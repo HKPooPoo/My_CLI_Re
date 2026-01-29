@@ -1,0 +1,82 @@
+.navi-bar {
+    height: clamp(var(--sub-navi-height), min(12vw, 12vh), var(--navi-height));
+    width: 100%;
+    border-bottom: var(--border-line);
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-around;
+    /*removed, such that sub-navi-mask will not cover sub-navi-track*/
+    /* z-index: 1000; */
+}
+
+.navi-bar * {
+    font-weight: bold;
+}
+
+/*clickable*/
+.navi-item {
+    position: relative;
+    height: 100%;
+    align-items: center;
+    justify-content: center;
+}
+
+.navi-item-text {
+    padding: 0 4px;
+    background-color: var(--bg-secondary);
+    z-index: 1000;
+}
+
+.sub-navi-indicator {
+    position: absolute;
+    width: calc(100% + clamp(16px, 4vw, 8 * 64px));
+    height: 100%;
+    border: var(--border-line);
+    top: 50%;
+    background-color: var(--bg-secondary);
+    /*below sub-navi-mask*/
+    z-index: 999;
+}
+
+/*unify navi and sub-nav = [32, 48, 64]
+*/
+.sub-navi-indicator-mask,
+.sub-navi-track,
+.sub-navi-item {
+    height: clamp(32px, min(8vw, 8vh), var(--sub-navi-height));
+}
+
+.sub-navi-indicator-mask {
+    width: 100%;
+    background-color: var(--bg-secondary);
+    border-bottom: var(--border-line);
+    z-index: 1000;
+}
+
+/*hoverable*/
+.sub-navi-track {
+    position: absolute;
+    top: 100%;
+    flex-direction: row;
+    align-items: flex-end;
+    justify-content: space-around;
+    /*above sub-navi-mask*/
+    z-index: 1001;
+}
+
+/*clickable*/
+.sub-navi-item {
+    position: relative;
+    justify-content: center;
+    width: max-content;
+}
+
+.sub-navi-item-text {
+    padding: 0 clamp(16px, 4vw, 32px);
+}
+
+/*hidden*/
+.sub-navi-indicator,
+.sub-navi-item>* {
+    display: none;
+}

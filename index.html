@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My CLI</title>
+    <link rel="icon" href="./image/favicon.ico">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="stylesheets/hud.css">
+    <link rel="stylesheet" href="stylesheets/crt-vfx.css">
+    <link rel="stylesheet" href="stylesheets/navi.css">
+    <link rel="stylesheet" href="stylesheets/page.css">
+</head>
+
+<body>
+    <div class="header">
+        <img src="./image/banner.png" class="header-img">
+        <!--hud.css-->
+        <div class="hud-bar">
+            <div id="login-status-bar">UID: <div id="login-status-display">Connecting...</div>
+            </div>
+            <div id="db-status-bar">DB: <div id="db-status-display">Connecting...</div>
+            </div>
+        </div>
+    </div>
+    <div class="body">
+        <!--crt-vfx.css-->
+        <div class="crt-scanner"></div>
+        <!--crt-vfx.css-->
+        <div id="press-start-overlay">PRESS START</div>
+        <!--navi.css-->
+        <nav class="navi-bar crt-text-green">
+            <div class="navi-item" data-navi-item="blackboard">
+                <div class="navi-item-text">BLACKBOARD</div>
+                <div class="sub-navi-indicator"></div>
+                <div class="sub-navi-track">
+                    <div class="sub-navi-item" data-sub-navi-item="blackboard-log">
+                        <div class="sub-navi-item-text">LOG</div>
+                    </div>
+                    <div class="sub-navi-item" data-sub-navi-item="blackboard-todo">
+                        <div class="sub-navi-item-text">TODO</div>
+                    </div>
+                    <div class="sub-navi-item" data-sub-navi-item="blackboard-misc">
+                        <div class="sub-navi-item-text">MISC</div>
+                    </div>
+                </div>
+            </div>
+            <div class="navi-item" data-navi-item="walkie-typie">
+                <div class="navi-item-text">WALKIE-TYPIE</div>
+                <div class="sub-navi-indicator"></div>
+                <div class="sub-navi-track">
+                    <div class="sub-navi-item" data-sub-navi-item="walkie-typie-list">
+                        <div class="sub-navi-item-text">LIST</div>
+                    </div>
+                    <div class="sub-navi-item" data-sub-navi-item="walkie-typie-text">
+                        <div class="sub-navi-item-text">TEXT</div>
+                    </div>
+                    <div class="sub-navi-item" data-sub-navi-item="walkie-typie-add">
+                        <div class="sub-navi-item-text">ADD</div>
+                    </div>
+                </div>
+            </div>
+            <div class="navi-item" data-navi-item="broadcast">
+                <div class="navi-item-text">BROADCAST</div>
+                <div class="sub-navi-indicator"></div>
+                <div class="sub-navi-track">
+                    <div class="sub-navi-item" data-sub-navi-item="broadcast-signal">
+                        <div class="sub-navi-item-text">&lt;--&gt;</div>
+                    </div>
+                    <div class="sub-navi-item" data-sub-navi-item="broadcast-list">
+                        <div class="sub-navi-item-text">LIST</div>
+                    </div>
+                </div>
+            </div>
+        </nav>
+        <div class="sub-navi-indicator-mask"></div>
+        <div class="page-container">
+
+        </div>
+        <div class="page-container"></div>
+    </div>
+    <div class="footer">
+        <div class="footer-text">&copy; 2026 My CLI | YU Shing Hei</div>
+    </div>
+</body>
+
+</html>

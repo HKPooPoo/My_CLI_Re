@@ -1,0 +1,28 @@
+/*HUD Status Bar*/
+.hud-bar {
+    position: absolute;
+    bottom: 4px;
+    left: 8px;
+    flex-direction: row;
+}
+
+.hud-bar * {
+    font-size: var(--header-footer-font-size);
+}
+
+#login-status-bar,
+#db-status-bar {
+    position: relative;
+    padding: 0 8px;
+    flex-direction: row;
+}
+
+#login-status-display,
+#db-status-display {
+    padding: 0 4px;
+    max-width: 16vw;
+    display: inline-block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: var(--text-orange);
+}

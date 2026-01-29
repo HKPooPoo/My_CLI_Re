@@ -1,0 +1,5 @@
+.page-container {
+    width: 100%;
+    /*fill vertical space*/
+    flex: 1;
+}

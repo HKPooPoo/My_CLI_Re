@@ -1,0 +1,104 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+:root {
+    font-size: clamp(12px, min(4vh, 4vw), 16px);
+    /* font-weight: bold; */
+    font-family: 'Courier New';
+    --text-green: #32FF32;
+    --text-orange: #FFB000;
+    --text-red: #FF3232;
+    --bg-primary: #000000;
+    --bg-secondary: #001100;
+    --header-height: clamp(96px, min(10vw, 20vh), 128px);
+    --footer-height: clamp(48px, min(10vw, 20vh), 64px);
+    --header-footer-font-size: clamp(8px, min(8vh, 4vw), 0.96, 0 0 10px var(--text-green)rem);
+    --border-line: 2px solid var(--text-green);
+    /*alternative of border-line*/
+    --box-shadow: 0 0 0 2px var(--text-green);
+    --box-shadow-up: 0 -2px 0 0 var(--text-green);
+    --box-shadow-down: 0 2px 0 0 var(--text-green);
+    --crt-line-width: 8px;
+    --text-shadow-green: 0 0 4px var(--text-green), 0 0 8px var(--text-green);
+    --text-shadow-orange: 0 0 4px var(--text-orange), 0 0 8px var(--text-orange);
+    --text-shadow-red: 0 0 4px var(--text-red), 0 0 8px var(--text-red);
+    --navi-height: 64px;
+    --sub-navi-height: 48px;
+}
+
+::selection {
+    background: var(--bg-secondary);
+    color: var(--text-orange);
+}
+
+html,
+body {
+    width: 100vw;
+    height: 100%;
+    background-color: var(--bg-secondary);
+    color: var(--text-green);
+    overflow-x: hidden;
+}
+
+/*Unify flex column*/
+body,
+nav,
+div,
+span,
+.header,
+.body,
+.footer {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+}
+
+a {
+    text-decoration: none;
+}
+
+.header,
+.footer {
+    width: 100%;
+    justify-content: center;
+    align-items: center;
+    background-color: var(--bg-primary);
+    overflow: hidden;
+    z-index: 2000;
+}
+
+.header {
+    height: var(--header-height);
+}
+
+.footer {
+    height: var(--footer-height);
+    border-top: var(--border-line);
+    /* box-shadow: var(--box-shadow-up); */
+}
+
+.footer-text {
+    font-size: var(--header-footer-font-size);
+}
+
+.header-img {
+    position: absolute;
+    margin: auto;
+    height: 100%;
+    /*No stretch*/
+    object-fit: contain;
+    transform: scale(1.28);
+    filter: saturate(1.6);
+}
+
+.body {
+    position: relative;
+    width: 100%;
+    height: calc(100% - var(--header-height) - var(--footer-height));
+    border-top: var(--border-line);
+    /*moved to footer*/
+    /* border-bottom: var(--border-line); */
+}

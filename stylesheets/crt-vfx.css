@@ -1,0 +1,44 @@
+.crt-scanner {
+    position: fixed;
+    width: 100%;
+    /* height: 100%; */
+    height: calc(100% - var(--header-height) - var(--footer-height) + var(--crt-line-width));
+    background: linear-gradient(rgba(16, 16, 16, 0.1) 50%, rgba(0, 0, 0, 0.2) 50%),
+        radial-gradient(circle, rgba(0, 0, 0, 0) 69%, rgba(0, 0, 0, 0.8) 100%);
+    background-size: 100% var(--crt-line-width);
+    /* top: -8px; */
+    top: calc(var(--header-height) - (var(--crt-line-width) / 2));
+    /*under header and footer*/
+    /* z-index: 1999; */
+    /*above header and footer*/
+    z-index: 2001;
+    pointer-events: none;
+}
+
+.crt-text-green * {
+    color: var(--text-green);
+    text-shadow: var(--text-shadow-green)
+}
+
+.crt-text-orange * {
+    color: var(--text-orange);
+    text-shadow: var(--text-shadow-orange)
+}
+
+.crt-text-red * {
+    color: var(--text-red);
+    text-shadow: var(--text-shadow-red)
+}
+
+#press-start-overlay {
+    /* display: none; */
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background-color: var(--bg-primary);
+    justify-content: center;
+    align-items: center;
+    font-size: 2rem;
+    text-shadow: var(--text-shadow-green);
+    z-index: 2000;
+}
