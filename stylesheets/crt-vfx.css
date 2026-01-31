@@ -8,11 +8,6 @@
     background-size: 100% var(--crt-line-width);
     /* top: -8px; */
     top: calc(var(--header-height) - (var(--crt-line-width) / 2));
-    /*under header and footer*/
-    /* z-index: 1999; */
-    /*above header and footer*/
-    z-index: 2001;
-    pointer-events: none;
 }
 
 .crt-text-green * {
@@ -39,9 +34,7 @@
     align-items: center;
     font-size: 2rem;
     text-shadow: var(--text-shadow-green);
-    z-index: 1999;
     /*pressStart.js*/
-    display: flex;
     transform: scale(1, 1) translate3d(0, 0, 0);
     filter: brightness(1);
 }

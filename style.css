@@ -6,7 +6,7 @@
 }
 
 :root {
-    font-size: clamp(12px, min(4vh, 4vw), 16px);
+    font-size: clamp(0.875rem, min(4vh, 2vw), 1rem);
     /* font-weight: bold; */
     font-family: 'Courier New';
     --text-green: #32FF32;
@@ -16,7 +16,7 @@
     --bg-secondary: #001100;
     --header-height: clamp(96px, min(10vw, 20vh), 128px);
     --footer-height: clamp(48px, min(10vw, 20vh), 64px);
-    --header-footer-font-size: clamp(8px, min(8vh, 4vw), 0.96, 0 0 10px var(--text-green)rem);
+    --header-footer-font-size: clamp(0.75rem, min(8vh, 4vw), 0.875rem);
     --border-line: 2px solid var(--text-green);
     /*alternative of border-line*/
     --box-shadow: 0 0 0 2px var(--text-green);
@@ -68,7 +68,6 @@ a {
     align-items: center;
     background-color: var(--bg-primary);
     overflow: hidden;
-    z-index: 2000;
 }
 
 .header {
@@ -88,11 +87,13 @@ a {
 .header-img {
     position: absolute;
     margin: auto;
-    height: 100%;
+    height: var(--header-height);
     /*No stretch*/
     object-fit: contain;
-    transform: scale(1.28);
     filter: saturate(1.6);
+    /*it works*/
+    transform: scale(1.28) if(media(width < 768px): translateX(clamp(0px, 128% - 100vh, 48%)); else: translateX(0));
+    transition: transform 0.16s ease-out;
 }
 
 .body {
@@ -103,5 +104,4 @@ a {
     /*moved to footer*/
     /* border-bottom: var(--border-line); */
     overflow: hidden;
-    z-index: 1000;
 }

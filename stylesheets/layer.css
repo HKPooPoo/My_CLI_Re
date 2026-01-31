@@ -1,0 +1,35 @@
+/* style.css */
+
+/* crt-vfx.css */
+.crt-scanner {
+    z-index: 1999;
+    pointer-events: none;
+}
+
+#press-start-overlay {
+    z-index: 1999;
+    display: flex;
+}
+
+/* navi.css */
+.navi-item-text,
+.sub-navi-track {
+    z-index: 1001;
+}
+
+.navi-mask,
+.sub-navi-indicator,
+.sub-navi-indicator-mask {
+    z-index: 1000;
+    pointer-events: none;
+}
+
+.sub-navi-indicator,
+.sub-navi-item>* {
+    /* display: none; */
+}
+
+/* page.css */
+.page-container {
+    z-index: 999;
+}

@@ -1,5 +1,5 @@
 .navi-bar {
-    height: clamp(var(--sub-navi-height), min(12vw, 12vh), var(--navi-height));
+    height: clamp(var(--sub-navi-height), min(8vw, 8vh), var(--navi-height));
     width: 100%;
     /*Moved to navi-mask */
     /* border-bottom: var(--border-line); */
@@ -20,7 +20,6 @@
     width: 100%;
     background-color: var(--bg-secondary);
     border-bottom: var(--border-line);
-    z-index: 1000;
 }
 
 /*clickable*/
@@ -34,7 +33,6 @@
 .navi-item-text {
     padding: 0 4px;
     background-color: var(--bg-secondary);
-    z-index: 1000;
 }
 
 .sub-navi-indicator {
@@ -45,22 +43,25 @@
     top: 50%;
     background-color: var(--bg-secondary);
     /*below sub-navi-mask*/
-    z-index: 999;
+    /*
+    pending animation
+    height: ;
+    transform: translateY();
+    */
 }
 
-/*unify navi and sub-nav = [32, 48, 64]
+/*unify height of navi and sub-nav by tier [32, 48, 64]
 */
 .sub-navi-indicator-mask,
 .sub-navi-track,
 .sub-navi-item {
-    height: clamp(32px, min(8vw, 8vh), var(--sub-navi-height));
+    height: clamp(32px, min(6vw, 6vh), var(--sub-navi-height));
 }
 
 .sub-navi-indicator-mask {
     width: 100%;
     background-color: var(--bg-secondary);
     border-bottom: var(--border-line);
-    z-index: 1000;
 }
 
 /*hoverable*/
@@ -71,7 +72,6 @@
     align-items: flex-end;
     justify-content: space-around;
     /*above sub-navi-mask*/
-    z-index: 1001;
 }
 
 /*clickable*/
@@ -82,11 +82,5 @@
 }
 
 .sub-navi-item-text {
-    padding: 0 clamp(16px, 4vw, 32px);
-}
-
-/*hidden*/
-.sub-navi-indicator,
-.sub-navi-item>* {
-    display: none;
+    padding: 0 clamp(16px, 2vw, 48px);
 }
