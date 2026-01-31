@@ -3,4 +3,9 @@
     /*fill vertical space*/
     /*DO NOT USE HEIGHT: 100%*/
     flex: 1;
+    z-index: 999;
+    /*scroll setting*/
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--text-green) var(--bg-primary);
 }

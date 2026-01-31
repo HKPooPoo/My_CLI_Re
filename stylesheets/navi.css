@@ -1,7 +1,8 @@
 .navi-bar {
     height: clamp(var(--sub-navi-height), min(12vw, 12vh), var(--navi-height));
     width: 100%;
-    border-bottom: var(--border-line);
+    /*Moved to navi-mask */
+    /* border-bottom: var(--border-line); */
     flex-direction: row;
     align-items: center;
     justify-content: space-around;
@@ -11,6 +12,15 @@
 
 .navi-bar * {
     font-weight: bold;
+}
+
+.navi-mask {
+    position: absolute;
+    height: 100%;
+    width: 100%;
+    background-color: var(--bg-secondary);
+    border-bottom: var(--border-line);
+    z-index: 1000;
 }
 
 /*clickable*/

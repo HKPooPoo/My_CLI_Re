@@ -102,4 +102,6 @@ a {
     border-top: var(--border-line);
     /*moved to footer*/
     /* border-bottom: var(--border-line); */
+    overflow: hidden;
+    z-index: 1000;
 }
