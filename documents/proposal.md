@@ -1,3 +1,11 @@
+SEHH3140 SEHH3140 PROGRAMMING PROJECT
+Group8_Proposal.pdf
+24121627a YU Shing Hei
+24129268A CHEN Jian Hong
+24160192A HUANG Chi Yeung
+24079654A WONG Kam Yiu
+https://studenthkccpolyuedu-my.sharepoint.com/:w:/g/personal/24121627a_common_cpce-polyu_edu_hk/IQB6m8LtrMmwRYFM7kwpJ_roAVndFQJvZ878wkqMlwu3fAo?e=IarTRH
+
 # 1. Background Information
 Project Name: My CLI
 ---

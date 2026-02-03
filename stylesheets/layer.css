@@ -8,7 +8,8 @@
 
 #press-start-overlay {
     z-index: 1999;
-    display: flex;
+    /* display: flex; */
+    display: none;
 }
 
 /* navi.css */
@@ -18,10 +19,13 @@
 }
 
 .navi-mask,
-.sub-navi-indicator,
-.sub-navi-indicator-mask {
+.sub-navi-indicator {
     z-index: 1000;
     pointer-events: none;
+}
+
+.sub-navi-indicator-mask {
+    z-index: 1000;
 }
 
 .sub-navi-indicator,

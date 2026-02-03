@@ -32,55 +32,61 @@
         <!--pressStart.js-->
         <div id="press-start-overlay">PRESS START</div>
         <script src="javascript/pressStart.js"></script>
-        <!--navi.js-->
-        <script src="javascript/navi.js"></script>
         <!--navi.css-->
         <nav class="navi-bar crt-text-green">
             <div class="navi-mask"></div>
             <div class="navi-item" data-navi-item="blackboard">
                 <div class="navi-item-text">BLACKBOARD</div>
                 <div class="sub-navi-indicator"></div>
-                <div class="sub-navi-track">
-                    <div class="sub-navi-item" data-sub-navi-item="blackboard-log">
-                        <div class="sub-navi-item-text">LOG</div>
-                    </div>
-                    <div class="sub-navi-item" data-sub-navi-item="blackboard-todo">
-                        <div class="sub-navi-item-text">TODO</div>
-                    </div>
-                    <div class="sub-navi-item" data-sub-navi-item="blackboard-misc">
-                        <div class="sub-navi-item-text">MISC</div>
+                <div class="sub-navi-container">
+                    <div class="sub-navi-track">
+                        <div class="sub-navi-item" data-sub-navi-item="blackboard-log">
+                            <div class="sub-navi-item-text">LOG</div>
+                        </div>
+                        <div class="sub-navi-item" data-sub-navi-item="blackboard-todo">
+                            <div class="sub-navi-item-text">TODO</div>
+                        </div>
+                        <div class="sub-navi-item" data-sub-navi-item="blackboard-misc">
+                            <div class="sub-navi-item-text">MISC</div>
+                        </div>
                     </div>
                 </div>
             </div>
             <div class="navi-item" data-navi-item="walkie-typie">
                 <div class="navi-item-text">WALKIE-TYPIE</div>
-                <div class="sub-navi-indicator" style="display: none;"></div>
-                <div class="sub-navi-track" style="display: none;">
-                    <div class="sub-navi-item" data-sub-navi-item="walkie-typie-list">
-                        <div class="sub-navi-item-text">LIST</div>
-                    </div>
-                    <div class="sub-navi-item" data-sub-navi-item="walkie-typie-text">
-                        <div class="sub-navi-item-text">TEXT</div>
-                    </div>
-                    <div class="sub-navi-item" data-sub-navi-item="walkie-typie-add">
-                        <div class="sub-navi-item-text">ADD</div>
+                <div class="sub-navi-indicator"></div>
+                <div class="sub-navi-container">
+                    <div class="sub-navi-track">
+                        <div class="sub-navi-item" data-sub-navi-item="walkie-typie-list">
+                            <div class="sub-navi-item-text">LIST</div>
+                        </div>
+                        <div class="sub-navi-item" data-sub-navi-item="walkie-typie-text">
+                            <div class="sub-navi-item-text">TEXT</div>
+                        </div>
+                        <div class="sub-navi-item" data-sub-navi-item="walkie-typie-add">
+                            <div class="sub-navi-item-text">ADD</div>
+                        </div>
                     </div>
                 </div>
             </div>
             <div class="navi-item" data-navi-item="broadcast">
                 <div class="navi-item-text">BROADCAST</div>
-                <div class="sub-navi-indicator" style="display: none;"></div>
-                <div class="sub-navi-track" style="display: none;">
-                    <div class="sub-navi-item" data-sub-navi-item="broadcast-signal">
-                        <div class="sub-navi-item-text">&lt;--&gt;</div>
-                    </div>
-                    <div class="sub-navi-item" data-sub-navi-item="broadcast-list">
-                        <div class="sub-navi-item-text">LIST</div>
+                <div class="sub-navi-indicator"></div>
+                <div class="sub-navi-container">
+                    <div class="sub-navi-track">
+                        <div class="sub-navi-item" data-sub-navi-item="broadcast-signal">
+                            <div class="sub-navi-item-text">&lt;--&gt;</div>
+                        </div>
+                        <div class="sub-navi-item" data-sub-navi-item="broadcast-list">
+                            <div class="sub-navi-item-text">LIST</div>
+                        </div>
                     </div>
                 </div>
             </div>
         </nav>
         <div class="sub-navi-indicator-mask"></div>
+        <!--navi.js-->
+        <script src="javascript/navi.js"></script>
         <div class="page-container">
             <p>Test</p>
             <p>Test</p>

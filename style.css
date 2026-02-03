@@ -7,6 +7,7 @@
 
 :root {
     font-size: clamp(0.875rem, min(4vh, 2vw), 1rem);
+    --font-size: clamp(0.875rem, min(4vh, 2vw), 1rem);
     /* font-weight: bold; */
     font-family: 'Courier New';
     --text-green: #32FF32;
@@ -91,9 +92,14 @@ a {
     /*No stretch*/
     object-fit: contain;
     filter: saturate(1.6);
-    /*it works*/
-    transform: scale(1.28) if(media(width < 768px): translateX(clamp(0px, 128% - 100vh, 48%)); else: translateX(0));
     transition: transform 0.16s ease-out;
+    transform: scale(1.28);
+}
+
+@media (max-width: 768px) {
+    .header-img {
+        transform: scale(1.28) translateX(clamp(0px, 128% - 100vh, 48%));
+    }
 }
 
 .body {
