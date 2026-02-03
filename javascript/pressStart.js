@@ -1,3 +1,5 @@
+import { setActiveNaviItem, updateNaviPosition } from "./navi.js"
+
 const overlay = document.getElementById("press-start-overlay");
 
 let justGainedFocus = false;
@@ -34,7 +36,13 @@ overlay.addEventListener("click", () => {
     if (!overlay.style.display === "flex" || justGainedFocus) return;
 
     overlay.classList.add("crt-switch-off");
-    firstTriggered = true;
+
+    // Auto select blackboard-log on first trigger (no -ed)
+    if (!firstTriggered) {
+        setActiveNaviItem(document.querySelector('.navi-item[data-navi-item="blackboard"]'));
+        updateNaviPosition("blackboard");
+        firstTriggered = true;
+    }
 })
 
 /**

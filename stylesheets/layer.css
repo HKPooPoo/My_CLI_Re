@@ -9,7 +9,8 @@
 #press-start-overlay {
     z-index: 1999;
     /* display: flex; */
-    display: none;
+    /*deactivate it for dev*/
+    /* display: none; */
 }
 
 /* navi.css */

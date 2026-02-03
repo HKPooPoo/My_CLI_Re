@@ -11,7 +11,7 @@ Array.from($allNaviItems).forEach($naviItem => {
 
     const $subNaviTrack = $naviItem.querySelector(".sub-navi-track");
     const $subNaviItems = $naviItem.getElementsByClassName("sub-navi-item");
-    
+
     stateOfEachNaviItem[thisNaviItem] = {
         footPrint: false, //Marking
         thisNaviItem: thisNaviItem, //Name
@@ -20,7 +20,7 @@ Array.from($allNaviItems).forEach($naviItem => {
         $subNaviItems: $subNaviItems, //Owned Items
         subNaviItemAmount: $subNaviItems.length //Item Amount
     }
-    
+
     // Event
     $naviItem.addEventListener("click", (e) => {
         setActiveNaviItem($naviItem);
@@ -33,16 +33,16 @@ Array.from($allNaviItems).forEach($naviItem => {
         })
     })
     window.addEventListener("resize", () => {
-    for (const naviItemName of Object.keys(stateOfEachNaviItem)) {
-        if (!stateOfEachNaviItem[naviItemName].footPrint) continue;
-        updateNaviPosition(naviItemName);
-    }
+        for (const naviItemName of Object.keys(stateOfEachNaviItem)) {
+            if (!stateOfEachNaviItem[naviItemName].footPrint) continue;
+            updateNaviPosition(naviItemName);
+        }
     })
     // Scroll on subNaviTrack
     $subNaviTrack.addEventListener("wheel", handleSubNaviScroll, { passive: false })
 })
 
-function setActiveNaviItem($clickedNaviItem) {
+export function setActiveNaviItem($clickedNaviItem) {
     // deactivate all
     Array.from($allNaviItems).forEach($naviItem => {
         $naviItem.classList.remove("active");
@@ -67,7 +67,7 @@ function moveSubNaviItemHead($naviItem, nextSubNaviItemIndex) {
     stateOfNaviItem.subNaviHeadIndex = nextSubNaviItemIndex;
 }
 
-function updateNaviPosition($naviItem) {
+export function updateNaviPosition($naviItem) {
     const stateOfNaviItem = stateOfEachNaviItem[$naviItem];
 
     if (!stateOfNaviItem) return;
@@ -101,6 +101,18 @@ function updateNaviPosition($naviItem) {
             $focusedSubNaviItem.classList.remove("crt-text-orange");
         }
     });
+
+    // Here updates page; supposed the name are the same
+    updatePage($subNaviItems[subNaviHeadIndex].dataset.subNaviItem);
+
+    // Here plays glitchEffect on .body
+    const $noiseLayer = document.getElementsByClassName("crt-noise-layer")[0];
+    if ($noiseLayer) {
+        $noiseLayer.classList.remove("glitchEffect");
+        void $noiseLayer.offsetWidth;
+        $noiseLayer.classList.add("glitchEffect");
+        setTimeout(() => { $noiseLayer.classList.remove("glitchEffect") }, 1200) //.glitchEffect def time
+    }
 }
 
 // Scroll on sub-navi-indicator-mask
@@ -121,4 +133,20 @@ function handleSubNaviScroll(e) {
 
     moveSubNaviItemHead(activeNaviItem, nextIndex);
     updateNaviPosition(activeNaviItem);
+}
+
+/**
+ * Below is page switching logic
+ */
+let $activePage = null;
+
+function updatePage(subNaviItem) {
+    Array.from(document.getElementsByClassName("page")).forEach($page => {
+        if (subNaviItem === $page.dataset.page) {
+            $page.classList.add("active"); // defined in page.css
+            $activePage = $page;
+        } else {
+            $page.classList.remove("active");
+        }
+    })
 }
