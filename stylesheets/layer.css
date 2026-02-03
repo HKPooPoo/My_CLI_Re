@@ -10,7 +10,7 @@
     z-index: 1999;
     /* display: flex; */
     /*deactivate it for dev*/
-    /* display: none; */
+    display: none;
 }
 
 /* navi.css */

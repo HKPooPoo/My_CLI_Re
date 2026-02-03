@@ -1,18 +1,9 @@
 .navi-bar {
     height: clamp(var(--sub-navi-height), min(8vw, 8vh), var(--navi-height));
     width: 100%;
-    <<<<<<< HEAD
-    /*Moved to navi-mask */
-    /* border-bottom: var(--border-line); */
     flex-direction: row;
     align-items: center;
     justify-content: space-around;
-    /*removed, such that sub-navi-mask will not cover sub-navi-track*/
-    /* z-index: 1000; */
-    =======flex-direction: row;
-    align-items: center;
-    justify-content: space-around;
-    >>>>>>>fd1931e (backup 4/2/2026)
 }
 
 .navi-bar * {
@@ -33,8 +24,7 @@
     height: 100%;
     align-items: center;
     justify-content: center;
-    <<<<<<< HEAD=======cursor: pointer;
-    >>>>>>>fd1931e (backup 4/2/2026)
+    cursor: pointer;
 }
 
 .navi-item-text {
@@ -45,18 +35,12 @@
 .sub-navi-indicator {
     position: absolute;
     width: calc(100% + clamp(16px, 4vw, 8 * 64px));
-    <<<<<<< HEAD height: 100%;
     border: var(--border-line);
-    top: 50%;
-    background-color: var(--bg-secondary);
-    /*below sub-navi-mask*/
-    =======border: var(--border-line);
     background-color: var(--bg-secondary);
     /*added animation*/
     /* height: 100%;
     top: 50%; */
     transition: all 0.08s ease-in;
-    >>>>>>>fd1931e (backup 4/2/2026)
     /*
     pending animation
     height: ;
@@ -96,18 +80,15 @@ failure/pending: sub-navi-track overflow mask on edge
     flex-direction: row;
     width: 100%;
     align-items: flex-start;
-    transform: translateX(1000%);
-    /*test attribute, blackboard first item devide 2 = -13.395px*/
+    transform: translateX(1000%); /*test attribute, blackboard first item devide 2 = -13.395px*/
     transition: transform 0.16s ease-in;
 }
 
 .sub-navi-item {
     position: relative;
     align-items: center;
-    min-width: max-content;
-    /*avoid shift lines when spaces*/
-    margin-right: 32px;
-    /*hard coded, related to navi.js*/
+    min-width: max-content; /*avoid shift lines when spaces*/
+    margin-right: 32px; /*hard coded, related to navi.js*/
 }
 
 /*clickable*/
@@ -122,17 +103,14 @@ failure/pending: sub-navi-track overflow mask on edge
 .sub-navi-track {
     display: none;
 }
-
 /* .navi-item.active .sub-navi-indicator, */
 .navi-item.active .sub-navi-track {
     display: flex;
 }
-
 .sub-navi-indicator {
     height: 50%;
     top: 100%
 }
-
 .navi-item.active .sub-navi-indicator {
     height: 100%;
     top: 50%
