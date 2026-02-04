@@ -13,6 +13,7 @@
     <link rel="stylesheet" href="stylesheets/navi.css">
     <link rel="stylesheet" href="stylesheets/page.css">
     <link rel="stylesheet" href="stylesheets/layer.css">
+    <link rel="stylesheet" href="stylesheets/page-auth.css">
 </head>
 
 <body>
@@ -49,8 +50,8 @@
                         <div class="sub-navi-item" data-sub-navi-item="blackboard-todo">
                             <div class="sub-navi-item-text">TODO</div>
                         </div>
-                        <div class="sub-navi-item" data-sub-navi-item="blackboard-misc">
-                            <div class="sub-navi-item-text">MISC</div>
+                        <div class="sub-navi-item" data-sub-navi-item="blackboard-auth">
+                            <div class="sub-navi-item-text">AUTH</div>
                         </div>
                     </div>
                 </div>
@@ -95,7 +96,21 @@
         <div class="page-container">
             <div class="page" data-page="blackboard-log">abc</div>
             <div class="page" data-page="blackboard-todo">def</div>
-            <div class="page" data-page="blackboard-misc">ghi</div>
+            <div class="page" data-page="blackboard-auth">
+                <div class="auth-container">
+                    <div class="auth-title crt-text-orange">ACCOUNT AUTHENTICATION</div>
+
+                    <input type="text" id="auth-uid" class="auth-input" placeholder="UID" maxlength="32">
+                    <input type="email" id="auth-email" class="auth-input" placeholder="EMAIL (OPTIONAL)"
+                        maxlength="32">
+                    <input type="password" id="auth-passcode" class="auth-input" placeholder="PASSCODE" maxlength="32">
+
+                    <button id="btn-login" class="auth-btn crt-text-green">LOGIN</button>
+                    <button id="btn-register" class="auth-btn crt-text-green">REGISTER</button>
+
+                    <button id="btn-logout" class="auth-btn crt-text-green">LOGOUT</button>
+                </div>
+            </div>
             <!---->
             <div class="page" data-page="walkie-typie-list">jk</div>
             <div class="page" data-page="walkie-typie-text">lm</div>

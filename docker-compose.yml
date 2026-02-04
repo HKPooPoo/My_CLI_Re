@@ -1,0 +1,44 @@
+services:
+  web:
+    build: .
+    container_name: my-cli-web
+    ports:
+      - "80:80"
+    volumes:
+      - .:/var/www/html
+    depends_on:
+      - db
+  db:
+    image: postgres:16
+    container_name: my-cli-postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      - "5431:5432"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: my-cli-pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD}
+    ports:
+      - "8080:80"
+    volumes:
+      - pgadmin-data:/var/lib/pgadmin
+    depends_on:
+      - db
+
+  tunnel:
+    image: cloudflare/cloudflared:latest
+    container_name: my-cli-tunnel
+    restart: always
+    command: tunnel --url http://web:80
+    depends_on:
+      - web
+volumes:
+  db-data:
+  pgadmin-data:

@@ -15,12 +15,27 @@
     text-shadow: var(--text-shadow-green)
 }
 
+.crt-text-green {
+    color: var(--text-green);
+    text-shadow: var(--text-shadow-green)
+}
+
 .crt-text-orange * {
     color: var(--text-orange);
     text-shadow: var(--text-shadow-orange)
 }
 
+.crt-text-orange {
+    color: var(--text-orange);
+    text-shadow: var(--text-shadow-orange)
+}
+
 .crt-text-red * {
+    color: var(--text-red);
+    text-shadow: var(--text-shadow-red)
+}
+
+.crt-text-red {
     color: var(--text-red);
     text-shadow: var(--text-shadow-red)
 }
