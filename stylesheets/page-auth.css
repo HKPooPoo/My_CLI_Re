@@ -27,6 +27,10 @@
 }
 
 @media (max-width: 768px) {
+    .auth-container {
+        width: 64vw;
+    }
+
     .auth-title {
         left: 50%;
         transform: translateX(-50%);

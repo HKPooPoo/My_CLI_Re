@@ -24,5 +24,4 @@
     display: inline-block;
     overflow: hidden;
     text-overflow: ellipsis;
-    color: var(--text-orange);
 }
