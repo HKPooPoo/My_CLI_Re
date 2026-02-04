@@ -1,4 +1,4 @@
-import { setActiveNaviItem, updateNaviPosition } from "./navi.js"
+import { setActiveNaviItem, updateNaviPosition } from "./navi.js";
 
 const overlay = document.getElementById("press-start-overlay");
 

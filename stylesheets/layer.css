@@ -1,7 +1,8 @@
 /* style.css */
 
 /* crt-vfx.css */
-.crt-scanner {
+.crt-scanner,
+.crt-noise-layer {
     z-index: 1999;
     pointer-events: none;
 }
@@ -10,7 +11,7 @@
     z-index: 1999;
     /* display: flex; */
     /*deactivate it for dev*/
-    display: none;
+    /* display: none; */
 }
 
 /* navi.css */

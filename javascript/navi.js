@@ -1,3 +1,5 @@
+import { playAudio } from "./audio.js";
+
 const $allNaviItems = document.getElementsByClassName("navi-item");
 
 let activeNaviItem = null;
@@ -18,13 +20,15 @@ Array.from($allNaviItems).forEach($naviItem => {
         subNaviHeadIndex: 0, //Head Index
         $subNaviTrack: $subNaviTrack, //Owned Track
         $subNaviItems: $subNaviItems, //Owned Items
-        subNaviItemAmount: $subNaviItems.length //Item Amount
+        subNaviItemAmount: $subNaviItems.length, //Item Amount
+        // this is for audio.js
+        $naviItem: $naviItem
     }
 
     // Event
     $naviItem.addEventListener("click", (e) => {
         setActiveNaviItem($naviItem);
-        updateNaviPosition(thisNaviItem);
+        updateNaviPosition(thisNaviItem, true); // silent the sub navi; father first
     })
     Array.from($subNaviItems).forEach(($subNaviItem, index) => {
         $subNaviItem.addEventListener("click", () => {
@@ -42,7 +46,7 @@ Array.from($allNaviItems).forEach($naviItem => {
     $subNaviTrack.addEventListener("wheel", handleSubNaviScroll, { passive: false })
 })
 
-export function setActiveNaviItem($clickedNaviItem) {
+export function setActiveNaviItem($clickedNaviItem, silent = false) {
     // deactivate all
     Array.from($allNaviItems).forEach($naviItem => {
         $naviItem.classList.remove("active");
@@ -50,6 +54,10 @@ export function setActiveNaviItem($clickedNaviItem) {
 
     $clickedNaviItem.classList.add("active");
     activeNaviItem = $clickedNaviItem.dataset.naviItem; //for scroll
+
+    if (!silent) {
+        playAudio($clickedNaviItem.dataset.soundMain);
+    }
 }
 
 function moveSubNaviItemHead($naviItem, nextSubNaviItemIndex) {
@@ -67,10 +75,14 @@ function moveSubNaviItemHead($naviItem, nextSubNaviItemIndex) {
     stateOfNaviItem.subNaviHeadIndex = nextSubNaviItemIndex;
 }
 
-export function updateNaviPosition($naviItem) {
+export function updateNaviPosition($naviItem, silent = false) {
     const stateOfNaviItem = stateOfEachNaviItem[$naviItem];
 
     if (!stateOfNaviItem) return;
+
+    if (!silent) {
+        playAudio(stateOfNaviItem.$naviItem.dataset.soundSub);
+    }
 
     if (!stateOfNaviItem.footPrint) {
         stateOfNaviItem.footPrint = true;

@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>My CLI</title>
+    <script type="module" src="./javascript/audio.js"></script>
     <link rel="icon" href="./images/favicon.ico">
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="stylesheets/hud.css">
@@ -36,7 +37,8 @@
         <!--navi.css-->
         <nav class="navi-bar crt-text-green">
             <div class="navi-mask"></div>
-            <div class="navi-item" data-navi-item="blackboard">
+            <div class="navi-item" data-navi-item="blackboard" data-sound-main="UIGeneralCancel.mp3"
+                data-sound-sub="UIGeneralFocus.mp3">
                 <div class="navi-item-text">BLACKBOARD</div>
                 <div class="sub-navi-indicator"></div>
                 <div class="sub-navi-container">
@@ -53,7 +55,8 @@
                     </div>
                 </div>
             </div>
-            <div class="navi-item" data-navi-item="walkie-typie">
+            <div class="navi-item" data-navi-item="walkie-typie" data-sound-main="UIGeneralOK.mp3"
+                data-sound-sub="UIPipboyOK.mp3">
                 <div class="navi-item-text">WALKIE-TYPIE</div>
                 <div class="sub-navi-indicator"></div>
                 <div class="sub-navi-container">
@@ -70,12 +73,13 @@
                     </div>
                 </div>
             </div>
-            <div class="navi-item" data-navi-item="broadcast">
+            <div class="navi-item" data-navi-item="broadcast" data-sound-main="UIGeneralOK.mp3"
+                data-sound-sub="UISelectOff.mp3">
                 <div class="navi-item-text">BROADCAST</div>
                 <div class="sub-navi-indicator"></div>
                 <div class="sub-navi-container">
                     <div class="sub-navi-track">
-                        <div class="sub-navi-item" data-sub-navi-item="broadcast-signal">
+                        <div class="sub-navi-item" data-sub-navi-item="broadcast-channel">
                             <div class="sub-navi-item-text">&lt;--&gt;</div>
                         </div>
                         <div class="sub-navi-item" data-sub-navi-item="broadcast-list">
@@ -91,14 +95,14 @@
         <div class="page-container">
             <div class="page" data-page="blackboard-log">abc</div>
             <div class="page" data-page="blackboard-todo">def</div>
-            <div class="page" data-page="blackboard-misc"></div>
+            <div class="page" data-page="blackboard-misc">ghi</div>
             <!---->
-            <div class="page" data-page="walkie-typie-list"></div>
-            <div class="page" data-page="walkie-typie-text"></div>
-            <div class="page" data-page="walkie-typie-add"></div>
+            <div class="page" data-page="walkie-typie-list">jk</div>
+            <div class="page" data-page="walkie-typie-text">lm</div>
+            <div class="page" data-page="walkie-typie-add">op</div>
             <!---->
-            <div class="page" data-page="broadcast-channel"></div>
-            <div class="page" data-page="broadcast-list"></div>
+            <div class="page" data-page="broadcast-channel">qrs</div>
+            <div class="page" data-page="broadcast-list">tuv</div>
         </div>
     </div>
     <div class="footer">
