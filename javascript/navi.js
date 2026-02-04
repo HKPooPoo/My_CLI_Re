@@ -31,7 +31,8 @@ Array.from($allNaviItems).forEach($naviItem => {
         updateNaviPosition(thisNaviItem, true); // silent the sub navi; father first
     })
     Array.from($subNaviItems).forEach(($subNaviItem, index) => {
-        $subNaviItem.addEventListener("click", () => {
+        $subNaviItem.addEventListener("click", (e) => {
+            e.stopPropagation(); // prevent event bubble
             moveSubNaviItemHead(thisNaviItem, index);
             updateNaviPosition(thisNaviItem)
         })
@@ -39,11 +40,16 @@ Array.from($allNaviItems).forEach($naviItem => {
     window.addEventListener("resize", () => {
         for (const naviItemName of Object.keys(stateOfEachNaviItem)) {
             if (!stateOfEachNaviItem[naviItemName].footPrint) continue;
-            updateNaviPosition(naviItemName);
+            updateNaviPosition(naviItemName, true);
         }
     })
     // Scroll on subNaviTrack
     $subNaviTrack.addEventListener("wheel", handleSubNaviScroll, { passive: false })
+
+    // patch
+    $subNaviTrack.addEventListener("click", (e) => {
+        e.stopPropagation(); // prevent event bubble
+    })
 })
 
 export function setActiveNaviItem($clickedNaviItem, silent = false) {
