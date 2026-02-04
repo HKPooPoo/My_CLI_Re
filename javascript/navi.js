@@ -37,14 +37,18 @@ Array.from($allNaviItems).forEach($naviItem => {
             updateNaviPosition(thisNaviItem)
         })
     })
-    window.addEventListener("resize", () => {
-        for (const naviItemName of Object.keys(stateOfEachNaviItem)) {
-            if (!stateOfEachNaviItem[naviItemName].footPrint) continue;
-            updateNaviPosition(naviItemName, true);
-        }
-    })
     // Scroll on subNaviTrack
     $subNaviTrack.addEventListener("wheel", handleSubNaviScroll, { passive: false })
+
+    // Scroll on touch swipe
+    $subNaviTrack.addEventListener("touchstart", (e) => {
+        touchStartX = e.changedTouches[0].screenX;
+    }, { passive: true })
+
+    $subNaviTrack.addEventListener('touchend', (e) => {
+        const touchEndX = e.changedTouches[0].screenX;
+        handleSubNaviSwipe(touchStartX, touchEndX);
+    })
 
     // patch
     $subNaviTrack.addEventListener("click", (e) => {
@@ -167,4 +171,38 @@ function updatePage(subNaviItem) {
             $page.classList.remove("active");
         }
     })
+}
+
+// Event
+window.addEventListener("resize", () => {
+    for (const naviItemName of Object.keys(stateOfEachNaviItem)) {
+        if (!stateOfEachNaviItem[naviItemName].footPrint) continue;
+        updateNaviPosition(naviItemName, true);
+    }
+})
+// Scroll on touch swipe
+let touchStartX = 0;
+let $subNaviMask = document.getElementsByClassName("sub-navi-indicator-mask")[0];
+
+$subNaviMask.addEventListener("touchstart", (e) => {
+    touchStartX = e.changedTouches[0].screenX;
+}, { passive: true })
+
+$subNaviMask.addEventListener('touchend', (e) => {
+    const touchEndX = e.changedTouches[0].screenX;
+    handleSubNaviSwipe(touchStartX, touchEndX);
+})
+
+function handleSubNaviSwipe(startX, endX) {
+    if (!activeNaviItem) return;
+
+    const threshold = 50;
+    const distance = startX - endX;
+
+    if (Math.abs(distance) < threshold) return;
+
+    const direction = distance > 0 ? 1 : -1;
+
+    moveSubNaviItemHead(activeNaviItem, stateOfEachNaviItem[activeNaviItem].subNaviHeadIndex + direction);
+    updateNaviPosition(activeNaviItem);
 }

@@ -20,7 +20,7 @@
 #login-status-display,
 #db-status-display {
     padding: 0 4px;
-    max-width: 16vw;
+    max-width: 32vw;
     display: inline-block;
     overflow: hidden;
     text-overflow: ellipsis;

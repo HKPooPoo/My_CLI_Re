@@ -98,7 +98,10 @@ a {
 
 @media (max-width: 768px) {
     .header-img {
-        transform: scale(1.28) translateX(clamp(0px, 128% - 100vh, 48%));
+        /*right on height change*/
+        /* transform: scale(1.28) translateX(clamp(0px, 128% - 100vh, 48%)); */
+        /*right on width change*/
+        transform: scale(1.28) translateX(calc(36vw - 36%));
     }
 }
 
