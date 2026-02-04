@@ -18,7 +18,8 @@
 
 .auth-title {
     position: absolute;
-    top: -12px;
+    top: 0px;
+    transform: translateY(-50%);
     left: 16px;
     background-color: var(--bg-secondary);
     padding: 0.4vw;
@@ -33,7 +34,7 @@
 
     .auth-title {
         left: 50%;
-        transform: translateX(-50%);
+        transform: translate(-50%, -50%);
     }
 }
 

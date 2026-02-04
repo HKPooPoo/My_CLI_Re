@@ -1,3 +1,7 @@
+:root[data-theme="light"] .page-container {
+    background-image: none;
+}
+
 .page-container {
     width: 100%;
     /*fill vertical space*/

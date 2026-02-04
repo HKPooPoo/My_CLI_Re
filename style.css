@@ -31,6 +31,26 @@
     --sub-navi-height: 48px;
 }
 
+:root[data-theme="light"] {
+    --text-green: black;
+    --text-orange: black;
+    --text-red: black;
+    --bg-primary: white;
+    --bg-secondary: white;
+    --border-line: 2px solid black;
+    --box-shadow: 0 0 0 2px black;
+    --box-shadow-up: 0 -2px 0 0 black;
+    --box-shadow-down: 0 2px 0 0 black;
+    --text-shadow-green: none;
+    --text-shadow-orange: none;
+    --text-shadow-red: none;
+}
+
+:root[data-theme="light"] .header,
+.footer {
+    font-weight: bold;
+}
+
 ::selection {
     background: var(--bg-secondary);
     color: var(--text-orange);
@@ -69,6 +89,7 @@ a {
     align-items: center;
     background-color: var(--bg-primary);
     overflow: hidden;
+    font-weight: bold;
 }
 
 .header {

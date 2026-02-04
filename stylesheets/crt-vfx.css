@@ -1,3 +1,13 @@
+:root[data-theme="light"] .crt-scanner,
+:root[data-theme="light"] .crt-noise-layer,
+:root[data-theme="light"] .header-img {
+    display: none;
+}
+
+:root[data-theme="light"] #press-start-overlay {
+    font-weight: bold;
+}
+
 .crt-scanner {
     position: fixed;
     width: 100%;

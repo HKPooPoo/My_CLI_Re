@@ -44,6 +44,19 @@ function isStatusHasNoChange(nextStatus) {
     return false;
 }
 
+//theme change (dark and light)
+let crtMode = true;
+document.getElementById("theme-change-btn").addEventListener("click", () => {
+    console.log("Hello");
+    if (crtMode) {
+        document.documentElement.setAttribute("data-theme", "light");
+        crtMode = false;
+    } else {
+        document.documentElement.removeAttribute("data-theme");
+        crtMode = true;
+    }
+})
+
 replaceCrtTextColorBy("crt-text-orange") // Initially, it is "CONNECTING..." in orange
 updateDatabaseStatus();
 setInterval(updateDatabaseStatus, 8964);

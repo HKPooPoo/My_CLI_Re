@@ -175,9 +175,8 @@ function updatePage(subNaviItem) {
 
 // Event
 window.addEventListener("resize", () => {
-    for (const naviItemName of Object.keys(stateOfEachNaviItem)) {
-        if (!stateOfEachNaviItem[naviItemName].footPrint) continue;
-        updateNaviPosition(naviItemName, true);
+    if (activeNaviItem && stateOfEachNaviItem[activeNaviItem]) {
+        updateNaviPosition(activeNaviItem, true);
     }
 })
 // Scroll on touch swipe

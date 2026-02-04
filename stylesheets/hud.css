@@ -25,3 +25,34 @@
     overflow: hidden;
     text-overflow: ellipsis;
 }
+
+/* Theme Change Button */
+#theme-change-btn {
+    position: absolute;
+    justify-self: center;
+    top: 0px;
+    right: 0px;
+    width: 64px;
+    height: 64px;
+    padding: 1vh;
+    margin: 1vh;
+    cursor: pointer;
+    border: none;
+    background-color: var(--text-green);
+    mask: url('../images/theme_switch.svg');
+    transition: all 0.16s ease-out;
+}
+
+@media (max-width: 768px) or (max-height: 256px) {
+    #theme-change-btn {
+        width: 48px;
+        height: 48px;
+        transform: translateX(calc(-2 * (48vw - 48%)));
+    }
+}
+
+@media (max-height: 111px) {
+    #theme-change-btn {
+        top: -100px;
+    }
+}
