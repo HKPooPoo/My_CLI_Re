@@ -1,0 +1,123 @@
+.navi-bar {
+    height: clamp(var(--sub-navi-height), min(8vw, 8vh), var(--navi-height));
+    width: 100%;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-around;
+}
+
+.navi-bar * {
+    font-weight: bold;
+}
+
+.navi-mask {
+    position: absolute;
+    height: 100%;
+    width: 100%;
+    background-color: var(--bg-secondary);
+    border-bottom: var(--border-line);
+}
+
+/*clickable*/
+.navi-item {
+    position: relative;
+    height: 100%;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
+.navi-item-text {
+    padding: 0 4px;
+    background-color: var(--bg-secondary);
+}
+
+.sub-navi-indicator {
+    position: absolute;
+    width: calc(100% + clamp(16px, 4vw, 8 * 64px));
+    border: var(--border-line);
+    background-color: var(--bg-secondary);
+    /*added animation*/
+    /* height: 100%;
+    top: 50%; */
+    transition: height 0.08s ease-in, top 0.08s ease-in;
+    /*
+    pending animation
+    height: ;
+    transform: translateY();
+    */
+}
+
+/*unify height of navi and sub-nav by tier [32, 48, 64]*/
+.sub-navi-indicator-mask,
+.sub-navi-container,
+.sub-navi-track,
+.sub-navi-item {
+    height: clamp(32px, min(6vw, 6vh), var(--sub-navi-height));
+}
+
+/*hover to scroll*/
+.sub-navi-indicator-mask {
+    width: 100%;
+    background-color: var(--bg-secondary);
+    border-bottom: var(--border-line);
+    /* cursor: pointer; */
+}
+
+/*
+failure/pending: sub-navi-track overflow mask on edge
+*/
+
+.sub-navi-container {
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    cursor: default;
+}
+
+/*movable*/
+.sub-navi-track {
+    flex-direction: row;
+    width: 100%;
+    align-items: flex-start;
+    transform: translateX(1000%);
+    /*test attribute, blackboard first item devide 2 = -13.395px*/
+    transition: transform 0.16s ease-in;
+}
+
+.sub-navi-item {
+    position: relative;
+    align-items: center;
+    min-width: max-content;
+    /*avoid shift lines when spaces*/
+    margin-right: 32px;
+    /*hard coded, related to navi.js*/
+}
+
+/*clickable*/
+.sub-navi-item-text {
+    position: relative;
+    padding: calc((clamp(32px, min(6vw, 6vh), var(--sub-navi-height)) - var(--font-size)) / 2) 0;
+    cursor: pointer;
+}
+
+/*manifest*/
+/* .sub-navi-indicator, */
+.sub-navi-track {
+    display: none;
+}
+
+/* .navi-item.active .sub-navi-indicator, */
+.navi-item.active .sub-navi-track {
+    display: flex;
+}
+
+.sub-navi-indicator {
+    height: 50%;
+    top: 100%
+}
+
+.navi-item.active .sub-navi-indicator {
+    height: 100%;
+    top: 50%
+}

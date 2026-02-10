@@ -1,0 +1,217 @@
+.push-btn,
+.pull-btn {
+    position: absolute;
+    width: 36vw;
+    height: 4vh;
+    align-self: center;
+    cursor: pointer;
+    border: var(--border-line);
+    transition: transform 0.4s ease-in,
+        box-shadow 0.16s,
+        color 0.16s,
+        background 0.16s;
+}
+
+/* .push-btn:hover,
+.pull-btn:hover {
+    background: var(--text-green);
+    color: var(--bg-primary);
+    box-shadow: 0 0 10px var(--text-green);
+} */
+
+.push-btn {
+    top: 0px;
+    border-top: none;
+    border-radius: 0 0 var(--border-radius) var(--border-radius);
+    /*navi.js logic in func updatePage*/
+}
+
+.head-indicator {
+    position: absolute;
+    top: 0px;
+    left: 0px;
+    width: fit-content;
+    height: 16rem;
+    padding-bottom: 16px;
+    border: var(--border-line);
+    border-top: none;
+    border-left: none;
+    writing-mode: sideways-lr;
+    flex-direction: row;
+    justify-content: right;
+    justify-content: right;
+    font-weight: bold;
+    font-size: var(--font-size);
+    color: var(--text-green);
+    overflow: hidden;
+    transition: transform 0.4s ease-in;
+}
+
+.pull-btn {
+    bottom: 0px;
+    border-bottom: none;
+    border-radius: var(--border-radius) var(--border-radius) 0 0;
+    /*navi.js logic in func updatePage*/
+}
+
+#log-textarea {
+    /*follow push and pull btn height (by margin); add value -> gap -> no stick together with btn */
+    margin: var(--single-textbox-margin);
+    height: 100%;
+    /*idk why, the font-size same as navi and btn, but looks smaller; needs add value*/
+    /*note: unified in root*/
+    font-size: var(--textbox-font-size);
+}
+
+/*scaffold*/
+
+.feature-container {
+    position: absolute;
+    right: 0px;
+    width: var(--sub-navi-height);
+    height: 100%;
+    user-select: none;
+    background-color: transparent;
+    justify-content: space-around;
+    transition: transform 0.4s ease-in,
+        box-shadow 0.16s,
+        color 0.16s,
+        background 0.16s;
+}
+
+.feature-container * {
+    user-select: auto;
+}
+
+.feature-btn {
+    position: relative;
+    height: 8vh;
+    max-width: 100%;
+    cursor: pointer;
+    border: var(--border-line);
+    border-right: none;
+    transition: all 0.2s;
+    border-radius: var(--border-radius) 0 0 var(--border-radius);
+    /*detect page; if exit dedicated classList, then active -> active: left: 0%; initial: left: 100%*/
+    /* left: 100%; */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 0;
+}
+
+.feature-btn::after {
+    content: "";
+    display: block;
+    width: 128%;
+    height: 60%;
+    background-color: var(--text-green);
+    mask-size: contain;
+    mask-repeat: no-repeat;
+    mask-position: center;
+    transition: background-color 0.2s, filter 0.2s;
+}
+
+.feature-btn[data-feature-btn="translate-zh-TW"]::after {
+    mask-image: url('../images/translate_zh_tw.svg');
+}
+
+.feature-btn[data-feature-btn="translate-zh-CN"]::after {
+    mask-image: url('../images/translate_zh_cn.svg');
+}
+
+.feature-btn[data-feature-btn="translate-en"]::after {
+    mask-image: url('../images/translate_en.svg');
+}
+
+.feature-btn[data-feature-btn="translate-ja"]::after {
+    mask-image: url('../images/translate_ja.svg');
+}
+
+.feature-btn[data-feature-btn="voice-to-textbox"]::after {
+    mask-image: url('../images/voice_to_textbox.svg');
+}
+
+/* Status states (toggled by JS) */
+.feature-btn.active::after {
+    filter: drop-shadow(0 0 5px var(--text-orange));
+}
+
+.feature-btn.recording::after {
+    background-color: var(--text-red);
+    filter: drop-shadow(0 0 5px var(--text-red));
+}
+
+.feature-btn.processing::after {
+    background-color: var(--text-orange);
+    filter: drop-shadow(0 0 5px var(--text-orange));
+}
+
+.feature-btn:hover {
+    background: transparent;
+    box-shadow: 0 0 10px var(--text-green);
+}
+
+.feature-shelf-container {
+    position: absolute;
+    left: 100%;
+    /*left shelf scroll -100vw*/
+    transform: translate3d(0vw, 0, 0);
+    height: 100%;
+    width: 100vw;
+    margin-left: var(--scaffold-left-gap);
+    padding-right: var(--scaffold-left-gap);
+    transition: transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    pointer-events: auto;
+}
+
+/* Class to disable transition during dragging for immediate response */
+.no-transition {
+    transition: none !important;
+}
+
+/* Frosted glass effect */
+.frosted-glass {
+    /* background: var(--frosted-glass-bg); */
+    backdrop-filter: blur(10px);
+    border: var(--frosted-glass-border);
+    /* box-shadow: var(--frosted-glass-shadow); */
+}
+
+.feature-shelf-back-btn {
+    position: absolute;
+    height: 100%;
+    width: calc(var(--scaffold-left-gap) / 2);
+    right: 100%;
+    background-color: var(--feature-shelf-btn-bg);
+    color: var(--feature-shelf-btn-color);
+    /* Temporary logic, maybe override with CSS var */
+    /* background-color: var(--bg-primary); */
+    border-radius: var(--border-radius) 0 0 var(--border-radius);
+    /* border: var(--border-line); */
+    border-right: none;
+    cursor: col-resize;
+    /* Indicate dragging */
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    writing-mode: vertical-rl;
+    text-orientation: upright;
+}
+
+.feature-shelf {
+    display: none;
+    padding: min(4vh, 4vw);
+    height: 100%;
+}
+
+
+
+#feature-translator-output {
+    font-size: var(--textbox-font-size);
+    /* margin: 0 var(--scaffold-left-gap) 0 0; */
+    height: 100%;
+    border: var(--border-line);
+    border-radius: 0 0 var(--border-radius) var(--border-radius);
+}

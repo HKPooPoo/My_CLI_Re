@@ -1,0 +1,56 @@
+:root[data-theme="light"] .page-container {
+    background-image: none;
+}
+
+.page-container {
+    width: 100%;
+    /*fill vertical space*/
+    /*DO NOT USE HEIGHT: 100%*/
+    height: 100%;
+    flex: 1;
+    /*scroll setting*/
+    overflow-x: hidden;
+    overflow-y: hidden;
+    scrollbar-width: thin;
+    scrollbar-color: var(--text-green) var(--bg-primary);
+    background-image: url(../images/background.svg);
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: max(100vh, 768px);
+    /*
+    pending animation
+    transform: translateY();
+    this can create film strip illusion
+    background-size: contain;
+    */
+    /* transform: translateY(0px); */
+    padding: auto calc(var(--header-height) / 4) var(--header-height);
+    transition: all 0.08s ease-in;
+}
+
+.page {
+    width: calc(100% - var(--sub-navi-height));
+    height: 100%;
+    font-weight: bold;
+    display: none;
+    /*such that pull and push btns that outside of page can be triggered*/
+    pointer-events: none;
+}
+
+/*such that pull and push btns that outside of page can be triggered*/
+.page * {
+    pointer-events: auto;
+}
+
+.page.active {
+    display: flex;
+}
+
+.page-flex-direction-row {
+    flex-direction: row;
+    justify-content: center;
+}
+
+.page-flex-direction-row>div {
+    flex: 1;
+}

@@ -1,0 +1,181 @@
+* {
+    margin: 0;
+    padding: 0;
+    user-select: none;
+    box-sizing: border-box;
+}
+
+:root {
+    font-size: clamp(0.875rem, min(4vh, 2vw), 1rem);
+    --font-size: clamp(0.875rem, min(4vh, 2vw), 1rem);
+    /* font-weight: bold; */
+    font-family: 'Courier New';
+    --text-green: #32FF32;
+    --text-orange: #FFB000;
+    --text-red: #FF3232;
+    --bg-primary: #000000;
+    --bg-secondary: #001100;
+    --header-height: clamp(96px, min(10vw, 20vh), 128px);
+    --footer-height: clamp(48px, min(10vw, 20vh), 64px);
+    --header-footer-font-size: clamp(0.75rem, min(8vh, 4vw), 0.875rem);
+    --border-line: 2px solid var(--text-green);
+    /*alternative of border-line*/
+    --box-shadow: 0 0 0 2px var(--text-green);
+    --box-shadow-up: 0 -2px 0 0 var(--text-green);
+    --box-shadow-down: 0 2px 0 0 var(--text-green);
+    --crt-line-width: 8px;
+    --text-shadow-green: 0 0 4px var(--text-green), 0 0 8px var(--text-green);
+    --text-shadow-orange: 0 0 4px var(--text-orange), 0 0 8px var(--text-orange);
+    --text-shadow-red: 0 0 4px var(--text-red), 0 0 8px var(--text-red);
+    --navi-height: 64px;
+    --sub-navi-height: 48px;
+    --border-radius: 8px;
+    /*Textbox*/
+    --single-textbox-margin: calc(4vh + 0.4rem) 8vw;
+    --double-textbox-margin: calc(4vh + 0.4rem) 2vw;
+    --textbox-font-size: calc(var(--font-size) + 0.4rem);
+    /*scaffold*/
+    --scaffold-left-gap: 16vw;
+    /* Feature Shelf */
+    --frosted-glass-bg: rgba(255, 255, 255, 0.2);
+    --frosted-glass-border: 1px solid rgba(255, 255, 255, 0.3);
+    --frosted-glass-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+    --feature-shelf-btn-bg: var(--frosted-glass-bg);
+    --feature-shelf-btn-color: white;
+}
+
+:root[data-theme="light"] {
+    --text-green: black;
+    --text-orange: black;
+    --text-red: black;
+    --bg-primary: white;
+    --bg-secondary: white;
+    --border-line: 2px solid black;
+    --box-shadow: 0 0 0 2px black;
+    --box-shadow-up: 0 -2px 0 0 black;
+    --box-shadow-down: 0 2px 0 0 black;
+    --text-shadow-green: none;
+    --text-shadow-orange: none;
+    --text-shadow-red: none;
+
+    /* Feature Shelf Light Mode */
+    --frosted-glass-bg: rgba(0, 0, 0, 0.1);
+    --frosted-glass-border: 1px solid rgba(0, 0, 0, 0.2);
+    --frosted-glass-shadow: 0 4px 30px rgba(0, 0, 0, 0.05);
+    --feature-shelf-btn-bg: var(--frosted-glass-bg);
+    --feature-shelf-btn-color: black;
+}
+
+:root[data-theme="light"] .header,
+.footer {
+    font-weight: bold;
+}
+
+:root[data-theme="light"] ::selection {
+    background: var(--text-green);
+    color: var(--bg-primary);
+}
+
+::selection {
+    background: var(--bg-secondary);
+    color: var(--text-orange);
+}
+
+button,
+textarea,
+input {
+    border: none;
+    resize: none;
+    outline: none;
+    color: var(--text-green);
+    font-family: inherit;
+    font-weight: bold;
+    font-size: var(--font-size);
+    background: transparent;
+}
+
+@media (hover: hover) {
+    button:hover {
+        background: var(--text-green);
+        color: var(--bg-primary);
+        box-shadow: 0 0 10px var(--text-green);
+    }
+}
+
+button.error {
+    color: var(--text-red) !important;
+    border-color: var(--text-red) !important;
+    box-shadow: 0 0 10px var(--text-red) !important;
+    transition: all 0.2s;
+}
+
+html,
+body {
+    width: 100vw;
+    height: 100%;
+    background-color: var(--bg-secondary);
+    color: var(--text-green);
+    overflow-x: hidden;
+}
+
+/*Unify flex column*/
+body,
+nav,
+div,
+span,
+.header,
+.body,
+.footer {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+}
+
+a {
+    text-decoration: none;
+}
+
+.header,
+.footer {
+    width: 100%;
+    justify-content: center;
+    align-items: center;
+    background-color: var(--bg-primary);
+    overflow: hidden;
+    font-weight: bold;
+}
+
+.header {
+    height: var(--header-height);
+}
+
+.footer {
+    height: var(--footer-height);
+    border-top: var(--border-line);
+    /* box-shadow: var(--box-shadow-up); */
+}
+
+.footer-text {
+    font-size: var(--header-footer-font-size);
+}
+
+.header-img {
+    position: absolute;
+    margin: auto;
+    height: var(--header-height);
+    /*No stretch*/
+    object-fit: contain;
+    filter: saturate(1.6);
+    transition: transform 0.16s ease-out;
+    transform: scale(1.28);
+}
+
+.body {
+    position: relative;
+    width: 100%;
+    height: calc(100% - var(--header-height) - var(--footer-height));
+    border-top: var(--border-line);
+    /*moved to footer*/
+    /* border-bottom: var(--border-line); */
+    overflow: hidden;
+}

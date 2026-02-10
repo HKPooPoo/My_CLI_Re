@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My CLI</title>
+    <script type="module" src="./javascript/audio.js"></script>
+    <link rel="icon" href="./images/favicon.ico">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="stylesheets/hud.css">
+    <link rel="stylesheet" href="stylesheets/crt-vfx.css">
+    <link rel="stylesheet" href="stylesheets/navi.css">
+    <link rel="stylesheet" href="stylesheets/page.css">
+    <link rel="stylesheet" href="stylesheets/layer.css">
+    <link rel="stylesheet" href="stylesheets/page-auth.css">
+    <link rel="stylesheet" href="stylesheets/page-blackboard-log.css">
+    <link rel="stylesheet" href="stylesheets/@media.css">
+    <link rel="stylesheet" href="stylesheets/page-ai-translate.css">
+</head>
+
+<body>
+    <div class="header">
+        <img src="./images/banner.png" class="header-img" alt="banner in header">
+        <!--hud.css-->
+        <div class="hud-bar">
+            <div id="login-status-bar">UID: <div class="crt-text-orange" id="login-status-display">Connecting...</div>
+            </div>
+            <div id="db-status-bar">DB: <div id="db-status-display">Connecting...</div>
+            </div>
+        </div>
+        <button id="theme-change-btn"></button>
+        <!--hud.js-->
+        <script type="module" src="./javascript/hud.js"></script>
+    </div>
+    <div class="body">
+        <!--crt-vfx.css-->
+        <div class="crt-scanner"></div>
+        <div class="crt-noise-layer"></div>
+        <!--crt-vfx.css-->
+        <!--pressStart.js-->
+        <div id="press-start-overlay">PRESS START</div>
+        <script type="module" src="javascript/pressStart.js"></script>
+        <!--navi.css-->
+        <nav class="navi-bar crt-text-green">
+            <div class="navi-mask"></div>
+            <div class="navi-item" data-navi-item="blackboard" data-sound-main="UIGeneralCancel.mp3"
+                data-sound-sub="UIGeneralFocus.mp3">
+                <div class="navi-item-text">BLACKBOARD</div>
+                <div class="sub-navi-indicator"></div>
+                <div class="sub-navi-container">
+                    <div class="sub-navi-track">
+                        <div class="sub-navi-item" data-sub-navi-item="blackboard-log">
+                            <div class="sub-navi-item-text">LOG</div>
+                        </div>
+                        <!-- <div class="sub-navi-item" data-sub-navi-item="blackboard-todo">
+                            <div class="sub-navi-item-text">TODO</div>
+                        </div> -->
+                        <div class="sub-navi-item" data-sub-navi-item="blackboard-ver">
+                            <div class="sub-navi-item-text">VER</div>
+                        </div>
+                        <div class="sub-navi-item" data-sub-navi-item="auth">
+                            <div class="sub-navi-item-text">AUTH</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- <div class="navi-item" data-navi-item="ai" data-sound-main="UIGeneralOK.mp3"
+                data-sound-sub="UIPipboyOK.mp3">
+                <div class="navi-item-text">AI</div>
+                <div class="sub-navi-indicator"></div>
+                <div class="sub-navi-container">
+                    <div class="sub-navi-track">
+                        <div class="sub-navi-item" data-sub-navi-item="ai-translate">
+                            <div class="sub-navi-item-text">TRANS</div>
+                        </div>
+                        <div class="sub-navi-item" data-sub-navi-item="ai-cqc">
+                            <div class="sub-navi-item-text">CQC</div>
+                        </div>
+                    </div>
+                </div>
+            </div> -->
+            <div class="navi-item" data-navi-item="walkie-typie" data-sound-main="UIGeneralOK.mp3"
+                data-sound-sub="UIPipboyOK.mp3">
+                <div class="navi-item-text">WALKIE-TYPIE</div>
+                <div class="sub-navi-indicator"></div>
+                <div class="sub-navi-container">
+                    <div class="sub-navi-track">
+                        <div class="sub-navi-item" data-sub-navi-item="walkie-typie-list">
+                            <div class="sub-navi-item-text">LIST</div>
+                        </div>
+                        <div class="sub-navi-item" data-sub-navi-item="walkie-typie-text">
+                            <div class="sub-navi-item-text">TEXT</div>
+                        </div>
+                        <div class="sub-navi-item" data-sub-navi-item="walkie-typie-add">
+                            <div class="sub-navi-item-text">ADD</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="navi-item" data-navi-item="broadcast" data-sound-main="UIGeneralOK.mp3"
+                data-sound-sub="UISelectOff.mp3">
+                <div class="navi-item-text">BROADCAST</div>
+                <div class="sub-navi-indicator"></div>
+                <div class="sub-navi-container">
+                    <div class="sub-navi-track">
+                        <div class="sub-navi-item" data-sub-navi-item="broadcast-channel">
+                            <div class="sub-navi-item-text">&lt;--&gt;</div>
+                        </div>
+                        <div class="sub-navi-item" data-sub-navi-item="broadcast-list">
+                            <div class="sub-navi-item-text">LIST</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </nav>
+        <div class="sub-navi-indicator-mask"></div>
+        <!--navi.js-->
+        <script type="module" src="javascript/navi.js"></script>
+        <div class="page-container" id="page-container">
+            <div class="feature-container" style="display: flex;">
+                <!-- <button class="feature-btn" data-feature-btn="">N/A</button>
+                <button class="feature-btn" data-feature-btn="ai-picture-analyse">pic</button>
+                <button class="feature-btn" data-feature-btn="ai-text-analyze">txt</button> -->
+                <button class="feature-btn" data-feature-btn="translate-zh-TW"></button>
+                <button class="feature-btn" data-feature-btn="translate-zh-CN"></button>
+                <button class="feature-btn" data-feature-btn="translate-en"></button>
+                <button class="feature-btn" data-feature-btn="translate-ja"></button>
+                <button class="feature-btn" data-feature-btn="voice-to-textbox"></button>
+                <div class="feature-shelf-container frosted-glass">
+                    <button class="feature-shelf-back-btn">>></button>
+                    <!-- <div class="feature-shelf" data-feature-shelf="ai-picture-analyse"></div> -->
+                    <div class="feature-shelf" data-feature-shelf="ai-text-analyze"></div>
+                    <div class="feature-shelf" data-feature-shelf="translator" style="display: flex;">
+                        <textarea name="" id="feature-translator-output"></textarea>
+                    </div>
+                </div>
+            </div>
+            <button class="push-btn">PUSH</button>
+            <button class="pull-btn">PULL</button>
+            <div class="head-indicator">
+                <div class="branch-is-saved">&#36;{is_saved}</div>:
+                <div class="branch-name">&#36;{branch_name}</div>:
+                <div class="branch-head">&#36;{branch_head}</div>
+            </div>
+            <div class="page can-push-pull have-feature" data-page="blackboard-log">
+                <textarea name="" id="log-textarea" placeholder="Enter..."></textarea>
+            </div>
+            <!--try to use version control, instead of todo1 todo2 log1 log2...-->
+            <!-- <div class="page can-push-pull" data-page="blackboard-todo">
+                <textarea name="" id="todo-textarea" placeholder="Enter..."></textarea>
+            </div> -->
+            <div class="page" data-page="blackboard-ver"></div>
+            <div class="page" data-page="auth">
+                <div class="auth-container">
+                    <div class="auth-title crt-text-orange">ACCOUNT AUTHENTICATION</div>
+
+                    <input type="text" id="auth-uid" class="auth-input" placeholder="UID" maxlength="32">
+                    <input type="email" id="auth-email" class="auth-input" placeholder="EMAIL (OPTIONAL)"
+                        maxlength="32">
+                    <input type="password" id="auth-passcode" class="auth-input" placeholder="PASSCODE" maxlength="32">
+
+                    <button id="btn-login" class="auth-btn crt-text-green">LOGIN</button>
+                    <button id="btn-register" class="auth-btn crt-text-green">REGISTER</button>
+
+                    <button id="btn-logout" class="auth-btn crt-text-green">LOGOUT</button>
+                </div>
+            </div>
+            <!--blackboard.js-->
+            <script type="module" src="javascript/blackboard.js"></script>
+            <script type="module" src="javascript/feature.js"></script>
+            <script type="module" src="javascript/feature-shelf.js"></script>
+            <script type="module" src="javascript/feature-translator.js"></script>
+            <!---->
+            <!-- <div class="page page-flex-direction-row can-push-pull" data-page="ai-translate">
+                <textarea name="" id="ai-translate-input" placeholder="Enter..."></textarea>
+                <div class="ai-translate-cursor">
+                    <ul>
+                        <li>1</li>
+                        <li>2</li>
+                        <li>3</li>
+                    </ul>
+                </div>
+                <textarea name="" id="ai-translate-output" placeholder="On hold..."></textarea>
+            </div> -->
+            <!-- <div class="page page-flex-direction-row can-push-pull" data-page="ai-cqc">cqc output</div> -->
+            <!---->
+            <div class="page" data-page="walkie-typie-list">jk</div>
+            <div class="page" data-page="walkie-typie-text">lm</div>
+            <div class="page" data-page="walkie-typie-add">op</div>
+            <!---->
+            <div class="page" data-page="broadcast-channel">qrs</div>
+            <div class="page" data-page="broadcast-list">tuv</div>
+        </div>
+    </div>
+    <div class="footer">
+        <div class="footer-text">&copy; 2026 My CLI | YU Shing Hei</div>
+    </div>
+</body>
+
+</html>

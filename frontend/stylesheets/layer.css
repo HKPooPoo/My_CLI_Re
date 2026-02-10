@@ -1,0 +1,56 @@
+/* style.css */
+
+/* crt-vfx.css */
+.crt-scanner,
+.crt-noise-layer {
+    z-index: 1999;
+    pointer-events: none;
+}
+
+#press-start-overlay {
+    z-index: 1999;
+    /* display: flex; */
+    /*deactivate it for dev*/
+    /* display: none; */
+}
+
+/* navi.css */
+.navi-item-text,
+.sub-navi-track {
+    z-index: 1001;
+}
+
+.navi-mask,
+.sub-navi-indicator {
+    z-index: 1000;
+    pointer-events: none;
+}
+
+.sub-navi-indicator-mask {
+    z-index: 1000;
+}
+
+.sub-navi-indicator,
+.sub-navi-item>* {
+    /* display: none; */
+}
+
+/* page.css */
+.page-container {
+    z-index: 999;
+}
+
+.feature-container,
+.feature-shelf-container {
+    z-index: 998;
+}
+
+.push-btn,
+.pull-btn,
+.feature-btn {
+    z-index: 997;
+}
+
+.page {
+    z-index: 996;
+}

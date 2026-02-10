@@ -1,0 +1,7 @@
+.env
+/prototypes
+/documents
+/backend/vendor
+/backend/.env
+/backend/storage/logs
+docker-compose.old.yml
