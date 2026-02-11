@@ -1,0 +1,16 @@
+{
+    "name": "My CLI — Clean Logging Interface",
+    "short_name": "My CLI",
+    "description": "Offline-first personal information manager with CRT terminal aesthetic",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#000000",
+    "theme_color": "#32FF32",
+    "icons": [
+        {
+            "src": "/images/favicon.ico",
+            "sizes": "48x48",
+            "type": "image/x-icon"
+        }
+    ]
+}

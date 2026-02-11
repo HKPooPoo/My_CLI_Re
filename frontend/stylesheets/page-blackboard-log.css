@@ -137,14 +137,59 @@
     filter: drop-shadow(0 0 5px var(--text-orange));
 }
 
+/* Recording: Pulse animation (breathing red glow) */
 .feature-btn.recording::after {
     background-color: var(--text-red);
-    filter: drop-shadow(0 0 5px var(--text-red));
+    animation: recording-pulse 1s ease-in-out infinite;
 }
 
+@keyframes recording-pulse {
+
+    0%,
+    100% {
+        filter: drop-shadow(0 0 3px var(--text-red));
+        opacity: 1;
+    }
+
+    50% {
+        filter: drop-shadow(0 0 12px var(--text-red));
+        opacity: 0.6;
+    }
+}
+
+/* Recording timer display (ruby-bottom style, below icon) */
+.feature-btn.recording::before {
+    content: attr(data-timer);
+    position: absolute;
+    bottom: 2px;
+    left: 0;
+    right: 0;
+    text-align: center;
+    font-size: calc(var(--font-size) * 0.6);
+    line-height: 1;
+    color: var(--text-red);
+    text-shadow: var(--text-shadow-red);
+    pointer-events: none;
+}
+
+/* Processing: Flicker animation (CRT-style) */
 .feature-btn.processing::after {
     background-color: var(--text-orange);
-    filter: drop-shadow(0 0 5px var(--text-orange));
+    animation: processing-flicker 0.6s steps(2) infinite;
+}
+
+@keyframes processing-flicker {
+
+    0%,
+    100% {
+        filter: drop-shadow(0 0 5px var(--text-orange));
+        opacity: 1;
+    }
+
+    50% {
+        filter: drop-shadow(0 0 10px var(--text-orange));
+        opacity: 0.4;
+    }
 }
 
 .feature-btn:hover {

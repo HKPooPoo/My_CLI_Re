@@ -1,6 +1,6 @@
 services:
   nginx:
-    image: nginx:alpine
+    image: nginx:1.27-alpine
     container_name: my-cli-nginx
     ports:
       - "80:80"
@@ -33,7 +33,7 @@ services:
     restart: unless-stopped
 
   db:
-    image: postgres:16
+    image: postgres:16.6-alpine
     container_name: my-cli-postgres
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
@@ -46,12 +46,14 @@ services:
     restart: unless-stopped
 
   redis:
-    image: redis:alpine
+    image: redis:7.4-alpine
     container_name: my-cli-redis
+    volumes:
+      - redis-data:/data
     restart: unless-stopped
 
   pgadmin:
-    image: dpage/pgadmin4
+    image: dpage/pgadmin4:8.14
     container_name: my-cli-pgadmin
     environment:
       PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL}
@@ -64,7 +66,7 @@ services:
       - db
 
   tunnel:
-    image: cloudflare/cloudflared:latest
+    image: cloudflare/cloudflared:2025.2.0
     container_name: my-cli-tunnel
     restart: always
     command: tunnel --url http://nginx:80
@@ -74,3 +76,4 @@ services:
 volumes:
   db-data:
   pgadmin-data:
+  redis-data:

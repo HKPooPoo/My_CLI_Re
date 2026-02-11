@@ -32,7 +32,7 @@ class SpeechController extends Controller
             ], 500);
         }
 
-        // Try V2 (Chirp 2) first
+        // Try V2 (Chirp 2) first, with strict timeout
         $projectId = config('services.google.project_id', 'my-cli-re');
         $v2Result = $this->tryV2($apiKey, $projectId, $validated['audio']);
 
@@ -49,17 +49,19 @@ class SpeechController extends Controller
         $url = "https://speech.googleapis.com/v2/projects/{$projectId}/locations/global/recognizers/_:recognize?key={$apiKey}";
 
         try {
-            $response = Http::post($url, [
-                'config' => [
-                    'autoDecodingConfig' => new \stdClass(),
-                    'languageCodes' => ['cmn-Hant-TW'],
-                    'model' => 'chirp_2',
-                    'features' => [
-                        'enableAutomaticPunctuation' => true,
+            $response = Http::timeout(15)
+                ->connectTimeout(5)
+                ->post($url, [
+                    'config' => [
+                        'autoDecodingConfig' => new \stdClass(),
+                        'languageCodes' => ['cmn-Hant-TW'],
+                        'model' => 'chirp_2',
+                        'features' => [
+                            'enableAutomaticPunctuation' => true,
+                        ],
                     ],
-                ],
-                'content' => $base64Audio,
-            ]);
+                    'content' => $base64Audio,
+                ]);
 
             if ($response->successful() && !isset($response->json()['error'])) {
                 return response()->json($response->json());
@@ -68,7 +70,7 @@ class SpeechController extends Controller
             Log::warning('Speech V2 failed, falling back to V1: ' . $e->getMessage());
         }
 
-        return null; // Signal to try V1
+        return null;
     }
 
     private function tryV1(string $apiKey, string $base64Audio)
@@ -76,17 +78,19 @@ class SpeechController extends Controller
         $url = "https://speech.googleapis.com/v1/speech:recognize?key={$apiKey}";
 
         try {
-            $response = Http::post($url, [
-                'config' => [
-                    'encoding' => 'WEBM_OPUS',
-                    'sampleRateHertz' => 48000,
-                    'languageCode' => 'cmn-Hant-TW',
-                    'enableAutomaticPunctuation' => true,
-                ],
-                'audio' => [
-                    'content' => $base64Audio,
-                ],
-            ]);
+            $response = Http::timeout(15)
+                ->connectTimeout(5)
+                ->post($url, [
+                    'config' => [
+                        'encoding' => 'WEBM_OPUS',
+                        'sampleRateHertz' => 48000,
+                        'languageCode' => 'cmn-Hant-TW',
+                        'enableAutomaticPunctuation' => true,
+                    ],
+                    'audio' => [
+                        'content' => $base64Audio,
+                    ],
+                ]);
 
             return response()->json($response->json(), $response->status());
         } catch (\Exception $e) {

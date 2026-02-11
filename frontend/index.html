@@ -7,6 +7,7 @@
     <title>My CLI</title>
     <script type="module" src="./javascript/audio.js"></script>
     <link rel="icon" href="./images/favicon.ico">
+    <link rel="manifest" href="/manifest.json">
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="stylesheets/hud.css">
     <link rel="stylesheet" href="stylesheets/crt-vfx.css">
@@ -195,7 +196,14 @@
     </div>
     <div class="footer">
         <div class="footer-text">&copy; 2026 My CLI | YU Shing Hei</div>
-    </div>
+</div>
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/service-worker.js');
+            });
+        }
+    </script>
 </body>
 
 </html>
