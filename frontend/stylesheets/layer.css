@@ -36,7 +36,8 @@
 }
 
 /* page.css */
-.page-container {
+.page-container,
+#toast-container {
     z-index: 999;
 }
 

@@ -1,0 +1,44 @@
+/* Toast Container positioned in bottom-right of page-container */
+#toast-container {
+    position: absolute;
+    bottom: 2rem;
+    right: 2rem;
+    display: flex;
+    flex-direction: column-reverse;
+    /* Newest at bottom */
+    gap: 0.5rem;
+    pointer-events: none;
+    /* Let clicks pass through empty areas */
+    max-width: 300px;
+    width: 100%;
+}
+
+/* Individual Toast Style */
+.toast {
+    background-color: var(--bg-color);
+    border: 1px solid var(--text-green);
+    color: var(--text-green);
+    padding: 0.75rem 1rem;
+    font-family: inherit;
+    /* Use global retro font */
+    font-size: 0.9rem;
+    box-shadow: 0 0 0 2px var(--text-green);
+    opacity: 0;
+    transform: translateY(10px);
+    transition: opacity var(--transition-normal) ease, transform var(--transition-normal) ease;
+    pointer-events: auto;
+    /* Allow clicking the toast itself if needed */
+    user-select: none;
+    text-shadow: var(--text-shadow-green);
+}
+
+/* Animation Stages */
+.toast.showing {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.toast.hiding {
+    opacity: 0;
+    transform: translateY(-10px);
+}

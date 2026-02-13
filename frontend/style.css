@@ -78,7 +78,8 @@
 }
 
 :root[data-theme="light"] .header,
-.footer {
+.footer,
+.toast {
     font-weight: bold;
 }
 
