@@ -1,6 +1,16 @@
 import db, { Dexie } from "./indexedDB.js"
+import { ToastMessager } from "./toast.js"
+
+const toast = new ToastMessager()
 
 const DRAFT_TIMESTAMP = Number.MAX_SAFE_INTEGER
+
+function getHKTTimestamp() {
+    const now = new Date();
+    const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+    const hkt = new Date(utc + (3600000 * 8));
+    return hkt.toISOString().replace('Z', '+08:00');
+}
 
 db.on("populate", async () => {
     await db.blackboard.add({
@@ -8,7 +18,8 @@ db.on("populate", async () => {
         branch: "master",
         timestamp: DRAFT_TIMESTAMP,
         text: "",
-        bin: ""
+        bin: "",
+        createdAt: getHKTTimestamp()
     });
 });
 
@@ -35,6 +46,7 @@ let $blackboardTextarea = document.getElementById("log-textarea")
 let $branchListContainer = document.querySelector('[data-page="blackboard-branch"] .vcs-list-container')
 let $branchBtn = document.getElementById("branch-btn")
 let $checkoutBtn = document.getElementById("checkout-btn")
+let $dropBtn = document.getElementById("drop-btn")
 
     ; (async () => {
         await setTextarea(currentHead)
@@ -46,6 +58,7 @@ $pushBtn.addEventListener("click", push)
 $pullBtn.addEventListener("click", pull)
 $branchBtn.addEventListener("click", createBranch)
 $checkoutBtn.addEventListener("click", checkoutBranch)
+$dropBtn.addEventListener("click", dropBranch)
 
 async function push() {
     await saveToDB()
@@ -205,16 +218,19 @@ async function updateBranchList() {
         .reverse()
         .each(record => {
             if (!branches.has(record.branch)) {
+                // Since we iterate in reverse, the first record we meet is the Draft (MAX_TIMESTAMP)
+                // We expect the Draft to hold the 'createdAt' property.
+                const creationTime = (record.timestamp === DRAFT_TIMESTAMP && record.createdAt)
+                    ? record.createdAt
+                    : null
+
                 branches.set(record.branch, {
                     owner: record.owner,
-                    timestamp: record.timestamp !== DRAFT_TIMESTAMP ? record.timestamp : null
+                    timestamp: creationTime
                 })
-            } else {
-                const info = branches.get(record.branch)
-                if (info.timestamp === null && record.timestamp !== DRAFT_TIMESTAMP) {
-                    info.timestamp = record.timestamp
-                }
             }
+            // We no longer need to update timestamp from commits because we want the fixed Creation Time
+            // found in the Draft record.
         })
 
     $branchListContainer.innerHTML = ""
@@ -226,7 +242,7 @@ async function updateBranchList() {
             item.classList.add("active")
         }
 
-        const dateDisplay = info.timestamp ? new Date(info.timestamp).toISOString() : "DRAFT"
+        const dateDisplay = info.timestamp ? info.timestamp : "unknown"
 
         item.innerHTML = `
             <input type="text" class="vcs-list-branch" value="${branchName}" placeholder="branch name" name="vcs-list-branch">
@@ -283,7 +299,7 @@ async function renameBranch(oldName, newName) {
         ).count()
 
     if (existing > 0) {
-        alert(`Branch "${newName}" already exists.`)
+        toast.addMessage(`System: Branch "${newName}" already exists.`)
         await updateBranchList()
         return
     }
@@ -310,7 +326,7 @@ async function renameBranch(oldName, newName) {
 }
 
 async function createBranch() {
-    const timestamp = new Date().toISOString()
+    const timestamp = getHKTTimestamp()
     const newBranchName = timestamp // Use timestamp as default branch name
 
     // Confirm uniqueness (though timestamp is likely unique)
@@ -321,8 +337,8 @@ async function createBranch() {
         ).count()
 
     if (existing > 0) {
-        // Fallback if somehow collides or user clicks super fast (unlikely with full ISO)
-        console.warn("Branch name collision, try again")
+        toast.addMessage(`System: Branch "${newBranchName}" already exists.`)
+        await updateBranchList()
         return
     }
 
@@ -335,7 +351,10 @@ async function createBranch() {
 
     // Transactionally duplicate them
     await db.transaction('rw', db.blackboard, async () => {
+        // Copy history (Exclude Draft)
         for (const record of records) {
+            if (record.timestamp === DRAFT_TIMESTAMP) continue
+
             await db.blackboard.add({
                 owner: record.owner,
                 branch: newBranchName,
@@ -344,6 +363,16 @@ async function createBranch() {
                 bin: record.bin
             })
         }
+
+        // Create new Draft for the new branch with Creation Timestamp
+        await db.blackboard.add({
+            owner: currentUserBranch.owner,
+            branch: newBranchName,
+            timestamp: DRAFT_TIMESTAMP,
+            text: "", // Start with empty draft or copy? User said "new branch contains everything", but draft is usually ephemeral. Let's start empty to be safe.
+            bin: "",
+            createdAt: timestamp
+        })
     })
 
     // Update list to show new branch
@@ -361,5 +390,79 @@ async function checkoutBranch() {
 
     if (branchName) {
         await switchBranch(branchName)
+    }
+}
+
+async function dropBranch() {
+    const activeItem = $branchListContainer.querySelector(".vcs-list-item.active")
+    if (!activeItem) return
+
+    const input = activeItem.querySelector(".vcs-list-branch")
+    const branchNameToDrop = input.value
+    const owner = currentUserBranch.owner
+
+    // Count unique branches to decide logic
+    const uniqueBranches = new Set()
+    await db.blackboard.where('[owner+branch+timestamp]')
+        .between(
+            [owner, Dexie.minKey, Dexie.minKey],
+            [owner, Dexie.maxKey, Dexie.maxKey]
+        )
+        .each(record => {
+            uniqueBranches.add(record.branch)
+        })
+
+    const hasParent = uniqueBranches.size > 1
+
+    if (hasParent) {
+        // Drop itself (Delete the branch)
+        // Direct execute as per instruction
+        await db.transaction('rw', db.blackboard, async () => {
+            await db.blackboard.where('[owner+branch+timestamp]')
+                .between(
+                    [owner, branchNameToDrop, Dexie.minKey],
+                    [owner, branchNameToDrop, Dexie.maxKey]
+                ).delete()
+        })
+
+        toast.addMessage(`System: Branch "${branchNameToDrop}" deleted.`)
+
+        // If we dropped the current branch, switch to another
+        if (branchNameToDrop === currentUserBranch.branch) {
+            uniqueBranches.delete(branchNameToDrop)
+            // Prefer master, else first available
+            const fallback = uniqueBranches.has('master') ? 'master' : uniqueBranches.values().next().value
+            await switchBranch(fallback)
+        } else {
+            await updateBranchList()
+        }
+    } else {
+        // No parent (Last branch) -> Clean the record (Wipe)
+        // Direct execute as per instruction
+        await db.transaction('rw', db.blackboard, async () => {
+            await db.blackboard.where('[owner+branch+timestamp]')
+                .between(
+                    [owner, branchNameToDrop, Dexie.minKey],
+                    [owner, branchNameToDrop, Dexie.maxKey]
+                ).delete()
+
+            // Restore empty draft
+            await db.blackboard.add({
+                owner: owner,
+                branch: branchNameToDrop,
+                timestamp: DRAFT_TIMESTAMP,
+                text: "",
+                bin: ""
+            })
+        })
+
+        toast.addMessage(`System: Branch "${branchNameToDrop}" wiped.`)
+
+        if (branchNameToDrop === currentUserBranch.branch) {
+            currentHead = 0
+            await setTextarea(currentHead)
+            updateIndicators()
+        }
+        await updateBranchList()
     }
 }
