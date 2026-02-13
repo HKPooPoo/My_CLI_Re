@@ -6,10 +6,14 @@
     align-self: center;
     cursor: pointer;
     border: var(--border-line);
-    transition: transform 0.4s ease-in,
-        box-shadow 0.16s,
-        color 0.16s,
-        background 0.16s;
+    /* transition: transform 0.4s ease-in, */
+    transition: transform var(--transition-slow) ease-in,
+        /* box-shadow 0.16s, */
+        box-shadow var(--transition-normal),
+        /* color 0.16s, */
+        color var(--transition-normal),
+        /* background 0.16s; */
+        background var(--transition-normal);
 }
 
 /* .push-btn:hover,
@@ -44,7 +48,8 @@
     font-size: var(--font-size);
     color: var(--text-green);
     overflow: hidden;
-    transition: transform 0.4s ease-in;
+    /* transition: transform 0.4s ease-in; */
+    transition: transform var(--transition-slow) ease-in;
 }
 
 .pull-btn {
@@ -73,10 +78,19 @@
     user-select: none;
     background-color: transparent;
     justify-content: space-around;
-    transition: transform 0.4s ease-in,
-        box-shadow 0.16s,
-        color 0.16s,
-        background 0.16s;
+    /* transition: transform 0.4s ease-in, */
+    transition: transform var(--transition-slow) ease-in,
+        /* box-shadow 0.16s, */
+        box-shadow var(--transition-normal),
+        /* color 0.16s, */
+        color var(--transition-normal),
+        /* background 0.16s; */
+        background var(--transition-normal);
+}
+
+.page>* {
+    /*simple patch for feature-container width caused offset*/
+    transform: translateX(calc(var(--sub-navi-height)/2));
 }
 
 .feature-container * {

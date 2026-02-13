@@ -26,11 +26,13 @@
         padding: auto calc(var(--header-height) / 2) calc(var(--header-height) / 2);
     }
 
-    .auth-container {
+    .auth-container,
+    .vcs-container {
         width: 64vw;
     }
 
-    .auth-title {
+    .auth-title,
+    .vcs-title {
         left: 50%;
         transform: translate(-50%, -50%);
     }
@@ -47,7 +49,6 @@
         height: 48px;
         transform: translateX(calc(-2 * (48vw - 48%)));
     }
-
 }
 
 @media (orientation: portrait) {

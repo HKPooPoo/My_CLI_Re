@@ -42,6 +42,17 @@
     --frosted-glass-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
     --feature-shelf-btn-bg: var(--frosted-glass-bg);
     --feature-shelf-btn-color: white;
+
+    /* Refactored Variables */
+    /* --container-width: 48vw; */
+    --container-width: clamp(300px, 86vw, 512px);
+    --container-max-width: 512px;
+    --container-margin: max(4vh, 32px) auto;
+    --panel-padding: 16px;
+    --panel-gap: 2vh;
+    --title-padding: 0.4vw;
+    --transition-slow: 0.4s;
+    --transition-normal: 0.16s;
 }
 
 :root[data-theme="light"] {

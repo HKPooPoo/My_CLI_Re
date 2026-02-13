@@ -184,13 +184,17 @@ function updatePage(subNaviItem) {
             if ($page.classList.contains("can-push-pull")) {
                 $pushBtn.style.transform = "translateY(0)";
                 $pullBtn.style.transform = "translateY(0)";
-                $headIndicator.style.transform = "translateX(0)";
                 $featureScaffold.style.transform = "translateX(0)";
             } else {
                 $pushBtn.style.transform = "translateY(-256%)";
                 $pullBtn.style.transform = "translateY(256%)";
-                $headIndicator.style.transform = "translateX(-256%)";
                 $featureScaffold.style.transform = "translateX(256%)";
+            }
+
+            if ($page.classList.contains("show-branch")) {
+                $headIndicator.style.transform = "translateX(0)";
+            } else {
+                $headIndicator.style.transform = "translateX(-256%)";
             }
 
             // Here update flex direction (spesificly for two block in one page)

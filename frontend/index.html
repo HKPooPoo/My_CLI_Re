@@ -15,8 +15,9 @@
     <link rel="stylesheet" href="stylesheets/layer.css">
     <link rel="stylesheet" href="stylesheets/page-auth.css">
     <link rel="stylesheet" href="stylesheets/page-blackboard-log.css">
-    <link rel="stylesheet" href="stylesheets/@media.css">
     <link rel="stylesheet" href="stylesheets/page-ai-translate.css">
+    <link rel="stylesheet" href="stylesheets/page-blackboard-vcs.css">
+    <link rel="stylesheet" href="stylesheets/@media.css">
 </head>
 
 <body>
@@ -53,11 +54,11 @@
                         <div class="sub-navi-item" data-sub-navi-item="blackboard-log">
                             <div class="sub-navi-item-text">LOG</div>
                         </div>
-                        <!-- <div class="sub-navi-item" data-sub-navi-item="blackboard-todo">
-                            <div class="sub-navi-item-text">TODO</div>
-                        </div> -->
-                        <div class="sub-navi-item" data-sub-navi-item="blackboard-ver">
-                            <div class="sub-navi-item-text">VER</div>
+                        <div class="sub-navi-item" data-sub-navi-item="blackboard-branch">
+                            <div class="sub-navi-item-text">BRANCH</div>
+                        </div>
+                        <div class="sub-navi-item" data-sub-navi-item="blackboard-stash">
+                            <div class="sub-navi-item-text">STASH</div>
                         </div>
                         <div class="sub-navi-item" data-sub-navi-item="auth">
                             <div class="sub-navi-item-text">AUTH</div>
@@ -143,26 +144,101 @@
                 <div class="branch-name">&#36;{branch_name}</div>:
                 <div class="branch-head">&#36;{branch_head}</div>
             </div>
-            <div class="page can-push-pull have-feature" data-page="blackboard-log">
+            <div class="page can-push-pull have-feature show-branch" data-page="blackboard-log">
                 <textarea name="" id="log-textarea" placeholder="Enter..."></textarea>
             </div>
             <!--try to use version control, instead of todo1 todo2 log1 log2...-->
             <!-- <div class="page can-push-pull" data-page="blackboard-todo">
                 <textarea name="" id="todo-textarea" placeholder="Enter..."></textarea>
             </div> -->
-            <div class="page" data-page="blackboard-ver"></div>
+            <div class="page show-branch" data-page="blackboard-branch">
+                <div class="vcs-container">
+                    <div class="vcs-title crt-text-orange">BRANCH CONTROLLER</div>
+                    <div class="vcs-list-container">
+                        <div class="vcs-list-item active">
+                            <div class="vcs-list-branch">master</div>
+                            <div class="vcs-list-timestamp">2026-02-13T14:05:27.123Z</div>
+                            <div class="vcs-list-owner">local</div>
+                        </div>
+                        <div class="vcs-list-item">
+                            <div class="vcs-list-branch">master</div>
+                            <div class="vcs-list-timestamp">2026-02-13T14:05:27.123Z</div>
+                            <div class="vcs-list-owner">local</div>
+                        </div>
+                        <div class="vcs-list-item">
+                            <div class="vcs-list-branch">master</div>
+                            <div class="vcs-list-timestamp">2026-02-13T14:05:27.123Z</div>
+                            <div class="vcs-list-owner">local</div>
+                        </div>
+                        <div class="vcs-list-item">
+                            <div class="vcs-list-branch">master</div>
+                            <div class="vcs-list-timestamp">2026-02-13T14:05:27.123Z</div>
+                            <div class="vcs-list-owner">local</div>
+                        </div>
+                        <div class="vcs-list-item">
+                            <div class="vcs-list-branch">master</div>
+                            <div class="vcs-list-timestamp">2026-02-13T14:05:27.123Z</div>
+                            <div class="vcs-list-owner">local</div>
+                        </div>
+                    </div>
+                    <div class="vcs-button-container-container">
+                        <div class="vcs-button-container">
+                            <button class="vcs-btn" id="commit-btn">COMMIT</button>
+                            <button class="vcs-btn" id="checkout-btn">CHECKOUT</button>
+                        </div>
+                        <div class="vcs-button-container">
+                            <button class="vcs-btn" id="branch-btn">BRANCH</button>
+                            <button class="vcs-btn" id="wipe-btn">WIPE</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="page show-branch" data-page="blackboard-stash">
+                <div class="vcs-container">
+                    <div class="vcs-title crt-text-orange">STASH CONTROLLER</div>
+                    <div class="vcs-list-container">
+                        <div class="vcs-list-item active">
+                            <div class="vcs-list-branch">master</div>
+                            <div class="vcs-list-timestamp">2026-02-13T14:05:27.123Z</div>
+                            <div class="vcs-list-owner">local</div>
+                        </div>
+                        <div class="vcs-list-item">
+                            <div class="vcs-list-branch">master</div>
+                            <div class="vcs-list-timestamp">2026-02-13T14:05:27.123Z</div>
+                            <div class="vcs-list-owner">local</div>
+                        </div>
+                        <div class="vcs-list-item">
+                            <div class="vcs-list-branch">master</div>
+                            <div class="vcs-list-timestamp">2026-02-13T14:05:27.123Z</div>
+                            <div class="vcs-list-owner">local</div>
+                        </div>
+                        <div class="vcs-list-item">
+                            <div class="vcs-list-branch">master</div>
+                            <div class="vcs-list-timestamp">2026-02-13T14:05:27.123Z</div>
+                            <div class="vcs-list-owner">local</div>
+                        </div>
+                        <div class="vcs-list-item">
+                            <div class="vcs-list-branch">master</div>
+                            <div class="vcs-list-timestamp">2026-02-13T14:05:27.123Z</div>
+                            <div class="vcs-list-owner">local</div>
+                        </div>
+                    </div>
+                    <button class="vcs-btn" id="stash-btn">STASH</button>
+                    <button class="vcs-btn" id="pop-btn">POP</button>
+                </div>
+            </div>
             <div class="page" data-page="auth">
                 <div class="auth-container">
                     <div class="auth-title crt-text-orange">ACCOUNT AUTHENTICATION</div>
 
                     <input type="text" id="auth-uid" class="auth-input" placeholder="UID" maxlength="32">
-                    <input type="email" id="auth-email" class="auth-input" placeholder="EMAIL (OPTIONAL)"
-                        maxlength="32">
                     <input type="password" id="auth-passcode" class="auth-input" placeholder="PASSCODE" maxlength="32">
 
                     <button id="btn-login" class="auth-btn crt-text-green">LOGIN</button>
                     <button id="btn-register" class="auth-btn crt-text-green">REGISTER</button>
 
+                    <!-- <input type="email" id="auth-email" class="auth-input" placeholder="EMAIL (OPTIONAL)"
+                        maxlength="32"> -->
                     <button id="btn-logout" class="auth-btn crt-text-green">LOGOUT</button>
                 </div>
             </div>

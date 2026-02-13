@@ -1,4 +1,6 @@
-.auth-container {
+/*Reusing style from auth*/
+
+.vcs-container {
     justify-content: space-around;
     /* gap: 2vh; */
     gap: var(--panel-gap);
@@ -13,7 +15,7 @@
     border: var(--border-line);
 }
 
-.auth-title {
+.vcs-title {
     position: absolute;
     top: 0px;
     transform: translateY(-50%);
@@ -26,29 +28,37 @@
     transition: left var(--transition-normal) ease-in, transform var(--transition-normal) ease-in;
 }
 
-.auth-input,
-.auth-btn {
-    padding: 8px 0;
-}
-
-.auth-input {
+.vcs-list-container {
     border-bottom: var(--border-line);
+    /* height: calc(var(--container-width) / 4); */
+    height: clamp(192px, calc(var(--container-width) / 2), 40vh);
+    overflow-y: auto;
+    overflow-x: hidden;
 }
 
-.auth-btn {
-    border: var(--border-line);
+.vcs-list-item {
+    padding: calc(var(--panel-gap) / 4);
 }
 
-.auth-input:focus {
-    border-bottom-color: var(--text-orange);
-}
-
-#btn-logout {
-    display: none;
-}
-
-/* .auth-btn:hover {
+.vcs-list-item.active {
     background: var(--text-green);
     color: var(--bg-primary);
     box-shadow: 0 0 10px var(--text-green);
-} */
+}
+
+.vcs-btn {
+    border: var(--border-line);
+    padding: 8px 0;
+    height: 8vh;
+}
+
+.vcs-button-container-container {
+    flex-direction: row;
+    flex: 1;
+    gap: var(--panel-gap);
+}
+
+.vcs-button-container {
+    flex: 1;
+    gap: var(--panel-gap);
+}
