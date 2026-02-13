@@ -46,6 +46,10 @@
     box-shadow: 0 0 10px var(--text-green);
 }
 
+.vcs-list-item.active .vcs-list-branch {
+    color: var(--bg-primary);
+}
+
 .vcs-btn {
     border: var(--border-line);
     padding: 8px 0;
