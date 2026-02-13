@@ -79,8 +79,10 @@ export class InfiniteList {
     // Call this if the DOM list changes
     refresh() {
         this.items = Array.from(this.container.querySelectorAll(this.itemSelector));
-        this.activeIndex = this.items.findIndex(item => item.classList.contains("active"));
-        if (this.activeIndex === -1 && this.items.length > 0) {
+        const domActiveIndex = this.items.findIndex(item => item.classList.contains("active"));
+        if (domActiveIndex !== -1) {
+            this.activeIndex = domActiveIndex;
+        } else if (this.activeIndex === -1 && this.items.length > 0) {
             this.activeIndex = 0;
             this.items[0].classList.add("active");
         }
@@ -179,9 +181,10 @@ class InfiniteListElement {
 
     refresh() {
         this.items = Array.from(this.container.querySelectorAll(this.itemSelector));
-        // We don't reset activeIndex here unless it's invalid, 
-        // because we want to maintain state if possible.
-        if (this.activeIndex >= this.items.length) {
+        const domActiveIndex = this.items.findIndex(item => item.classList.contains("active"));
+        if (domActiveIndex !== -1) {
+            this.activeIndex = domActiveIndex;
+        } else if (this.activeIndex >= this.items.length) {
             this.activeIndex = this.items.length - 1;
         }
     }

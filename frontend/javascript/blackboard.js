@@ -351,9 +351,17 @@ async function createBranch() {
 
     // Transactionally duplicate them
     await db.transaction('rw', db.blackboard, async () => {
+        let currentDraftText = ""
+        let currentDraftBin = ""
+
         // Copy history (Exclude Draft)
         for (const record of records) {
-            if (record.timestamp === DRAFT_TIMESTAMP) continue
+            if (record.timestamp === DRAFT_TIMESTAMP) {
+                // Capture current draft content
+                currentDraftText = record.text
+                currentDraftBin = record.bin
+                continue
+            }
 
             await db.blackboard.add({
                 owner: record.owner,
@@ -364,13 +372,13 @@ async function createBranch() {
             })
         }
 
-        // Create new Draft for the new branch with Creation Timestamp
+        // Create new Draft for the new branch with Creation Timestamp AND content from current draft
         await db.blackboard.add({
             owner: currentUserBranch.owner,
             branch: newBranchName,
             timestamp: DRAFT_TIMESTAMP,
-            text: "", // Start with empty draft or copy? User said "new branch contains everything", but draft is usually ephemeral. Let's start empty to be safe.
-            bin: "",
+            text: currentDraftText,
+            bin: currentDraftBin,
             createdAt: timestamp
         })
     })
