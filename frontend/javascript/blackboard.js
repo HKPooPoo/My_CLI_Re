@@ -34,6 +34,7 @@ let $branchSavedIndicator = document.querySelector(".branch-is-saved")
 let $blackboardTextarea = document.getElementById("log-textarea")
 let $branchListContainer = document.querySelector('[data-page="blackboard-branch"] .vcs-list-container')
 let $branchBtn = document.getElementById("branch-btn")
+let $checkoutBtn = document.getElementById("checkout-btn")
 
     ; (async () => {
         await setTextarea(currentHead)
@@ -44,6 +45,7 @@ let $branchBtn = document.getElementById("branch-btn")
 $pushBtn.addEventListener("click", push)
 $pullBtn.addEventListener("click", pull)
 $branchBtn.addEventListener("click", createBranch)
+$checkoutBtn.addEventListener("click", checkoutBranch)
 
 async function push() {
     await saveToDB()
@@ -346,4 +348,18 @@ async function createBranch() {
 
     // Update list to show new branch
     await updateBranchList()
+}
+
+async function checkoutBranch() {
+    // Find the actively selected item (handled by blackboard-vcs.js or similar logic)
+    // Note: Since we rely on InfiniteList logic or manual selection, we look for '.active'
+    const activeItem = $branchListContainer.querySelector(".vcs-list-item.active")
+    if (!activeItem) return
+
+    const input = activeItem.querySelector(".vcs-list-branch")
+    const branchName = input.value
+
+    if (branchName) {
+        await switchBranch(branchName)
+    }
 }
