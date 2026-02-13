@@ -225,10 +225,25 @@ async function updateBranchList() {
         const dateDisplay = info.timestamp ? new Date(info.timestamp).toISOString() : "DRAFT"
 
         item.innerHTML = `
-            <input type="text" class="vcs-list-branch" value="${branchName}" readonly name="vcs-list-branch">
+            <input type="text" class="vcs-list-branch" value="${branchName}" placeholder="branch name" name="vcs-list-branch">
             <div class="vcs-list-timestamp">${dateDisplay}</div>
             <div class="vcs-list-owner">${info.owner}</div>
         `
+
+        const input = item.querySelector(".vcs-list-branch")
+
+        input.addEventListener("click", (e) => {
+            e.stopPropagation()
+        })
+
+        input.addEventListener("change", async (e) => {
+            const newName = e.target.value.trim()
+            if (newName && newName !== branchName) {
+                await renameBranch(branchName, newName)
+            } else {
+                e.target.value = branchName
+            }
+        })
 
         item.addEventListener("click", async () => {
             if (currentUserBranch.branch !== branchName) {
@@ -251,4 +266,41 @@ async function switchBranch(branchName) {
     currentHead = 0
     await setTextarea(currentHead)
     updateIndicators()
+    updateBranchList()
+}
+
+async function renameBranch(oldName, newName) {
+    if (oldName === newName) return
+
+    const existing = await db.blackboard.where('[owner+branch+timestamp]')
+        .between(
+            [currentUserBranch.owner, newName, Dexie.minKey],
+            [currentUserBranch.owner, newName, Dexie.maxKey]
+        ).count()
+
+    if (existing > 0) {
+        alert(`Branch "${newName}" already exists.`)
+        await updateBranchList()
+        return
+    }
+
+    const records = await db.blackboard.where('[owner+branch+timestamp]')
+        .between(
+            [currentUserBranch.owner, oldName, Dexie.minKey],
+            [currentUserBranch.owner, oldName, Dexie.maxKey]
+        ).toArray()
+
+    await db.transaction('rw', db.blackboard, async () => {
+        for (const record of records) {
+            await db.blackboard.update(record.id, { branch: newName })
+        }
+    })
+
+    if (currentUserBranch.branch === oldName) {
+        currentUserBranch.branch = newName
+        localStorage.setItem("currentBranch", newName)
+        updateIndicators()
+    }
+
+    await updateBranchList()
 }

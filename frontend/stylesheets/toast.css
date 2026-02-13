@@ -32,6 +32,10 @@
     text-shadow: var(--text-shadow-green);
 }
 
+:root[data-theme="light"] .toast {
+    font-weight: bold;
+}
+
 /* Animation Stages */
 .toast.showing {
     opacity: 1;

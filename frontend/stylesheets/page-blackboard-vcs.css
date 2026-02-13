@@ -46,6 +46,11 @@
     box-shadow: 0 0 10px var(--text-green);
 }
 
+.vcs-list-item.active ::selection {
+    background: var(--bg-primary);
+    color: var(--text-green);
+}
+
 .vcs-list-item.active .vcs-list-branch {
     color: var(--bg-primary);
 }
