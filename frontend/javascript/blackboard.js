@@ -5,8 +5,8 @@ const toast = new ToastMessager()
 
 const DRAFT_TIMESTAMP = Number.MAX_SAFE_INTEGER
 
-function getHKTTimestamp() {
-    const now = new Date();
+function getHKTTimestamp(dateInput) {
+    const now = dateInput ? new Date(dateInput) : new Date();
     const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
     const hkt = new Date(utc + (3600000 * 8));
     return hkt.toISOString().replace('Z', '+08:00');
@@ -95,7 +95,8 @@ async function push() {
             ...currentUserBranch,
             timestamp: DRAFT_TIMESTAMP,
             text: "",
-            bin: ""
+            bin: "",
+            createdAt: getHKTTimestamp()
         })
     }
 
@@ -196,7 +197,8 @@ async function saveToDB() {
             ...currentUserBranch,
             timestamp: DRAFT_TIMESTAMP,
             text: textToSave,
-            bin: ""
+            bin: "",
+            createdAt: getHKTTimestamp()
         })
     }
 
@@ -208,7 +210,7 @@ async function saveToDB() {
 async function updateBranchList() {
     if (!$branchListContainer) return
 
-    const branches = new Map()
+    const branches = new Map() // branchName -> { owner, draftRecord, earliestTimestamp }
 
     await db.blackboard.where('[owner+branch+timestamp]')
         .between(
@@ -217,43 +219,60 @@ async function updateBranchList() {
         )
         .reverse()
         .each(record => {
-            if (!branches.has(record.branch)) {
-                // Since we iterate in reverse, the first record we meet is the Draft (MAX_TIMESTAMP)
-                // We expect the Draft to hold the 'createdAt' property.
-                const creationTime = (record.timestamp === DRAFT_TIMESTAMP && record.createdAt)
-                    ? record.createdAt
-                    : null
-
-                branches.set(record.branch, {
-                    owner: record.owner,
-                    timestamp: creationTime
-                })
+            let info = branches.get(record.branch)
+            if (!info) {
+                info = { owner: record.owner, draftRecord: null, earliestTimestamp: null }
+                branches.set(record.branch, info)
             }
-            // We no longer need to update timestamp from commits because we want the fixed Creation Time
-            // found in the Draft record.
+
+            if (record.timestamp === DRAFT_TIMESTAMP) {
+                info.draftRecord = record
+            } else {
+                // Since iterating reverse (Newest first), the last one we see is oldest
+                info.earliestTimestamp = record.timestamp
+            }
         })
 
     $branchListContainer.innerHTML = ""
 
     for (const [branchName, info] of branches) {
+        let displayTime = "unknown"
+        let timestampToSave = null
+
+        // Determine correct timestamp
+        if (info.draftRecord && info.draftRecord.createdAt) {
+            displayTime = info.draftRecord.createdAt
+        } else {
+            // Missing createdAt. Heal it.
+            // Use earliest commit time (formatted), or current HKT time if totally empty
+            displayTime = getHKTTimestamp(info.earliestTimestamp)
+            timestampToSave = displayTime
+        }
+
+        // Heal DB if needed
+        if (timestampToSave && info.draftRecord) {
+            await db.blackboard.update(info.draftRecord.id, { createdAt: timestampToSave })
+            // Update memory so next check passes/consistency
+            info.draftRecord.createdAt = timestampToSave
+        }
+
         const item = document.createElement("div")
         item.classList.add("vcs-list-item")
         if (currentUserBranch.branch === branchName) {
             item.classList.add("active")
         }
 
-        const dateDisplay = info.timestamp ? info.timestamp : "unknown"
-
         item.innerHTML = `
-            <input type="text" class="vcs-list-branch" value="${branchName}" placeholder="branch name" name="vcs-list-branch">
-            <div class="vcs-list-timestamp">${dateDisplay}</div>
+            <input type="text" class="vcs-list-branch" value="${branchName}" placeholder="branch name" name="vcs-list-branch" maxlength="32">
+            <div class="vcs-list-timestamp">${displayTime}</div>
             <div class="vcs-list-owner">${info.owner}</div>
         `
 
         const input = item.querySelector(".vcs-list-branch")
 
         input.addEventListener("click", (e) => {
-            e.stopPropagation()
+            // e.stopPropagation()
+            // Allow click to bubble so InfiniteList can handle 'active' class
         })
 
         input.addEventListener("change", async (e) => {
