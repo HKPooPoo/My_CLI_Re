@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Secure Terminal Note</title>
+    <style>
+        :root {
+            --bg-color: #000000;
+            --text-color: #00ff00;
+            /* Classic Terminal Green */
+            --caret-color: #00ff00;
+            --status-color: #00cc00;
+            --overlay-bg: rgba(0, 0, 0, 0.95);
+            --modal-bg: #111;
+            --border-color: #00ff00;
+            --error-color: #ff3333;
+            --font-family: 'Courier New', Courier, monospace;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body,
+        html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            width: 100%;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: var(--font-family);
+            overflow: hidden;
+        }
+
+        /* Full Screen Editor */
+        #editor {
+            width: 100%;
+            height: 100%;
+            background-color: transparent;
+            color: var(--text-color);
+            border: none;
+            outline: none;
+            resize: none;
+            padding: 20px;
+            font-size: 16px;
+            font-family: var(--font-family);
+            caret-color: var(--caret-color);
+            line-height: 1.5;
+        }
+
+        #editor::placeholder {
+            color: #004400;
+            opacity: 0.8;
+        }
+
+        /* Status Indicator */
+        #status-bar {
+            position: fixed;
+            bottom: 10px;
+            right: 20px;
+            font-size: 12px;
+            color: var(--status-color);
+            opacity: 0.7;
+            background-color: var(--bg-color);
+            padding: 5px 10px;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+            z-index: 10;
+        }
+
+        /* Login/Auth Overlay */
+        #auth-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: var(--overlay-bg);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .auth-box {
+            background: var(--modal-bg);
+            border: 1px solid var(--border-color);
+            padding: 2rem;
+            width: 400px;
+            max-width: 90%;
+            text-align: center;
+            box-shadow: 0 0 15px rgba(0, 255, 0, 0.2);
+            animation: fadeIn 0.5s ease;
+        }
+
+        .auth-title {
+            margin-top: 0;
+            margin-bottom: 20px;
+            font-size: 24px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--text-color);
+        }
+
+        .auth-message {
+            margin-bottom: 20px;
+            font-size: 14px;
+            color: #aaa;
+        }
+
+        /* Custom Input */
+        .auth-input {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 15px;
+            background: #000;
+            border: 1px solid #005500;
+            color: var(--text-color);
+            font-family: var(--font-family);
+            font-size: 16px;
+            outline: none;
+            text-align: center;
+        }
+
+        .auth-input:focus {
+            border-color: var(--border-color);
+            box-shadow: 0 0 5px rgba(0, 255, 0, 0.3);
+        }
+
+        /* Buttons */
+        .btn {
+            background: transparent;
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+            padding: 10px 20px;
+            font-family: var(--font-family);
+            font-size: 14px;
+            cursor: pointer;
+            text-transform: uppercase;
+            transition: all 0.2s;
+            margin-top: 5px;
+            width: 100%;
+        }
+
+        .btn:hover {
+            background: var(--text-color);
+            color: #000;
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            border-color: #555;
+            color: #555;
+        }
+
+        .error-msg {
+            color: var(--error-color);
+            min-height: 20px;
+            margin-top: 15px;
+            font-size: 13px;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes shake {
+
+            0%,
+            100% {
+                transform: translateX(0);
+            }
+
+            10%,
+            30%,
+            50%,
+            70%,
+            90% {
+                transform: translateX(-5px);
+            }
+
+            20%,
+            40%,
+            60%,
+            80% {
+                transform: translateX(5px);
+            }
+        }
+
+        .shake {
+            animation: shake 0.4s cubic-bezier(.36, .07, .19, .97) both;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Main Editor -->
+    <textarea id="editor" spellcheck="false" placeholder="Secure Terminal v1.0. 
+Type notes here...
+Commands: /clear, /copy, /paste, /exit"></textarea>
+
+    <div id="status-bar">WAITING FOR AUTH...</div>
+
+    <!-- Authentication Overlay -->
+    <div id="auth-overlay">
+        <div class="auth-box" id="auth-box">
+            <h2 class="auth-title">Secure Access</h2>
+            <div id="auth-message" class="auth-message">Detecting Storage...</div>
+
+            <input type="password" id="password-input" class="auth-input" placeholder="Enter Password" autofocus>
+
+            <button id="auth-btn" class="btn">Login</button>
+            <div id="error-msg" class="error-msg"></div>
+        </div>
+    </div>
+
+    <script>
+        /**
+         * SECURE TERMINAL NOTE APP
+         * 
+         * Features:
+         * 1. 100% Client-side. No server.
+         * 2. AES-GCM 256-bit encryption.
+         * 3. PBKDF2 Key Derivation.
+         * 4. Secure localStorage persistence.
+         */
+
+        // --- Configuration ---
+        const CONFIG = {
+            storageKey: 'secure_term_v1',
+            pbkdf2: {
+                name: 'PBKDF2',
+                hash: 'SHA-256',
+                iterations: 100000
+            },
+            aes: {
+                name: 'AES-GCM',
+                length: 256
+            },
+            debounceMs: 500
+        };
+
+        // --- Application State ---
+        const AppState = {
+            key: null,          // CryptoKey object (in-memory only)
+            salt: null,         // Current salt (saved to storage)
+            isNewUser: false,   // Flag for setup mode
+            isDirty: false      // Flag for unsaved changes
+        };
+
+        // --- DOM Elements ---
+        const UI = {
+            editor: document.getElementById('editor'),
+            statusBar: document.getElementById('status-bar'),
+            overlay: document.getElementById('auth-overlay'),
+            authBox: document.getElementById('auth-box'),
+            authMessage: document.getElementById('auth-message'),
+            input: document.getElementById('password-input'),
+            btn: document.getElementById('auth-btn'),
+            error: document.getElementById('error-msg')
+        };
+
+        // --- Helpers ---
+        const bufferToBase64 = (buf) => btoa(String.fromCharCode(...new Uint8Array(buf)));
+        const base64ToBuffer = (b64) => Uint8Array.from(atob(b64), c => c.charCodeAt(0));
+
+        const setStatus = (msg) => {
+            UI.statusBar.textContent = msg;
+            UI.statusBar.style.opacity = 1;
+            // Fade out after 3 seconds
+            clearTimeout(UI.statusTimeout);
+            UI.statusTimeout = setTimeout(() => {
+                UI.statusBar.style.opacity = 0.5;
+            }, 3000);
+        };
+
+        // --- Cryptography Module ---
+        const Crypto = {
+
+            // Generate a random 16-byte salt
+            generateSalt: () => window.crypto.getRandomValues(new Uint8Array(16)),
+
+            // Generate a random 12-byte IV for AES-GCM
+            generateIV: () => window.crypto.getRandomValues(new Uint8Array(12)),
+
+            // Derive a Key from Password + Salt using PBKDF2
+            deriveKey: async (password, salt) => {
+                const enc = new TextEncoder();
+                const keyMaterial = await window.crypto.subtle.importKey(
+                    'raw',
+                    enc.encode(password),
+                    { name: 'PBKDF2' },
+                    false,
+                    ['deriveKey']
+                );
+
+                return window.crypto.subtle.deriveKey(
+                    {
+                        name: 'PBKDF2',
+                        salt: salt,
+                        iterations: CONFIG.pbkdf2.iterations,
+                        hash: CONFIG.pbkdf2.hash
+                    },
+                    keyMaterial,
+                    CONFIG.aes,
+                    false, // key is not extractable
+                    ['encrypt', 'decrypt']
+                );
+            },
+
+            // Encrypt Text: Returns { iv, ciphertext }
+            encrypt: async (text, key) => {
+                const iv = Crypto.generateIV();
+                const enc = new TextEncoder();
+                const encodedText = enc.encode(text);
+
+                const ciphertext = await window.crypto.subtle.encrypt(
+                    { name: 'AES-GCM', iv: iv },
+                    key,
+                    encodedText
+                );
+
+                return { iv, ciphertext };
+            },
+
+            // Decrypt Text: Returns string or throws error
+            decrypt: async (ciphertext, iv, key) => {
+                const decrypted = await window.crypto.subtle.decrypt(
+                    { name: 'AES-GCM', iv: iv },
+                    key,
+                    ciphertext
+                );
+                const dec = new TextDecoder();
+                return dec.decode(decrypted);
+            }
+        };
+
+        // --- Application Logic ---
+
+        // 1. Storage Manager
+        const Storage = {
+            save: async (text) => {
+                if (!AppState.key) return;
+
+                try {
+                    // Reuse salt if exists, otherwise generated
+                    if (!AppState.salt) AppState.salt = Crypto.generateSalt();
+
+                    const { iv, ciphertext } = await Crypto.encrypt(text, AppState.key);
+
+                    const packet = {
+                        salt: bufferToBase64(AppState.salt),
+                        iv: bufferToBase64(iv),
+                        ciphertext: bufferToBase64(ciphertext)
+                    };
+
+                    localStorage.setItem(CONFIG.storageKey, JSON.stringify(packet));
+                    setStatus("ENCRYPTED & SAVED");
+                } catch (e) {
+                    console.error("Save Error:", e);
+                    setStatus("SAVE ERROR: " + e.message);
+                }
+            },
+
+            load: () => {
+                const raw = localStorage.getItem(CONFIG.storageKey);
+                return raw ? JSON.parse(raw) : null;
+            },
+
+            clear: () => {
+                localStorage.removeItem(CONFIG.storageKey);
+                setStatus("STORAGE CLEARED");
+            }
+        };
+
+        // 2. Initialization & Auth
+        async function init() {
+            const data = Storage.load();
+
+            if (!data) {
+                // New User Setup
+                AppState.isNewUser = true;
+                UI.authMessage.textContent = "System Empty. Set a secure password.";
+                UI.btn.textContent = "INITIALIZE";
+            } else {
+                // Existing User Login
+                AppState.isNewUser = false;
+                UI.authMessage.textContent = "Encrypted Data Found. Enter Password.";
+                UI.btn.textContent = "DECRYPT";
+            }
+
+            UI.overlay.classList.remove('hidden');
+            UI.input.focus();
+        }
+
+        async function handleLogin() {
+            const password = UI.input.value;
+            if (!password) {
+                showError("Password required");
+                return;
+            }
+
+            UI.btn.disabled = true;
+            UI.error.textContent = "Processing...";
+
+            try {
+                if (AppState.isNewUser) {
+                    // --- SETUP ---
+                    const salt = Crypto.generateSalt();
+                    const key = await Crypto.deriveKey(password, salt);
+
+                    AppState.key = key;
+                    AppState.salt = salt;
+
+                    // Initial empty save to establish storage
+                    await Storage.save("");
+
+                    unlockAndShow("");
+
+                } else {
+                    // --- LOGIN ---
+                    const data = Storage.load();
+                    const salt = base64ToBuffer(data.salt);
+                    const iv = base64ToBuffer(data.iv);
+                    const ciphertext = base64ToBuffer(data.ciphertext);
+
+                    // Derive key with stored salt
+                    const key = await Crypto.deriveKey(password, salt);
+
+                    // Attempt Decrypt
+                    const text = await Crypto.decrypt(ciphertext, iv, key);
+
+                    // If successful:
+                    AppState.key = key;
+                    AppState.salt = salt;
+                    unlockAndShow(text);
+                }
+            } catch (err) {
+                console.error(err);
+                if (err.name === 'OperationError') {
+                    showError("Access Denied: Wrong Password");
+                } else {
+                    showError("Error: " + err.message);
+                }
+
+                // Shake Animation
+                UI.authBox.classList.remove('shake');
+                void UI.authBox.offsetWidth; // trigger reflow
+                UI.authBox.classList.add('shake');
+
+                UI.input.value = "";
+                UI.input.focus();
+            } finally {
+                UI.btn.disabled = false;
+            }
+        }
+
+        function unlockAndShow(content) {
+            UI.overlay.classList.add('hidden');
+            UI.editor.value = content;
+            UI.editor.focus();
+            setStatus("SYSTEM UNLOCKED");
+            UI.input.value = ""; // Clear password from memory DOM
+        }
+
+        function showError(msg) {
+            UI.error.textContent = msg;
+        }
+
+        // 3. Event Listeners for Auth
+        UI.btn.addEventListener('click', handleLogin);
+        UI.input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') handleLogin();
+        });
+
+
+        // 4. Editor Logic (Debounce Save)
+        let debounceTimer;
+        UI.editor.addEventListener('input', () => {
+            clearTimeout(debounceTimer);
+            setStatus("Typing...");
+
+            debounceTimer = setTimeout(() => {
+                if (AppState.key) {
+                    Storage.save(UI.editor.value);
+                }
+            }, CONFIG.debounceMs);
+        });
+
+        // 5. Command Parser
+        UI.editor.addEventListener('keydown', async (e) => {
+            if (e.key === 'Enter') {
+                const value = UI.editor.value;
+                const selectionStart = UI.editor.selectionStart;
+
+                // Find the current line text up to the cursor
+                const lastLineIndex = value.lastIndexOf('\n', selectionStart - 1);
+                const startOfLine = lastLineIndex === -1 ? 0 : lastLineIndex + 1;
+                const currentLine = value.substring(startOfLine, selectionStart);
+
+                // Detect command (simple regex: look for /cmd at end of line)
+                // We trim trailing spaces to allow " /clear " to work
+                const match = currentLine.match(/(\/\w+)\s*$/);
+
+                if (match) {
+                    e.preventDefault(); // Stop newline insertion
+                    const command = match[1]; // e.g., "/clear"
+
+                    // Execute Command
+                    if (await executeCommand(command, startOfLine, selectionStart)) {
+                        // If logic handled it, we are done.
+                        // Command string removal is handled inside executeCommand logic usually,
+                        // or we interpret the requirement "remove the command string" here.
+                    }
+                }
+            }
+        });
+
+        async function executeCommand(cmd, startOfLine, selectionStart) {
+
+            // Remove the command text from editor
+            const value = UI.editor.value;
+            // The command is at [startOfLine ... selectionStart] roughly, but we matched specifically
+            // We need to cut out the specific command match part.
+            // Simplified: We assume the user typed the command at the end of the line.
+
+            // Re-eval match to get exact indices
+            const lineContent = value.substring(startOfLine, selectionStart);
+            const match = lineContent.match(/(\/\w+)\s*$/);
+            if (!match) return false;
+
+            const cmdStr = match[0]; // The command + potential trailing space
+            const cmdName = match[1]; // Just the /cmd part
+
+            // Remove command from text
+            const pre = value.substring(0, startOfLine + match.index);
+            const post = value.substring(selectionStart);
+
+            // Update Editor ONLY if it's a valid command or we want to clean up invalid ones too?
+            // Requirement: "remove the command string... so it doesn't get saved"
+            // We'll remove it first.
+            const newValue = pre + post;
+            UI.editor.value = newValue;
+
+            // Ensure the cleaned text is saved to storage immediately
+            // (fixes issue where slow typing might have saved the command string already)
+            await Storage.save(newValue);
+
+            // Restore Cursor
+            UI.editor.selectionStart = UI.editor.selectionEnd = pre.length;
+
+            switch (cmdName) {
+                case '/clear':
+                    // if (confirm("Clear all data?")) {
+                    UI.editor.value = "";
+                    await Storage.save("");
+                    setStatus("CLEARED");
+                    // }
+                    break;
+                case '/copy':
+                    try {
+                        await navigator.clipboard.writeText(UI.editor.value);
+                        setStatus("COPIED TO CLIPBOARD");
+                    } catch (e) {
+                        setStatus("COPY FAILED: " + e.message);
+                    }
+                    break;
+                case '/paste':
+                    try {
+                        const clipped = await navigator.clipboard.readText();
+                        // Insert at cursor
+                        const cur = UI.editor.selectionStart;
+                        const v = UI.editor.value;
+                        UI.editor.value = v.slice(0, cur) + clipped + v.slice(cur);
+                        await Storage.save(UI.editor.value);
+                        setStatus("PASTED");
+                    } catch (e) {
+                        setStatus("PASTE FAILED (Permission?)");
+                    }
+                    break;
+                case '/exit':
+                    AppState.key = null;
+                    document.body.innerHTML = "<h1 style='color:green;text-align:center;margin-top:20%'>SESSION ENDED</h1>";
+                    setTimeout(() => window.close(), 1000);
+                    // Note: window.close() usually only works if script opened the window. 
+                    // Fallback: Reload to lock
+                    location.reload();
+                    break;
+                default:
+                    setStatus("UNKNOWN COMMAND: " + cmdName);
+                    // We removed the text, so just showing status is enough.
+                    break;
+            }
+
+            return true;
+        }
+
+        // Start App
+        init();
+
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple List Test</title>
+    <style>
+        :root {
+            --text-green: #32FF32;
+            --bg-primary: #000000;
+            --bg-secondary: #001100;
+            --font-main: 'Courier New', monospace;
+        }
+
+        body {
+            background-color: var(--bg-secondary);
+            color: var(--text-green);
+            font-family: var(--font-main);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+        }
+
+        .interactive-list-container {
+            width: 300px;
+            height: 250px;
+            border: 2px solid var(--text-green);
+            background-color: var(--bg-primary);
+            overflow: hidden;
+            /* Hide default scrollbar */
+            position: relative;
+        }
+
+        .interactive-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            transition: transform 0.2s ease-out;
+        }
+
+        .list-item {
+            padding: 10px 20px;
+            cursor: pointer;
+            border-bottom: 1px dashed rgba(50, 255, 50, 0.3);
+        }
+
+        .list-item.active {
+            background-color: var(--text-green);
+            color: var(--bg-primary);
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="interactive-list-container" id="list-container">
+        <ul class="interactive-list" id="list">
+            <li class="list-item">Item 01 - Weapon</li>
+            <li class="list-item">Item 02 - Armor</li>
+            <li class="list-item">Item 03 - Potion</li>
+            <li class="list-item">Item 04 - Map</li>
+            <li class="list-item">Item 05 - Key</li>
+            <li class="list-item">Item 06 - Scroll</li>
+            <li class="list-item">Item 07 - Food</li>
+            <li class="list-item">Item 08 - Water</li>
+            <li class="list-item">Item 09 - Tent</li>
+            <li class="list-item">Item 10 - Torch</li>
+            <li class="list-item">Item 11 - Rope</li>
+            <li class="list-item">Item 12 - Flint</li>
+            <li class="list-item">Item 13 - Knife</li>
+            <li class="list-item">Item 14 - Compass</li>
+            <li class="list-item">Item 15 - Journal</li>
+        </ul>
+    </div>
+
+    <script>
+        const listContainer = document.getElementById('list-container');
+        const listElement = document.getElementById('list');
+        const items = document.querySelectorAll('.list-item');
+
+        let currentIndex = 0;
+
+        function updateSelection(index) {
+            // Boundary Check
+            if (index < 0) index = 0;
+            if (index >= items.length) index = items.length - 1;
+
+            currentIndex = index;
+
+            // Visual Update
+            items.forEach(item => item.classList.remove('active'));
+            const activeItem = items[index];
+            activeItem.classList.add('active');
+
+            // Auto Scroll Logic
+            centerView(activeItem);
+        }
+
+        function centerView(activeItem) {
+            const containerH = listContainer.clientHeight;
+            const itemTop = activeItem.offsetTop;
+            const itemHeight = activeItem.offsetHeight;
+            const currentTrans = getTranslateY();
+
+            // Calculate absolute positions relative to container top
+            const visualTop = itemTop + currentTrans;
+            const visualBottom = visualTop + itemHeight;
+            const padding = 20; // Visibility buffer
+
+            let newTrans = currentTrans;
+
+            // Scroll Up
+            if (visualTop < padding) {
+                newTrans = padding - itemTop;
+            }
+            // Scroll Down
+            else if (visualBottom > containerH - padding) {
+                newTrans = containerH - padding - (itemTop + itemHeight);
+            }
+
+            listElement.style.transform = `translateY(${newTrans}px)`;
+        }
+
+        function getTranslateY() {
+            const style = window.getComputedStyle(listElement);
+            const matrix = new WebKitCSSMatrix(style.transform);
+            return matrix.m42;
+        }
+
+        // Direct Click Selection
+        items.forEach((item, index) => {
+            item.addEventListener('click', () => {
+                updateSelection(index);
+            });
+        });
+
+        // Wheel Hijack
+        listContainer.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            if (e.deltaY > 0) {
+                updateSelection(currentIndex + 1);
+            } else {
+                updateSelection(currentIndex - 1);
+            }
+        });
+
+        // Initialize
+        updateSelection(0);
+    </script>
+</body>
+
+</html>

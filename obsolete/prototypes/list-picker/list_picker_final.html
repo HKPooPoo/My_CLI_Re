@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Responsive List Picker Final</title>
+    <style>
+        :root {
+            --text-green: #32FF32;
+            --bg-primary: #000000;
+            --bg-secondary: #001100;
+            --font-main: 'Courier New', monospace;
+            --item-height: 48px;
+            --container-size: 320px;
+            /* Square base for easy rotation logic */
+        }
+
+        body {
+            background-color: var(--bg-secondary);
+            color: var(--text-green);
+            font-family: var(--font-main);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+        }
+
+        /* LAYOUT CONTAINER */
+        /* Default: Landscape (Row direction for controls + picker, picker scrolls vertically) -- Wait, user said "portrait then row direction"? 
+           Let's clarify user rule: "media orientation: portrait then row direction". 
+           Standard Desktop (Landscape): Column layout (Top/Bottom buttons)? Or Side by Side?
+           Let's assume:
+           - Portrait (Phone): Row Direction (Left Button - Picker - Right Button). Picker scrolls Horizontally? Or still Vertically but buttons are on sides?
+           
+           Actually, usually "List Picker" scrolls Vertically.
+           If User means "Row Direction" for flex container:
+           - Portrait: [Btn] [Picker] [Btn]
+           - Landscape: 
+             [Btn]
+             [Picker]
+             [Btn]
+             
+           Let's implement flex-direction switching based on media query.
+        */
+
+        .main-layout {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            /* Default (Landscape/Desktop) -> Column (Up/Down buttons) */
+            flex-direction: column;
+        }
+
+        @media (orientation: portrait) {
+            .main-layout {
+                /* Portrait (Phone) -> Row (Left/Right buttons) */
+                flex-direction: row;
+            }
+        }
+
+        /* BUTTONS */
+        .control-btn {
+            background: var(--bg-primary);
+            color: var(--text-green);
+            border: 2px solid var(--text-green);
+            width: 64px;
+            height: 64px;
+            font-size: 24px;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 0 10px rgba(50, 255, 50, 0.2);
+            user-select: none;
+        }
+
+        .control-btn:active {
+            background: var(--text-green);
+            color: var(--bg-primary);
+        }
+
+        /* PICKER */
+        .picker-frame {
+            width: var(--container-size);
+            height: 250px;
+            border: 2px solid var(--text-green);
+            background-color: var(--bg-primary);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .picker-cursor {
+            position: absolute;
+            top: 50%;
+            left: 0;
+            width: 100%;
+            height: var(--item-height);
+            margin-top: calc(var(--item-height) / -2);
+            border-top: 2px solid var(--text-green);
+            border-bottom: 2px solid var(--text-green);
+            background-color: rgba(50, 255, 50, 0.15);
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .picker-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            position: absolute;
+            width: 100%;
+            top: 50%;
+            will-change: transform;
+            /* Transform set in JS */
+        }
+
+        .list-item {
+            height: var(--item-height);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            opacity: 0.5;
+            transition: opacity 0.2s;
+        }
+
+        .list-item.active {
+            opacity: 1;
+            font-weight: bold;
+            color: #fff;
+            text-shadow: 0 0 8px var(--text-green);
+        }
+
+        #debug-info {
+            margin-top: 20px;
+            font-size: 0.8rem;
+            opacity: 0.8;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="main-layout">
+        <!-- Button 1: Logical "Previous" / Visual "Up/Left" -->
+        <button class="control-btn" id="btn-prev">▲</button>
+
+        <div class="picker-frame">
+            <div class="picker-cursor"></div>
+            <ul class="picker-list" id="picker-list"></ul>
+        </div>
+
+        <!-- Button 2: Logical "Next" / Visual "Down/Right" -->
+        <button class="control-btn" id="btn-next">▼</button>
+    </div>
+
+    <div id="debug-info">Selected: <span id="out-item">--</span></div>
+
+    <script>
+        // CONFIG
+        const RAW_DATA = ["Alpha", "Beta", "Gamma", "Delta", "Epsilon", "Zeta", "Eta", "Theta"];
+        const ITEM_HEIGHT = 48;
+
+        // Setup DOM
+        const listEl = document.getElementById('picker-list');
+        const btnPrev = document.getElementById('btn-prev');
+        const btnNext = document.getElementById('btn-next');
+        const outItem = document.getElementById('out-item');
+
+        // 1. Build Triple List for Infinite Loop
+        // [Copy A] [Real] [Copy B]
+        const TRIPLE_DATA = [...RAW_DATA, ...RAW_DATA, ...RAW_DATA];
+
+        TRIPLE_DATA.forEach((text, i) => {
+            const li = document.createElement('li');
+            li.className = 'list-item';
+            li.innerText = text;
+            listEl.appendChild(li);
+        });
+
+        const allItems = document.querySelectorAll('.list-item');
+        const REAL_START = RAW_DATA.length;
+        const REAL_END = RAW_DATA.length * 2 - 1;
+
+        let internalIndex = REAL_START; // Start at first "Real" item
+        let isAnimating = false;
+
+        function render(animate = true) {
+            const offset = ITEM_HEIGHT / 2;
+            const translateY = -(internalIndex * ITEM_HEIGHT) - offset;
+
+            listEl.style.transition = animate ? 'transform 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94)' : 'none';
+            listEl.style.transform = `translateY(${translateY}px)`;
+
+            // Visuals
+            allItems.forEach(el => el.classList.remove('active'));
+            if (allItems[internalIndex]) allItems[internalIndex].classList.add('active');
+
+            // Output
+            const realIdx = internalIndex % RAW_DATA.length;
+            outItem.innerText = RAW_DATA[realIdx];
+        }
+
+        function move(dir) {
+            if (isAnimating) return;
+            isAnimating = true;
+
+            internalIndex += dir;
+            render(true);
+
+            setTimeout(() => {
+                // Silent Teleport Logic
+                if (internalIndex < REAL_START) {
+                    internalIndex += RAW_DATA.length;
+                    render(false);
+                } else if (internalIndex > REAL_END) {
+                    internalIndex -= RAW_DATA.length;
+                    render(false);
+                }
+                isAnimating = false;
+            }, 210);
+        }
+
+        // 2. Button Logic
+        btnPrev.addEventListener('click', () => move(-1)); // Move "Up" (Index decreases)
+        btnNext.addEventListener('click', () => move(1));  // Move "Down" (Index increases)
+
+        // 3. Responsive Button Text Update
+        // Check orientation to change arrows
+        function updateButtonVisuals() {
+            if (window.matchMedia("(orientation: portrait)").matches) {
+                // Row Layout: Prev is Left, Next is Right
+                btnPrev.innerText = "◀";
+                btnNext.innerText = "▶";
+            } else {
+                // Column Layout: Prev is Up, Next is Down
+                btnPrev.innerText = "▲";
+                btnNext.innerText = "▼";
+            }
+        }
+
+        // Listen for resize/rotate
+        window.addEventListener('resize', updateButtonVisuals);
+        updateButtonVisuals(); // Init
+
+        // Init Picker
+        render(false);
+
+    </script>
+</body>
+
+</html>

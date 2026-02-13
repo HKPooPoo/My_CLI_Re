@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shelf Drag Prototype</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div class="feature-container">
+        <!-- Buttons to open shelves -->
+        <button class="feature-btn" data-feature-btn="">N/A</button>
+        <button class="feature-btn" data-feature-btn="ai-picture-analyse">pic</button>
+        <button class="feature-btn" data-feature-btn="ai-text-analyze">txt</button>
+        <button class="feature-btn" data-feature-btn="translator">trans</button>
+        <button class="feature-btn" data-feature-btn="voice-to-textbox">voice</button>
+
+        <!-- Shelf Container -->
+        <div class="feature-shelf-container frosted-glass" id="feature-shelf-container">
+            <!-- Draggable Back Button (Handle) -->
+            <button class="feature-shelf-back-btn" id="feature-shelf-back-btn">&gt;&gt;</button>
+
+            <!-- Shelves Content -->
+            <div class="feature-shelf" data-feature-shelf="ai-picture-analyse">
+                <h2>AI Picture Analysis</h2>
+                <div
+                    style="border: 2px dashed #0f0; height: 200px; display: flex; align-items: center; justify-content: center;">
+                    [Image Drop Zone]
+                </div>
+            </div>
+
+            <div class="feature-shelf" data-feature-shelf="ai-text-analyze">
+                <h2>AI Text Analyze</h2>
+                <p>Paste text here to analyze...</p>
+                <textarea style="width: 100%; height: 200px; background: #001; color: #0fo; padding: 10px;"></textarea>
+            </div>
+
+            <div class="feature-shelf" data-feature-shelf="translator" style="display: flex;">
+                <div class="feature-translator-pannel">
+                    <div class="feature-translator-picker">Language Picker</div>
+                </div>
+                <textarea name="" id="feature-translator-output" placeholder="Translation output..."></textarea>
+            </div>
+
+            <div class="feature-shelf" data-feature-shelf="voice-to-textbox">
+                <h2>Voice to Text</h2>
+                <button style="border: 2px solid #0f0; padding: 10px;">Start Recording</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+
+</html>

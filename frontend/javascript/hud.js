@@ -4,6 +4,13 @@ const ONLINE_STR = "ONLINE"
 const OFFLINE_STR = "OFFLINE"
 
 const dbStatusDisplay = document.getElementById("db-status-display");
+const loginStatusDisplay = document.getElementById("login-status-display");
+
+function updateLoginStatus() {
+    const currentUser = localStorage.getItem("currentUser");
+    loginStatusDisplay.textContent = currentUser;
+}
+updateLoginStatus();
 
 async function updateDatabaseStatus() {
     // status.php

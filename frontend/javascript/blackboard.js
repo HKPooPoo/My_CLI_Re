@@ -1,4 +1,4 @@
-import db, { Dexie } from "./indexedDBfromDexie.js"
+import db, { Dexie } from "./indexedDB.js"
 
 const DRAFT_TIMESTAMP = Number.MAX_SAFE_INTEGER
 
@@ -23,6 +23,7 @@ let currentUserBranch = {
 }
 
 let currentHead = 0
+// Just adjust this, 10 is for the concern of localStorage initially
 let maxSlot = 10
 
 let $pushBtn = document.querySelector(".push-btn")

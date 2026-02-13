@@ -1,0 +1,172 @@
+:root {
+    font-size: clamp(0.875rem, min(4vh, 2vw), 1rem);
+    --font-size: clamp(0.875rem, min(4vh, 2vw), 1rem);
+    font-family: 'Courier New', monospace;
+    --text-green: #32FF32;
+    --bg-primary: #000000;
+    --bg-secondary: #001100;
+    --border-line: 2px solid var(--text-green);
+    --border-radius: 8px;
+    --navi-height: 64px;
+    --sub-navi-height: 48px;
+    --scaffold-left-gap: 16vw;
+    --textbox-font-size: calc(var(--font-size) + 0.4rem);
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    user-select: none;
+}
+
+body {
+    background-color: var(--bg-secondary);
+    color: var(--text-green);
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+    position: relative;
+}
+
+button {
+    background: transparent;
+    border: none;
+    color: inherit;
+    font-family: inherit;
+    font-size: inherit;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+button:hover {
+    background: var(--text-green);
+    color: var(--bg-primary);
+    box-shadow: 0 0 10px var(--text-green);
+}
+
+
+/* Feature Container / Buttons (Right side menu) */
+.feature-container {
+    position: absolute;
+    right: 0;
+    top: 0;
+    width: var(--sub-navi-height);
+    height: 100%;
+    /* justify-content: space-around; */
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 1rem;
+    pointer-events: none;
+    /* Let clicks pass through empty space */
+}
+
+/* Enable pointer events on children */
+.feature-container>* {
+    pointer-events: auto;
+}
+
+.feature-btn {
+    position: relative;
+    height: 8vh;
+    width: 100%;
+    max-width: 100%;
+    cursor: pointer;
+    border: var(--border-line);
+    border-right: none;
+    transition: all 0.2s;
+    border-radius: var(--border-radius) 0 0 var(--border-radius);
+    background-color: var(--bg-primary);
+    /* Ensure button has background */
+}
+
+/* Shelf Container */
+.feature-shelf-container {
+    position: absolute;
+    top: 0;
+    /* positioned fully off-screen to the right initially */
+    left: 100%;
+    width: 100vw;
+    /* Shelf width */
+    height: 100%;
+
+    /* Initial state: no translation (still offscreen at left: 100%) */
+    transform: translate3d(0, 0, 0);
+
+    margin-left: var(--scaffold-left-gap);
+    /* Offset if needed, based on original CSS */
+    padding-right: var(--scaffold-left-gap);
+
+    /* Using a transition for smooth open/close when not dragging */
+    transition: transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    pointer-events: auto;
+}
+
+/* Class to disable transition during dragging for immediate response */
+.no-transition {
+    transition: none !important;
+}
+
+/* Frosted glass effect */
+.frosted-glass {
+    background: rgba(0, 20, 0, 0.85);
+    /* Slightly darker for legibility */
+    backdrop-filter: blur(10px);
+    border-left: 1px solid var(--text-green);
+    box-shadow: -4px 0 30px rgba(0, 0, 0, 0.5);
+}
+
+/* Draggable Back Button (Handle) */
+.feature-shelf-back-btn {
+    position: absolute;
+    height: 100%;
+    width: calc(var(--scaffold-left-gap) / 2);
+    /* Position it to the left of the container so it sticks out */
+    right: 100%;
+    top: 0;
+
+    background-color: var(--bg-primary);
+    border-radius: var(--border-radius) 0 0 var(--border-radius);
+    border: var(--border-line);
+    border-right: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: col-resize;
+    /* Indicate dragging */
+    writing-mode: vertical-rl;
+    text-orientation: upright;
+    z-index: 10;
+}
+
+/* Individual Shelves Content */
+.feature-shelf {
+    display: none;
+    /* Hidden by default */
+    padding: min(4vh, 4vw);
+    height: 100%;
+    width: 100%;
+    flex-direction: column;
+}
+
+/* Example Content Styles */
+.feature-translator-pannel {
+    display: flex;
+    flex-direction: column;
+    height: var(--navi-height);
+    border: var(--border-line);
+    border-bottom: none;
+    border-radius: var(--border-radius) var(--border-radius) 0 0;
+}
+
+#feature-translator-output {
+    flex: 1;
+    width: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    border: var(--border-line);
+    border-radius: 0 0 var(--border-radius) var(--border-radius);
+    color: var(--text-green);
+    padding: 1rem;
+    font-family: inherit;
+}

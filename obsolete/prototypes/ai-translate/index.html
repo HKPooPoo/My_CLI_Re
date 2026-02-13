@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Translation Prototype</title>
+    <style>
+        :root {
+            --bg-color: #1a1a1a;
+            --text-color: #00ff00;
+            --border-color: #00ff00;
+            --input-bg: #000;
+        }
+
+        body {
+            font-family: 'Courier New', Courier, monospace;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        h1 {
+            text-shadow: 0 0 5px var(--text-color);
+            margin-bottom: 20px;
+        }
+
+        .container {
+            display: flex;
+            width: 100%;
+            max-width: 1000px;
+            gap: 20px;
+            flex: 1;
+        }
+
+        .box {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        label {
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+
+        textarea {
+            flex: 1;
+            background-color: var(--input-bg);
+            color: var(--text-color);
+            border: 2px solid var(--border-color);
+            padding: 15px;
+            font-family: inherit;
+            font-size: 16px;
+            resize: none;
+            outline: none;
+            box-shadow: 0 0 10px rgba(0, 255, 0, 0.2);
+        }
+
+        textarea:focus {
+            box-shadow: 0 0 15px rgba(0, 255, 0, 0.5);
+        }
+
+        .controls {
+            margin: 20px 0;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        select,
+        button {
+            background-color: var(--input-bg);
+            color: var(--text-color);
+            border: 2px solid var(--border-color);
+            padding: 10px 20px;
+            font-family: inherit;
+            font-size: 16px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        button:hover {
+            background-color: var(--text-color);
+            color: var(--bg-color);
+        }
+
+        #status {
+            margin-top: 10px;
+            font-size: 0.9em;
+            color: #ffff00;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>AI TRANSLATOR_V1</h1>
+
+    <!-- Controls -->
+    <div class="controls">
+        <label>Translate to:</label>
+        <select id="targetLang">
+            <option value="zh-TW">Traditional Chinese</option>
+            <option value="en">English</option>
+            <option value="ja">Japanese</option>
+            <option value="ko">Korean</option>
+            <option value="es">Spanish</option>
+            <option value="fr">French</option>
+        </select>
+        <button id="btn-translate">TRANSLATE >></button>
+    </div>
+
+    <div class="container">
+        <!-- Input Box -->
+        <div class="box">
+            <label for="input-text">SOURCE (Auto-Detect)</label>
+            <textarea id="input-text" placeholder="Type something here..."></textarea>
+        </div>
+
+        <!-- Output Box -->
+        <div class="box">
+            <label for="output-text">TARGET</label>
+            <textarea id="output-text" readonly placeholder="Translation will appear here..."></textarea>
+        </div>
+    </div>
+
+    <div id="status">Ready.</div>
+
+    <script>
+        /**
+         * ⚠️ API KEY CONFIGURATION
+         * Paste your Google Cloud Translation API Key inside the quotes below.
+         * Security Warning: Never publish this file with the key included!
+         */
+        const API_KEY = "AIzaSyB5l5g9Ztcii2Cd0QvHYLIbrRHu7WyUcBE"; // <--- PASTE YOUR KEY HERE
+
+        const API_URL = "https://translation.googleapis.com/language/translate/v2";
+
+        const btnTranslate = document.getElementById('btn-translate');
+        const inputText = document.getElementById('input-text');
+        const outputText = document.getElementById('output-text');
+        const targetLang = document.getElementById('targetLang');
+        const statusDiv = document.getElementById('status');
+
+        btnTranslate.addEventListener('click', async () => {
+            const text = inputText.value.trim();
+            const target = targetLang.value;
+
+            if (!text) {
+                alert("Please enter some text!");
+                return;
+            }
+
+            if (!API_KEY) {
+                alert("Error: API Key is missing. Please open the HTML file and paste your key in the script section.");
+                return;
+            }
+
+            // UI Feedback
+            statusDiv.textContent = "Connecting to Google Cloud...";
+            statusDiv.style.color = "#ffff00";
+            outputText.value = "Translating...";
+            btnTranslate.disabled = true;
+
+            try {
+                // Construct URL with query parameters
+                const url = `${API_URL}?key=${API_KEY}`;
+
+                // Prepare POST body
+                const requestBody = {
+                    q: text,
+                    target: target,
+                    format: "text" // "text" or "html"
+                };
+
+                // Fetch API
+                const response = await fetch(url, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify(requestBody)
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error.message || "Unknown API Error");
+                }
+
+                // Parse Result
+                const translations = data.data.translations;
+                if (translations && translations.length > 0) {
+                    const result = translations[0].translatedText;
+                    const detectedSource = translations[0].detectedSourceLanguage;
+
+                    outputText.value = result;
+                    statusDiv.textContent = `Completed (Detected Source: ${detectedSource})`;
+                    statusDiv.style.color = "#00ff00"; // Green
+                }
+
+            } catch (error) {
+                console.error("Translation Error:", error);
+                outputText.value = "Error!";
+                statusDiv.textContent = `Error: ${error.message}`;
+                statusDiv.style.color = "#ff3333"; // Red
+            } finally {
+                btnTranslate.disabled = false;
+            }
+        });
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Infinite Fixed Cursor Picker</title>
+    <style>
+        :root {
+            --text-green: #32FF32;
+            --bg-primary: #000000;
+            --bg-secondary: #001100;
+            --font-main: 'Courier New', monospace;
+            --item-height: 48px;
+            --container-height: 250px;
+        }
+
+        body {
+            background-color: var(--bg-secondary);
+            color: var(--text-green);
+            font-family: var(--font-main);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+            flex-direction: column;
+        }
+
+        h2 {
+            margin-bottom: 20px;
+            text-shadow: 0 0 5px var(--text-green);
+        }
+
+        .picker-container {
+            width: 320px;
+            height: var(--container-height);
+            border: 2px solid var(--text-green);
+            background-color: var(--bg-primary);
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 0 10px rgba(50, 255, 50, 0.2);
+        }
+
+        .picker-cursor {
+            position: absolute;
+            top: 50%;
+            left: 0;
+            width: 100%;
+            height: var(--item-height);
+            margin-top: calc(var(--item-height) / -2);
+            background-color: rgba(50, 255, 50, 0.2);
+            border-top: 2px solid var(--text-green);
+            border-bottom: 2px solid var(--text-green);
+            pointer-events: none;
+            z-index: 10;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 10px;
+            box-sizing: border-box;
+        }
+
+        .picker-cursor::before {
+            content: "►";
+        }
+
+        .picker-cursor::after {
+            content: "◄";
+        }
+
+        .picker-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            position: absolute;
+            width: 100%;
+            top: 50%;
+            will-change: transform;
+            /* Transition is handled in JS to allow "instant" jumps */
+        }
+
+        .list-item {
+            height: var(--item-height);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            opacity: 0.5;
+            transition: opacity 0.2s, font-weight 0.2s;
+            font-size: 1.2rem;
+        }
+
+        .list-item.active {
+            opacity: 1;
+            font-weight: bold;
+            color: #fff;
+            text-shadow: 0 0 8px var(--text-green);
+        }
+    </style>
+</head>
+
+<body>
+
+    <h2>INFINITE LOOP PICKER</h2>
+
+    <div class="picker-container" id="picker-container">
+        <div class="picker-cursor"></div>
+        <ul class="picker-list" id="picker-list"></ul>
+    </div>
+
+    <div style="margin-top:20px; color: var(--text-green)">
+        Selected: <span id="debug-output">None</span> (Real Index: <span id="real-index"></span>)
+    </div>
+
+    <script>
+        // --- CONFIG ---
+        const RAW_DATA = [
+            "01. Alpha", "02. Beta", "03. Gamma", "04. Delta",
+            "05. Epsilon", "06. Zeta", "07. Eta", "08. Theta"
+        ];
+        const ITEM_HEIGHT = 48;
+        const BUFFER_COUNT = 4; // Check this many items above/below for cloning
+        // ----------------
+
+        const listElement = document.getElementById('picker-list');
+        const debugOutput = document.getElementById('debug-output');
+        const realIndexOutput = document.getElementById('real-index');
+
+        let currentIndex = 0; // Virtual index (can go negative or beyond length)
+        let isTransitioning = false;
+
+        // 1. Build List with Clones (Head + Real + Tail)
+        // Structure: [Tail Clones] [Real Items] [Head Clones]
+        // Actually, easiest way for infinite is valid range [0 ... N-1]
+        // But we allow currentIndex to go to -1, -2... and map it visually.
+        // Better Strategy: Seamless Loop using 3 Sets: [Clone A] [Real] [Clone B]
+
+        // Let's keep it simple: Real list + logic to jump
+        // We will render 3 copies of the list:
+        // [Copy 1 (Pre)] [Copy 2 (Main)] [Copy 3 (Post)]
+
+        const TRIPLE_DATA = [...RAW_DATA, ...RAW_DATA, ...RAW_DATA];
+        // The "Real" center starts at index = RAW_DATA.length
+
+        TRIPLE_DATA.forEach((text, i) => {
+            const li = document.createElement('li');
+            li.className = 'list-item';
+            li.innerText = text;
+            listElement.appendChild(li);
+        });
+
+        const allDoms = document.querySelectorAll('.list-item');
+        const REAL_START_INDEX = RAW_DATA.length;
+        const REAL_END_INDEX = RAW_DATA.length * 2 - 1;
+
+        // Init at start of Main block
+        let internalIndex = REAL_START_INDEX;
+
+        function render(animate = true) {
+            const offset = ITEM_HEIGHT / 2;
+            const translateY = -(internalIndex * ITEM_HEIGHT) - offset;
+
+            if (animate) {
+                listElement.style.transition = 'transform 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+            } else {
+                listElement.style.transition = 'none';
+            }
+
+            listElement.style.transform = `translateY(${translateY}px)`;
+
+            // Visual Active
+            allDoms.forEach(d => d.classList.remove('active'));
+            allDoms[internalIndex].classList.add('active');
+
+            // Logic Output (Mod logic to get 0-7)
+            const realIdx = internalIndex % RAW_DATA.length;
+            debugOutput.innerText = RAW_DATA[realIdx];
+            realIndexOutput.innerText = realIdx;
+        }
+
+        function move(direction) {
+            if (isTransitioning) return; // Debounce fast spam to prevent glitches
+            isTransitioning = true;
+
+            internalIndex += direction;
+            render(true);
+
+            // Check Infinite Jump after animation finishes
+            setTimeout(() => {
+                handleInfiniteJump();
+                isTransitioning = false;
+            }, 210); // slightly longer than 0.2s
+        }
+
+        function handleInfiniteJump() {
+            // If we drifted into the [Pre] section
+            if (internalIndex < REAL_START_INDEX) {
+                // Teleport to the end of [Main]
+                internalIndex = internalIndex + RAW_DATA.length;
+                render(false); // No animation (Instant)
+            }
+            // If we drifted into the [Post] section
+            else if (internalIndex > REAL_END_INDEX) {
+                // Teleport to the start of [Main]
+                internalIndex = internalIndex - RAW_DATA.length;
+                render(false); // No animation (Instant)
+            }
+        }
+
+        // Init
+        render(false);
+
+        // Inputs
+        const container = document.getElementById('picker-container');
+        container.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            const dir = Math.sign(e.deltaY);
+            if (dir > 0) move(1);
+            else move(-1);
+        });
+
+        window.addEventListener('keydown', (e) => {
+            if (e.key === "ArrowDown") move(1);
+            if (e.key === "ArrowUp") move(-1);
+        });
+
+    </script>
+</body>
+
+</html>

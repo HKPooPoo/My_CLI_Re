@@ -156,6 +156,7 @@
                     <div class="vcs-title crt-text-orange">BRANCH CONTROLLER</div>
                     <div class="vcs-list-container">
                         <div class="vcs-list-item active">
+                            <!--Let id be its' vcs-list-timestamp-->
                             <input type="text" class="vcs-list-branch" placeholder="branch name" id=""
                                 name="vcs-list-branch">
                             <div class="vcs-list-timestamp">2026-02-13T14:05:27.123Z</div>
@@ -187,7 +188,7 @@
                         </div>
                     </div>
                     <div class="vcs-button-container-container">
-                        <div class="vcs-button-container">
+                        <div class="vcs-button-container" style="display: none;">
                             <button class="vcs-btn" id="commit-btn">COMMIT</button>
                             <button class="vcs-btn" id="checkout-btn">CHECKOUT</button>
                         </div>
@@ -203,6 +204,7 @@
                     <div class="vcs-title crt-text-orange">STASH CONTROLLER</div>
                     <div class="vcs-list-container">
                         <div class="vcs-list-item active">
+                            <!--Stash is belonings of a branch-->
                             <div class="vcs-list-timestamp">2026-02-13T14:05:27.123Z</div>
                             <input type="text" name="vcs-list-stash-comment" id="" class="vcs-list-stash-comment"
                                 placeholder="comment">

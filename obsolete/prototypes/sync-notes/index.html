@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VCS Prototype - Git-like Notes</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <header>
+        <h1>📝 VCS Notes</h1>
+        <div id="status-bar">Loading...</div>
+    </header>
+
+    <main>
+        <!-- Left Panel: Editor -->
+        <section class="editor-panel">
+            <div class="toolbar">
+                <button id="btn-pull" title="Pull (Previous Page)">⬆️ PULL</button>
+                <button id="btn-push" title="Push (New Page)">⬇️ PUSH</button>
+                <span class="separator">|</span>
+                <button id="btn-commit" title="Commit (Snapshot)">💾 COMMIT</button>
+            </div>
+            <textarea id="editor" placeholder="Start typing..."></textarea>
+        </section>
+
+        <!-- Right Panel: VCS Info -->
+        <aside class="vcs-panel">
+            <div class="panel-section">
+                <h3>🌿 Branches</h3>
+                <button id="btn-branch" title="Create Branch">+ New</button>
+                <button id="btn-merge" title="Merge Branch">🔀 Merge</button>
+                <div id="branch-list" class="list-container"></div>
+            </div>
+
+            <div class="panel-section">
+                <h3>📜 Commits</h3>
+                <div id="commit-list" class="list-container"></div>
+            </div>
+
+            <div class="panel-section">
+                <h3>📋 Log</h3>
+                <div id="log-area" class="log-container"></div>
+            </div>
+        </aside>
+    </main>
+
+    <script src="app.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fixed Cursor List Test</title>
+    <style>
+        :root {
+            --text-green: #32FF32;
+            --bg-primary: #000000;
+            --bg-secondary: #001100;
+            --font-main: 'Courier New', monospace;
+            --item-height: 48px;
+            /* Fixed height for easier calculation */
+            --container-height: 250px;
+        }
+
+        body {
+            background-color: var(--bg-secondary);
+            color: var(--text-green);
+            font-family: var(--font-main);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+            flex-direction: column;
+        }
+
+        h2 {
+            margin-bottom: 20px;
+            text-shadow: 0 0 5px var(--text-green);
+        }
+
+        /* The Viewport */
+        .picker-container {
+            width: 320px;
+            height: var(--container-height);
+            border: 2px solid var(--text-green);
+            background-color: var(--bg-primary);
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 0 10px rgba(50, 255, 50, 0.2);
+        }
+
+        /* The Static Cursor (Highlight Zone) */
+        .picker-cursor {
+            position: absolute;
+            top: 50%;
+            left: 0;
+            width: 100%;
+            height: var(--item-height);
+            margin-top: calc(var(--item-height) / -2);
+            /* Center exactly */
+
+            /* Visual Style */
+            background-color: rgba(50, 255, 50, 0.2);
+            border-top: 2px solid var(--text-green);
+            border-bottom: 2px solid var(--text-green);
+            pointer-events: none;
+            /* Let clicks pass through */
+            z-index: 10;
+
+            /* Indicator Arrows */
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 10px;
+            box-sizing: border-box;
+        }
+
+        .picker-cursor::before {
+            content: "►";
+        }
+
+        .picker-cursor::after {
+            content: "◄";
+        }
+
+        /* The Moving List */
+        .picker-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            position: absolute;
+            width: 100%;
+            top: 50%;
+            /* Start items from center */
+            /* Initial offset to center the first item (Index 0) */
+            /* logic: translateY = - (index * itemHeight) - (itemHeight/2) */
+            transform: translateY(calc(var(--item-height) / -2));
+            transition: transform 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+
+        .list-item {
+            height: var(--item-height);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            opacity: 0.5;
+            transition: opacity 0.2s, background-color 0.2s;
+            font-size: 1.2rem;
+        }
+
+        /* Active State (controlled by js logic, not hover) */
+        .list-item.active {
+            opacity: 1;
+            font-weight: bold;
+            color: #fff;
+            text-shadow: 0 0 8px var(--text-green);
+        }
+    </style>
+</head>
+
+<body>
+
+    <h2>FIXED CURSOR PICKER</h2>
+
+    <div class="picker-container" id="picker-container">
+        <div class="picker-cursor"></div>
+        <ul class="picker-list" id="picker-list">
+            <!-- Items will be generated JS for ease -->
+        </ul>
+    </div>
+
+    <div style="margin-top:20px; color: var(--text-green)">
+        Selected: <span id="debug-output">None</span>
+    </div>
+
+    <script>
+        // Data
+        const dataItems = [
+            "01. Analyze", "02. Scan", "03. Hack", "04. Upload",
+            "05. Download", "06. Encrypt", "07. Decrypt", "08. Override",
+            "09. Reboot", "10. Shutdown", "11. Ping", "12. Trace"
+        ];
+
+        const listElement = document.getElementById('picker-list');
+        const debugOutput = document.getElementById('debug-output');
+        const itemHeight = 48; // Must match CSS
+
+        // Generate DOM
+        dataItems.forEach((text, i) => {
+            const li = document.createElement('li');
+            li.className = 'list-item';
+            li.innerText = text;
+            li.dataset.index = i;
+
+            // Allow click to snap
+            li.addEventListener('click', () => {
+                selectIndex(i);
+            });
+
+            listElement.appendChild(li);
+        });
+
+        const domItems = document.querySelectorAll('.list-item');
+        let currentIndex = 0;
+
+        function selectIndex(index) {
+            // Clamp
+            if (index < 0) index = 0;
+            if (index >= dataItems.length) index = dataItems.length - 1;
+
+            currentIndex = index; // Update State
+
+            // 1. Move List
+            // Formula: To center item N, move list UP by N * height + offset
+            const offset = itemHeight / 2;
+            const translateY = -(index * itemHeight) - offset;
+
+            listElement.style.transform = `translateY(${translateY}px)`;
+
+            // 2. Visual Highlight
+            domItems.forEach(item => item.classList.remove('active'));
+            domItems[index].classList.add('active');
+
+            // 3. Logic Output
+            debugOutput.innerText = dataItems[index];
+        }
+
+        // Init
+        selectIndex(0);
+
+        // Scroll Control
+        const container = document.getElementById('picker-container');
+
+        container.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            const direction = Math.sign(e.deltaY); // 1 (down) or -1 (up)
+
+            if (direction > 0) {
+                selectIndex(currentIndex + 1);
+            } else {
+                selectIndex(currentIndex - 1);
+            }
+        });
+
+        // Optional: Keyboard Support
+        window.addEventListener('keydown', (e) => {
+            if (e.key === "ArrowDown") selectIndex(currentIndex + 1);
+            if (e.key === "ArrowUp") selectIndex(currentIndex - 1);
+        });
+
+    </script>
+</body>
+
+</html>
