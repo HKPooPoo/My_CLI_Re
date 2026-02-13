@@ -33,6 +33,7 @@ let $branchHeadIndicator = document.querySelector(".branch-head")
 let $branchSavedIndicator = document.querySelector(".branch-is-saved")
 let $blackboardTextarea = document.getElementById("log-textarea")
 let $branchListContainer = document.querySelector('[data-page="blackboard-branch"] .vcs-list-container')
+let $branchBtn = document.getElementById("branch-btn")
 
     ; (async () => {
         await setTextarea(currentHead)
@@ -42,6 +43,7 @@ let $branchListContainer = document.querySelector('[data-page="blackboard-branch
 
 $pushBtn.addEventListener("click", push)
 $pullBtn.addEventListener("click", pull)
+$branchBtn.addEventListener("click", createBranch)
 
 async function push() {
     await saveToDB()
@@ -245,11 +247,11 @@ async function updateBranchList() {
             }
         })
 
-        item.addEventListener("click", async () => {
-            if (currentUserBranch.branch !== branchName) {
-                await switchBranch(branchName)
-            }
-        })
+        // item.addEventListener("click", async () => {
+        //     if (currentUserBranch.branch !== branchName) {
+        //         await switchBranch(branchName)
+        //     }
+        // })
 
         $branchListContainer.appendChild(item)
     }
@@ -302,5 +304,46 @@ async function renameBranch(oldName, newName) {
         updateIndicators()
     }
 
+    await updateBranchList()
+}
+
+async function createBranch() {
+    const timestamp = new Date().toISOString()
+    const newBranchName = timestamp // Use timestamp as default branch name
+
+    // Confirm uniqueness (though timestamp is likely unique)
+    const existing = await db.blackboard.where('[owner+branch+timestamp]')
+        .between(
+            [currentUserBranch.owner, newBranchName, Dexie.minKey],
+            [currentUserBranch.owner, newBranchName, Dexie.maxKey]
+        ).count()
+
+    if (existing > 0) {
+        // Fallback if somehow collides or user clicks super fast (unlikely with full ISO)
+        console.warn("Branch name collision, try again")
+        return
+    }
+
+    // Get all records from current branch
+    const records = await db.blackboard.where('[owner+branch+timestamp]')
+        .between(
+            [currentUserBranch.owner, currentUserBranch.branch, Dexie.minKey],
+            [currentUserBranch.owner, currentUserBranch.branch, Dexie.maxKey]
+        ).toArray()
+
+    // Transactionally duplicate them
+    await db.transaction('rw', db.blackboard, async () => {
+        for (const record of records) {
+            await db.blackboard.add({
+                owner: record.owner,
+                branch: newBranchName,
+                timestamp: record.timestamp,
+                text: record.text,
+                bin: record.bin
+            })
+        }
+    })
+
+    // Update list to show new branch
     await updateBranchList()
 }
