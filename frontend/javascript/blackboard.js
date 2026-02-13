@@ -32,10 +32,12 @@ let $branchNameIndicator = document.querySelector(".branch-name")
 let $branchHeadIndicator = document.querySelector(".branch-head")
 let $branchSavedIndicator = document.querySelector(".branch-is-saved")
 let $blackboardTextarea = document.getElementById("log-textarea")
+let $branchListContainer = document.querySelector('[data-page="blackboard-branch"] .vcs-list-container')
 
     ; (async () => {
         await setTextarea(currentHead)
         updateIndicators()
+        await updateBranchList()
     })()
 
 $pushBtn.addEventListener("click", push)
@@ -102,6 +104,7 @@ async function push() {
 
     $blackboardTextarea.value = ""
     updateIndicators()
+    await updateBranchList()
 }
 
 async function pull() {
@@ -141,8 +144,6 @@ async function setTextarea(index) {
 }
 
 function updateIndicators() {
-    $branchNameIndicator.textContent = currentUserBranch.branch
-    $branchHeadIndicator.textContent = currentHead
     $branchNameIndicator.textContent = currentUserBranch.branch
     $branchHeadIndicator.textContent = currentHead
     $branchSavedIndicator.textContent = "SAVED"
@@ -185,4 +186,69 @@ async function saveToDB() {
     if ($blackboardTextarea.value === textToSave) {
         $branchSavedIndicator.textContent = "SAVED"
     }
+}
+
+async function updateBranchList() {
+    if (!$branchListContainer) return
+
+    const branches = new Map()
+
+    await db.blackboard.where('[owner+branch+timestamp]')
+        .between(
+            [currentUserBranch.owner, Dexie.minKey, Dexie.minKey],
+            [currentUserBranch.owner, Dexie.maxKey, Dexie.maxKey]
+        )
+        .reverse()
+        .each(record => {
+            if (!branches.has(record.branch)) {
+                branches.set(record.branch, {
+                    owner: record.owner,
+                    timestamp: record.timestamp !== DRAFT_TIMESTAMP ? record.timestamp : null
+                })
+            } else {
+                const info = branches.get(record.branch)
+                if (info.timestamp === null && record.timestamp !== DRAFT_TIMESTAMP) {
+                    info.timestamp = record.timestamp
+                }
+            }
+        })
+
+    $branchListContainer.innerHTML = ""
+
+    for (const [branchName, info] of branches) {
+        const item = document.createElement("div")
+        item.classList.add("vcs-list-item")
+        if (currentUserBranch.branch === branchName) {
+            item.classList.add("active")
+        }
+
+        const dateDisplay = info.timestamp ? new Date(info.timestamp).toISOString() : "DRAFT"
+
+        item.innerHTML = `
+            <input type="text" class="vcs-list-branch" value="${branchName}" readonly name="vcs-list-branch">
+            <div class="vcs-list-timestamp">${dateDisplay}</div>
+            <div class="vcs-list-owner">${info.owner}</div>
+        `
+
+        item.addEventListener("click", async () => {
+            if (currentUserBranch.branch !== branchName) {
+                await switchBranch(branchName)
+            }
+        })
+
+        $branchListContainer.appendChild(item)
+    }
+}
+
+async function switchBranch(branchName) {
+    if (currentUserBranch.branch === branchName) return
+
+    await saveToDB()
+
+    currentUserBranch.branch = branchName
+    localStorage.setItem("currentBranch", branchName)
+
+    currentHead = 0
+    await setTextarea(currentHead)
+    updateIndicators()
 }
