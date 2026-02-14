@@ -1,157 +1,123 @@
-import { ToastMessager } from "./toast.js";
-import db, { Dexie } from "./indexedDB.js";
-import { initBoard } from "./blackboard.js";
-
-const toast = new ToastMessager();
-
-const $uidInput = document.getElementById("auth-uid");
-const $passcodeInput = document.getElementById("auth-passcode");
-const $loginBtn = document.getElementById("btn-login");
-const $registerBtn = document.getElementById("btn-register");
-const $logoutBtn = document.getElementById("btn-logout");
-const $loginStatusDisplay = document.getElementById("login-status-display");
-const $userInfoUid = document.getElementById("auth-user-info-uid");
-
-const $loginRegisterContainer = document.querySelector(".auth-login-register-container");
-const $logoutContainer = document.querySelector(".auth-logout-container");
-const $authShowUidContainer = document.querySelector(".auth-show-uid-container");
-
+import { BBMessage } from "./blackboard-msg.js";
 
 /**
- * 執行登出與資料清理
+ * 帳戶系統前端控制
  */
-async function cleanupAndLogout() {
-    const currentUser = localStorage.getItem("currentUser");
-    if (currentUser && currentUser !== "guest") {
-        // 刪除該使用者的本地快取記錄 (安全性考量)
-        await db.blackboard.where('[owner+branch+timestamp]')
-            .between(
-                [currentUser, Dexie.minKey, Dexie.minKey],
-                [currentUser, Dexie.maxKey, Dexie.maxKey]
-            )
-            .delete();
-    }
+export const AuthManager = {
+    elements: {
+        uidInput: document.getElementById("auth-uid"),
+        passcodeInput: document.getElementById("auth-passcode"),
+        loginBtn: document.getElementById("btn-login"),
+        registerBtn: document.getElementById("btn-register"),
+        logoutBtn: document.getElementById("btn-logout"),
+        userInfoUid: document.getElementById("auth-user-info-uid"),
+        loginContainer: document.querySelector(".auth-login-register-container"),
+        logoutContainer: document.querySelector(".auth-logout-container")
+    },
 
-    // 清除 Session 狀態
-    localStorage.setItem("currentUser", "guest");
-
-    updateHUD("guest");
-    toast.addMessage("System: 已登出。");
-
-    // 不再重整頁面，直接重新初始化黑板
-    await initBoard();
-}
-
-/**
- * 更新 HUD 與登入/登出區域的顯示狀態
- * @param {string} username 使用者名稱
- */
-function updateHUD(username) {
-    if ($loginStatusDisplay) {
-        $loginStatusDisplay.textContent = username;
-    }
-    if ($userInfoUid) {
-        $userInfoUid.textContent = username;
-    }
-
-    const isLoggedIn = username && username !== "guest";
-
-    if (isLoggedIn) {
-        if ($loginRegisterContainer) $loginRegisterContainer.style.display = "none";
-        if ($logoutContainer) $logoutContainer.style.display = "flex";
-        if ($authShowUidContainer) $authShowUidContainer.textContent = username;
-    } else {
-        if ($loginRegisterContainer) $loginRegisterContainer.style.display = "flex";
-        if ($logoutContainer) $logoutContainer.style.display = "none";
-        if ($authShowUidContainer) $authShowUidContainer.textContent = "";
-    }
-}
-
-// 初始檢查
-updateHUD(localStorage.getItem("currentUser") || "guest");
-
-// 登入邏輯
-if ($loginBtn) {
-    $loginBtn.addEventListener("click", async () => {
-        const uid = $uidInput.value.trim();
-        const passcode = $passcodeInput.value.trim();
-
-        if (!uid || !passcode) {
-            toast.addMessage("System: 請輸入 UID 與 Passcode。");
-            return;
+    /**
+     * 更新 UI 顯示狀態
+     * @param {string|null} uid 使用者 ID，null 代表未登入
+     */
+    updateUI(uid) {
+        if (uid) {
+            this.elements.loginContainer.style.display = "none";
+            this.elements.logoutContainer.style.display = "flex";
+            this.elements.userInfoUid.textContent = uid;
+            localStorage.setItem("currentUser", uid);
+        } else {
+            this.elements.loginContainer.style.display = "flex";
+            this.elements.logoutContainer.style.display = "none";
+            this.elements.userInfoUid.textContent = "";
+            localStorage.setItem("currentUser", "guest");
         }
+        // 通知 HUD 與其他組件狀態已改變
+        window.dispatchEvent(new CustomEvent("blackboard:authUpdated"));
+    },
 
-        try {
-            const response = await fetch('/api/login', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json'
-                },
-                body: JSON.stringify({ uid, passcode })
-            });
+    /**
+     * 初始化並檢查登入狀態
+     */
+    async init() {
+        this.bindEvents();
 
-            const data = await response.json();
+        // 初始可從 localStorage 讀取，或同步 API。這裡預設先走 guest 流程
+        const currentUser = localStorage.getItem("currentUser");
+        this.updateUI(currentUser && currentUser !== "guest" ? currentUser : null);
+    },
 
-            if (response.ok) {
-                // 登入成功
-                localStorage.setItem("currentUser", data.user.uid);
+    bindEvents() {
+        // 登入
+        this.elements.loginBtn?.addEventListener("click", async () => {
+            const uid = this.elements.uidInput.value.trim();
+            const passcode = this.elements.passcodeInput.value.trim();
 
-                updateHUD(data.user.uid);
-                toast.addMessage(`System: 歡迎回來，${data.user.uid}。`);
-
-                $uidInput.value = "";
-                $passcodeInput.value = "";
-
-
-                // 不再重整頁面，直接重新初始化黑板
-                await initBoard();
-            } else {
-                toast.addMessage(`Error: ${data.message || '登入失敗'}`);
+            if (!uid || !passcode) {
+                BBMessage.error("請輸入 UID 與 Passcode");
+                return;
             }
-        } catch (error) {
-            console.error(error);
-            toast.addMessage("Error: 連線失敗。");
-        }
-    });
-}
 
-// 註冊邏輯
-if ($registerBtn) {
-    $registerBtn.addEventListener("click", async () => {
-        const uid = $uidInput.value.trim();
-        const passcode = $passcodeInput.value.trim();
+            try {
+                const res = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ uid, passcode })
+                });
+                const data = await res.json();
 
-        if (!uid || !passcode) {
-            toast.addMessage("System: 請輸入 UID 與 Passcode。");
-            return;
-        }
-
-        try {
-            const response = await fetch('/api/register', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json'
-                },
-                body: JSON.stringify({ uid, passcode })
-            });
-
-            const data = await response.json();
-
-            if (response.ok) {
-                toast.addMessage("System: 註冊成功，請進行登入。");
-            } else {
-                toast.addMessage(`Error: ${data.message || '註冊失敗'}`);
+                if (res.ok) {
+                    BBMessage.info(`歡迎回來, ${data.user.uid}`);
+                    this.updateUI(data.user.uid);
+                    this.elements.uidInput.value = "";
+                    this.elements.passcodeInput.value = "";
+                } else {
+                    BBMessage.error(data.message);
+                }
+            } catch (e) {
+                BBMessage.error("伺服器連線失敗");
             }
-        } catch (error) {
-            console.error(error);
-            toast.addMessage("Error: 連線失敗。");
-        }
-    });
-}
+        });
 
-// 登出邏輯
-if ($logoutBtn) {
-    $logoutBtn.addEventListener("click", cleanupAndLogout);
-}
+        // 註冊
+        this.elements.registerBtn?.addEventListener("click", async () => {
+            const uid = this.elements.uidInput.value.trim();
+            const passcode = this.elements.passcodeInput.value.trim();
+
+            if (!uid || !passcode) {
+                BBMessage.error("請輸入 UID 與 Passcode");
+                return;
+            }
+
+            try {
+                const res = await fetch('/api/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ uid, passcode })
+                });
+                const data = await res.json();
+
+                if (res.ok) {
+                    BBMessage.info("註冊成功，請開始登入");
+                } else {
+                    BBMessage.error(data.message);
+                }
+            } catch (e) {
+                BBMessage.error("伺服器連線失敗");
+            }
+        });
+
+        // 登出
+        this.elements.logoutBtn?.addEventListener("click", async () => {
+            try {
+                await fetch('/api/logout', { method: 'POST' });
+                this.updateUI(null);
+                BBMessage.info("已登出");
+            } catch (e) {
+                this.updateUI(null);
+            }
+        });
+    }
+};
+
+// 立即執行
+AuthManager.init();

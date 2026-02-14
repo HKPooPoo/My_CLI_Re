@@ -12,10 +12,9 @@ return new class extends Migration {
     {
         Schema::create('users', function (Blueprint $table) {
             $table->id();
-            $table->string('uid')->unique();
+            $table->string('uid')->unique(); // 使用者選用的唯一識別
+            $table->string('passcode');      // 你的命名規範：使用 passcode 而非 password
             $table->string('email')->nullable();
-            $table->timestamp('email_verified_at')->nullable();
-            $table->string('password');
             $table->rememberToken();
             $table->timestamps();
         });

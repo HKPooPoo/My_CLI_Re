@@ -19,4 +19,6 @@ Route::get('/status', [StatusController::class, 'check']);
 // Authentication
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/register', [AuthController::class, 'register']);
+Route::post('/logout', [AuthController::class, 'logout']);
+Route::get('/auth-status', [AuthController::class, 'status']);
 

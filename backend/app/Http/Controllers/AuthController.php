@@ -5,59 +5,79 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Facades\Auth;
 
 class AuthController extends Controller
 {
-    // Register
+    /**
+     * 註冊功能
+     */
     public function register(Request $request)
     {
         $request->validate([
-            'uid' => 'required|string|unique:users',
-            'passcode' => 'required|string|min:4',
+            'uid' => 'required|unique:users',
+            'passcode' => 'required|min:4',
         ]);
 
         $user = User::create([
             'uid' => $request->uid,
-            // Hashing passcode into password field
-            'password' => Hash::make($request->passcode),
-            // Default email to null or something if needed, but we made it nullable
+            'passcode' => Hash::make($request->passcode),
         ]);
 
         return response()->json([
-            'message' => 'User registered successfully',
-            'user' => [
-                'uid' => $user->uid,
-                'created_at' => $user->created_at
-            ]
+            'message' => '註冊成功',
+            'user' => $user
         ], 201);
     }
 
-    // Login
+    /**
+     * 登入功能
+     */
     public function login(Request $request)
     {
         $request->validate([
-            'uid' => 'required|string',
-            'passcode' => 'required|string',
+            'uid' => 'required',
+            'passcode' => 'required',
         ]);
 
         $user = User::where('uid', $request->uid)->first();
 
-        // Check if user exists and passcode matches
-        if (!$user || !Hash::check($request->passcode, $user->password)) {
-            return response()->json(['message' => 'Invalid credentials'], 401);
+        // 檢查使用者是否存在且密碼 (passcode) 正確
+        if (!$user || !Hash::check($request->passcode, $user->passcode)) {
+            return response()->json(['message' => 'UID 或 Passcode 錯誤'], 401);
         }
 
-        // For simple token based auth (or just session if using Sanctum later)
-        // Since we are not fully setting up Sanctum in this step, we will return a success message
-        // In a real app, we would return $user->createToken('token-name')->plainTextToken;
+        // 登入
+        Auth::login($user);
 
         return response()->json([
-            'message' => 'Login successful',
+            'message' => '登入成功',
             'user' => [
-                'uid' => $user->uid,
-                'last_login' => now()
+                'uid' => $user->uid
             ]
         ]);
+    }
+
+    /**
+     * 登出功能
+     */
+    public function logout()
+    {
+        Auth::logout();
+        return response()->json(['message' => '已登出']);
+    }
+
+    /**
+     * 獲取當前狀態
+     */
+    public function status()
+    {
+        if (Auth::check()) {
+            return response()->json([
+                'isLoggedIn' => true,
+                'uid' => Auth::user()->uid
+            ]);
+        }
+        return response()->json(['isLoggedIn' => false]);
     }
 }

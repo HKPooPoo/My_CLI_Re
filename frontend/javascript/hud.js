@@ -6,10 +6,16 @@ const OFFLINE_STR = "OFFLINE"
 const dbStatusDisplay = document.getElementById("db-status-display");
 const loginStatusDisplay = document.getElementById("login-status-display");
 
-function updateLoginStatus() {
-    const currentUser = localStorage.getItem("currentUser");
-    loginStatusDisplay.textContent = currentUser;
+export function updateLoginStatus() {
+    const currentUser = localStorage.getItem("currentUser") || "guest";
+    if (loginStatusDisplay) {
+        loginStatusDisplay.textContent = currentUser;
+    }
 }
+
+// 監聽來自 auth.js 的狀態更新事件
+window.addEventListener("blackboard:authUpdated", updateLoginStatus);
+
 updateLoginStatus();
 
 async function updateDatabaseStatus() {
