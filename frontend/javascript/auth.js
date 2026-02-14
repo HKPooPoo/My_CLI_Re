@@ -34,7 +34,6 @@ async function cleanupAndLogout() {
 
     // 清除 Session 狀態
     localStorage.setItem("currentUser", "guest");
-    localStorage.setItem("currentBranch", "master"); // 重置分支
 
     updateHUD("guest");
     toast.addMessage("System: 已登出。");
@@ -97,7 +96,6 @@ if ($loginBtn) {
             if (response.ok) {
                 // 登入成功
                 localStorage.setItem("currentUser", data.user.uid);
-                localStorage.setItem("currentBranch", "master"); // 預設切換至 master
 
                 updateHUD(data.user.uid);
                 toast.addMessage(`System: 歡迎回來，${data.user.uid}。`);

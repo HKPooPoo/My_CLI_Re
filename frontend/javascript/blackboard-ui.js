@@ -1,0 +1,69 @@
+/**
+ * Blackboard 介面渲染與事件綁定層
+ */
+export const BBUI = {
+    // DOM 引用
+    elements: {
+        pushBtn: document.querySelector(".push-btn"),
+        pullBtn: document.querySelector(".pull-btn"),
+        branchName: document.querySelector(".branch-name"),
+        headIndex: document.querySelector(".branch-head"),
+        savedStatus: document.querySelector(".branch-is-saved"),
+        textarea: document.getElementById("log-textarea")
+    },
+
+    /**
+     * 更新畫面上的狀態指示器
+     */
+    updateIndicators(branch, head, isSaved = true) {
+        if (this.elements.branchName) this.elements.branchName.textContent = branch;
+        if (this.elements.headIndex) this.elements.headIndex.textContent = head;
+        if (this.elements.savedStatus) {
+            this.elements.savedStatus.textContent = isSaved ? "SAVED" : "UNSAVED";
+        }
+    },
+
+    /**
+     * 設定黑板文字內容
+     */
+    setTextarea(text) {
+        if (this.elements.textarea) {
+            this.elements.textarea.value = text;
+            this.updateIndicators(undefined, undefined, true);
+        }
+    },
+
+    /**
+     * 讀取文字框內容
+     */
+    getTextareaValue() {
+        return this.elements.textarea ? this.elements.textarea.value : "";
+    },
+
+    /**
+     * 渲染分支列表
+     */
+    renderBranchList(branches, activeBranch) {
+        const container = document.querySelector(".vcs-list-container");
+        if (!container) return;
+
+        container.innerHTML = "";
+
+        branches.forEach(branch => {
+            const item = document.createElement("div");
+            item.className = `vcs-list-item ${branch.name === activeBranch ? 'active' : ''}`;
+            item.dataset.branch = branch.name;
+
+            item.innerHTML = `
+                <input type="text" class="vcs-list-branch" value="${branch.name}" placeholder="branch name" name="vcs-list-branch" maxlength="32">
+                <div class="vcs-list-timestamp">${branch.displayTime}</div>
+                <div class="vcs-list-owner">${branch.owner}</div>
+            `;
+
+            container.appendChild(item);
+        });
+
+        // 觸發自定義事件讓 InfiniteList 更新
+        window.dispatchEvent(new CustomEvent("blackboard:listUpdated"));
+    }
+};
