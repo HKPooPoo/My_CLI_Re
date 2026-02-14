@@ -67,7 +67,9 @@ services:
     image: cloudflare/cloudflared:latest
     container_name: my-cli-tunnel
     restart: always
-    command: tunnel --url http://nginx:80
+    command: tunnel run
+    environment:
+      - TUNNEL_TOKEN=${CLOUDFLARED_TOKEN}
     depends_on:
       - nginx
 

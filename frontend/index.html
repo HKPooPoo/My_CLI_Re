@@ -191,7 +191,6 @@
                     </div>
                     <div class="vcs-button-container-container">
                         <div class="vcs-button-container">
-                            <button class=" vcs-btn" id="commit-btn">COMMIT</button>
                             <button class="vcs-btn" id="checkout-btn">CHECKOUT</button>
                         </div>
                         <div class="vcs-button-container">
@@ -240,15 +239,23 @@
                 <div class="auth-container">
                     <div class="auth-title crt-text-orange">ACCOUNT AUTHENTICATION</div>
 
-                    <input type="text" id="auth-uid" class="auth-input" placeholder="UID" maxlength="32">
-                    <input type="password" id="auth-passcode" class="auth-input" placeholder="PASSCODE" maxlength="32">
+                    <div class="auth-login-register-container">
+                        <input type="text" id="auth-uid" class="auth-input" placeholder="UID" maxlength="32">
+                        <input type="password" id="auth-passcode" class="auth-input" placeholder="PASSCODE"
+                            maxlength="32">
 
-                    <button id="btn-login" class="auth-btn crt-text-green">LOGIN</button>
-                    <button id="btn-register" class="auth-btn crt-text-green">REGISTER</button>
+                        <button id="btn-login" class="auth-btn crt-text-green">LOGIN</button>
+                        <button id="btn-register" class="auth-btn crt-text-green">REGISTER</button>
+                    </div>
+
+                    <div class="auth-logout-container">
+                        <div class="auth-user-info-container">Welcome Back, <div id="auth-user-info-uid"></div>
+                        </div>
+                        <button id="btn-logout" class="auth-btn crt-text-green">LOGOUT</button>
+                    </div>
 
                     <!-- <input type="email" id="auth-email" class="auth-input" placeholder="EMAIL (OPTIONAL)"
                         maxlength="32"> -->
-                    <button id="btn-logout" class="auth-btn crt-text-green">LOGOUT</button>
                 </div>
             </div>
             <!--blackboard.js-->

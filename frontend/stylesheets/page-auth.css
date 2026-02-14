@@ -13,6 +13,11 @@
     border: var(--border-line);
 }
 
+.auth-logout-container,
+.auth-login-register-container {
+    gap: var(--panel-gap);
+}
+
 .auth-title {
     position: absolute;
     top: 0px;
@@ -41,10 +46,6 @@
 
 .auth-input:focus {
     border-bottom-color: var(--text-orange);
-}
-
-#btn-logout {
-    display: none;
 }
 
 /* .auth-btn:hover {

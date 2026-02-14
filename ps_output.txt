@@ -1,0 +1,8 @@
+CONTAINER ID   IMAGE                           COMMAND                   CREATED          STATUS         PORTS                                         NAMES
+bb580847f83c   crystaldba/postgres-mcp         "/app/docker-entrypo…"   4 minutes ago    Up 4 minutes   8000/tcp                                      pedantic_rosalind
+ba12ba1cc3ef   nginx:alpine                    "/docker-entrypoint.…"   8 minutes ago    Up 5 minutes   0.0.0.0:80->80/tcp, [::]:80->80/tcp           my-cli-nginx
+04001a9fe2c3   my_cli_re-api                   "docker-php-entrypoi…"   8 minutes ago    Up 5 minutes   9000/tcp                                      my-cli-api
+96c696f48856   redis:alpine                    "docker-entrypoint.s…"   19 minutes ago   Up 5 minutes   6379/tcp                                      my-cli-redis
+c11a3bc03c7a   cloudflare/cloudflared:latest   "cloudflared --no-au…"   11 hours ago     Up 5 minutes                                                 my-cli-tunnel
+6dd6d0220cf0   dpage/pgadmin4                  "/entrypoint.sh"          11 hours ago     Up 5 minutes   0.0.0.0:8080->80/tcp, [::]:8080->80/tcp       my-cli-pgadmin
+ad512e729744   postgres:16                     "docker-entrypoint.s…"   11 hours ago     Up 5 minutes   0.0.0.0:5431->5432/tcp, [::]:5431->5432/tcp   my-cli-postgres
