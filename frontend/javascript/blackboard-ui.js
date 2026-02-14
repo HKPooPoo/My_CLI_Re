@@ -9,6 +9,7 @@ export const BBUI = {
         branchName: document.querySelector(".branch-name"),
         headIndex: document.querySelector(".branch-head"),
         savedStatus: document.querySelector(".branch-is-saved"),
+        branchBtn: document.getElementById("branch-btn"),
         textarea: document.getElementById("log-textarea")
     },
 
@@ -56,7 +57,7 @@ export const BBUI = {
             item.dataset.branchName = branch.name;
 
             item.innerHTML = `
-                <input type="text" class="vcs-list-branch" value="${branch.name}" placeholder="branch name" name="vcs-list-branch" maxlength="32">
+                <input type="text" class="vcs-list-branch" value="${branch.name}" placeholder="Name your branch..." name="vcs-list-branch" maxlength="32">
                 <div class="vcs-list-timestamp">${branch.displayTime}</div>
                 <div class="vcs-list-owner">${branch.owner}</div>
             `;
