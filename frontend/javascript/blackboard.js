@@ -7,9 +7,9 @@ const DRAFT_TIMESTAMP = Number.MAX_SAFE_INTEGER
 
 function getHKTTimestamp(dateInput) {
     const now = dateInput ? new Date(dateInput) : new Date();
-    const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
-    const hkt = new Date(utc + (3600000 * 8));
-    return hkt.toISOString().replace('Z', '+08:00');
+    const hktOffset = 8 * 60 * 60 * 1000;
+    const hktTime = new Date(now.getTime() + hktOffset);
+    return hktTime.toISOString().replace('Z', '+08:00');
 }
 
 db.on("populate", async () => {
