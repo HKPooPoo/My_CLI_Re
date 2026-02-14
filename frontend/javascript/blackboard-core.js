@@ -1,8 +1,5 @@
 import db, { Dexie } from "./indexedDB.js";
 
-/**
- * 取得香港時間戳記 (ISO 格式)
- */
 export function getHKTTimestamp(dateInput) {
     const now = dateInput ? new Date(dateInput) : new Date();
     const hktOffset = 8 * 60 * 60 * 1000;
@@ -10,66 +7,67 @@ export function getHKTTimestamp(dateInput) {
     return hktTime.toISOString().replace('Z', '+08:00');
 }
 
-/**
- * Blackboard 核心數據操作層
- */
 export const BBCore = {
     /**
      * 讀取特定索引的紀錄
      */
-    async getRecord(owner, branch, index) {
-        return await db.blackboard.where('[owner+branch+timestamp]')
-            .between(
-                [owner, branch, Dexie.minKey],
-                [owner, branch, Dexie.maxKey]
-            )
+    async getRecord(owner, branchId, index) {
+        return await db.blackboard.where('[owner+branchId+timestamp]')
+            .between([owner, branchId, Dexie.minKey], [owner, branchId, Dexie.maxKey])
             .reverse()
             .offset(index)
             .first();
     },
 
     /**
-     * 新增一筆空白紀錄
+     * 新增一筆紀錄
      */
-    async addEmptyRecord(owner, branch) {
+    async addRecord(owner, branchId, branchName, text = "") {
         return await db.blackboard.add({
             owner,
-            branch,
+            branchId,
+            branch: branchName,
             timestamp: Date.now(),
-            text: "",
+            text,
             bin: "",
             createdAt: getHKTTimestamp()
         });
     },
 
     /**
-     * 更新現有紀錄的文字內容
+     * 更新紀錄的文字內容 (使用複合鍵定位)
      */
-    async updateText(id, text) {
-        return await db.blackboard.update(id, { text });
+    async updateText(owner, branchId, timestamp, text) {
+        return await db.blackboard
+            .where({ owner, branchId, timestamp })
+            .modify({ text });
     },
 
     /**
-     * 獲取分支紀錄總數
+     * 分支改名 (對該 branchId 下的所有紀錄進行改名)
      */
-    async countRecords(owner, branch) {
-        return await db.blackboard.where('[owner+branch+timestamp]')
-            .between(
-                [owner, branch, Dexie.minKey],
-                [owner, branch, Dexie.maxKey]
-            )
+    async renameBranch(owner, branchId, newName) {
+        return await db.blackboard
+            .where('[owner+branchId+timestamp]')
+            .between([owner, branchId, Dexie.minKey], [owner, branchId, Dexie.maxKey])
+            .modify({ branch: newName });
+    },
+
+    /**
+     * 統計分支紀錄數量
+     */
+    async countRecords(owner, branchId) {
+        return await db.blackboard.where('[owner+branchId+timestamp]')
+            .between([owner, branchId, Dexie.minKey], [owner, branchId, Dexie.maxKey])
             .count();
     },
 
     /**
-     * 清理舊紀錄 (超過 maxSlot 的部分)
+     * 清理舊紀錄
      */
-    async cleanupOldRecords(owner, branch, maxSlot) {
-        const collection = db.blackboard.where('[owner+branch+timestamp]')
-            .between(
-                [owner, branch, Dexie.minKey],
-                [owner, branch, Dexie.maxKey]
-            );
+    async cleanupOldRecords(owner, branchId, maxSlot) {
+        const collection = db.blackboard.where('[owner+branchId+timestamp]')
+            .between([owner, branchId, Dexie.minKey], [owner, branchId, Dexie.maxKey]);
 
         const count = await collection.count();
         if (count > maxSlot) {
@@ -79,26 +77,27 @@ export const BBCore = {
     },
 
     /**
-     * 獲取使用者的全部分支清單與其最後更新時間
+     * 獲取所有分支清單 (優化查詢方式)
      */
     async getAllBranches(owner) {
         const branches = new Map();
 
-        await db.blackboard.where('[owner+branch+timestamp]')
+        // 透過複合索引快速檢索該 owner 的所有紀錄
+        await db.blackboard.where('[owner+branchId+timestamp]')
             .between([owner, Dexie.minKey, Dexie.minKey], [owner, Dexie.maxKey, Dexie.maxKey])
             .each(record => {
-                // 我們取該分支下最新的一筆紀錄作為顯示時間
-                const existing = branches.get(record.branch);
-                if (!existing || record.timestamp > existing.timestamp) {
-                    branches.set(record.branch, {
+                const existing = branches.get(record.branchId);
+                if (!existing || record.timestamp > existing.lastUpdate) {
+                    branches.set(record.branchId, {
+                        id: record.branchId,
                         name: record.branch,
                         owner: record.owner,
-                        timestamp: record.timestamp,
-                        displayTime: record.createdAt || getHKTTimestamp(record.timestamp)
+                        lastUpdate: record.timestamp,
+                        displayTime: getHKTTimestamp(record.branchId)
                     });
                 }
             });
 
-        return Array.from(branches.values()).sort((a, b) => b.timestamp - a.timestamp);
+        return Array.from(branches.values()).sort((a, b) => b.lastUpdate - a.lastUpdate);
     }
 };

@@ -43,7 +43,7 @@ export const BBUI = {
     /**
      * 渲染分支列表
      */
-    renderBranchList(branches, activeBranch) {
+    renderBranchList(branches, activeBranchId) {
         const container = document.querySelector(".vcs-list-container");
         if (!container) return;
 
@@ -51,14 +51,24 @@ export const BBUI = {
 
         branches.forEach(branch => {
             const item = document.createElement("div");
-            item.className = `vcs-list-item ${branch.name === activeBranch ? 'active' : ''}`;
-            item.dataset.branch = branch.name;
+            item.className = `vcs-list-item ${branch.id === activeBranchId ? 'active' : ''}`;
+            item.dataset.branchId = branch.id;
+            item.dataset.branchName = branch.name;
 
             item.innerHTML = `
                 <input type="text" class="vcs-list-branch" value="${branch.name}" placeholder="branch name" name="vcs-list-branch" maxlength="32">
                 <div class="vcs-list-timestamp">${branch.displayTime}</div>
                 <div class="vcs-list-owner">${branch.owner}</div>
             `;
+
+            // 監聽改名事件
+            const input = item.querySelector(".vcs-list-branch");
+            input.addEventListener("change", (e) => {
+                const newName = e.target.value.trim() || branch.name;
+                window.dispatchEvent(new CustomEvent("blackboard:branchRename", {
+                    detail: { branchId: branch.id, newName }
+                }));
+            });
 
             container.appendChild(item);
         });
