@@ -99,5 +99,14 @@ export const BBCore = {
             });
 
         return Array.from(branches.values()).sort((a, b) => b.lastUpdate - a.lastUpdate);
+    },
+
+    /**
+     * 獲取一個分支的所有歷史紀錄 (用於 Commit 上傳)
+     */
+    async getAllRecordsForBranch(owner, branchId) {
+        return await db.blackboard.where('[owner+branchId+timestamp]')
+            .between([owner, branchId, Dexie.minKey], [owner, branchId, Dexie.maxKey])
+            .toArray();
     }
 };

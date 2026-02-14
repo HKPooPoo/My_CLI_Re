@@ -29,7 +29,7 @@ export const AuthManager = {
             this.elements.loginContainer.style.display = "flex";
             this.elements.logoutContainer.style.display = "none";
             this.elements.userInfoUid.textContent = "";
-            localStorage.setItem("currentUser", "guest");
+            localStorage.setItem("currentUser", "");
         }
         // 通知 HUD 與其他組件狀態已改變
         window.dispatchEvent(new CustomEvent("blackboard:authUpdated"));
@@ -41,9 +41,9 @@ export const AuthManager = {
     async init() {
         this.bindEvents();
 
-        // 初始可從 localStorage 讀取，或同步 API。這裡預設先走 guest 流程
+        // 初始可從 localStorage 讀取
         const currentUser = localStorage.getItem("currentUser");
-        this.updateUI(currentUser && currentUser !== "guest" ? currentUser : null);
+        this.updateUI(currentUser && currentUser !== "local" ? currentUser : null);
     },
 
     bindEvents() {
@@ -61,6 +61,7 @@ export const AuthManager = {
                 const res = await fetch('/api/login', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include', // 關鍵：確保傳送 Session Cookie
                     body: JSON.stringify({ uid, passcode })
                 });
                 const data = await res.json();

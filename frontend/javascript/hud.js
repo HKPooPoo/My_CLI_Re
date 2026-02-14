@@ -7,7 +7,7 @@ const dbStatusDisplay = document.getElementById("db-status-display");
 const loginStatusDisplay = document.getElementById("login-status-display");
 
 export function updateLoginStatus() {
-    const currentUser = localStorage.getItem("currentUser") || "guest";
+    const currentUser = localStorage.getItem("currentUser") || "";
     if (loginStatusDisplay) {
         loginStatusDisplay.textContent = currentUser;
     }

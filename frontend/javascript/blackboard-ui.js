@@ -10,6 +10,7 @@ export const BBUI = {
         headIndex: document.querySelector(".branch-head"),
         savedStatus: document.querySelector(".branch-is-saved"),
         branchBtn: document.getElementById("branch-btn"),
+        commitBtn: document.getElementById("commit-btn"),
         textarea: document.getElementById("log-textarea")
     },
 
@@ -44,7 +45,7 @@ export const BBUI = {
     /**
      * 渲染分支列表
      */
-    renderBranchList(branches, activeBranchId) {
+    renderBranchList(branches, activeBranchId, activeOwner) {
         const container = document.querySelector(".vcs-list-container");
         if (!container) return;
 
@@ -52,7 +53,10 @@ export const BBUI = {
 
         branches.forEach(branch => {
             const item = document.createElement("div");
-            item.className = `vcs-list-item ${branch.id === activeBranchId ? 'active' : ''}`;
+            // 雙重檢查：ID 相同且擁有者相同才是真正的 Active
+            const isActive = branch.id === activeBranchId && branch.owner === activeOwner;
+
+            item.className = `vcs-list-item ${isActive ? 'active' : ''}`;
             item.dataset.branchId = branch.id;
             item.dataset.branchName = branch.name;
 

@@ -22,3 +22,9 @@ Route::post('/register', [AuthController::class, 'register']);
 Route::post('/logout', [AuthController::class, 'logout']);
 Route::get('/auth-status', [AuthController::class, 'status']);
 
+// Blackboard Sync
+Route::prefix('blackboard')->group(function () {
+    Route::post('/commit', [BlackboardController::class, 'commit']);
+    Route::get('/branches', [BlackboardController::class, 'fetchBranches']);
+});
+

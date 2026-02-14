@@ -4,109 +4,70 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Auth;
 
 class BlackboardController extends Controller
 {
     /**
-     * Commit: 上傳本地分支至雲端，以 branch_id 作為唯一識別
+     * Commit: 上傳/更新分支所有歷史紀錄
      */
     public function commit(Request $request)
     {
-        $request->validate([
-            'uid' => 'required|string|exists:users,uid',
-            'records' => 'required|array',
-            'records.*.branchId' => 'required|string',
-            'records.*.branchName' => 'required|string',
-            'records.*.timestamp' => 'required|numeric',
-        ]);
+        $user = Auth::user();
+        if (!$user)
+            return response()->json(['message' => 'Unauthorized'], 401);
 
-        $uid = $request->uid;
-        $records = $request->records;
+        $branchId = $request->input('branchId');
+        $branchName = $request->input('branchName');
+        $records = $request->input('records'); // 陣列
 
-        try {
-            DB::beginTransaction();
-
-            foreach ($records as $record) {
-                // 以 branch_id + timestamp 作為更新基準，而非 branch_name
-                DB::table('blackboards')->updateOrInsert(
-                    [
-                        'user_uid' => $uid,
-                        'branch_id' => $record['branchId'],
-                        'timestamp' => $record['timestamp'],
-                    ],
-                    [
-                        'branch_name' => $record['branchName'],
-                        'text' => $record['text'] ?? '',
-                        'bin' => $record['bin'] ?? null,
-                        'created_at_str' => $record['createdAt'] ?? now()->toIso8601String(),
-                        'updated_at' => now(),
-                    ]
-                );
-            }
-
-            DB::commit();
-            return response()->json(['message' => 'Sync successful.']);
-
-        } catch (\Exception $e) {
-            DB::rollBack();
-            Log::error($e);
-            return response()->json(['message' => 'Commit failed: ' . $e->getMessage()], 500);
+        if (!$branchId || !is_array($records)) {
+            return response()->json(['message' => 'Invalid Data'], 400);
         }
-    }
 
-    /**
-     * Checkout: 抓取使用者的所有同步記錄
-     */
-    public function checkout(Request $request)
-    {
-        $request->validate([
-            'uid' => 'required|string|exists:users,uid',
-        ]);
-
-        $uid = $request->uid;
-
-        $records = DB::table('blackboards')
-            ->where('user_uid', $uid)
-            ->get()
-            ->map(function ($item) {
-                return [
-                    'owner' => $item->user_uid,
-                    'branchId' => $item->branch_id,
-                    'branchName' => $item->branch_name,
-                    'timestamp' => (int) $item->timestamp,
-                    'text' => $item->text,
-                    'bin' => $item->bin,
-                    'createdAt' => $item->created_at_str,
-                ];
-            });
-
-        return response()->json(['records' => $records]);
-    }
-
-    /**
-     * Drop: 刪除雲端特定的分支 (依據 branch_id)
-     */
-    public function drop(Request $request)
-    {
-        $request->validate([
-            'uid' => 'required|string|exists:users,uid',
-            'branchId' => 'required|string',
-        ]);
-
-        $uid = $request->uid;
-        $branchId = $request->branchId;
-
-        try {
+        return DB::transaction(function () use ($user, $branchId, $branchName, $records) {
+            // 1. 先刪除 Postgres 中該用戶同 ID 的舊紀錄
             DB::table('blackboards')
-                ->where('user_uid', $uid)
+                ->where('owner', $user->uid)
                 ->where('branch_id', $branchId)
                 ->delete();
 
-            return response()->json(['message' => "Branch $branchId deleted from cloud."]);
-        } catch (\Exception $e) {
-            Log::error($e);
-            return response()->json(['message' => 'Drop failed: ' . $e->getMessage()], 500);
-        }
+            // 2. 批量寫入新紀錄
+            foreach ($records as $record) {
+                DB::table('blackboards')->insert([
+                    'owner' => $user->uid,
+                    'branch_id' => $branchId,
+                    'branch_name' => $branchName,
+                    'timestamp' => $record['timestamp'],
+                    'text' => $record['text'],
+                    'bin' => $record['bin'] ?? null,
+                    'created_at_hkt' => $record['createdAt'] ?? null,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            }
+
+            return response()->json(['message' => 'Commit Successful']);
+        });
+    }
+
+    /**
+     * 獲取目前登入使用者的所有雲端分支
+     */
+    public function fetchBranches()
+    {
+        $user = Auth::user();
+        if (!$user)
+            return response()->json(['branches' => []]);
+
+        // 只抓出獨特的 branch_id 及其最新資訊
+        $branches = DB::table('blackboards')
+            ->where('owner', $user->uid)
+            ->select('branch_id', 'branch_name', 'owner', DB::raw('MAX(timestamp) as last_update'))
+            ->groupBy('branch_id', 'branch_name', 'owner')
+            ->orderBy('last_update', 'desc')
+            ->get();
+
+        return response()->json(['branches' => $branches]);
     }
 }
