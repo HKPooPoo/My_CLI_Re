@@ -60,10 +60,17 @@ export const BBUI = {
             item.dataset.branchId = branch.id;
             item.dataset.branchName = branch.name;
 
+            // 根據邏輯判定顯示文字
+            let ownerDisplay = "local";
+            if (branch.isServer) {
+                const syncStatus = branch.isDirty ? "asynced" : "synced";
+                ownerDisplay += `, online/${branch.owner} [${syncStatus}]`;
+            }
+
             item.innerHTML = `
                 <input type="text" class="vcs-list-branch" value="${branch.name}" placeholder="Name your branch..." name="vcs-list-branch" maxlength="32">
                 <div class="vcs-list-timestamp">${branch.displayTime}</div>
-                <div class="vcs-list-owner">${branch.owner}</div>
+                <div class="vcs-list-owner">${ownerDisplay}</div>
             `;
 
             // 監聽改名事件
