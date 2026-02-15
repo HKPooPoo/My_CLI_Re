@@ -32,6 +32,7 @@
     /* Allow clicking the toast itself if needed */
     user-select: none;
     text-shadow: var(--text-shadow-green);
+    pointer-events: none;
 }
 
 :root[data-theme="light"] .toast {

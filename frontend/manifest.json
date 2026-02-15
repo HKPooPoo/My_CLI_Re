@@ -1,0 +1,22 @@
+{
+  "name": "Blackboard CLI",
+  "short_name": "Blackboard",
+  "description": "A terminal-style blackboard system with VCS capabilities.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#32FF32",
+  "icons": [
+    {
+      "src": "favicon.ico",
+      "sizes": "32x32 48x48 64x128 256x256",
+      "type": "image/x-icon"
+    },
+    {
+      "src": "images/background.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

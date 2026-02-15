@@ -391,3 +391,14 @@ setInterval(() => {
         updateBranchList();
     }
 }, 60000);
+
+/**
+ * PWA Service Worker 註冊
+ */
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js').catch(err => {
+            console.warn('PWA: Service Worker registration failed:', err);
+        });
+    });
+}

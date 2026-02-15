@@ -5,8 +5,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>My CLI</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#32FF32">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <script type="module" src="./javascript/audio.js"></script>
     <link rel="icon" href="./images/favicon.ico">
+    <link rel="apple-touch-icon" href="./images/favicon.ico">
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="stylesheets/hud.css">
     <link rel="stylesheet" href="stylesheets/crt-vfx.css">
@@ -247,12 +252,20 @@
 
                         <button id="btn-login" class="auth-btn crt-text-green">LOGIN</button>
                         <button id="btn-register" class="auth-btn crt-text-green">REGISTER</button>
+                        <!--Detect auth-uid-->
+                        <button id="btn-reset-passcode" class="auth-btn crt-text-green">RESET PASSCODE</button>
                     </div>
 
                     <div class="auth-logout-container">
                         <div class="auth-user-info-container">Welcome Back, <div id="auth-user-info-uid"></div>
                         </div>
                         <button id="btn-logout" class="auth-btn crt-text-green">LOGOUT</button>
+                        <hr style="border: var(--border-line);">
+                        <!--later 32 + regex -> max length-->
+                        <!--If email is registered, then placeholder = email-->
+                        <input type="text" id="auth-register-email" class="auth-input" placeholder="EMAIL"
+                            maxlength="32">
+                        <button id="btn-register-email" class="auth-btn crt-text-green">REGISTER</button>
                     </div>
 
                     <!-- <input type="email" id="auth-email" class="auth-input" placeholder="EMAIL (OPTIONAL)"
