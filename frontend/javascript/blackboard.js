@@ -77,40 +77,73 @@ async function syncView() {
     BBUI.updateIndicators(state.branch || "NAMELESS_BRANCH", state.currentHead, true);
 }
 
-/**
- * 更新並顯示分支清單 (整合 Local 與 Server)
- */
 async function updateBranchList() {
-    // 1. 抓取本地 (IndexedDB) 的所有分支 (不分 owner)
+    // 1. 抓取本地 (IndexedDB) 所有分支 (鎖定 local 分區)
     const localBranches = await BBCore.getAllBranches("local");
     const loggedInUser = localStorage.getItem("currentUser");
 
-    let combinedBranches = [...localBranches];
+    const branchMap = new Map();
 
-    // 2. 如果登入，抓取伺服器 (Postgres) 的清單
+    // 先填入本地資料
+    localBranches.forEach(b => {
+        branchMap.set(b.id, {
+            id: b.id,
+            name: b.name,
+            owner: "local",
+            lastUpdate: b.lastUpdate,
+            displayTime: getHKTTimestamp(b.id),
+            isLocal: true,
+            isServer: false,
+            isDirty: false
+        });
+    });
+
+    // 2. 如果登入，抓取伺服器清單並合併至 Map
     if (loggedInUser) {
         try {
-            const res = await fetch('/api/blackboard/branches', {
-                credentials: 'include'
-            });
+            const res = await fetch('/api/blackboard/branches', { credentials: 'include' });
             const data = await res.json();
 
-            const serverBranches = data.branches.map(b => ({
-                id: parseInt(b.branch_id),
-                name: b.branch_name,
-                owner: b.owner,
-                lastUpdate: b.last_update,
-                displayTime: getHKTTimestamp(parseInt(b.branch_id)),
-                isServer: true
-            }));
+            data.branches.forEach(sb => {
+                const sid = parseInt(sb.branch_id);
+                const existing = branchMap.get(sid);
 
-            combinedBranches = [...combinedBranches, ...serverBranches];
+                if (existing) {
+                    // 同 ID 存在於本地與雲端：合併顯示
+                    existing.isServer = true;
+                    existing.owner = sb.owner; // 儲存 uid 用於 UI 顯示 online/uid
+                    // 根據最後更新時間判定是否同步
+                    existing.isDirty = (parseInt(sb.last_update) !== existing.lastUpdate);
+                } else {
+                    // 僅存於雲端
+                    branchMap.set(sid, {
+                        id: sid,
+                        name: sb.branch_name,
+                        owner: sb.owner,
+                        lastUpdate: parseInt(sb.last_update),
+                        displayTime: getHKTTimestamp(sid),
+                        isLocal: false,
+                        isServer: true,
+                        isDirty: true // 同步後的「僅雲端」被視為需要 pull/checkout 的 asynced 狀態
+                    });
+                }
+            });
         } catch (e) {
             console.error("無法載入雲端分支", e);
         }
     }
 
-    combinedBranches.sort((a, b) => b.lastUpdate - a.lastUpdate);
+    // 3. 排序：當前分支置頂，其餘依時間排序
+    const combinedBranches = Array.from(branchMap.values());
+    combinedBranches.sort((a, b) => {
+        const aIsActive = a.id === state.branchId;
+        const bIsActive = b.id === state.branchId;
+        if (aIsActive && !bIsActive) return -1;
+        if (!aIsActive && bIsActive) return 1;
+        return b.lastUpdate - a.lastUpdate;
+    });
+
+    // 4. 渲染
     BBUI.renderBranchList(combinedBranches, state.branchId, state.owner);
 }
 
@@ -127,17 +160,20 @@ BBUI.elements.pullBtn?.addEventListener("click", async () => {
     if (updated) { await syncView(); await updateBranchList(); }
 });
 
-// BRANCH (建立新分支)
+// FORK (建立並繼承分支)
 BBUI.elements.branchBtn?.addEventListener("click", async () => {
     await BBVCS.save(state, BBUI.getTextareaValue());
+
     const newId = Date.now();
-    await BBCore.addRecord("local", newId, "");
+    await BBCore.forkBranch(state.owner, state.branchId, newId);
+
     state.branchId = newId;
     state.branch = "";
     state.owner = "local";
     state.currentHead = 0;
+
     localStorage.setItem("currentBranchId", state.branchId);
-    BBMessage.info("已建立新分支 (Local)");
+    BBMessage.info("已完成 Fork (Local)");
     await syncView();
     await updateBranchList();
 });
@@ -147,6 +183,25 @@ BBUI.elements.commitBtn?.addEventListener("click", async () => {
     try {
         await BBVCS.commit(state, BBUI.getTextareaValue());
         BBMessage.info("Commit 成功，已同步至雲端");
+        await updateBranchList();
+    } catch (e) {
+        BBMessage.error(e.message);
+    }
+});
+
+// CHECKOUT (切換分支)
+BBUI.elements.checkoutBtn?.addEventListener("click", async () => {
+    const activeItem = document.querySelector(".vcs-list-item.active");
+    if (!activeItem) return;
+
+    const targetId = parseInt(activeItem.dataset.branchId);
+    const targetOwner = activeItem.querySelector(".vcs-list-owner").textContent.includes("online/")
+        ? "remote" : "local"; // 簡單識別是否含雲端
+
+    try {
+        await BBVCS.checkout(state, targetId, targetOwner);
+        BBMessage.info("已切換分支");
+        await syncView();
         await updateBranchList();
     } catch (e) {
         BBMessage.error(e.message);

@@ -85,5 +85,50 @@ export const BBVCS = {
         }
 
         return true;
+    },
+
+    /**
+     * Checkout: 切換分支，若本地不存在則從雲端抓取
+     */
+    async checkout(state, targetBranchId, targetOwner) {
+        // 1. 檢查本地 IndexedDB 是否已有該分支資料 (owner: local)
+        const localRecords = await BBCore.getAllRecordsForBranch("local", targetBranchId);
+
+        if (localRecords.length === 0 && targetOwner !== "local") {
+            // 2. 本地無資料但有線上標記 -> 從伺服器下載
+            BBMessage.info("正在從雲端同步分支資料...");
+            const res = await fetch(`/api/blackboard/branches/${targetBranchId}`, {
+                credentials: 'include'
+            });
+
+            if (!res.ok) throw new Error("無法從雲端獲取分支內容");
+
+            const data = await res.json();
+
+            // 3. 轉換格式並存入本地 local 分區
+            const downloadRecords = data.records.map(r => ({
+                owner: "local",
+                branchId: parseInt(r.branch_id),
+                branch: r.branch_name,
+                timestamp: r.timestamp,
+                text: r.text,
+                bin: r.bin,
+                createdAt: r.created_at_hkt
+            }));
+
+            await db.blackboard.bulkAdd(downloadRecords);
+        }
+
+        // 4. 更新 state (編輯區永遠是 local)
+        state.branchId = targetBranchId;
+        state.owner = "local";
+        state.currentHead = 0;
+
+        // 嘗試更新 branchName (從 local 抓取最新一筆)
+        const latest = await BBCore.getRecord("local", targetBranchId, 0);
+        state.branch = latest?.branch ?? "";
+
+        localStorage.setItem("currentBranchId", state.branchId);
+        return true;
     }
 };

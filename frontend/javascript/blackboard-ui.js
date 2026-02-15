@@ -11,6 +11,7 @@ export const BBUI = {
         savedStatus: document.querySelector(".branch-is-saved"),
         branchBtn: document.getElementById("branch-btn"),
         commitBtn: document.getElementById("commit-btn"),
+        checkoutBtn: document.getElementById("checkout-btn"),
         textarea: document.getElementById("log-textarea")
     },
 
@@ -61,10 +62,14 @@ export const BBUI = {
             item.dataset.branchName = branch.name;
 
             // 根據邏輯判定顯示文字
-            let ownerDisplay = "local";
-            if (branch.isServer) {
+            let ownerDisplay = "";
+            if (branch.isLocal && branch.isServer) {
                 const syncStatus = branch.isDirty ? "asynced" : "synced";
-                ownerDisplay += `, online/${branch.owner} [${syncStatus}]`;
+                ownerDisplay = `local, online/${branch.owner} [${syncStatus}]`;
+            } else if (branch.isServer) {
+                ownerDisplay = `online/${branch.owner} [asynced]`;
+            } else {
+                ownerDisplay = "local";
             }
 
             item.innerHTML = `

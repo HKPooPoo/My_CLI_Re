@@ -108,5 +108,19 @@ export const BBCore = {
         return await db.blackboard.where('[owner+branchId+timestamp]')
             .between([owner, branchId, Dexie.minKey], [owner, branchId, Dexie.maxKey])
             .toArray();
+    },
+
+    /**
+     * Fork 分支：複製所有歷史紀錄到新 ID
+     */
+    async forkBranch(oldOwner, oldBranchId, newId) {
+        const records = await this.getAllRecordsForBranch(oldOwner, oldBranchId);
+        const newRecords = records.map(r => ({
+            ...r,
+            owner: "local",
+            branchId: newId,
+            branch: "" // Fork 出來的新分支預設無名稱
+        }));
+        return await db.blackboard.bulkAdd(newRecords);
     }
 };

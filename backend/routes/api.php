@@ -26,5 +26,6 @@ Route::get('/auth-status', [AuthController::class, 'status']);
 Route::prefix('blackboard')->group(function () {
     Route::post('/commit', [BlackboardController::class, 'commit']);
     Route::get('/branches', [BlackboardController::class, 'fetchBranches']);
+    Route::get('/branches/{branchId}', [BlackboardController::class, 'fetchBranchDetails']);
 });
 

@@ -70,4 +70,22 @@ class BlackboardController extends Controller
 
         return response()->json(['branches' => $branches]);
     }
+
+    /**
+     * 獲取特定分支的所有紀錄 (用於 Checkout 下載到本地)
+     */
+    public function fetchBranchDetails($branchId)
+    {
+        $user = Auth::user();
+        if (!$user)
+            return response()->json(['message' => 'Unauthorized'], 401);
+
+        $records = DB::table('blackboards')
+            ->where('owner', $user->uid)
+            ->where('branch_id', $branchId)
+            ->orderBy('timestamp', 'asc')
+            ->get();
+
+        return response()->json(['records' => $records]);
+    }
 }
