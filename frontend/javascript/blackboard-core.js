@@ -122,5 +122,25 @@ export const BBCore = {
             branch: "" // Fork 出來的新分支預設無名稱
         }));
         return await db.blackboard.bulkAdd(newRecords);
+    },
+
+    /**
+     * Stage 1: 清空特定分支的所有文字紀錄內容
+     */
+    async clearBranchRecords(owner, branchId) {
+        // 更新該分支下所有紀錄的 text 為空，保留 index
+        return await db.blackboard.where('[owner+branchId+timestamp]')
+            .between([owner, branchId, Dexie.minKey], [owner, branchId, Dexie.maxKey])
+            .modify({ text: "" });
+    },
+
+    /**
+     * Stage 3: 徹底刪除本地分支的所有資料與索引
+     */
+    async deleteLocalBranch(owner, branchId) {
+        const keys = await db.blackboard.where('[owner+branchId+timestamp]')
+            .between([owner, branchId, Dexie.minKey], [owner, branchId, Dexie.maxKey])
+            .primaryKeys();
+        return await db.blackboard.bulkDelete(keys);
     }
 };

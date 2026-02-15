@@ -88,4 +88,21 @@ class BlackboardController extends Controller
 
         return response()->json(['records' => $records]);
     }
+
+    /**
+     * 刪除雲端分支 (Stage 2)
+     */
+    public function destroyBranch($branchId)
+    {
+        $user = Auth::user();
+        if (!$user)
+            return response()->json(['message' => 'Unauthorized'], 401);
+
+        DB::table('blackboards')
+            ->where('owner', $user->uid)
+            ->where('branch_id', $branchId)
+            ->delete();
+
+        return response()->json(['message' => 'Remote branch deleted']);
+    }
 }

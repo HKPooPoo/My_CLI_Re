@@ -1,4 +1,4 @@
-import Dexie from 'https://unpkg.com/dexie@latest/dist/dexie.mjs';
+import Dexie from './vendor/dexie.js';
 
 const db = new Dexie('blackboardDB');
 
