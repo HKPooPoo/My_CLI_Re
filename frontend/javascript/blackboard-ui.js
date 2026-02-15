@@ -79,6 +79,7 @@ export const BBUI = {
 
             item.className = `vcs-list-item ${isActive ? 'active' : ''}`;
             item.dataset.branchId = branch.id;
+            item.dataset.branchName = branch.name;
             
             // 轉義顯示內容
             const safeName = this.escapeHTML(branch.name);

@@ -19,6 +19,7 @@
     border: 1px solid var(--text-green);
     color: var(--text-green);
     right: calc(var(--sub-navi-height) / 2);
+    bottom: calc(var(--sub-navi-height) / 2);
     padding: 0.75rem 1rem;
     font-family: inherit;
     /* Use global retro font */

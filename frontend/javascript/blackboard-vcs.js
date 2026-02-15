@@ -46,43 +46,46 @@ export const BBVCS = {
     },
 
     /**
-     * 自動儲存
+     * 自動儲存：更新現有歷史點或新增初始點
      */
     async save(state, text) {
         const entry = await BBCore.getRecord(state.owner, state.branchId, state.currentHead);
-        if (entry && entry.text !== text) {
-            // 使用 [owner, branchId, timestamp] 複合主鍵進行更新
-            await BBCore.updateText(state.owner, state.branchId, entry.timestamp, text);
+        
+        if (entry) {
+            if (entry.text !== text) {
+                // 更新現有紀錄
+                await BBCore.updateText(state.owner, state.branchId, entry.timestamp, text);
+            }
+        } else if (state.currentHead === 0) {
+            // 如果本地完全沒紀錄且在 Head 0，則視為初始點，直接新增
+            await BBCore.addRecord("local", state.branchId, state.branch, text);
         }
     },
 
     /**
-     * Commit: 將目前 local 分支上傳至 Server (以 uid 名義)
+     * Commit: 將指定分支的所有本地歷史上傳至 Server
      */
-    async commit(state, currentText) {
-        // 1. 先確保目前內容已儲存至 local
-        await this.save(state, currentText);
+    async commit(branchMeta) {
+        const { branchId, branch } = branchMeta;
 
         const loggedInUser = localStorage.getItem("currentUser");
         if (!loggedInUser) throw new Error("請先登入以進行 Commit");
 
-        // 2. 抓取目前 local 分支的所有紀錄
-        const records = await BBCore.getAllRecordsForBranch("local", state.branchId);
+        // 1. 抓取該分支的所有紀錄
+        const records = await BBCore.getAllRecordsForBranch("local", branchId);
 
-        // [BUG FIX]: 如果本地沒有任何紀錄，代表該分支尚未在當前裝置初始化或 Checkout。
-        // 直接上傳會導致雲端資料被誤刪或出現空分支。
         if (records.length === 0) {
-            throw new Error("本地無資料。請先點擊 CHECKOUT 同步雲端內容。");
+            throw new Error("本地無資料，請先 CHECKOUT 同步。");
         }
 
-        // 3. 上傳至伺服器
+        // 2. 上傳至伺服器
         const res = await fetch('/api/blackboard/commit', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            credentials: 'include', // 傳送登入憑證
+            credentials: 'include',
             body: JSON.stringify({
-                branchId: state.branchId,
-                branchName: state.branch,
+                branchId: branchId,
+                branchName: branch,
                 records: records
             })
         });

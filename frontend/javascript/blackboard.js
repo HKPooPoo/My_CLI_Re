@@ -150,9 +150,26 @@ async function updateBranchList() {
     BBUI.renderBranchList(combinedBranches, state.branchId, state.owner);
 }
 
+/**
+ * 獲取當前清單中選中的分支資訊
+ */
+function getSelectedBranchInfo() {
+    const activeItem = document.querySelector(".vcs-list-item.active");
+    if (!activeItem) return null;
+
+    const ownerText = activeItem.querySelector(".vcs-list-owner").textContent;
+    return {
+        id: parseInt(activeItem.dataset.branchId),
+        name: activeItem.dataset.branchName,
+        isLocal: ownerText.includes("local"),
+        isServer: ownerText.includes("online/"),
+        isDirty: ownerText.includes("[asynced]")
+    };
+}
+
 // --- 按鈕組件初始化 ---
 
-// PUSH / PULL (單階音效按鈕)
+// PUSH / PULL (操作對象：編輯中分支)
 if (BBUI.elements.pushBtn) {
     new MultiStepButton(BBUI.elements.pushBtn, {
         sound: "Click.mp3",
@@ -173,7 +190,7 @@ if (BBUI.elements.pullBtn) {
     });
 }
 
-// FORK: 繼承當前分支內容並建立一個全新的本地 ID
+// FORK: 基於「目前編輯內容」建立新分支 (不變)
 if (BBUI.elements.branchBtn) {
     new MultiStepButton(BBUI.elements.branchBtn, {
         sound: "UIPipboyOK.mp3",
@@ -183,8 +200,10 @@ if (BBUI.elements.branchBtn) {
                 await BBVCS.save(state, BBUI.getTextareaValue());
                 const newId = Date.now();
                 await BBCore.forkBranch(state.owner, state.branchId, newId);
+                
+                // 切換到新 Fork 的分支
                 state.branchId = newId;
-                state.branch = "";
+                state.branch = "master_fork"; 
                 state.owner = "local";
                 state.currentHead = 0;
                 localStorage.setItem("currentBranchId", state.branchId);
@@ -200,44 +219,58 @@ if (BBUI.elements.branchBtn) {
     });
 }
 
-// COMMIT: 將當前分支推送到雲端
+// COMMIT: 將「選中分支」推送到雲端
 if (BBUI.elements.commitBtn) {
     new MultiStepButton(BBUI.elements.commitBtn, {
         sound: "UIPipboyOKPress.mp3",
         action: async () => {
-            const msg = BBMessage.info("SYNCING...");
+            const selected = getSelectedBranchInfo();
+            if (!selected) return;
+
+            // [Git Logic]: 必須先有本地資料才能 Commit
+            if (!selected.isLocal) {
+                BBMessage.error("ERROR: LOCAL SYNC REQUIRED. PULL FIRST.");
+                return;
+            }
+
+            const msg = BBMessage.info("SYNCING TO CLOUD...");
             try {
-                await BBVCS.commit(state, BBUI.getTextareaValue());
+                // 如果 Commit 的是對象是當前編輯的分支，先存檔
+                if (selected.id === state.branchId) {
+                    await BBVCS.save(state, BBUI.getTextareaValue());
+                }
+
+                await BBVCS.commit({ branchId: selected.id, branch: selected.name });
                 msg.update("SYNC COMPLETE.");
                 await updateBranchList();
             } catch (e) {
                 msg.close();
-                BBMessage.error("SYNC FAILED.");
+                BBMessage.error(e.message || "SYNC FAILED.");
             }
         }
     });
 }
 
-// CHECKOUT: 切換分支
+// CHECKOUT: 切換/下載分支
 if (BBUI.elements.checkoutBtn) {
     new MultiStepButton(BBUI.elements.checkoutBtn, {
         sound: "Click.mp3",
         action: async () => {
-            const activeItem = document.querySelector(".vcs-list-item.active");
-            if (!activeItem) return;
-            const targetId = parseInt(activeItem.dataset.branchId);
-            const targetOwner = activeItem.querySelector(".vcs-list-owner").textContent.includes("online/") ? "remote" : "local";
+            const selected = getSelectedBranchInfo();
+            if (!selected) return;
 
-            const msg = BBMessage.info("LOADING...");
+            const msg = BBMessage.info("LOADING BRANCH...");
             try {
-                await BBVCS.checkout(state, targetId, targetOwner);
-                msg.update("BRANCH LOADED.");
+                // 如果選中的是 remote 且 dirty，BBVCS.checkout 會負責下載
+                const targetOwner = selected.isServer ? "remote" : "local";
+                await BBVCS.checkout(state, selected.id, targetOwner);
+                
+                msg.update("BRANCH READY.");
                 await syncView();
                 await updateBranchList();
             } catch (e) {
                 msg.close();
                 BBMessage.error("LOAD FAILED.");
-                console.log(e);
             }
         }
     });
