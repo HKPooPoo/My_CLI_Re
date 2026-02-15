@@ -8,3 +8,15 @@ docker-compose.old.yml
 .agent/
 .gemini/
 mcp/
+
+# Logs
+*.txt
+nginx_logs.txt
+api_logs.txt
+api_stderr.txt
+backend_log_tail.txt
+ps_output.txt
+
+# OS Files
+.DS_Store
+Thumbs.db
