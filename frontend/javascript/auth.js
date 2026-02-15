@@ -72,10 +72,11 @@ export const AuthManager = {
                     const passcode = this.elements.passcodeInput.value.trim();
 
                     if (!uid || !passcode) {
-                        BBMessage.error("請輸入 UID 與 Passcode");
+                        BBMessage.error("INPUT UID/PASS.");
                         return;
                     }
 
+                    const msg = BBMessage.info("AUTH...");
                     try {
                         const res = await fetch('/api/login', {
                             method: 'POST',
@@ -86,15 +87,17 @@ export const AuthManager = {
                         const data = await res.json();
 
                         if (res.ok) {
-                            BBMessage.info(`歡迎回來, ${data.user.uid}`);
+                            msg.update(`WELCOME BACK, ${data.user.uid.toUpperCase()}`);
                             this.updateUI(data.user.uid);
                             this.elements.uidInput.value = "";
                             this.elements.passcodeInput.value = "";
                         } else {
-                            BBMessage.error(data.message);
+                            msg.close();
+                            BBMessage.error("AUTH FAILED.");
                         }
                     } catch (e) {
-                        BBMessage.error("伺服器連線失敗");
+                        msg.close();
+                        BBMessage.error("OFLINE.");
                     }
                 }
             });
@@ -106,17 +109,17 @@ export const AuthManager = {
                 {
                     label: "REGISTER",
                     sound: "Click.mp3",
-                    action: () => BBMessage.info("再次點擊以確認註冊 (3)")
+                    // action: () => BBMessage.info("CONFIRM (3)")
                 },
                 {
                     label: "REGISTER x 3",
                     sound: "Click.mp3",
-                    action: () => BBMessage.info("再次點擊以確認註冊 (2)")
+                    // action: () => BBMessage.info("CONFIRM (2)")
                 },
                 {
                     label: "REGISTER x 2",
                     sound: "Click.mp3",
-                    action: () => BBMessage.info("最後一次確認 (1)")
+                    // action: () => BBMessage.info("CONFIRM (1)")
                 },
                 {
                     label: "CONFIRM!",
@@ -126,10 +129,11 @@ export const AuthManager = {
                         const passcode = this.elements.passcodeInput.value.trim();
 
                         if (!uid || !passcode) {
-                            BBMessage.error("請輸入 UID 與 Passcode");
+                            BBMessage.error("INPUT UID/PASS.");
                             return;
                         }
 
+                        const msg = BBMessage.info("SENDING...");
                         try {
                             const res = await fetch('/api/register', {
                                 method: 'POST',
@@ -139,12 +143,14 @@ export const AuthManager = {
                             const data = await res.json();
 
                             if (res.ok) {
-                                BBMessage.info("註冊成功，請開始登入");
+                                msg.update("REG COMPLETE.");
                             } else {
-                                BBMessage.error(data.message);
+                                msg.close();
+                                BBMessage.error("FAILED.");
                             }
                         } catch (e) {
-                            BBMessage.error("伺服器連線失敗");
+                            msg.close();
+                            BBMessage.error("OFFLINE.");
                         }
                     }
                 }
@@ -159,7 +165,7 @@ export const AuthManager = {
                     try {
                         await fetch('/api/logout', { method: 'POST' });
                         this.updateUI(null);
-                        BBMessage.info("已登出");
+                        BBMessage.info("LOGOUT.");
                     } catch (e) {
                         this.updateUI(null);
                     }

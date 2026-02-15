@@ -1,46 +1,56 @@
 /**
- * Blackboard Message Wrapper
+ * Blackboard Message Facade (Themed)
  * =================================================================
- * 介紹：黑板系統的統一訊息門面 (Facade)。
- * 職責：
- * 1. 封裝 `ToastMessager` 的調用細節。
- * 2. 標準化系統所有反饋文字的格式 (如前綴 "System: " 或 "Error: ")。
- * 3. 提供語意化的通知介面 (info, error, success)。
- * 依賴：toast.js
+ * Introduction: Unified message interface for the Blackboard system.
+ * Responsibilities:
+ * 1. Encapsulate ToastMessager calls.
+ * 2. Standardize feedback text with terminal-style prefixes.
+ * 3. Provide semantic notification interfaces (info, error, success).
+ * Dependencies: toast.js
  * =================================================================
  */
 
-import { ToastMessager } from "./toast.js";
+import toast from "./toast.js";
 
-// 建立全局唯一 Toast 實體
-const toast = new ToastMessager();
+/**
+ * Message Wrapper: Ensures prefixes are preserved during updates.
+ */
+function wrapHandler(handler, prefix) {
+    return {
+        update: (text, duration) => handler.update(`${prefix}${text}`, duration),
+        close: () => handler.close()
+    };
+}
 
 export const BBMessage = {
     /**
-     * 系統一般資訊提示
+     * System information (Terminal Style)
      */
     info(text) {
-        toast.addMessage(`System: ${text}`);
+        const prefix = "SYSTEM > ";
+        return wrapHandler(toast.addMessage(`${prefix}${text}`), prefix);
     },
 
     /**
-     * 嚴重錯誤提示
+     * System warning/error
      */
     error(text) {
-        toast.addMessage(`Error: ${text}`);
+        const prefix = "CRITICAL > ";
+        return wrapHandler(toast.addMessage(`${prefix}${text}`), prefix);
     },
 
     /**
-     * 特定操作成功提示
+     * Operation success shortcut
      */
     success(action) {
-        toast.addMessage(`System: ${action} 成功。`);
+        const prefix = "SYSTEM > ";
+        return wrapHandler(toast.addMessage(`${prefix}${action} COMPLETE.`), prefix);
     },
 
     /**
-     * 快捷提示：登入保護
+     * Auth requirement
      */
     requireLogin() {
-        toast.addMessage("System: 請先登入以使用此功能。");
+        return this.error("LOGIN REQUIRED FOR THIS OPERATION.");
     }
 };

@@ -2,7 +2,7 @@
 #toast-container {
     position: absolute;
     bottom: 2rem;
-    right: 2rem;
+    right: calc(var(--sub-navi-height) / 2);
     display: flex;
     flex-direction: column-reverse;
     /* Newest at bottom */

@@ -27,19 +27,19 @@ $translateBtns.forEach($btn => {
 
         const text = $translatorInput.value.trim();
         if (!text) {
-            $translatorOutput.value = "Tip: Please input text in the blackboard first.";
+            $translatorOutput.value = "PROTOCOL ERROR: BUFFER EMPTY. INPUT REQUIRED.";
             return;
         }
 
         const targetLang = $btn.dataset.featureBtn.replace(TRANSLATE_BTN_PREFIX, '');
-        $translatorOutput.value = "Translating...";
+        $translatorOutput.value = "DECRYPTING LINGUISTICS... STANDBY.";
 
         try {
             const translation = await translateText(text, targetLang);
-            $translatorOutput.value = translation || "No translation returned.";
+            $translatorOutput.value = translation || "RESULT: NULL. UNABLE TO DECODE.";
         } catch (e) {
             console.error("Translation Error:", e);
-            $translatorOutput.value = "Error: " + e.message;
+            $translatorOutput.value = "CRITICAL BREACH: " + e.message.toUpperCase();
         }
     });
 });
