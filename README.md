@@ -1,3 +1,5 @@
+I have registered a URL: https://my-cli.uk
+
 # My CLI Re (Docker Version)
 
 ## Setup for Development

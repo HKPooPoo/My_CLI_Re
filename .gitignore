@@ -7,3 +7,4 @@
 docker-compose.old.yml
 .agent/
 .gemini/
+mcp/
