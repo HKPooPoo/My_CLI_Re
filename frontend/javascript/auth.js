@@ -1,4 +1,5 @@
 import { BBMessage } from "./blackboard-msg.js";
+import { MultiStepButton } from "./multiStepButton.js";
 
 /**
  * 帳戶系統前端控制
@@ -61,7 +62,7 @@ export const AuthManager = {
                 const res = await fetch('/api/login', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    credentials: 'include', // 關鍵：確保傳送 Session Cookie
+                    credentials: 'include',
                     body: JSON.stringify({ uid, passcode })
                 });
                 const data = await res.json();
@@ -79,33 +80,56 @@ export const AuthManager = {
             }
         });
 
-        // 註冊
-        this.elements.registerBtn?.addEventListener("click", async () => {
-            const uid = this.elements.uidInput.value.trim();
-            const passcode = this.elements.passcodeInput.value.trim();
+        // 註冊 - MultiStep 試刀
+        if (this.elements.registerBtn) {
+            new MultiStepButton(this.elements.registerBtn, [
+                {
+                    label: "REGISTER",
+                    sound: "Click.mp3",
+                    action: () => BBMessage.info("再次點擊以確認註冊 (3)")
+                },
+                {
+                    label: "REGISTER x 3",
+                    sound: "Click.mp3",
+                    action: () => BBMessage.info("再次點擊以確認註冊 (2)")
+                },
+                {
+                    label: "REGISTER x 2",
+                    sound: "Click.mp3",
+                    action: () => BBMessage.info("最後一次確認 (1)")
+                },
+                {
+                    label: "CONFIRM!",
+                    sound: "Cassette.mp3",
+                    action: async () => {
+                        const uid = this.elements.uidInput.value.trim();
+                        const passcode = this.elements.passcodeInput.value.trim();
 
-            if (!uid || !passcode) {
-                BBMessage.error("請輸入 UID 與 Passcode");
-                return;
-            }
+                        if (!uid || !passcode) {
+                            BBMessage.error("請輸入 UID 與 Passcode");
+                            return;
+                        }
 
-            try {
-                const res = await fetch('/api/register', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ uid, passcode })
-                });
-                const data = await res.json();
+                        try {
+                            const res = await fetch('/api/register', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ uid, passcode })
+                            });
+                            const data = await res.json();
 
-                if (res.ok) {
-                    BBMessage.info("註冊成功，請開始登入");
-                } else {
-                    BBMessage.error(data.message);
+                            if (res.ok) {
+                                BBMessage.info("註冊成功，請開始登入");
+                            } else {
+                                BBMessage.error(data.message);
+                            }
+                        } catch (e) {
+                            BBMessage.error("伺服器連線失敗");
+                        }
+                    }
                 }
-            } catch (e) {
-                BBMessage.error("伺服器連線失敗");
-            }
-        });
+            ], 4000);
+        }
 
         // 登出
         this.elements.logoutBtn?.addEventListener("click", async () => {
