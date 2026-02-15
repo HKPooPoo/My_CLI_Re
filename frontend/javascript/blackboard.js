@@ -212,10 +212,10 @@ if (BBUI.elements.branchBtn) {
                 // 從選中的分支（不論 local 或 remote）Fork
                 const sourceOwner = selected.isLocal ? "local" : "remote";
                 await BBCore.forkBranch(sourceOwner, selected.id, newId);
-                
+
                 // 切換到新 Fork 的分支
                 state.branchId = newId;
-                state.branch = `${selected.name}_fork`; 
+                state.branch = `${selected.name}_fork`;
                 state.owner = "local";
                 state.currentHead = 0;
                 localStorage.setItem("currentBranchId", state.branchId);
@@ -276,7 +276,7 @@ if (BBUI.elements.checkoutBtn) {
                 // 如果選中的是 remote 且 dirty，BBVCS.checkout 會負責下載
                 const targetOwner = selected.isServer ? "remote" : "local";
                 await BBVCS.checkout(state, selected.id, targetOwner);
-                
+
                 msg.update("BRANCH READY.");
                 await syncView();
                 await updateBranchList();
@@ -338,8 +338,8 @@ if (dropBtnEl) {
                         } else {
                             throw new Error("SERVER_DELETE_FAILED");
                         }
-                    } 
-                    
+                    }
+
                     // Stage 3: 如果雲端已刪除或本來就沒有，且本地已清空，則刪除本地 (DELETED)
                     if (selected.isLocal) {
                         await BBCore.deleteLocalBranch("local", targetId);
@@ -367,7 +367,7 @@ if (dropBtnEl) {
 BBUI.elements.textarea?.addEventListener("input", () => {
     // 立即更新為 UNSAVED，但不要觸發完整的 DOM 重繪
     if (BBUI.elements.savedStatus) BBUI.elements.savedStatus.textContent = "UNSAVED";
-    
+
     clearTimeout(debounceTimer);
     debounceTimer = setTimeout(async () => {
         await BBVCS.save(state, BBUI.getTextareaValue());
@@ -413,14 +413,17 @@ window.addEventListener("focus", () => {
 });
 
 /**
- * 低頻輪詢：每 60 秒自動檢查一次雲端分支狀態
+ * 低頻輪詢：僅在視窗處於焦點且位於黑板頁面時，每 4 秒自動檢查一次雲端分支狀態
  */
 setInterval(() => {
     const loggedInUser = localStorage.getItem("currentUser");
-    if (loggedInUser && !isInitializing) {
+    const blackboardPage = document.getElementById("page-blackboard");
+    const isVisible = blackboardPage && blackboardPage.style.display !== "none";
+
+    if (document.visibilityState === 'visible' && isVisible && loggedInUser && !isInitializing) {
         updateBranchList();
     }
-}, 60000);
+}, 4000);
 
 /**
  * PWA Service Worker 註冊

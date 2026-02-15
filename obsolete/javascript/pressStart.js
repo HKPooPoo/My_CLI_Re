@@ -68,5 +68,5 @@ window.addEventListener("blur", () => {
     focusTimer = setTimeout(() => {
         overlay.classList.add("crt-switch-on");
         overlay.style.display = "flex";
-    }, 600000000) //default 60000
+    }, 60000) //default 60000
 })
