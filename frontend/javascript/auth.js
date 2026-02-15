@@ -1,10 +1,21 @@
+/**
+ * Auth Manager - Account & Synchronization Control
+ * =================================================================
+ * 介紹：負責處理使用者身份驗證 (登入/註冊/登出) 與後端 API 通訊。
+ * 職責：
+ * 1. 管理帳戶相關的 DOM 元素與顯示狀態切換。
+ * 2. 實作登入/註冊資料提交與憑證處理。
+ * 3. 使用 `MultiStepButton` 為註冊按鈕提供防誤點的四階確認機制。
+ * 4. 維護本地 `localStorage` 的登入紀錄，並在狀態改變時廣播全域事件。
+ * 依賴：blackboard-msg.js, multiStepButton.js
+ * =================================================================
+ */
+
 import { BBMessage } from "./blackboard-msg.js";
 import { MultiStepButton } from "./multiStepButton.js";
 
-/**
- * 帳戶系統前端控制
- */
 export const AuthManager = {
+    // --- DOM 引用 ---
     elements: {
         uidInput: document.getElementById("auth-uid"),
         passcodeInput: document.getElementById("auth-passcode"),
@@ -18,7 +29,7 @@ export const AuthManager = {
 
     /**
      * 更新 UI 顯示狀態
-     * @param {string|null} uid 使用者 ID，null 代表未登入
+     * 步驟：1. 若有 UID 則隱藏登入區、顯示登出區 2. 同步 localStorage 3. 發送全域廣播
      */
     updateUI(uid) {
         if (uid) {
@@ -32,23 +43,27 @@ export const AuthManager = {
             this.elements.userInfoUid.textContent = "";
             localStorage.setItem("currentUser", "");
         }
-        // 通知 HUD 與其他組件狀態已改變
+
+        // 通知 HUD、黑板等組件進行重繪或 API 刷新
         window.dispatchEvent(new CustomEvent("blackboard:authUpdated"));
     },
 
     /**
-     * 初始化並檢查登入狀態
+     * 初始化啟動
      */
     async init() {
         this.bindEvents();
 
-        // 初始可從 localStorage 讀取
+        // 恢復上次登入狀態
         const currentUser = localStorage.getItem("currentUser");
         this.updateUI(currentUser && currentUser !== "local" ? currentUser : null);
     },
 
+    /**
+     * 事件綁定區
+     */
     bindEvents() {
-        // 登入
+        // --- 登入邏輯 ---
         this.elements.loginBtn?.addEventListener("click", async () => {
             const uid = this.elements.uidInput.value.trim();
             const passcode = this.elements.passcodeInput.value.trim();
@@ -62,7 +77,7 @@ export const AuthManager = {
                 const res = await fetch('/api/login', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    credentials: 'include',
+                    credentials: 'include', // 確保攜帶 Session Cookie
                     body: JSON.stringify({ uid, passcode })
                 });
                 const data = await res.json();
@@ -80,7 +95,7 @@ export const AuthManager = {
             }
         });
 
-        // 註冊 - MultiStep 試刀
+        // --- 註冊邏輯 (四階步進確認) ---
         if (this.elements.registerBtn) {
             new MultiStepButton(this.elements.registerBtn, [
                 {
@@ -131,18 +146,19 @@ export const AuthManager = {
             ], 4000);
         }
 
-        // 登出
+        // --- 登出邏輯 ---
         this.elements.logoutBtn?.addEventListener("click", async () => {
             try {
                 await fetch('/api/logout', { method: 'POST' });
                 this.updateUI(null);
                 BBMessage.info("已登出");
             } catch (e) {
+                // 即使後端出錯，前端也要強制清理狀態
                 this.updateUI(null);
             }
         });
     }
 };
 
-// 立即執行
+// --- 自動啟動 ---
 AuthManager.init();

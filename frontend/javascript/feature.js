@@ -1,29 +1,42 @@
+/**
+ * Feature - Voice to Text (Speech Recognition)
+ * =================================================================
+ * 介紹：負責處理語音輸入功能，將錄音轉換為 Base64 並透過 PHP Proxy 調用 Speech API。
+ * 職責：
+ * 1. 錄音管理：使用 MediaRecorder API 進行音頻採集。
+ * 2. 游標追蹤：實時監控 Textarea 的游標位置，確保聽寫結果準確插入。
+ * 3. 狀態反饋：提供 Recording (錄音中)、Processing (處理中)、Error (出錯) 的視覺狀態。
+ * 4. 插入邏輯：處理文字插入後的字串拼接與輸入事件觸發 (以連動黑板自動儲存)。
+ * 依賴：/api/speech (後端 Proxy)
+ * =================================================================
+ */
 
-// Voice-to-Text using PHP Proxy (No API Key Exposed)
+// --- DOM 引用 ---
 const $voiceBtn = document.querySelector('[data-feature-btn="voice-to-textbox"]');
 const $textarea = document.getElementById("log-textarea");
 
+// --- 錄音狀態與快取 ---
 let mediaRecorder;
 let audioChunks = [];
 let isRecording = false;
 
-// Track Cursor
+// --- 游標位置追蹤 ---
 let savedCursorPosition = 0;
 let isTextareaFocused = false;
 
+// --- 初始化監聽 ---
 if ($voiceBtn && $textarea) {
-    // Prevent focus loss on button PRESS
+    // 預防機制：在點擊按鈕時不讓 Textarea 失去焦點 (避免手機鍵盤縮回)
     $voiceBtn.addEventListener('mousedown', (e) => {
         if (document.activeElement === $textarea) {
-            e.preventDefault(); // Keep focus on textarea
+            e.preventDefault();
         }
     });
 
-    // Track focus
     $textarea.addEventListener('focus', () => { isTextareaFocused = true; });
     $textarea.addEventListener('blur', () => { isTextareaFocused = false; });
 
-    // Track cursor continuously
+    // 實時更新游標位置：覆蓋所有可能的輸入與移動情境
     ['keyup', 'click', 'input', 'focus'].forEach(event => {
         $textarea.addEventListener(event, () => {
             savedCursorPosition = $textarea.selectionStart;
@@ -31,30 +44,30 @@ if ($voiceBtn && $textarea) {
     });
 
     $voiceBtn.addEventListener("click", toggleRecording);
-} else {
-    console.error("Voice-to-text elements not found.");
 }
 
+/**
+ * 切換錄音狀態
+ */
 async function toggleRecording() {
     if (!$textarea) return;
 
     if (!isRecording) {
-        // START: Check if textarea is focused
+        // 開始錄音前置檢查：必須聚焦在文字框
         if (!isTextareaFocused) {
             flashError();
             return;
         }
-
-        // Save position at start
         savedCursorPosition = $textarea.selectionStart;
-
         await startRecording();
     } else {
-        // STOP
         await stopRecording();
     }
 }
 
+/**
+ * 錯誤閃爍反饋
+ */
 function flashError() {
     $voiceBtn.classList.add('error');
     setTimeout(() => {
@@ -62,6 +75,10 @@ function flashError() {
     }, 500);
 }
 
+/**
+ * 執行錄音採集
+ * 步驟：1. 申請麥克風權限 2. 建立 MediaRecorder 3. 收集 AudioChunks 4. 註冊 Stop 回調進行轉碼
+ */
 async function startRecording() {
     try {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -69,131 +86,99 @@ async function startRecording() {
         audioChunks = [];
 
         mediaRecorder.ondataavailable = (event) => {
-            if (event.data.size > 0) {
-                audioChunks.push(event.data);
-            }
+            if (event.data.size > 0) audioChunks.push(event.data);
         };
 
         mediaRecorder.onstop = async () => {
-            // Stop all mic tracks immediately
-            stream.getTracks().forEach(track => track.stop());
-
+            stream.getTracks().forEach(track => track.stop()); // 立即釋放麥克風
             const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
             await transcribeAudio(audioBlob);
         };
 
         mediaRecorder.start();
         isRecording = true;
-
-        // Visual feedback
         $voiceBtn.classList.add("recording");
 
     } catch (err) {
-        console.error("Error accessing microphone:", err);
-        alert("Mic Error");
+        console.error("Mic Access Error:", err);
         $voiceBtn.classList.remove("recording");
     }
 }
 
+/**
+ * 停止錄音並切換至處理狀態
+ */
 async function stopRecording() {
     if (mediaRecorder && mediaRecorder.state !== 'inactive') {
         mediaRecorder.stop();
         isRecording = false;
     }
-
-    // Processing state
     $voiceBtn.classList.remove("recording");
     $voiceBtn.classList.add("processing");
 }
 
+/**
+ * 調用 Speech API (透過 Proxy)
+ * 步驟：1. 將 Blob 轉為 Base64 2. 送往 /api/speech 3. 解析轉錄文字 4. 調用插入函數
+ */
 async function transcribeAudio(audioBlob) {
     const reader = new FileReader();
     reader.readAsDataURL(audioBlob);
 
     reader.onloadend = async () => {
-        // Get Base64
         const base64Audio = reader.result.split(',')[1];
-
         try {
-            // Call PHP Proxy
-            const url = "/api/speech";
-
-            const payload = {
-                audio: base64Audio
-            };
-
-            // console.log("Sending Speech-to-Text request to proxy...");
-
-            const response = await fetch(url, {
+            const response = await fetch("/api/speech", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(payload)
+                body: JSON.stringify({ audio: base64Audio })
             });
 
-            if (!response.ok) {
-                throw new Error(`Server Error: ${response.status}`);
-            }
+            if (!response.ok) throw new Error(`Server Error: ${response.status}`);
 
             const data = await response.json();
-            // console.log("Speech-to-Text response:", data);
-
             if (data.error) {
                 console.error("Speech API Error:", data.error);
-                alert("API Error: " + (data.error.message || "Unknown Error"));
                 return;
             }
 
             const transcript = data.results?.[0]?.alternatives?.[0]?.transcript;
-
             if (transcript) {
                 insertTextAtCursor(transcript);
-            } else {
-                console.warn("No transcription returned");
             }
 
         } catch (error) {
-            console.error("Request Error:", error);
-            flashError(); // Network error feedback
+            console.error("Transcribe Request Error:", error);
+            flashError();
         } finally {
-            // Always reset UI
-            $voiceBtn.classList.remove("active");
-            $voiceBtn.classList.remove("recording");
-            $voiceBtn.classList.remove("processing");
+            $voiceBtn.classList.remove("active", "recording", "processing");
             isRecording = false;
         }
     };
 }
 
+/**
+ * 文字插入邏輯
+ * 步驟：1. 獲取原文字與預存游標位 2. 切開字串並置入轉錄內容 3. 觸發 input 事件以觸發黑板自動儲存 4. 修正游標位
+ */
 function insertTextAtCursor(text) {
     if (!$textarea) return;
 
-    // Logic: Insert at savedCursorPosition
     const originalText = $textarea.value;
     const pos = savedCursorPosition;
-
-    // Ensure pos is within bounds
     const validPos = Math.min(Math.max(0, pos), originalText.length);
 
     const newText = originalText.substring(0, validPos) + text + originalText.substring(validPos);
     $textarea.value = newText;
 
-    // Trigger input
+    // 重要：手動觸發 input 事件，否則 blackboard.js 不會監聽到內容變動
     $textarea.dispatchEvent(new Event('input'));
 
-    // Move cursor to end of inserted text
     const newCursorPos = validPos + text.length;
 
-    // Update selection range so next typing happens at correct spot
-    // But DO NOT force focus() if it was lost, to avoid keyboard popup on mobile
-
-    if (document.activeElement === $textarea) {
-        $textarea.setSelectionRange(newCursorPos, newCursorPos);
-        // Already focused, keep it
-    } else {
-        // If not focused (e.g. mobile keyboard closed), just update selection without focusing
-        // Setting selection range on a non-focused element usually doesn't trigger focus/keyboard
-        $textarea.setSelectionRange(newCursorPos, newCursorPos);
-        // Explicitly ensure blur to stay safe against keyboard popup
-        $textarea.blur();
+    // 更新游標位置，並處理移動端焦點防噴發
+    $textarea.setSelectionRange(newCursorPos, newCursorPos);
+    if (document.activeElement !== $textarea) {
+        $textarea.blur(); // 若本來就沒聚焦，不強制 focus
     }
 }

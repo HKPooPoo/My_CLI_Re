@@ -1,8 +1,19 @@
 /**
- * Blackboard 介面渲染與事件綁定層
+ * Blackboard UI - Presentation Layer
+ * =================================================================
+ * 介紹：負責黑板系統的所有 DOM 交互、介面渲染與自定義事件廣播。
+ * 職責：
+ * 1. 維護介面元素的引用清單 (elements)。
+ * 2. 實作黑板狀態指示器 (分支名、Head 索引、儲存狀態) 的動態更新。
+ * 3. 負責文字框 (Textarea) 的雙向數據存取。
+ * 4. 具備高階渲染邏輯：渲染分支列表，並自動處理「Local/Remote 混合顯示」與「同步/非同步狀態標籤」。
+ * 5. 處理 UI 內的內聯事件 (如分改名)。
+ * 依賴：無 (由 blackboard.js 調用)
+ * =================================================================
  */
+
 export const BBUI = {
-    // DOM 引用
+    // --- DOM 引用清單 ---
     elements: {
         pushBtn: document.querySelector(".push-btn"),
         pullBtn: document.querySelector(".pull-btn"),
@@ -16,18 +27,18 @@ export const BBUI = {
     },
 
     /**
-     * 更新畫面上的狀態指示器
+     * 更新狀態指示器 (Indicators)
      */
     updateIndicators(branch, head, isSaved = true) {
-        if (this.elements.branchName) this.elements.branchName.textContent = branch;
-        if (this.elements.headIndex) this.elements.headIndex.textContent = head;
+        if (this.elements.branchName && branch !== undefined) this.elements.branchName.textContent = branch;
+        if (this.elements.headIndex && head !== undefined) this.elements.headIndex.textContent = head;
         if (this.elements.savedStatus) {
             this.elements.savedStatus.textContent = isSaved ? "SAVED" : "UNSAVED";
         }
     },
 
     /**
-     * 設定黑板文字內容
+     * 設定文字框內容並強制重設儲存標籤
      */
     setTextarea(text) {
         if (this.elements.textarea) {
@@ -44,7 +55,13 @@ export const BBUI = {
     },
 
     /**
-     * 渲染分支列表
+     * 渲染分支列表 (VCS List)
+     * 步驟：
+     * 1. 清空容器。
+     * 2. 遍歷分支清單 -> 根據 ID 與 Owner 判定 Active 狀態。
+     * 3. 計算並構造擁有者文字 (如 local, online/uid [synced])。
+     * 4. 插入 DOM 並綁定內部改名 Input 的 Change 事件。
+     * 5. 廣播 listUpdated 事件觸發無限滾動刷新。
      */
     renderBranchList(branches, activeBranchId, activeOwner) {
         const container = document.querySelector(".vcs-list-container");
@@ -54,14 +71,14 @@ export const BBUI = {
 
         branches.forEach(branch => {
             const item = document.createElement("div");
-            // 雙重檢查：ID 相同且擁有者相同才是真正的 Active
+            // 注意：Active 必須 ID 與 Owner 同時匹配 (排除只有其中一邊存在的情況)
             const isActive = branch.id === activeBranchId && branch.owner === activeOwner;
 
             item.className = `vcs-list-item ${isActive ? 'active' : ''}`;
             item.dataset.branchId = branch.id;
             item.dataset.branchName = branch.name;
 
-            // 根據邏輯判定顯示文字
+            // --- 狀態標籤生成邏輯 ---
             let ownerDisplay = "";
             if (branch.isLocal && branch.isServer) {
                 const syncStatus = branch.isDirty ? "asynced" : "synced";
@@ -78,7 +95,7 @@ export const BBUI = {
                 <div class="vcs-list-owner">${ownerDisplay}</div>
             `;
 
-            // 監聽改名事件
+            // 改名監聽：由 UI 對象直接捕捉並向上廣播自定義事件，不處理具體資料邏輯
             const input = item.querySelector(".vcs-list-branch");
             input.addEventListener("change", (e) => {
                 const newName = e.target.value.trim() || branch.name;
@@ -90,7 +107,7 @@ export const BBUI = {
             container.appendChild(item);
         });
 
-        // 觸發自定義事件讓 InfiniteList 更新
+        // 打開信號讓 blackboard-ui-list.js 重新計算無限滾動高度
         window.dispatchEvent(new CustomEvent("blackboard:listUpdated"));
     }
 };

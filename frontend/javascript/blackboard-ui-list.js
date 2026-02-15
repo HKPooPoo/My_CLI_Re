@@ -1,33 +1,48 @@
 /**
- * 無限捲動列表控制類別
- * 用於處理分支、隱藏 (Stash) 等列表的游標移動與選取
+ * Infinite List Controller
+ * =================================================================
+ * 介紹：負責處理 UI 列表 (如 VCS 分支列表、Stash 列表) 的「無限滾動」與「游標導航」邏輯。
+ * 職責：
+ * 1. 同步：確保 JavaScript 快取中的列表項與當前 DOM 結構保持一致 (Refresh)。
+ * 2. 導航：控制 Active 指標的移動，並實作循環選取 (向上溢出至底，向下溢出至頂)。
+ * 3. 滾動：接管容器的 Wheel 事件，將滾輪物理捲動轉換為邏輯項目移位。
+ * 4. UX：確保選中的項目始終處於可視區域 (ScrollIntoView)。
+ * 依賴：無
+ * =================================================================
  */
+
 export class InfiniteList {
+    /**
+     * @param {HTMLElement} containerElement 包含列表項的容器
+     * @param {string} itemSelector 子項目的 CSS 選擇器
+     */
     constructor(containerElement, itemSelector = ".vcs-list-item") {
         this.container = containerElement;
         this.itemSelector = itemSelector;
-        this.items = [];
+        this.items = [];      // 用於快取 DOM 引用
         this.activeIndex = -1;
 
         this.refresh();
         this.initEventListeners();
     }
 
+    /**
+     * 綁定底層事件
+     */
     initEventListeners() {
-        // 使用 { passive: false } 確保 e.preventDefault() 能生效
+        // --- 滾輪接管 ---
         this.container.addEventListener("wheel", (e) => {
-            // 執行 refresh 確保目前的 DOM 結構與記憶體同步
-            this.refresh();
+            this.refresh(); // 滾動前先確保引用最新 (例如剛渲染完)
 
             if (this.items.length === 0) return;
 
-            // 只有當確定有 items 時才攔截原生捲動
+            // 步驟：1. 阻斷瀏覽器原生捲動 2. 判斷滾輪方向 3. 演進游標
             e.preventDefault();
-
             const direction = e.deltaY > 0 ? 1 : -1;
             this.moveCursor(direction);
         }, { passive: false });
 
+        // --- 點擊反饋 ---
         this.container.addEventListener("click", (e) => {
             const item = e.target.closest(this.itemSelector);
             if (item) {
@@ -40,22 +55,28 @@ export class InfiniteList {
         });
     }
 
+    /**
+     * 位移游標 (演進邏輯)
+     */
     moveCursor(direction) {
         if (this.items.length === 0) return;
 
         let newIndex = this.activeIndex + direction;
 
-        // 循環邏輯
-        if (newIndex >= this.items.length) newIndex = 0;
-        else if (newIndex < 0) newIndex = this.items.length - 1;
+        // --- 循環處理 ---
+        if (newIndex >= this.items.length) newIndex = 0;              // 超過底部回到頂部
+        else if (newIndex < 0) newIndex = this.items.length - 1;     // 超過頂部回到底部
 
         this.setCursor(newIndex);
     }
 
+    /**
+     * 強制設定游標位置 (渲染邏輯)
+     */
     setCursor(index) {
         if (index < 0 || index >= this.items.length) return;
 
-        // 視覺更新：先移除所有項目的 active 類別
+        // 移除舊高亮
         this.items.forEach(item => item.classList.remove("active"));
 
         this.activeIndex = index;
@@ -63,25 +84,25 @@ export class InfiniteList {
 
         if (newItem) {
             newItem.classList.add("active");
-            // 捲動到可視區域，確保 UX 流暢
+            // 保保：確保元素在長列表中不會因滾動而消失，平滑對齊到最近邊緣
             newItem.scrollIntoView({ behavior: "smooth", block: "nearest" });
         }
     }
 
     /**
-     * 同步 DOM 項目與內部 state
+     * 數據同步 (Sync Heartbeat)
+     * 邏輯：重新抓取所有符合選擇器的 DOM 項，並嘗試恢復先前的 Active 狀態，若丟失則歸零。
      */
     refresh() {
-        // 重新抓取容器內的所有目標項目
         this.items = Array.from(this.container.querySelectorAll(this.itemSelector));
 
-        // 優先從 DOM 中尋找目前被標記為 active 的項目
+        // 嘗試從現實 DOM 中找回靈魂
         const domActiveIndex = this.items.findIndex(item => item.classList.contains("active"));
 
         if (domActiveIndex !== -1) {
             this.activeIndex = domActiveIndex;
         } else if (this.items.length > 0) {
-            // 如果 DOM 中沒有 active (例如剛同步完)，則預設選中第一個
+            // 系統初始化或剛同步完的預設行為
             this.activeIndex = 0;
             this.items[0].classList.add("active");
         } else {
@@ -90,11 +111,12 @@ export class InfiniteList {
     }
 }
 
-// 實例化快取
-const listInstances = new WeakMap();
+// --- 實例工廠 ---
+const listInstances = new WeakMap(); // 使用 WeakMap 避免內存洩漏，讓 DOM 銷毀時對象也能自動釋放
 
 /**
- * 初始化頁面中所有的無限列表
+ * 全域初始化入口
+ * 用於頁面渲染完成後，自動掃描並賦予列表無限滾動能力。
  */
 export function initAllInfiniteLists() {
     const containers = document.querySelectorAll(".vcs-list-container");
@@ -104,7 +126,7 @@ export function initAllInfiniteLists() {
             instance = new InfiniteList(container);
             listInstances.set(container, instance);
         } else {
-            instance.refresh(); // 已存在的列表只需更新內部引用
+            instance.refresh(); // 若已存在，則執行同步
         }
     });
 }
