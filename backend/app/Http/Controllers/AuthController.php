@@ -20,21 +20,21 @@ class AuthController extends Controller
      */
     public function register(Request $request)
     {
-        try {
-            $request->validate([
-                'uid' => 'required|alpha_dash|unique:users|max:32',
-                'passcode' => 'required|string|regex:/^[a-zA-Z0-9!@#$%^&*]{8,32}$/',
-            ], [
-                'passcode.regex' => 'PASSCODE MUST BE 8-32 CHARS AND CONTAINS NO SPACES.'
-            ]);
+        $request->validate([
+            'uid' => 'required|alpha_dash|unique:users|max:32',
+            'passcode' => 'required|string|regex:/^[a-zA-Z0-9!@#$%^&*]{4,32}$/',
+        ], [
+            'passcode.regex' => 'PASSCODE MUST BE 4-32 CHARS AND CONTAINS NO SPACES.'
+        ]);
 
+        try {
             $user = User::create([
                 'uid' => $request->uid,
                 'passcode' => Hash::make($request->passcode),
             ]);
 
             return response()->json([
-                'message' => '註冊成功',
+                'message' => 'REGISTRATION SUCCESSFUL',
                 'user' => $user
             ], 201);
         } catch (\Exception $e) {
@@ -48,22 +48,22 @@ class AuthController extends Controller
      */
     public function login(Request $request)
     {
-        try {
-            $request->validate([
-                'uid' => 'required',
-                'passcode' => 'required',
-            ]);
+        $request->validate([
+            'uid' => 'required',
+            'passcode' => 'required',
+        ]);
 
+        try {
             $user = User::where('uid', $request->uid)->first();
 
             if (!$user || !Hash::check($request->passcode, $user->passcode)) {
-                return response()->json(['message' => 'UID 或 Passcode 錯誤'], 401);
+                return response()->json(['message' => 'INVALID UID OR PASSCODE'], 401);
             }
 
             Auth::login($user);
 
             return response()->json([
-                'message' => '登入成功',
+                'message' => 'LOGIN SUCCESSFUL',
                 'user' => [
                     'uid' => $user->uid
                 ]
@@ -80,7 +80,7 @@ class AuthController extends Controller
     public function logout()
     {
         Auth::logout();
-        return response()->json(['message' => '已登出']);
+        return response()->json(['message' => 'LOGGED OUT']);
     }
 
     /**
@@ -130,11 +130,12 @@ class AuthController extends Controller
      */
     public function requestEmailBinding(Request $request)
     {
+        $request->validate([
+            'email' => 'required|email|max:255'
+        ]);
+
         try {
             $user = Auth::user();
-            $request->validate([
-                'email' => 'required|email|max:255'
-            ]);
             $email = $request->input('email');
 
             if (!$user)

@@ -138,7 +138,7 @@ async function updateBranchList() {
                 }
             });
         } catch (e) {
-            console.error("無法載入雲端分支", e);
+            console.error("FAILED TO LOAD CLOUD BRANCHES", e);
         }
     }
 

@@ -15,13 +15,14 @@ import Dexie from './vendor/dexie.js';
 const db = new Dexie('blackboardDB');
 
 // --- 版本與 Schema 定義 ---
-db.version(6).stores({
+db.version(7).stores({
     /**
      * blackboard 表
      * 欄位：[owner+branchId+timestamp], branch_name, text, bin
      * 索引：owner (用於登出抹除), branchId (用於快速查詢)
+     * 新增索引：[branchId+timestamp] (用於解決 local(synced) 與 local 混合時的排序問題)
      */
-    blackboard: '[owner+branchId+timestamp], owner, branchId'
+    blackboard: '[owner+branchId+timestamp], owner, branchId, [branchId+timestamp]'
 });
 
 export default db;

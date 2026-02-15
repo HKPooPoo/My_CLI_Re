@@ -26,14 +26,31 @@ class BlackboardController extends Controller
         }
 
         return DB::transaction(function () use ($user, $branchId, $branchName, $records) {
+            // 1. 取得本次 Commit 的所有時間戳記
+            $incomingTimestamps = array_column($records, 'timestamp');
+
+            // 2. 清理「垃圾資料」：刪除雲端上有但在本次 Commit 列表以外的舊紀錄
+            // 這解決了編輯紀錄後產生的舊 timestamp 殘留，以及本地 pruning 後的雲端殘留問題
+            DB::table('blackboards')
+                ->where('owner', $user->uid)
+                ->where('branch_id', $branchId)
+                ->whereNotIn('timestamp', $incomingTimestamps)
+                ->delete();
+
             $insertData = [];
             foreach ($records as $record) {
+                // 檢查文字內容是否為空，避免上傳無意義的空白頁到資料庫 (垃圾資料防治)
+                $text = $record['text'] ?? '';
+                if (trim($text) === "" && empty($record['bin'])) {
+                    continue;
+                }
+
                 $insertData[] = [
                     'owner' => $user->uid,
                     'branch_id' => $branchId,
                     'branch_name' => $branchName,
                     'timestamp' => $record['timestamp'],
-                    'text' => $record['text'],
+                    'text' => $text,
                     'bin' => $record['bin'] ?? null,
                     'created_at' => now(),
                     'updated_at' => now(),

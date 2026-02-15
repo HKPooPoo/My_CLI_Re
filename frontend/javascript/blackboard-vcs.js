@@ -13,6 +13,9 @@ export const BBVCS = {
         // 先儲存當前內容
         await this.save(state, currentText);
 
+        // 數據清洗
+        await BBCore.scrubBranch(state.owner, state.branchId, state.maxSlot);
+
         // 1. 如果在歷史頁面，則往回跳一頁 (回到較新紀錄)
         if (state.currentHead > 0) {
             state.currentHead--;
@@ -34,6 +37,9 @@ export const BBVCS = {
      * 執行拉回 (向後翻閱歷史)
      */
     async pull(state, currentText) {
+        // 數據清洗
+        await BBCore.scrubBranch(state.owner, state.branchId, state.maxSlot);
+
         const count = await BBCore.countRecords(state.owner, state.branchId);
 
         if (state.currentHead < count - 1) {
@@ -81,13 +87,18 @@ export const BBVCS = {
         const { branchId, branch } = branchMeta;
 
         const loggedInUser = localStorage.getItem("currentUser");
-        if (!loggedInUser) throw new Error("請先登入以進行 Commit");
+        if (!loggedInUser) throw new Error("LOGIN REQUIRED FOR COMMIT.");
+
+        // 0. Commit 前執行數據清洗 (移除空值與溢出)
+        // 嘗試從環境中取得 maxSlot，若無則預設 10
+        const maxSlot = parseInt(localStorage.getItem("blackboard_max_slot")) || 10;
+        await BBCore.scrubBranch("local", branchId, maxSlot);
 
         // 1. 抓取該分支的所有紀錄
         const records = await BBCore.getAllRecordsForBranch("local", branchId);
 
         if (records.length === 0) {
-            throw new Error("本地無資料，請先 CHECKOUT 同步。");
+            throw new Error("LOCAL DATA NOT FOUND. CHECKOUT FIRST.");
         }
 
         // 2. 上傳至伺服器
@@ -104,7 +115,7 @@ export const BBVCS = {
 
         if (!res.ok) {
             const err = await res.json();
-            throw new Error(err.message || "上傳失敗");
+            throw new Error(err.message || "UPLOAD FAILED.");
         }
 
         // Commit 成功後，將本地紀錄標記為 Synced 狀態
@@ -123,7 +134,7 @@ export const BBVCS = {
     async checkout(state, targetBranchId, targetOwner) {
         // 1. 如果目標是雲端分支，不論本地有無資料都先進行同步 (確保最新)
         if (targetOwner !== "local") {
-            BBMessage.info("正在從雲端同步分支資料...");
+            BBMessage.info("SYNCING BRANCH DATA FROM CLOUD...");
             const res = await fetch(`/api/blackboard/branches/${targetBranchId}`, {
                 credentials: 'include'
             });
@@ -146,8 +157,11 @@ export const BBVCS = {
 
                 // 使用 bulkPut 強制覆蓋本地舊有的同 ID/timestamp 紀錄
                 await db.blackboard.bulkPut(downloadRecords);
+
+                // 同步後執行數據清洗
+                await BBCore.scrubBranch("local", targetBranchId, state.maxSlot || 10);
             } else {
-                console.warn("雲端同步失敗，嘗試使用本地緩存");
+                console.warn("CLOUD SYNC FAILED. USING LOCAL CACHE.");
             }
         }
 
