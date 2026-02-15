@@ -42,3 +42,16 @@
     mask: url('../images/theme_switch.svg');
     transition: all 0.16s ease-in;
 }
+
+@media (hover: hover) {
+    #theme-change-btn:hover {
+        opacity: 1;
+        background-color: white;
+        box-shadow: 0 0 10px white;
+    }
+
+    :root[data-theme="light"] #theme-change-btn:hover {
+        background-color: #32FF32;
+        box-shadow: 0 0 10px #32FF32;
+    }
+}

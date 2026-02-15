@@ -4,7 +4,7 @@
     bottom: 2rem;
     right: 2rem;
     display: flex;
-    flex-direction: column-reverse;
+    flex-direction: column;
     /* Newest at bottom */
     gap: 0.5rem;
     pointer-events: none;
