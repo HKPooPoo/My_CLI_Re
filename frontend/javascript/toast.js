@@ -19,10 +19,10 @@ export class ToastMessager {
     /**
      * 彈出一條新訊息
      * @param {string} text 訊息內容
-     * @param {number} duration 顯示時長 (預設 3 秒)
+     * @param {number} duration 顯示時長 (預設 30 秒)
      * @returns {Object} 訊息控制對象 { update, close }
      */
-    addMessage(text, duration = 3000) {
+    addMessage(text, duration = 30000) {
         if (!this.container) {
             console.warn('Toast container not found');
             return { update: () => { }, close: () => { } };
@@ -58,9 +58,9 @@ export class ToastMessager {
             /**
              * 更新訊息內容並重設計時器
              * @param {string} newText 新文字
-             * @param {number} newDuration 新時長 (默認 3 秒)
+             * @param {number} newDuration 新時長 (默認 30 秒)
              */
-            update: (newText, newDuration = 3000) => {
+            update: (newText, newDuration = 30000) => {
                 toast.textContent = newText;
                 scheduleRemove(newDuration);
             },

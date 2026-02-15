@@ -39,11 +39,16 @@ self.addEventListener('fetch', (event) => {
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
       const fetchPromise = fetch(event.request).then((networkResponse) => {
+        // [FIX]: 必須立即克隆響應，否則在寫入快取前可能已被瀏覽器消耗
+        const responseToCache = networkResponse.clone();
+        
         caches.open(CACHE_NAME).then((cache) => {
-          cache.put(event.request, networkResponse.clone());
+          cache.put(event.request, responseToCache);
         });
+        
         return networkResponse;
       });
+      
       return cachedResponse || fetchPromise;
     })
   );

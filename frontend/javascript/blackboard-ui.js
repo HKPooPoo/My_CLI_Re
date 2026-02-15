@@ -81,7 +81,7 @@ export const BBUI = {
             item.className = `vcs-list-item ${isActive ? 'active' : ''}`;
             item.dataset.branchId = branch.id;
             item.dataset.branchName = branch.name;
-            
+
             // 轉義顯示內容
             const safeName = this.escapeHTML(branch.name);
             const safeOwner = this.escapeHTML(branch.owner);
@@ -98,7 +98,7 @@ export const BBUI = {
             }
 
             item.innerHTML = `
-                <input type="text" class="vcs-list-branch" value="${safeName}" placeholder="Name your branch..." name="vcs-list-branch" maxlength="32">
+                <input type="text" class="vcs-list-branch" value="${safeName}" placeholder="Name your branch..." name="vcs-list-branch" maxlength="64">
                 <div class="vcs-list-timestamp">${branch.displayTime}</div>
                 <div class="vcs-list-owner">${ownerDisplay}</div>
             `;

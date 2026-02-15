@@ -7,6 +7,13 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BlackboardController;
 use Illuminate\Support\Facades\Route;
 
+use App\Mail\ResetPasscodeMail;
+
+Route::get('/mail-preview', function () {
+    // 模擬資料
+    return new ResetPasscodeMail('test_user_01', '/passwd --token 1234 --new secret');
+});
+
 // Translation — auto-detect source, target specified by client
 Route::post('/translate', [TranslationController::class, 'translate']);
 
