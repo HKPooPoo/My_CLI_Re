@@ -11,6 +11,8 @@
  * =================================================================
  */
 
+import { playAudio } from "./audio.js";
+
 export class InfiniteList {
     /**
      * @param {HTMLElement} containerElement 包含列表項的容器
@@ -67,13 +69,15 @@ export class InfiniteList {
         if (newIndex >= this.items.length) newIndex = 0;              // 超過底部回到頂部
         else if (newIndex < 0) newIndex = this.items.length - 1;     // 超過頂部回到底部
 
-        this.setCursor(newIndex);
+        this.setCursor(newIndex, false);
     }
 
     /**
      * 強制設定游標位置 (渲染邏輯)
+     * @param {number} index 目標索引
+     * @param {boolean} silent 是否靜音
      */
-    setCursor(index) {
+    setCursor(index, silent = false) {
         if (index < 0 || index >= this.items.length) return;
 
         // 移除舊高亮
@@ -86,6 +90,11 @@ export class InfiniteList {
             newItem.classList.add("active");
             // 保保：確保元素在長列表中不會因滾動而消失，平滑對齊到最近邊緣
             newItem.scrollIntoView({ behavior: "smooth", block: "nearest" });
+
+            // --- 播放音效 ---
+            if (!silent && this.container.dataset.soundItem) {
+                playAudio(this.container.dataset.soundItem);
+            }
         }
     }
 
@@ -103,8 +112,7 @@ export class InfiniteList {
             this.activeIndex = domActiveIndex;
         } else if (this.items.length > 0) {
             // 系統初始化或剛同步完的預設行為
-            this.activeIndex = 0;
-            this.items[0].classList.add("active");
+            this.setCursor(0, true);
         } else {
             this.activeIndex = -1;
         }
