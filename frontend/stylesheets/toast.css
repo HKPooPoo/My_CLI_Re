@@ -2,7 +2,7 @@
 #toast-container {
     position: absolute;
     bottom: 2rem;
-    right: calc(var(--sub-navi-height) / 2);
+    right: 2rem;
     display: flex;
     flex-direction: column-reverse;
     /* Newest at bottom */
@@ -18,6 +18,7 @@
     background-color: var(--bg-color);
     border: 1px solid var(--text-green);
     color: var(--text-green);
+    right: calc(var(--sub-navi-height) / 2);
     padding: 0.75rem 1rem;
     font-family: inherit;
     /* Use global retro font */

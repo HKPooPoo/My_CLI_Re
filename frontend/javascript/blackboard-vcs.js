@@ -69,6 +69,12 @@ export const BBVCS = {
         // 2. 抓取目前 local 分支的所有紀錄
         const records = await BBCore.getAllRecordsForBranch("local", state.branchId);
 
+        // [BUG FIX]: 如果本地沒有任何紀錄，代表該分支尚未在當前裝置初始化或 Checkout。
+        // 直接上傳會導致雲端資料被誤刪或出現空分支。
+        if (records.length === 0) {
+            throw new Error("本地無資料。請先點擊 CHECKOUT 同步雲端內容。");
+        }
+
         // 3. 上傳至伺服器
         const res = await fetch('/api/blackboard/commit', {
             method: 'POST',
@@ -90,44 +96,42 @@ export const BBVCS = {
     },
 
     /**
-     * Checkout: 切換分支，若本地不存在則從雲端抓取
+     * Checkout: 切換分支，若為雲端分支則強制從雲端抓取最新紀錄並合併至本地
      */
     async checkout(state, targetBranchId, targetOwner) {
-        // 1. 檢查本地 IndexedDB 是否已有該分支資料 (owner: local)
-        const localRecords = await BBCore.getAllRecordsForBranch("local", targetBranchId);
-
-        if (localRecords.length === 0 && targetOwner !== "local") {
-            // 2. 本地無資料但有線上標記 -> 從伺服器下載
+        // 1. 如果目標是雲端分支，不論本地有無資料都先進行同步 (確保最新)
+        if (targetOwner !== "local") {
             BBMessage.info("正在從雲端同步分支資料...");
             const res = await fetch(`/api/blackboard/branches/${targetBranchId}`, {
                 credentials: 'include'
             });
 
-            if (!res.ok) throw new Error("無法從雲端獲取分支內容");
+            if (res.ok) {
+                const data = await res.json();
+                // 轉換格式並存入本地 local 分區
+                const downloadRecords = data.records.map(r => ({
+                    owner: "local",
+                    branchId: parseInt(r.branch_id),
+                    branch: r.branch_name,
+                    timestamp: parseInt(r.timestamp),
+                    text: r.text,
+                    bin: r.bin,
+                    createdAt: r.created_at_hkt
+                }));
 
-            const data = await res.json();
-
-            // 3. 轉換格式並存入本地 local 分區 (確保 BigInt 欄位在前端復原為 Number)
-            const downloadRecords = data.records.map(r => ({
-                owner: "local",
-                branchId: parseInt(r.branch_id),
-                branch: r.branch_name,
-                timestamp: parseInt(r.timestamp),
-                text: r.text,
-                bin: r.bin,
-                createdAt: r.created_at_hkt
-            }));
-
-            // 使用 bulkPut 以防本地已存在部分紀錄時崩潰
-            await db.blackboard.bulkPut(downloadRecords);
+                // 使用 bulkPut 強制覆蓋本地舊有的同 ID/timestamp 紀錄
+                await db.blackboard.bulkPut(downloadRecords);
+            } else {
+                console.warn("雲端同步失敗，嘗試使用本地緩存");
+            }
         }
 
-        // 4. 更新 state (編輯區永遠是 local)
+        // 2. 更新 state (編輯區永遠是 local)
         state.branchId = targetBranchId;
         state.owner = "local";
         state.currentHead = 0;
 
-        // 嘗試更新 branchName (從 local 抓取最新一筆)
+        // 嘗試更新 branchName (從剛同步完的 local 抓取最新一筆)
         const latest = await BBCore.getRecord("local", targetBranchId, 0);
         state.branch = latest?.branch ?? "";
 
