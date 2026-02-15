@@ -34,12 +34,23 @@ export const BBCore = {
     },
 
     /**
-     * 更新紀錄的文字內容 (使用複合鍵定位)
+     * 更新紀錄的文字內容 (會同時更新 timestamp 以觸發同步偵測)
      */
-    async updateText(owner, branchId, timestamp, text) {
-        return await db.blackboard
-            .where({ owner, branchId, timestamp })
-            .modify({ text });
+    async updateText(owner, branchId, oldTimestamp, text) {
+        const oldRecord = await db.blackboard.get({ owner, branchId, timestamp: oldTimestamp });
+        if (!oldRecord) return oldTimestamp;
+
+        // 刪除舊紀錄，新增帶有新時間戳的紀錄 (因為 timestamp 是主鍵)
+        await db.blackboard.delete([owner, branchId, oldTimestamp]);
+        
+        const newTimestamp = Date.now();
+        await db.blackboard.add({
+            ...oldRecord,
+            text: text,
+            timestamp: newTimestamp
+        });
+        
+        return newTimestamp;
     },
 
     /**
@@ -137,13 +148,21 @@ export const BBCore = {
     },
 
     /**
-     * Stage 1: 清空特定分支的所有文字紀錄內容
+     * Stage 1: 清空歷史本身 (刪除所有節點並重置為一筆空白節點)
      */
     async clearBranchRecords(owner, branchId) {
-        // 更新該分支下所有紀錄的 text 為空，保留 index
-        return await db.blackboard.where('[owner+branchId+timestamp]')
+        // 1. 獲取分支名稱 (為了重置後保留名稱)
+        const latest = await this.getRecord(owner, branchId, 0);
+        const branchName = latest?.branch ?? "NAMELESS_BRANCH";
+
+        // 2. 刪除該分支所有紀錄
+        const keys = await db.blackboard.where('[owner+branchId+timestamp]')
             .between([owner, branchId, Dexie.minKey], [owner, branchId, Dexie.maxKey])
-            .modify({ text: "" });
+            .primaryKeys();
+        await db.blackboard.bulkDelete(keys);
+
+        // 3. 建立一筆全新的空白起始點
+        return await this.addRecord(owner, branchId, branchName, "");
     },
 
     /**

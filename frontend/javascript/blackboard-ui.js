@@ -81,6 +81,9 @@ export const BBUI = {
             item.className = `vcs-list-item ${isActive ? 'active' : ''}`;
             item.dataset.branchId = branch.id;
             item.dataset.branchName = branch.name;
+            item.dataset.isLocal = branch.isLocal;
+            item.dataset.isServer = branch.isServer;
+            item.dataset.isDirty = branch.isDirty;
 
             // 轉義顯示內容
             const safeName = this.escapeHTML(branch.name);
@@ -90,9 +93,9 @@ export const BBUI = {
             let ownerDisplay = "";
             if (branch.isLocal && branch.isServer) {
                 const syncStatus = branch.isDirty ? "asynced" : "synced";
-                ownerDisplay = `local, <br>online/${safeOwner} [${syncStatus}]`;
+                ownerDisplay = `local, <br>online/${this.escapeHTML(branch.serverOwner)} [${syncStatus}]`;
             } else if (branch.isServer) {
-                ownerDisplay = `online/${safeOwner} [asynced]`;
+                ownerDisplay = `online/${this.escapeHTML(branch.serverOwner)} [asynced]`;
             } else {
                 ownerDisplay = "local";
             }

@@ -53,8 +53,20 @@ export const BBVCS = {
         
         if (entry) {
             if (entry.text !== text) {
-                // 更新現有紀錄
+                // 如果我們修改的是歷史節點 (Head > 0)
+                if (state.currentHead > 0) {
+                    // 檢查當前的 Head 0 是否為空，是的話就刪掉它避免廢頁
+                    const head0 = await BBCore.getRecord(state.owner, state.branchId, 0);
+                    if (head0 && (!head0.text || head0.text.trim() === "")) {
+                        await db.blackboard.delete([head0.owner, head0.branchId, head0.timestamp]);
+                    }
+                }
+
+                // 更新現有紀錄 (這會改變 timestamp 並使該紀錄變為 Head 0)
                 await BBCore.updateText(state.owner, state.branchId, entry.timestamp, text);
+                
+                // 無腦同步：不論原本在哪，編輯後該紀錄都變成了最新的 Head 0
+                state.currentHead = 0;
             }
         } else if (state.currentHead === 0) {
             // 如果本地完全沒紀錄且在 Head 0，則視為初始點，直接新增

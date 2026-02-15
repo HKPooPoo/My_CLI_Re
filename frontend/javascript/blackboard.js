@@ -98,11 +98,12 @@ async function updateBranchList() {
             id: b.id,
             name: b.name,
             owner: "local",
-            lastUpdate: b.lastUpdate,
+            lastUpdate: Number(b.lastUpdate),
             displayTime: getHKTTimestamp(b.id),
             isLocal: true,
             isServer: false,
-            isDirty: false
+            isDirty: false,
+            serverOwner: ""
         });
     });
 
@@ -114,22 +115,25 @@ async function updateBranchList() {
 
             data.branches.forEach(sb => {
                 const sid = parseInt(sb.branch_id);
+                const serverLastUpdate = Number(sb.last_update);
                 const existing = branchMap.get(sid);
 
                 if (existing) {
                     existing.isServer = true;
-                    existing.owner = sb.owner;
-                    existing.isDirty = (parseInt(sb.last_update) !== existing.lastUpdate);
+                    existing.serverOwner = sb.owner;
+                    // 無腦比對：只要時間戳不一致，就是 asynced
+                    existing.isDirty = (serverLastUpdate !== existing.lastUpdate);
                 } else {
                     branchMap.set(sid, {
                         id: sid,
                         name: sb.branch_name,
-                        owner: sb.owner,
-                        lastUpdate: parseInt(sb.last_update),
+                        owner: "local", // 即使僅在雲端，為了 UI 統一也設為 local
+                        lastUpdate: serverLastUpdate,
                         displayTime: getHKTTimestamp(sid),
                         isLocal: false,
                         isServer: true,
-                        isDirty: true
+                        isDirty: true,
+                        serverOwner: sb.owner
                     });
                 }
             });
@@ -157,13 +161,12 @@ function getSelectedBranchInfo() {
     const activeItem = document.querySelector(".vcs-list-item.active");
     if (!activeItem) return null;
 
-    const ownerText = activeItem.querySelector(".vcs-list-owner").textContent;
     return {
         id: parseInt(activeItem.dataset.branchId),
         name: activeItem.dataset.branchName,
-        isLocal: ownerText.includes("local"),
-        isServer: ownerText.includes("online/"),
-        isDirty: ownerText.includes("[asynced]")
+        isLocal: activeItem.dataset.isLocal === "true",
+        isServer: activeItem.dataset.isServer === "true",
+        isDirty: activeItem.dataset.isDirty === "true"
     };
 }
 
@@ -190,20 +193,29 @@ if (BBUI.elements.pullBtn) {
     });
 }
 
-// FORK: 基於「目前編輯內容」建立新分支 (不變)
+// FORK: 基於「選中分支」建立新分支
 if (BBUI.elements.branchBtn) {
     new MultiStepButton(BBUI.elements.branchBtn, {
         sound: "UIPipboyOK.mp3",
         action: async () => {
+            const selected = getSelectedBranchInfo();
+            if (!selected) return;
+
             const msg = BBMessage.info("FORK INITIATED...");
             try {
-                await BBVCS.save(state, BBUI.getTextareaValue());
+                // 如果 Fork 的是對象是當前編輯的分支，先存檔
+                if (selected.id === state.branchId) {
+                    await BBVCS.save(state, BBUI.getTextareaValue());
+                }
+
                 const newId = Date.now();
-                await BBCore.forkBranch(state.owner, state.branchId, newId);
+                // 從選中的分支（不論 local 或 remote）Fork
+                const sourceOwner = selected.isLocal ? "local" : "remote";
+                await BBCore.forkBranch(sourceOwner, selected.id, newId);
                 
                 // 切換到新 Fork 的分支
                 state.branchId = newId;
-                state.branch = "master_fork"; 
+                state.branch = `${selected.name}_fork`; 
                 state.owner = "local";
                 state.currentHead = 0;
                 localStorage.setItem("currentBranchId", state.branchId);
@@ -276,7 +288,7 @@ if (BBUI.elements.checkoutBtn) {
     });
 }
 
-// DROP: 三階遞進刪除
+// DROP: 三階遞進刪除 (針對選中分支)
 const dropBtnEl = document.getElementById("drop-btn");
 if (dropBtnEl) {
     new MultiStepButton(dropBtnEl, [
@@ -289,40 +301,57 @@ if (dropBtnEl) {
             label: "DROP !",
             sound: "UIGeneralCancel.mp3",
             action: async () => {
-                const targetId = state.branchId;
-                const targetOwner = "local";
+                const selected = getSelectedBranchInfo();
+                if (!selected) return;
 
+                const targetId = selected.id;
                 const msg = BBMessage.info("PURGING...");
                 try {
-                    const records = await BBCore.getAllRecordsForBranch(targetOwner, targetId);
-                    const hasText = records.some(r => r.text && r.text.trim() !== "");
+                    // Stage 1: 清空歷史本身 (如果紀錄超過 1 筆，或者唯一的那筆有文字)
+                    if (selected.isLocal) {
+                        const count = await BBCore.countRecords("local", targetId);
+                        const latest = await BBCore.getRecord("local", targetId, 0);
+                        const hasContent = latest && latest.text && latest.text.trim() !== "";
 
-                    if (hasText) {
-                        await BBCore.clearBranchRecords(targetOwner, targetId);
-                        msg.update("STAGE 1: CLEAN.");
-                    } else {
-                        const activeItem = document.querySelector(".vcs-list-item.active");
-                        const isOnline = activeItem?.querySelector(".vcs-list-owner")?.textContent.includes("online/");
-
-                        if (isOnline) {
-                            const res = await fetch(`/api/blackboard/branches/${targetId}`, {
-                                method: 'DELETE',
-                                credentials: 'include'
-                            });
-                            if (res.ok) {
-                                msg.update("STAGE 2: WIPED.");
-                            } else {
-                                throw new Error();
+                        if (count > 1 || hasContent) {
+                            await BBCore.clearBranchRecords("local", targetId);
+                            msg.update("STAGE 1: CLEAN.");
+                            await updateBranchList();
+                            if (targetId === state.branchId) {
+                                state.currentHead = 0;
+                                await syncView();
                             }
-                        } else {
-                            await BBCore.deleteLocalBranch(targetOwner, targetId);
-                            msg.update("STAGE 3: DELETED.");
-                            await initBoard();
                             return;
                         }
                     }
-                    await syncView();
-                    await updateBranchList();
+
+                    // Stage 2: 如果雲端有資料且本地已清空歷史，則刪除雲端 (WIPED)
+                    if (selected.isServer) {
+                        const res = await fetch(`/api/blackboard/branches/${targetId}`, {
+                            method: 'DELETE',
+                            credentials: 'include'
+                        });
+                        if (res.ok) {
+                            msg.update("STAGE 2: WIPED.");
+                            await updateBranchList();
+                            return;
+                        } else {
+                            throw new Error("SERVER_DELETE_FAILED");
+                        }
+                    } 
+                    
+                    // Stage 3: 如果雲端已刪除或本來就沒有，且本地已清空，則刪除本地 (DELETED)
+                    if (selected.isLocal) {
+                        await BBCore.deleteLocalBranch("local", targetId);
+                        msg.update("STAGE 3: DELETED.");
+                    }
+
+                    // 如果刪除的是當前正在編輯的分支，重置系統
+                    if (targetId === state.branchId) {
+                        await initBoard();
+                    } else {
+                        await updateBranchList();
+                    }
                 } catch (e) {
                     msg.close();
                     BBMessage.error("PURGE ERROR.");
@@ -343,6 +372,7 @@ BBUI.elements.textarea?.addEventListener("input", () => {
     debounceTimer = setTimeout(async () => {
         await BBVCS.save(state, BBUI.getTextareaValue());
         BBUI.updateIndicators(state.branch || "NAMELESS_BRANCH", state.currentHead, true);
+        await updateBranchList(); // 立即更新清單同步狀態
     }, 500);
 });
 
