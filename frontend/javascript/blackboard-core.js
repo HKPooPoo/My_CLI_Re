@@ -76,28 +76,41 @@ export const BBCore = {
     },
 
     /**
-     * 獲取所有分支清單 (優化查詢方式)
+     * 獲取所有分支清單 (效能優化版)
      */
     async getAllBranches(owner) {
         const branches = new Map();
 
-        // 透過複合索引快速檢索該 owner 的所有紀錄
+        // 效能優化：僅遍歷索引鍵而不加載完整的紀錄物件 (Object Store)
+        // 這在歷史紀錄眾多時能大幅減少 I/O 與內存壓力
         await db.blackboard.where('[owner+branchId+timestamp]')
             .between([owner, Dexie.minKey, Dexie.minKey], [owner, Dexie.maxKey, Dexie.maxKey])
-            .each(record => {
-                const existing = branches.get(record.branchId);
-                if (!existing || record.timestamp > existing.lastUpdate) {
-                    branches.set(record.branchId, {
-                        id: record.branchId,
-                        name: record.branch,
-                        owner: record.owner,
-                        lastUpdate: record.timestamp,
-                        displayTime: getHKTTimestamp(record.branchId)
+            .until(() => false) // 遍歷所有匹配項
+            .eachPrimaryKey((key) => {
+                const [_, branchId, timestamp] = key;
+                const existing = branches.get(branchId);
+                if (!existing || timestamp > existing.lastUpdate) {
+                    branches.set(branchId, {
+                        id: branchId,
+                        lastUpdate: timestamp
                     });
                 }
             });
 
-        return Array.from(branches.values()).sort((a, b) => b.lastUpdate - a.lastUpdate);
+        // 為了拿到 branch 顯示名稱，我們只需獲取每個分支的最新一筆
+        const result = [];
+        for (const [id, info] of branches) {
+            const latest = await this.getRecord(owner, id, 0);
+            result.push({
+                id: id,
+                name: latest?.branch ?? "NAMELESS_BRANCH",
+                owner: owner,
+                lastUpdate: info.lastUpdate,
+                displayTime: getHKTTimestamp(id)
+            });
+        }
+
+        return result.sort((a, b) => b.lastUpdate - a.lastUpdate);
     },
 
     /**

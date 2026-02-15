@@ -71,7 +71,8 @@ export const BBUI = {
         const container = document.querySelector(".vcs-list-container");
         if (!container) return;
 
-        container.innerHTML = "";
+        // 使用 DocumentFragment 在記憶體中進行操作，避免頻繁觸發 Reflow
+        const fragment = document.createDocumentFragment();
 
         branches.forEach(branch => {
             const item = document.createElement("div");
@@ -111,8 +112,11 @@ export const BBUI = {
                 }));
             });
 
-            container.appendChild(item);
+            fragment.appendChild(item);
         });
+
+        // 使用 replaceChildren 一次性替換所有子元素，這是目前效能最優的 DOM 更新方式
+        container.replaceChildren(fragment);
 
         // 打開信號讓 blackboard-ui-list.js 重新計算無限滾動高度
         window.dispatchEvent(new CustomEvent("blackboard:listUpdated"));

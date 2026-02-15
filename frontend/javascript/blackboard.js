@@ -336,7 +336,9 @@ if (dropBtnEl) {
 
 // 自動儲存：監聽文字框輸入並防抖處理
 BBUI.elements.textarea?.addEventListener("input", () => {
-    BBUI.updateIndicators(state.branch || "NAMELESS_BRANCH", state.currentHead, false);
+    // 立即更新為 UNSAVED，但不要觸發完整的 DOM 重繪
+    if (BBUI.elements.savedStatus) BBUI.elements.savedStatus.textContent = "UNSAVED";
+    
     clearTimeout(debounceTimer);
     debounceTimer = setTimeout(async () => {
         await BBVCS.save(state, BBUI.getTextareaValue());
@@ -367,3 +369,25 @@ window.addEventListener("blackboard:listUpdated", () => {
 
 // --- 系統啟動 ---
 initBoard();
+
+// --- 同步機制：處理多裝置更新 ---
+
+/**
+ * 焦點恢復同步：當使用者切換回此分頁時自動刷新清單
+ */
+window.addEventListener("focus", () => {
+    // 只有在非初始化狀態下才執行，避免重疊
+    if (!isInitializing) {
+        updateBranchList();
+    }
+});
+
+/**
+ * 低頻輪詢：每 60 秒自動檢查一次雲端分支狀態
+ */
+setInterval(() => {
+    const loggedInUser = localStorage.getItem("currentUser");
+    if (loggedInUser && !isInitializing) {
+        updateBranchList();
+    }
+}, 60000);
