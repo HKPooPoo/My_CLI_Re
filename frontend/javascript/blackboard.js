@@ -237,6 +237,7 @@ if (BBUI.elements.checkoutBtn) {
             } catch (e) {
                 msg.close();
                 BBMessage.error("LOAD FAILED.");
+                console.log(e);
             }
         }
     });

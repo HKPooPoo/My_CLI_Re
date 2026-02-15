@@ -26,15 +26,9 @@ class BlackboardController extends Controller
         }
 
         return DB::transaction(function () use ($user, $branchId, $branchName, $records) {
-            // 1. 先刪除 Postgres 中該用戶同 ID 的舊紀錄
-            DB::table('blackboards')
-                ->where('owner', $user->uid)
-                ->where('branch_id', $branchId)
-                ->delete();
-
-            // 2. 批量寫入新紀錄
+            $insertData = [];
             foreach ($records as $record) {
-                DB::table('blackboards')->insert([
+                $insertData[] = [
                     'owner' => $user->uid,
                     'branch_id' => $branchId,
                     'branch_name' => $branchName,
@@ -44,7 +38,16 @@ class BlackboardController extends Controller
                     'created_at_hkt' => $record['createdAt'] ?? null,
                     'created_at' => now(),
                     'updated_at' => now(),
-                ]);
+                ];
+            }
+
+            if (!empty($insertData)) {
+                // 使用 Laravel 內建的 upsert (原子操作，依賴於資料庫的唯一索引)
+                DB::table('blackboards')->upsert(
+                    $insertData,
+                    ['owner', 'branch_id', 'timestamp'], // 唯一鍵
+                    ['branch_name', 'text', 'bin', 'updated_at'] // 若衝突則更新這些欄位
+                );
             }
 
             return response()->json(['message' => 'Commit Successful']);

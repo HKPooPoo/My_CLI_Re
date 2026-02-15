@@ -1,4 +1,6 @@
 import { BBCore } from "./blackboard-core.js";
+import { BBMessage } from "./blackboard-msg.js";
+import db from "./indexedDB.js";
 
 /**
  * Blackboard 版本控制邏輯層 (大腦)
@@ -105,18 +107,19 @@ export const BBVCS = {
 
             const data = await res.json();
 
-            // 3. 轉換格式並存入本地 local 分區
+            // 3. 轉換格式並存入本地 local 分區 (確保 BigInt 欄位在前端復原為 Number)
             const downloadRecords = data.records.map(r => ({
                 owner: "local",
                 branchId: parseInt(r.branch_id),
                 branch: r.branch_name,
-                timestamp: r.timestamp,
+                timestamp: parseInt(r.timestamp),
                 text: r.text,
                 bin: r.bin,
                 createdAt: r.created_at_hkt
             }));
 
-            await db.blackboard.bulkAdd(downloadRecords);
+            // 使用 bulkPut 以防本地已存在部分紀錄時崩潰
+            await db.blackboard.bulkPut(downloadRecords);
         }
 
         // 4. 更新 state (編輯區永遠是 local)

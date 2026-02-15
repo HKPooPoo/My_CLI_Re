@@ -82,7 +82,7 @@ export const BBUI = {
             let ownerDisplay = "";
             if (branch.isLocal && branch.isServer) {
                 const syncStatus = branch.isDirty ? "asynced" : "synced";
-                ownerDisplay = `local, online/${branch.owner} [${syncStatus}]`;
+                ownerDisplay = `local, <br>online/${branch.owner} [${syncStatus}]`;
             } else if (branch.isServer) {
                 ownerDisplay = `online/${branch.owner} [asynced]`;
             } else {

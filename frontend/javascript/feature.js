@@ -12,6 +12,7 @@
  */
 
 import { playAudio } from "./audio.js";
+import { BBMessage } from "./blackboard-msg.js";
 
 // --- DOM 引用 ---
 const $voiceBtn = document.querySelector('[data-feature-btn="voice-to-textbox"]');

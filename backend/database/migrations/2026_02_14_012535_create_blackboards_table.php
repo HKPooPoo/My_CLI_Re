@@ -21,8 +21,8 @@ return new class extends Migration {
             $table->string('created_at_hkt')->nullable(); // HKT 格式的時間字串
             $table->timestamps();
 
-            // 複合索引提高檢索效能，匹配前端的 [owner+branchId+timestamp] 結構
-            $table->index(['owner', 'branch_id', 'timestamp']);
+            // 複合唯一約束，確保在同一個持有者與分支下，同一個時間戳只會有一筆記錄
+            $table->unique(['owner', 'branch_id', 'timestamp']);
         });
     }
 
