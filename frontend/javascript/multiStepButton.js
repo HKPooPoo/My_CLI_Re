@@ -7,13 +7,14 @@ import { playAudio } from "./audio.js";
 export class MultiStepButton {
     /**
      * @param {HTMLElement} element 按鈕 DOM 元素
-     * @param {Object[]} steps 步驟定義陣列 [{ label, sound, action }]
-     * @param {number} timeout 重置超時時間 (ms)，預設 3000
+     * @param {Object[]|Object} steps 步驟定義陣列或單個物件
+     * @param {number} timeout 重置超時時間 (ms)
      */
     constructor(element, steps, timeout = 3000) {
         if (!element) return;
         this.element = element;
-        this.steps = steps;
+        // 如果傳入單個物件，自動封裝成單階陣列
+        this.steps = Array.isArray(steps) ? steps : [steps];
         this.timeout = timeout;
         this.state = 0;
         this.timer = null;
@@ -32,24 +33,29 @@ export class MultiStepButton {
     handleClick() {
         const currentStep = this.steps[this.state];
 
-        // 1. 播放音效 (如果定義)
+        // 1. 播放音效
         if (currentStep.sound) {
             playAudio(currentStep.sound);
         }
 
-        // 2. 執行該階段函數 (如果定義)
+        // 2. 執行該階段函數
         if (currentStep.action) {
-            currentStep.action(this.state);
+            currentStep.action();
         }
 
         // 3. 處理狀態演進
-        if (this.state < this.steps.length - 1) {
-            this.state++;
-            this.updateUI();
-            this.resetTimer();
+        if (this.steps.length > 1) {
+            if (this.state < this.steps.length - 1) {
+                this.state++;
+                this.updateUI();
+                this.resetTimer();
+            } else {
+                // 最後一步後重置
+                this.reset();
+            }
         } else {
-            // 最後一步後重置
-            this.reset();
+            // 單階模式：不演進狀態，僅重置 Timer (如果有)
+            this.updateUI();
         }
     }
 
@@ -57,21 +63,19 @@ export class MultiStepButton {
         const step = this.steps[this.state];
         if (!step) return;
 
-        // 更新內容
-        this.element.innerHTML = step.label;
+        // 只有在多階模式下且 label 有變動才更新 HTML，避免單階按鈕閃爍
+        if (this.steps.length > 1 || this.element.innerHTML === "") {
+            this.element.innerHTML = step.label || this.element.innerHTML;
+        }
 
-        // 更新樣式類別 (btn-state-N)
-        this.steps.forEach((_, i) => {
-            this.element.classList.remove(`btn-state-${i}`);
-        });
+        // 更新樣式類別
+        this.steps.forEach((_, i) => this.element.classList.remove(`btn-state-${i}`));
         this.element.classList.add(`btn-state-${this.state}`);
     }
 
     resetTimer() {
         if (this.timer) clearTimeout(this.timer);
-        this.timer = setTimeout(() => {
-            this.reset();
-        }, this.timeout);
+        this.timer = setTimeout(() => this.reset(), this.timeout);
     }
 
     reset() {

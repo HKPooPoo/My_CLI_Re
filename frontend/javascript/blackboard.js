@@ -147,18 +147,30 @@ async function updateBranchList() {
     BBUI.renderBranchList(combinedBranches, state.branchId, state.owner);
 }
 
-// 綁定按鈕事件
+import { MultiStepButton } from "./multiStepButton.js";
 
-// PUSH / PULL
-BBUI.elements.pushBtn?.addEventListener("click", async () => {
-    const updated = await BBVCS.push(state, BBUI.getTextareaValue());
-    if (updated) { await syncView(); await updateBranchList(); }
-});
+// ...省略中間...
 
-BBUI.elements.pullBtn?.addEventListener("click", async () => {
-    const updated = await BBVCS.pull(state, BBUI.getTextareaValue());
-    if (updated) { await syncView(); await updateBranchList(); }
-});
+// PUSH / PULL (單階按鈕帶音效)
+if (BBUI.elements.pushBtn) {
+    new MultiStepButton(BBUI.elements.pushBtn, {
+        sound: "Click.mp3",
+        action: async () => {
+            const updated = await BBVCS.push(state, BBUI.getTextareaValue());
+            if (updated) { await syncView(); await updateBranchList(); }
+        }
+    });
+}
+
+if (BBUI.elements.pullBtn) {
+    new MultiStepButton(BBUI.elements.pullBtn, {
+        sound: "Click.mp3",
+        action: async () => {
+            const updated = await BBVCS.pull(state, BBUI.getTextareaValue());
+            if (updated) { await syncView(); await updateBranchList(); }
+        }
+    });
+}
 
 // FORK (建立並繼承分支)
 BBUI.elements.branchBtn?.addEventListener("click", async () => {
