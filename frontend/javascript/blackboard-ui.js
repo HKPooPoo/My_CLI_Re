@@ -55,13 +55,17 @@ export const BBUI = {
     },
 
     /**
+     * 轉義 HTML 特殊字元防止 XSS
+     */
+    escapeHTML(str) {
+        if (!str) return "";
+        return str.replace(/[&<>"']/g, m => ({
+            '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+        }[m]));
+    },
+
+    /**
      * 渲染分支列表 (VCS List)
-     * 步驟：
-     * 1. 清空容器。
-     * 2. 遍歷分支清單 -> 根據 ID 與 Owner 判定 Active 狀態。
-     * 3. 計算並構造擁有者文字 (如 local, online/uid [synced])。
-     * 4. 插入 DOM 並綁定內部改名 Input 的 Change 事件。
-     * 5. 廣播 listUpdated 事件觸發無限滾動刷新。
      */
     renderBranchList(branches, activeBranchId, activeOwner) {
         const container = document.querySelector(".vcs-list-container");
@@ -71,26 +75,28 @@ export const BBUI = {
 
         branches.forEach(branch => {
             const item = document.createElement("div");
-            // 注意：Active 必須 ID 與 Owner 同時匹配 (排除只有其中一邊存在的情況)
             const isActive = branch.id === activeBranchId && branch.owner === activeOwner;
 
             item.className = `vcs-list-item ${isActive ? 'active' : ''}`;
             item.dataset.branchId = branch.id;
-            item.dataset.branchName = branch.name;
+            
+            // 轉義顯示內容
+            const safeName = this.escapeHTML(branch.name);
+            const safeOwner = this.escapeHTML(branch.owner);
 
             // --- 狀態標籤生成邏輯 ---
             let ownerDisplay = "";
             if (branch.isLocal && branch.isServer) {
                 const syncStatus = branch.isDirty ? "asynced" : "synced";
-                ownerDisplay = `local, <br>online/${branch.owner} [${syncStatus}]`;
+                ownerDisplay = `local, <br>online/${safeOwner} [${syncStatus}]`;
             } else if (branch.isServer) {
-                ownerDisplay = `online/${branch.owner} [asynced]`;
+                ownerDisplay = `online/${safeOwner} [asynced]`;
             } else {
                 ownerDisplay = "local";
             }
 
             item.innerHTML = `
-                <input type="text" class="vcs-list-branch" value="${branch.name}" placeholder="Name your branch..." name="vcs-list-branch" maxlength="32">
+                <input type="text" class="vcs-list-branch" value="${safeName}" placeholder="Name your branch..." name="vcs-list-branch" maxlength="32">
                 <div class="vcs-list-timestamp">${branch.displayTime}</div>
                 <div class="vcs-list-owner">${ownerDisplay}</div>
             `;

@@ -35,18 +35,17 @@ class BlackboardController extends Controller
                     'timestamp' => $record['timestamp'],
                     'text' => $record['text'],
                     'bin' => $record['bin'] ?? null,
-                    'created_at_hkt' => $record['createdAt'] ?? null,
                     'created_at' => now(),
                     'updated_at' => now(),
                 ];
             }
 
             if (!empty($insertData)) {
-                // 使用 Laravel 內建的 upsert (原子操作，依賴於資料庫的唯一索引)
+                // 使用 Laravel 內建的 upsert
                 DB::table('blackboards')->upsert(
                     $insertData,
-                    ['owner', 'branch_id', 'timestamp'], // 唯一鍵
-                    ['branch_name', 'text', 'bin', 'updated_at'] // 若衝突則更新這些欄位
+                    ['owner', 'branch_id', 'timestamp'], // 唯一判定鍵
+                    ['branch_name', 'text', 'bin', 'updated_at'] // 衝突時更新的欄位
                 );
             }
 

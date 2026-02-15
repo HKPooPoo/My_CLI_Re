@@ -115,8 +115,7 @@ export const BBVCS = {
                     branch: r.branch_name,
                     timestamp: parseInt(r.timestamp),
                     text: r.text,
-                    bin: r.bin,
-                    createdAt: r.created_at_hkt
+                    bin: r.bin
                 }));
 
                 // 使用 bulkPut 強制覆蓋本地舊有的同 ID/timestamp 紀錄

@@ -12,16 +12,15 @@ return new class extends Migration {
     {
         Schema::create('blackboards', function (Blueprint $table) {
             $table->id();
-            $table->string('owner');          // 統一命名為 owner (與前端 BBCore 一致)
-            $table->bigInteger('branch_id'); // Immutable Branch ID (Timestamp)
-            $table->string('branch_name')->nullable(); // Mutable Display Name
+            $table->string('owner');          // User UID
+            $table->bigInteger('branch_id'); // Immutable Branch ID (Frontend Timestamp)
+            $table->string('branch_name')->nullable(); 
             $table->bigInteger('timestamp'); // History Node Timestamp
-            $table->text('text')->nullable();
-            $table->binary('bin')->nullable();
-            $table->string('created_at_hkt')->nullable(); // HKT 格式的時間字串
-            $table->timestamps();
+            $table->longText('text')->nullable();
+            $table->binary('bin')->nullable(); // Reserved for binary files
+            $table->timestamps(); // DB Internal: created_at, updated_at
 
-            // 複合唯一約束，確保在同一個持有者與分支下，同一個時間戳只會有一筆記錄
+            // 複合唯一索引，確保同步邏輯的原子性
             $table->unique(['owner', 'branch_id', 'timestamp']);
         });
     }

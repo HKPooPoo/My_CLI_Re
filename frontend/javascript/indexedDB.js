@@ -15,11 +15,10 @@ import Dexie from './vendor/dexie.js';
 const db = new Dexie('blackboardDB');
 
 // --- 版本與 Schema 定義 ---
-db.version(4).stores({
+db.version(5).stores({
     /**
      * blackboard 表
-     * 索引解釋：
-     * [owner+branchId+timestamp] : 複合指標，用於快速定位特定用戶分支下的特定時間 Slot。
+     * 欄位：[owner+branchId+timestamp], branch_name, text, bin
      */
     blackboard: '[owner+branchId+timestamp]'
 });

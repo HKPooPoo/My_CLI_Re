@@ -29,8 +29,7 @@ export const BBCore = {
             branch: branchName,
             timestamp: Date.now(),
             text,
-            bin: "",
-            createdAt: getHKTTimestamp()
+            bin: null
         });
     },
 
