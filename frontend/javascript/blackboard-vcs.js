@@ -107,6 +107,13 @@ export const BBVCS = {
             throw new Error(err.message || "上傳失敗");
         }
 
+        // Commit 成功後，將本地紀錄標記為 Synced 狀態
+        // 這樣登出時 wipeSyncedData 就會將其抹除
+        const syncedOwner = `local, online/${loggedInUser} [synced]`;
+        await db.blackboard.where('owner').equals('local')
+            .and(item => item.branchId === branchId)
+            .modify({ owner: syncedOwner });
+
         return true;
     },
 
@@ -123,9 +130,13 @@ export const BBVCS = {
 
             if (res.ok) {
                 const data = await res.json();
-                // 轉換格式並存入本地 local 分區
+                // 獲取當前 UID
+                const currentUser = localStorage.getItem("currentUser") || "unknown";
+                
+                // 轉換格式並存入本地，使用特殊 owner 標籤以支援登出抹除
+                // 格式：local, online/uid [synced]
                 const downloadRecords = data.records.map(r => ({
-                    owner: "local",
+                    owner: `local, online/${r.owner} [synced]`, 
                     branchId: parseInt(r.branch_id),
                     branch: r.branch_name,
                     timestamp: parseInt(r.timestamp),

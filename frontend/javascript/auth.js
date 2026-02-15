@@ -13,6 +13,7 @@
 
 import { BBMessage } from "./blackboard-msg.js";
 import { MultiStepButton } from "./multiStepButton.js";
+import { BBCore } from "./blackboard-core.js";
 import toast from "./toast.js";
 
 export const AuthManager = {
@@ -174,8 +175,15 @@ export const AuthManager = {
                 action: async () => {
                     try {
                         await fetch('/api/logout', { method: 'POST', headers: { 'Accept': 'application/json' } });
+                        
+                        // 抹除本地同步資料
+                        await BBCore.wipeSyncedData();
+                        
                         this.updateUI(null);
-                        BBMessage.info("LOGOUT.");
+                        BBMessage.info("LOGOUT & SYNCED DATA ERASED.");
+                        
+                        // 通知 UI 刷新分支清單
+                        window.dispatchEvent(new CustomEvent("blackboard:branchUpdated"));
                     } catch (e) {
                         this.updateUI(null);
                     }
