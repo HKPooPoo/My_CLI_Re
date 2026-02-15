@@ -139,7 +139,6 @@ async function updateBranchList() {
     }
 
     const combinedBranches = Array.from(branchMap.values());
-    // 排序：當前活動分支最前，其餘按最後更新時間倒序
     combinedBranches.sort((a, b) => {
         const aIsActive = a.id === state.branchId;
         const bIsActive = b.id === state.branchId;
@@ -174,47 +173,62 @@ if (BBUI.elements.pullBtn) {
     });
 }
 
-// FORK: 繼承當前分支內容並建立一個全新的本地 ID
-BBUI.elements.branchBtn?.addEventListener("click", async () => {
-    await BBVCS.save(state, BBUI.getTextareaValue());
-    const newId = Date.now();
-    await BBCore.forkBranch(state.owner, state.branchId, newId);
-    state.branchId = newId;
-    state.branch = "";
-    state.owner = "local";
-    state.currentHead = 0;
-    localStorage.setItem("currentBranchId", state.branchId);
-    BBMessage.info("已完成 Fork (Local)");
-    await syncView();
-    await updateBranchList();
-});
+// FORK: 繼承當前分支內容並建立一個全新的本地 ID (添加 UIPipboyOK.mp3)
+if (BBUI.elements.branchBtn) {
+    new MultiStepButton(BBUI.elements.branchBtn, {
+        sound: "UIPipboyOK.mp3",
+        action: async () => {
+            await BBVCS.save(state, BBUI.getTextareaValue());
+            const newId = Date.now();
+            await BBCore.forkBranch(state.owner, state.branchId, newId);
+            state.branchId = newId;
+            state.branch = "";
+            state.owner = "local";
+            state.currentHead = 0;
+            localStorage.setItem("currentBranchId", state.branchId);
+            BBMessage.info("已完成 Fork (Local)");
+            await syncView();
+            await updateBranchList();
+        }
+    });
+}
 
-// COMMIT: 將當前分支推送到雲端
-BBUI.elements.commitBtn?.addEventListener("click", async () => {
-    try {
-        await BBVCS.commit(state, BBUI.getTextareaValue());
-        BBMessage.info("Commit 成功，已同步至雲端");
-        await updateBranchList();
-    } catch (e) {
-        BBMessage.error(e.message);
-    }
-});
+// COMMIT: 將當前分支推送到雲端 (添加 UIPipboyOKPress.mp3)
+if (BBUI.elements.commitBtn) {
+    new MultiStepButton(BBUI.elements.commitBtn, {
+        sound: "UIPipboyOKPress.mp3",
+        action: async () => {
+            try {
+                await BBVCS.commit(state, BBUI.getTextareaValue());
+                BBMessage.info("Commit 成功，已同步至雲端");
+                await updateBranchList();
+            } catch (e) {
+                BBMessage.error(e.message);
+            }
+        }
+    });
+}
 
-// CHECKOUT: 切換分支 (若為雲端分支則自動觸發下載)
-BBUI.elements.checkoutBtn?.addEventListener("click", async () => {
-    const activeItem = document.querySelector(".vcs-list-item.active");
-    if (!activeItem) return;
-    const targetId = parseInt(activeItem.dataset.branchId);
-    const targetOwner = activeItem.querySelector(".vcs-list-owner").textContent.includes("online/") ? "remote" : "local";
-    try {
-        await BBVCS.checkout(state, targetId, targetOwner);
-        BBMessage.info("已切換分支");
-        await syncView();
-        await updateBranchList();
-    } catch (e) {
-        BBMessage.error(e.message);
-    }
-});
+// CHECKOUT: 切換分支 (添加 Click.mp3)
+if (BBUI.elements.checkoutBtn) {
+    new MultiStepButton(BBUI.elements.checkoutBtn, {
+        sound: "Click.mp3",
+        action: async () => {
+            const activeItem = document.querySelector(".vcs-list-item.active");
+            if (!activeItem) return;
+            const targetId = parseInt(activeItem.dataset.branchId);
+            const targetOwner = activeItem.querySelector(".vcs-list-owner").textContent.includes("online/") ? "remote" : "local";
+            try {
+                await BBVCS.checkout(state, targetId, targetOwner);
+                BBMessage.info("已切換分支");
+                await syncView();
+                await updateBranchList();
+            } catch (e) {
+                BBMessage.error(e.message);
+            }
+        }
+    });
+}
 
 // DROP: 三階遞進刪除 (內容 -> 雲端 -> 本地實體)
 const dropBtnEl = document.getElementById("drop-btn");
@@ -231,8 +245,6 @@ if (dropBtnEl) {
             action: async () => {
                 const targetId = state.branchId;
                 const targetOwner = "local";
-
-                // Stage 1: 內容清空
                 const records = await BBCore.getAllRecordsForBranch(targetOwner, targetId);
                 const hasText = records.some(r => r.text && r.text.trim() !== "");
 
@@ -240,7 +252,6 @@ if (dropBtnEl) {
                     await BBCore.clearBranchRecords(targetOwner, targetId);
                     BBMessage.info("Stage 1: 分支內容已清空");
                 } else {
-                    // Stage 2: 雲端刪除
                     const activeItem = document.querySelector(".vcs-list-item.active");
                     const isOnline = activeItem?.querySelector(".vcs-list-owner")?.textContent.includes("online/");
 
@@ -260,7 +271,6 @@ if (dropBtnEl) {
                             return;
                         }
                     } else {
-                        // Stage 3: 本地徹底抹除
                         await BBCore.deleteLocalBranch(targetOwner, targetId);
                         BBMessage.info("Stage 3: 本地分支全數據已移除");
                         await initBoard();

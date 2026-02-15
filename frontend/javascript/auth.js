@@ -44,7 +44,7 @@ export const AuthManager = {
             localStorage.setItem("currentUser", "");
         }
 
-        // 通知 HUD、黑板等組件進行重繪或 API 刷新
+        // 通知 HUD、黑板等組件進行重繪 or API 刷新
         window.dispatchEvent(new CustomEvent("blackboard:authUpdated"));
     },
 
@@ -63,37 +63,42 @@ export const AuthManager = {
      * 事件綁定區
      */
     bindEvents() {
-        // --- 登入邏輯 ---
-        this.elements.loginBtn?.addEventListener("click", async () => {
-            const uid = this.elements.uidInput.value.trim();
-            const passcode = this.elements.passcodeInput.value.trim();
+        // --- 登入邏輯 (單階 MultiStepButton) ---
+        if (this.elements.loginBtn) {
+            new MultiStepButton(this.elements.loginBtn, {
+                sound: "UIPipboyOK.mp3",
+                action: async () => {
+                    const uid = this.elements.uidInput.value.trim();
+                    const passcode = this.elements.passcodeInput.value.trim();
 
-            if (!uid || !passcode) {
-                BBMessage.error("請輸入 UID 與 Passcode");
-                return;
-            }
+                    if (!uid || !passcode) {
+                        BBMessage.error("請輸入 UID 與 Passcode");
+                        return;
+                    }
 
-            try {
-                const res = await fetch('/api/login', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    credentials: 'include', // 確保攜帶 Session Cookie
-                    body: JSON.stringify({ uid, passcode })
-                });
-                const data = await res.json();
+                    try {
+                        const res = await fetch('/api/login', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            credentials: 'include',
+                            body: JSON.stringify({ uid, passcode })
+                        });
+                        const data = await res.json();
 
-                if (res.ok) {
-                    BBMessage.info(`歡迎回來, ${data.user.uid}`);
-                    this.updateUI(data.user.uid);
-                    this.elements.uidInput.value = "";
-                    this.elements.passcodeInput.value = "";
-                } else {
-                    BBMessage.error(data.message);
+                        if (res.ok) {
+                            BBMessage.info(`歡迎回來, ${data.user.uid}`);
+                            this.updateUI(data.user.uid);
+                            this.elements.uidInput.value = "";
+                            this.elements.passcodeInput.value = "";
+                        } else {
+                            BBMessage.error(data.message);
+                        }
+                    } catch (e) {
+                        BBMessage.error("伺服器連線失敗");
+                    }
                 }
-            } catch (e) {
-                BBMessage.error("伺服器連線失敗");
-            }
-        });
+            });
+        }
 
         // --- 註冊邏輯 (四階步進確認) ---
         if (this.elements.registerBtn) {
@@ -146,17 +151,21 @@ export const AuthManager = {
             ], 4000);
         }
 
-        // --- 登出邏輯 ---
-        this.elements.logoutBtn?.addEventListener("click", async () => {
-            try {
-                await fetch('/api/logout', { method: 'POST' });
-                this.updateUI(null);
-                BBMessage.info("已登出");
-            } catch (e) {
-                // 即使後端出錯，前端也要強制清理狀態
-                this.updateUI(null);
-            }
-        });
+        // --- 登出邏輯 (單階 MultiStepButton) ---
+        if (this.elements.logoutBtn) {
+            new MultiStepButton(this.elements.logoutBtn, {
+                sound: "UISelectOff.mp3",
+                action: async () => {
+                    try {
+                        await fetch('/api/logout', { method: 'POST' });
+                        this.updateUI(null);
+                        BBMessage.info("已登出");
+                    } catch (e) {
+                        this.updateUI(null);
+                    }
+                }
+            });
+        }
     }
 };
 
