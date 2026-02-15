@@ -21,6 +21,9 @@ Route::post('/login', [AuthController::class, 'login']);
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/logout', [AuthController::class, 'logout']);
 Route::get('/auth-status', [AuthController::class, 'status']);
+Route::post('/auth/command', [AuthController::class, 'executeCommand']);
+Route::post('/auth/request-reset', [AuthController::class, 'requestPasswordReset']);
+Route::post('/auth/request-bind', [AuthController::class, 'requestEmailBinding']);
 
 // Blackboard Sync
 Route::prefix('blackboard')->group(function () {
