@@ -65,4 +65,4 @@ document.getElementById("theme-change-btn").addEventListener("click", () => {
 
 replaceCrtTextColorBy("crt-text-orange") // Initially, it is "CONNECTING..." in orange
 updateDatabaseStatus();
-setInterval(updateDatabaseStatus, 8964);
+setInterval(updateDatabaseStatus, 1000);

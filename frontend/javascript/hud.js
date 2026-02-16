@@ -99,4 +99,4 @@ document.getElementById("theme-change-btn").addEventListener("click", () => {
 updateLoginStatus();
 replaceCrtTextColorBy("crt-text-orange"); // 最初顯示為 orange (CONNECTING...)
 updateDatabaseStatus();
-setInterval(updateDatabaseStatus, 8964); // 每 8.9 秒檢索一次連線狀態
+setInterval(updateDatabaseStatus, 1000); // 每  秒檢索一次連線狀態

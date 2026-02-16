@@ -413,7 +413,7 @@ window.addEventListener("focus", () => {
 });
 
 /**
- * 低頻輪詢：僅在視窗處於焦點且位於黑板頁面時，每 4 秒自動檢查一次雲端分支狀態
+ * 低頻輪詢：僅在視窗處於焦點且位於黑板頁面時，每 秒自動檢查一次雲端分支狀態
  */
 setInterval(() => {
     const loggedInUser = localStorage.getItem("currentUser");
@@ -423,7 +423,7 @@ setInterval(() => {
     if (document.visibilityState === 'visible' && isVisible && loggedInUser && !isInitializing) {
         updateBranchList();
     }
-}, 4000);
+}, 1000);
 
 /**
  * PWA Service Worker 註冊
