@@ -79,6 +79,9 @@ export const AuthManager = {
      * 事件綁定區
      */
     bindEvents() {
+        if (this.eventsBound) return;
+        this.eventsBound = true;
+
         // --- 登入邏輯 ---
         if (this.elements.loginBtn) {
             new MultiStepButton(this.elements.loginBtn, {
@@ -194,45 +197,56 @@ export const AuthManager = {
         // --- 重置密碼邏輯 (方案 B: CLI 指令解析) ---
         if (this.elements.resetPasscodeBtn) {
             this.elements.resetPasscodeBtn.addEventListener("click", async () => {
-                const uid = this.elements.uidInput.value.trim();
-                const input = this.elements.passcodeInput.value.trim();
+                if (this.isResetting) return;
+                this.isResetting = true;
 
-                const isCommand = input.startsWith("/passwd");
+                try {
+                    const uid = this.elements.uidInput.value.trim();
+                    const input = this.elements.passcodeInput.value.trim();
 
-                if (isCommand) {
-                    const msg = toast.addMessage("EXECUTING COMMAND...");
-                    try {
-                        const res = await fetch('/api/auth/command', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'Accept': 'application/json'
-                            },
-                            body: JSON.stringify({ command: input })
-                        });
-                        const data = await res.json();
-                        msg.update(data.message);
-                        if (res.ok) this.elements.passcodeInput.value = "";
-                    } catch (e) {
-                        msg.update("OFFLINE.");
+                    const isCommand = input.startsWith("/passwd");
+
+                    if (isCommand) {
+                        const msg = toast.addMessage("EXECUTING COMMAND...");
+                        try {
+                            const res = await fetch('/api/auth/command', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'Accept': 'application/json'
+                                },
+                                body: JSON.stringify({ command: input })
+                            });
+                            const data = await res.json();
+                            msg.update(data.message);
+                            if (res.ok) this.elements.passcodeInput.value = "";
+                        } catch (e) {
+                            msg.update("OFFLINE.");
+                        }
+                    } else {
+                        if (!uid) {
+                            // unlock early if validation fails
+                            this.isResetting = false;
+                            return toast.addMessage("UID REQUIRED FOR RESTORE.");
+                        }
+                        const msg = toast.addMessage("REQUESTING RESTORE...");
+                        try {
+                            const res = await fetch('/api/auth/request-reset', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'Accept': 'application/json'
+                                },
+                                body: JSON.stringify({ uid })
+                            });
+                            const data = await res.json();
+                            msg.update(data.message);
+                        } catch (e) {
+                            msg.update("OFFLINE.");
+                        }
                     }
-                } else {
-                    if (!uid) return toast.addMessage("UID REQUIRED FOR RESTORE.");
-                    const msg = toast.addMessage("REQUESTING RESTORE...");
-                    try {
-                        const res = await fetch('/api/auth/request-reset', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'Accept': 'application/json'
-                            },
-                            body: JSON.stringify({ uid })
-                        });
-                        const data = await res.json();
-                        msg.update(data.message);
-                    } catch (e) {
-                        msg.update("OFFLINE.");
-                    }
+                } finally {
+                    setTimeout(() => { this.isResetting = false; }, 2000);
                 }
             });
         }
@@ -240,32 +254,42 @@ export const AuthManager = {
         // --- 郵件綁定邏輯 (方案 B: CLI 指令解析) ---
         if (this.elements.emailBindBtn) {
             this.elements.emailBindBtn.addEventListener("click", async () => {
-                const input = this.elements.emailInput.value.trim();
-                if (!input) return toast.addMessage("INPUT EMAIL OR COMMAND.");
+                if (this.isBinding) return;
+                this.isBinding = true;
 
-                const isCommand = input.startsWith("/bind");
-                const endpoint = isCommand ? '/api/auth/command' : '/api/auth/request-bind';
-                const body = isCommand ? { command: input } : { email: input };
-
-                const msg = toast.addMessage("PROCESSING...");
                 try {
-                    const res = await fetch(endpoint, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Accept': 'application/json'
-                        },
-                        body: JSON.stringify(body)
-                    });
-                    const data = await res.json();
-                    msg.update(data.message);
-                    if (res.ok && isCommand) {
-                        this.elements.emailInput.value = "";
-                        // 綁定成功後刷新 UI 以更新 placeholder
-                        this.init();
+                    const input = this.elements.emailInput.value.trim();
+                    if (!input) {
+                         this.isBinding = false;
+                         return toast.addMessage("INPUT EMAIL OR COMMAND.");
                     }
-                } catch (e) {
-                    msg.update("OFFLINE.");
+
+                    const isCommand = input.startsWith("/bind");
+                    const endpoint = isCommand ? '/api/auth/command' : '/api/auth/request-bind';
+                    const body = isCommand ? { command: input } : { email: input };
+
+                    const msg = toast.addMessage("PROCESSING...");
+                    try {
+                        const res = await fetch(endpoint, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Accept': 'application/json'
+                            },
+                            body: JSON.stringify(body)
+                        });
+                        const data = await res.json();
+                        msg.update(data.message);
+                        if (res.ok && isCommand) {
+                            this.elements.emailInput.value = "";
+                            // 綁定成功後刷新 UI 以更新 placeholder
+                            this.init();
+                        }
+                    } catch (e) {
+                        msg.update("OFFLINE.");
+                    }
+                } finally {
+                    setTimeout(() => { this.isBinding = false; }, 2000);
                 }
             });
         }
