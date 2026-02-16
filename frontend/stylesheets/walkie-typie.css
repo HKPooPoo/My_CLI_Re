@@ -132,7 +132,9 @@
     border-bottom-color: var(--text-orange);
 }
 
-#btn-add {
+#walkie-typie-add-btn {
+    border: var(--border-line);
+    border-radius: var(--border-radius);
     padding: 8px 0;
 }
 
