@@ -67,7 +67,7 @@ export const BBUI = {
     /**
      * 渲染分支列表 (VCS List)
      */
-    renderBranchList(branches, activeBranchId, activeOwner) {
+    renderBranchList(branches, activeBranchId, activeOwner, currentHeadId) {
         const container = document.querySelector(".vcs-list-container");
         if (!container) return;
 
@@ -77,6 +77,7 @@ export const BBUI = {
         branches.forEach(branch => {
             const item = document.createElement("div");
             const isActive = branch.id === activeBranchId && branch.owner === activeOwner;
+            const isHead = branch.id === currentHeadId;
 
             item.className = `vcs-list-item ${isActive ? 'active' : ''}`;
             item.dataset.branchId = branch.id;
@@ -91,13 +92,15 @@ export const BBUI = {
 
             // --- 狀態標籤生成邏輯 ---
             let ownerDisplay = "";
+            const localLabel = isHead ? "local [HEAD]" : "local";
+
             if (branch.isLocal && branch.isServer) {
                 const syncStatus = branch.isDirty ? "asynced" : "synced";
-                ownerDisplay = `local, <br>online/${this.escapeHTML(branch.serverOwner)} [${syncStatus}]`;
+                ownerDisplay = `${localLabel}, <br>online/${this.escapeHTML(branch.serverOwner)} [${syncStatus}]`;
             } else if (branch.isServer) {
                 ownerDisplay = `online/${this.escapeHTML(branch.serverOwner)} [asynced]`;
             } else {
-                ownerDisplay = "local";
+                ownerDisplay = localLabel;
             }
 
             item.innerHTML = `

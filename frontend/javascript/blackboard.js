@@ -153,7 +153,7 @@ async function updateBranchList() {
     const currentSelection = getSelectedBranchInfo();
     const targetSelectionId = currentSelection ? currentSelection.id : state.branchId;
 
-    BBUI.renderBranchList(combinedBranches, targetSelectionId, state.owner);
+    BBUI.renderBranchList(combinedBranches, targetSelectionId, state.owner, state.branchId);
 }
 
 /**
@@ -180,7 +180,10 @@ if (BBUI.elements.pushBtn) {
         sound: "Click.mp3",
         action: async () => {
             const updated = await BBVCS.push(state, BBUI.getTextareaValue());
-            if (updated) { await syncView(); await updateBranchList(); }
+            if (updated) { 
+                await syncView();
+                // [Optimization]: 移除 updateBranchList 以消除網絡延遲
+            }
         }
     });
 }
@@ -190,7 +193,10 @@ if (BBUI.elements.pullBtn) {
         sound: "Click.mp3",
         action: async () => {
             const updated = await BBVCS.pull(state, BBUI.getTextareaValue());
-            if (updated) { await syncView(); await updateBranchList(); }
+            if (updated) { 
+                await syncView(); 
+                // [Optimization]: 移除 updateBranchList 以消除網絡延遲
+            }
         }
     });
 }
@@ -215,15 +221,11 @@ if (BBUI.elements.branchBtn) {
                 const sourceOwner = selected.isLocal ? "local" : "remote";
                 await BBCore.forkBranch(sourceOwner, selected.id, newId);
 
-                // 切換到新 Fork 的分支
-                state.branchId = newId;
-                state.branch = `${selected.name}_fork`;
-                state.owner = "local";
-                state.currentHead = 0;
-                localStorage.setItem("currentBranchId", state.branchId);
-
+                // [Fix]: Fork 後不自動切換，停留在當前分支
+                // 僅更新列表以顯示新分支
+                
                 msg.update("FORK COMPLETE.");
-                await syncView();
+                // await syncView(); // 不需要同步視圖，因為沒切換
                 await updateBranchList();
             } catch (e) {
                 msg.close();
@@ -298,65 +300,66 @@ const dropBtnEl = document.getElementById("drop-btn");
 if (dropBtnEl) {
     new MultiStepButton(dropBtnEl, [
         {
-            label: "DROP",
+            label: "CLEAR",
             sound: "Click.mp3",
-            action: () => BBMessage.info("DROP READY.")
+            action: async () => {
+                const selected = getSelectedBranchInfo();
+                if (!selected) return;
+
+                if (selected.isLocal) {
+                    BBMessage.info("CLEARING HISTORY...");
+                    await BBCore.clearBranchRecords("local", selected.id);
+                    await updateBranchList();
+                    if (selected.id === state.branchId) {
+                        state.currentHead = 0;
+                        await syncView();
+                    }
+                    BBMessage.success("HISTORY CLEARED");
+                } else {
+                    BBMessage.info("TARGET IS NOT LOCAL.");
+                }
+            }
         },
         {
-            label: "DROP !",
+            label: "DROP CLOUD",
+            sound: "UIPipboyOK.mp3",
+            action: async () => {
+                const selected = getSelectedBranchInfo();
+                if (!selected) return;
+
+                if (selected.isServer) {
+                    BBMessage.info("DROPPING FROM CLOUD...");
+                    try {
+                        await BlackboardService.deleteBranch(selected.id);
+                        await updateBranchList();
+                        BBMessage.success("CLOUD BRANCH DROPPED");
+                    } catch (e) {
+                        BBMessage.error("CLOUD DROP FAILED");
+                    }
+                } else {
+                    BBMessage.info("TARGET IS NOT ON CLOUD.");
+                }
+            }
+        },
+        {
+            label: "DELETE LOCAL",
             sound: "UIGeneralCancel.mp3",
             action: async () => {
                 const selected = getSelectedBranchInfo();
                 if (!selected) return;
 
-                const targetId = selected.id;
-                const msg = BBMessage.info("PURGING...");
-                try {
-                    // Stage 1: 清空歷史本身 (如果紀錄超過 1 筆，或者唯一的那筆有文字)
-                    if (selected.isLocal) {
-                        const count = await BBCore.countRecords("local", targetId);
-                        const latest = await BBCore.getRecord("local", targetId, 0);
-                        const hasContent = latest && latest.text && latest.text.trim() !== "";
-
-                        if (count > 1 || hasContent) {
-                            await BBCore.clearBranchRecords("local", targetId);
-                            msg.update("STAGE 1: CLEAN.");
-                            await updateBranchList();
-                            if (targetId === state.branchId) {
-                                state.currentHead = 0;
-                                await syncView();
-                            }
-                            return;
-                        }
-                    }
-
-                    // Stage 2: 如果雲端有資料且本地已清空歷史，則刪除雲端 (WIPED)
-                    if (selected.isServer) {
-                        try {
-                            await BlackboardService.deleteBranch(targetId);
-                            msg.update("STAGE 2: WIPED.");
-                            await updateBranchList();
-                            return;
-                        } catch (e) {
-                            throw new Error("SERVER_DELETE_FAILED");
-                        }
-                    }
-
-                    // Stage 3: 如果雲端已刪除或本來就沒有，且本地已清空，則刪除本地 (DELETED)
-                    if (selected.isLocal) {
-                        await BBCore.deleteLocalBranch("local", targetId);
-                        msg.update("STAGE 3: DELETED.");
-                    }
-
-                    // 如果刪除的是當前正在編輯的分支，重置系統
-                    if (targetId === state.branchId) {
-                        await initBoard();
+                if (selected.isLocal) {
+                    BBMessage.info("DELETING LOCAL...");
+                    await BBCore.deleteLocalBranch("local", selected.id);
+                    
+                    if (selected.id === state.branchId) {
+                        await initBoard(); // 強制重置以確保至少有一個本地分支 (master)
                     } else {
                         await updateBranchList();
                     }
-                } catch (e) {
-                    msg.close();
-                    BBMessage.error("PURGE ERROR.");
+                    BBMessage.success("LOCAL BRANCH DELETED");
+                } else {
+                    BBMessage.info("TARGET IS NOT LOCAL.");
                 }
             }
         }

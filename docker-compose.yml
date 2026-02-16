@@ -27,6 +27,12 @@ services:
       DB_USERNAME: ${POSTGRES_USER}
       DB_PASSWORD: ${POSTGRES_PASSWORD}
       GG_API: ${GG_API}
+      REDIS_CLIENT: phpredis
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      CACHE_STORE: redis
+      QUEUE_CONNECTION: redis
+      SESSION_DRIVER: redis
       MAIL_MAILER: ${MAIL_MAILER:-smtp}
       MAIL_HOST: ${MAIL_HOST:-mailpit}
       MAIL_PORT: ${MAIL_PORT:-1025}
@@ -60,6 +66,9 @@ services:
       DB_USERNAME: ${POSTGRES_USER}
       DB_PASSWORD: ${POSTGRES_PASSWORD}
       GG_API: ${GG_API}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      QUEUE_CONNECTION: redis
       MAIL_MAILER: ${MAIL_MAILER:-smtp}
       MAIL_HOST: ${MAIL_HOST:-mailpit}
       MAIL_PORT: ${MAIL_PORT:-1025}
@@ -94,6 +103,8 @@ services:
   redis:
     image: redis:alpine
     container_name: my-cli-redis
+    volumes:
+      - redis-data:/data
     restart: unless-stopped
 
   pgadmin:
@@ -132,6 +143,8 @@ services:
       DB_DATABASE: ${POSTGRES_DB}
       DB_USERNAME: ${POSTGRES_USER}
       DB_PASSWORD: ${POSTGRES_PASSWORD}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
       REVERB_SERVER_HOST: 0.0.0.0
       REVERB_SERVER_PORT: 8081
       REVERB_HOST: reverb
@@ -158,3 +171,4 @@ services:
 volumes:
   db-data:
   pgadmin-data:
+  redis-data:
