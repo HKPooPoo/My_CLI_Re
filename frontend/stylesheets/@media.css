@@ -27,7 +27,8 @@
     }
 
     .auth-container,
-    .vcs-container {
+    .vcs-container,
+    .walkie-typie-list-container {
         width: 64vw;
     }
 
@@ -40,6 +41,11 @@
     #log-textarea {
         /*follow push and pull btn height (by margin)*/
         margin: calc(4vh + 0.4rem) 4vw;
+    }
+
+    #walkie-typie-blackboard-feature-switch {
+        top: 50%;
+        right: 0px;
     }
 }
 

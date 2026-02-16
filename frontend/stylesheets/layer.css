@@ -52,6 +52,20 @@
     z-index: 997;
 }
 
+.walkie-typie-blackboard,
+.we-push-btn,
+.we-pull-btn,
+.they-push-btn,
+.they-pull-btn,
+.walkie-typie-blackboard-we-title,
+.walkie-typie-blackboard-they-title {
+    z-index: 997;
+}
+
+#walkie-typie-blackboard-feature-switch {
+    z-index: 996;
+}
+
 .page {
     z-index: 996;
 }

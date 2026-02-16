@@ -17,13 +17,15 @@
     <link rel="stylesheet" href="stylesheets/crt-vfx.css">
     <link rel="stylesheet" href="stylesheets/navi.css">
     <link rel="stylesheet" href="stylesheets/page.css">
-    <link rel="stylesheet" href="stylesheets/layer.css">
     <link rel="stylesheet" href="stylesheets/page-auth.css">
     <link rel="stylesheet" href="stylesheets/page-blackboard-log.css">
     <link rel="stylesheet" href="stylesheets/page-ai-translate.css">
     <link rel="stylesheet" href="stylesheets/page-blackboard-vcs.css">
     <link rel="stylesheet" href="stylesheets/toast.css">
+    <link rel="stylesheet" href="stylesheets/walkie-typie.css">
+    <!--注意@media放在尾！！！-->
     <link rel="stylesheet" href="stylesheets/@media.css">
+    <link rel="stylesheet" href="stylesheets/layer.css">
 </head>
 
 <body>
@@ -292,9 +294,48 @@
             </div> -->
             <!-- <div class="page page-flex-direction-row can-push-pull" data-page="ai-cqc">cqc output</div> -->
             <!---->
-            <div class="page" data-page="walkie-typie-list">jk</div>
-            <div class="page" data-page="walkie-typie-text">lm</div>
-            <div class="page" data-page="walkie-typie-add">op</div>
+            <div class="page" data-page="walkie-typie-list">
+                <div class="walkie-typie-list-container">
+                    <div class="walkie-typie-list-title crt-text-orange">WALKIE-TYPIE CONTROLLER</div>
+                    <div class="walkie-typie-list-list-container" data-sound-item="UIGeneralFocus.mp3">
+                        <div class="walkie-typie-list-list-item">
+                            <input type="text" class="walkie-typie-list-tag" placeholder="Name this guy..." id=""
+                                name="walkie-typie-list-tag">
+                            <div class="walkie-typie-list-last-signal">2026-02-15T20:45.186+08:00</div>
+                            <div class="walkie-typie-list-uid">uid</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="page" data-page="walkie-typie-text">
+                <div class="walkie-typie-blackboard">
+                    <div class="walkie-typie-blackboard-we-title crt-text-orange">OUR BLACKBOARD</div>
+                    <button class="we-push-btn">PUSH</button>
+                    <textarea name="" id="walkie-typie-we-blackboard">
+                    </textarea>
+                    <button class="we-pull-btn">PULL</button>
+                </div>
+                <!-- <div class="walkie-typie-feature-container"> -->
+                <button class="walkie-typie-feature-btn" id="walkie-typie-blackboard-feature-switch"></button>
+                <!-- </div> -->
+                <div class="walkie-typie-blackboard">
+                    <!--Need to replace by corresponding uid-->
+                    <div class="walkie-typie-blackboard-they-title crt-text-orange">THEIR BLACKBOARD</div>
+                    <button class="they-push-btn">PUSH</button>
+                    <textarea name="" id="walkie-typie-they-blackboard">
+                    </textarea>
+                    <button class="they-pull-btn">PULL</button>
+                </div>
+            </div>
+            <div class="page" data-page="walkie-typie-add">
+                <div class="walkie-typie-add-container">
+                    <div class="walkie-typie-add-title crt-text-orange">WALKIE-TYPIE CONTROLLER</div>
+
+                    <input type="text" id="walkie-typie-add-uid" placeholder="UID" maxlength="64">
+
+                    <button id="btn-add" class="crt-text-green">ADD</button>
+                </div>
+            </div>
             <!---->
             <div class="page" data-page="broadcast-channel">qrs</div>
             <div class="page" data-page="broadcast-list">tuv</div>
