@@ -11,6 +11,11 @@ export const BBVCS = {
      * 執行推播 (向上翻頁或回到前端)
      */
     async push(state, currentText) {
+        // [Fix]: 如果當前頁面為空白，直接返回（不執行動作）
+        if (!currentText || !currentText.trim()) {
+            return false;
+        }
+
         // 先儲存當前內容
         await this.save(state, currentText);
 
@@ -23,28 +28,42 @@ export const BBVCS = {
             return true;
         }
 
-        // 2. 如果在 Head 0，且內容不是空的，則新增一頁
-        if (currentText.trim()) {
-            await BBCore.addRecord(state.owner, state.branchId, state.branch);
-            await BBCore.cleanupOldRecords(state.owner, state.branchId, state.maxSlot);
-            state.currentHead = 0;
-            return true;
-        }
-
-        return false;
+        // 2. 如果在 Head 0，且內容不是空的 (已在開頭檢查)，則新增一頁
+        await BBCore.addRecord(state.owner, state.branchId, state.branch);
+        await BBCore.cleanupOldRecords(state.owner, state.branchId, state.maxSlot);
+        state.currentHead = 0;
+        return true;
     },
 
     /**
      * 執行拉回 (向後翻閱歷史)
      */
     async pull(state, currentText) {
-        // 數據清洗
+        // 1. 先儲存當前狀態 (確保若使用者清空了當前頁，DB 也會更新為空白)
+        await this.save(state, currentText);
+
+        // 2. 數據清洗：刪除所有空白紀錄 (包含剛才儲存的若為空白)
+        // 注意：若 save 儲存了空字串，scrubBranch 會在此時將其刪除
         await BBCore.scrubBranch(state.owner, state.branchId, state.maxSlot);
 
+        // 3. 重新計算紀錄數量
         const count = await BBCore.countRecords(state.owner, state.branchId);
 
+        // [Fix]: 若當前輸入框內容為空，代表使用者意圖清除當前頁（或當前頁已被 scrubBranch 刪除）
+        // 此時紀錄遞補，原 currentHead 位置已是下一筆舊歷史，因此不需移動指標 (stay)
+        // 我們只需刷新畫面以顯示遞補上來的紀錄
+        if (!currentText || !currentText.trim()) {
+            // 防呆：若刪光了，回到 0
+            if (state.currentHead >= count && count > 0) {
+                state.currentHead = count - 1;
+            } else if (count === 0) {
+                state.currentHead = 0;
+            }
+            return true; // 刷新畫面
+        }
+
+        // 正常拉回：往舊歷史移動
         if (state.currentHead < count - 1) {
-            await this.save(state, currentText);
             state.currentHead++;
             return true;
         }
@@ -96,10 +115,13 @@ export const BBVCS = {
         await BBCore.scrubBranch("local", branchId, maxSlot);
 
         // 1. 抓取該分支的所有紀錄
-        const records = await BBCore.getAllRecordsForBranch("local", branchId);
+        let records = await BBCore.getAllRecordsForBranch("local", branchId);
+
+        // [Fix]: 再次過濾空白紀錄，確保不提交空資料
+        records = records.filter(r => r.text && r.text.trim() !== "");
 
         if (records.length === 0) {
-            throw new Error("LOCAL DATA NOT FOUND. CHECKOUT FIRST.");
+            throw new Error("LOCAL DATA NOT FOUND OR EMPTY. CHECKOUT FIRST.");
         }
 
         // 2. 上傳至伺服器

@@ -143,15 +143,17 @@ async function updateBranchList() {
     }
 
     const combinedBranches = Array.from(branchMap.values());
+    
+    // [Fix]: 移除將當前分支強制置頂的排序邏輯，僅依時間排序
     combinedBranches.sort((a, b) => {
-        const aIsActive = a.id === state.branchId;
-        const bIsActive = b.id === state.branchId;
-        if (aIsActive && !bIsActive) return -1;
-        if (!aIsActive && bIsActive) return 1;
         return b.lastUpdate - a.lastUpdate;
     });
 
-    BBUI.renderBranchList(combinedBranches, state.branchId, state.owner);
+    // [Fix]: 嘗試保留當前選中的分支，若無 (首次加載) 則可考慮預設為當前分支
+    const currentSelection = getSelectedBranchInfo();
+    const targetSelectionId = currentSelection ? currentSelection.id : state.branchId;
+
+    BBUI.renderBranchList(combinedBranches, targetSelectionId, state.owner);
 }
 
 /**
@@ -273,12 +275,15 @@ if (BBUI.elements.checkoutBtn) {
 
             const msg = BBMessage.info("LOADING BRANCH...");
             try {
-                // 如果選中的是 remote 且 dirty，BBVCS.checkout 會負責下載
-                const targetOwner = selected.isServer ? "remote" : "local";
+                // [Fix]: 如果本地已存在，優先使用本地 (不強制同步)；僅在純雲端分支時才下載
+                const targetOwner = selected.isLocal ? "local" : "remote";
                 await BBVCS.checkout(state, selected.id, targetOwner);
 
                 msg.update("BRANCH READY.");
                 await syncView();
+                // [Fix]: 切換後，列表選取狀態應跟隨切換到新分支 (可選，視 UX 需求而定，這裡保持自動更新)
+                // 由於 updateBranchList 會抓取 DOM 選取狀態，這裡不需要額外操作，
+                // 但為了讓使用者知道切換成功，清單刷新後選取項通常會停留在該分支上。
                 await updateBranchList();
             } catch (e) {
                 msg.close();
