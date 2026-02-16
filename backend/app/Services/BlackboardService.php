@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Cache;
 use App\Models\User;
 use App\Events\WalkieTypieSignal;
 
@@ -46,6 +47,7 @@ class BlackboardService
                 );
             }
 
+            Cache::forget("user:{$user->uid}:branches");
             $this->broadcastUpdate($user, $branchId);
         });
     }
@@ -75,12 +77,14 @@ class BlackboardService
 
     public function fetchBranches(User $user)
     {
-        return DB::table('blackboards')
-            ->where('owner', $user->uid)
-            ->select('branch_id', 'branch_name', 'owner', DB::raw('MAX(timestamp) as last_update'))
-            ->groupBy('branch_id', 'branch_name', 'owner')
-            ->orderBy('last_update', 'desc')
-            ->get();
+        return Cache::remember("user:{$user->uid}:branches", 5, function () use ($user) {
+            return DB::table('blackboards')
+                ->where('owner', $user->uid)
+                ->select('branch_id', 'branch_name', 'owner', DB::raw('MAX(timestamp) as last_update'))
+                ->groupBy('branch_id', 'branch_name', 'owner')
+                ->orderBy('last_update', 'desc')
+                ->get();
+        });
     }
 
     public function fetchBranchDetails(User $user, string $branchId)
@@ -94,9 +98,15 @@ class BlackboardService
 
     public function deleteBranch(User $user, string $branchId)
     {
-        return DB::table('blackboards')
+        $deleted = DB::table('blackboards')
             ->where('owner', $user->uid)
             ->where('branch_id', $branchId)
             ->delete();
+
+        if ($deleted) {
+            Cache::forget("user:{$user->uid}:branches");
+        }
+
+        return $deleted;
     }
 }

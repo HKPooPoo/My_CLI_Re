@@ -427,7 +427,7 @@ BBUI.elements.textarea?.addEventListener("input", () => {
         BBUI.updateIndicators(state.branch || "NAMELESS_BRANCH", headIndicator, true);
         
         await updateBranchList(); // 立即更新清單同步狀態
-    }, 500);
+    }, 200);
 });
 
 // 監聽分支更名事件
@@ -477,7 +477,7 @@ setInterval(() => {
     if (document.visibilityState === 'visible' && isVisible && loggedInUser && !isInitializing) {
         updateBranchList();
     }
-}, 1000);
+}, 500);
 
 /**
  * PWA Service Worker 註冊
