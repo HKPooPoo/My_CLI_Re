@@ -13,6 +13,7 @@
 
 import { playAudio } from "./audio.js";
 import { BBMessage } from "./blackboard-msg.js";
+import { SpeechService } from "./services/speech-service.js";
 
 // --- DOM 引用 ---
 const $voiceBtn = document.querySelector('[data-feature-btn="voice-to-textbox"]');
@@ -137,14 +138,7 @@ async function transcribeAudio(audioBlob) {
     reader.onloadend = async () => {
         const base64Audio = reader.result.split(',')[1];
         try {
-            const response = await fetch("/api/speech", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ audio: base64Audio })
-            });
-
-            if (!response.ok) throw new Error(`Server Error: ${response.status}`);
-            const data = await response.json();
+            const data = await SpeechService.recognize({ audio: base64Audio });
 
             const transcript = data.results?.[0]?.alternatives?.[0]?.transcript;
             if (transcript) {

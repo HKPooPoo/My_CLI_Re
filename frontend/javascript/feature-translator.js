@@ -11,6 +11,7 @@
  */
 
 import { playAudio } from "./audio.js";
+import { TranslationService } from "./services/translation-service.js";
 
 // --- 配置與引用 ---
 const TRANSLATE_BTN_PREFIX = 'translate-';
@@ -48,18 +49,14 @@ $translateBtns.forEach($btn => {
  * 遠程翻譯請求
  */
 async function translateText(text, targetLang) {
-    const url = "/api/translate";
     const payload = { text, target: targetLang };
 
-    const response = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-    });
-
-    if (!response.ok) throw new Error(`Server Error: ${response.status}`);
-    const data = await response.json();
-    if (data.error) throw new Error(data.error.message || JSON.stringify(data.error));
-
-    return data.data?.translations?.[0]?.translatedText;
+    try {
+        const data = await TranslationService.translate(payload);
+        return data.data?.translations?.[0]?.translatedText;
+    } catch (error) {
+        // Map API error to previously expected format if needed, or just throw
+        if (error.message) throw new Error(error.message);
+        throw error;
+    }
 }

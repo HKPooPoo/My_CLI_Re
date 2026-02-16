@@ -11,6 +11,7 @@
  */
 
 import { playAudio } from "./audio.js";
+import { StatusService } from "./services/status-service.js";
 
 // --- 常量定義 ---
 const ONLINE_STR = "ONLINE";
@@ -39,8 +40,7 @@ window.addEventListener("blackboard:authUpdated", updateLoginStatus);
  */
 async function updateDatabaseStatus() {
     try {
-        const response = await fetch('/api/status');
-        const responseJSON = await response.json();
+        const responseJSON = await StatusService.checkStatus();
 
         if (responseJSON.status === ONLINE_STR) {
             if (isStatusHasNoChange(ONLINE_STR)) return;

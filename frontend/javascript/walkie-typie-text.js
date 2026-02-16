@@ -12,6 +12,7 @@
 import { BBCore } from "./blackboard-core.js";
 import { BBMessage } from "./blackboard-msg.js";
 import { WTCore } from "./walkie-typie-core.js"; // For accessing echo if needed, or listen to global events
+import { WalkieTypieService } from "./services/walkie-typie-service.js";
 
 export const WTText = {
     elements: {
@@ -178,20 +179,10 @@ export const WTText = {
     
     async broadcastUpdate(text) {
         try {
-            await fetch('/api/walkie-typie/signal', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json'
-                },
-                body: JSON.stringify({
-                    partner_uid: this.currentConnection.partner_uid,
-                    text: text,
-                    branch_id: this.currentConnection.partner_branch_id // Tell them which branch to update (THEIR copy of MY branch)
-                    // Wait, logic check:
-                    // My "WE" branch (ID: A) corresponds to Their "THEY" branch (ID: A).
-                    // So I send ID: A.
-                })
+            await WalkieTypieService.sendSignal({
+                partner_uid: this.currentConnection.partner_uid,
+                text: text,
+                branch_id: this.currentConnection.partner_branch_id // Tell them which branch to update (THEIR copy of MY branch)
             });
         } catch (e) {
             console.error("Signal failed", e);

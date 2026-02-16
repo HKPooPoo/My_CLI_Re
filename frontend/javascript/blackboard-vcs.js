@@ -1,6 +1,7 @@
 import { BBCore } from "./blackboard-core.js";
 import { BBMessage } from "./blackboard-msg.js";
 import db from "./indexedDB.js";
+import { BlackboardService } from "./services/blackboard-service.js";
 
 /**
  * Blackboard 版本控制邏輯層 (大腦)
@@ -102,30 +103,24 @@ export const BBVCS = {
         }
 
         // 2. 上傳至伺服器
-        const res = await fetch('/api/blackboard/commit', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'include',
-            body: JSON.stringify({
+        try {
+            await BlackboardService.commit({
                 branchId: branchId,
                 branchName: branch,
                 records: records
-            })
-        });
+            });
 
-        if (!res.ok) {
-            const err = await res.json();
-            throw new Error(err.message || "UPLOAD FAILED.");
+            // Commit 成功後，將本地紀錄標記為 Synced 狀態
+            // 這樣登出時 wipeSyncedData 就會將其抹除
+            const syncedOwner = `local, online/${loggedInUser} [synced]`;
+            await db.blackboard.where('owner').equals('local')
+                .and(item => item.branchId === branchId)
+                .modify({ owner: syncedOwner });
+
+            return true;
+        } catch (e) {
+            throw new Error(e.message || "UPLOAD FAILED.");
         }
-
-        // Commit 成功後，將本地紀錄標記為 Synced 狀態
-        // 這樣登出時 wipeSyncedData 就會將其抹除
-        const syncedOwner = `local, online/${loggedInUser} [synced]`;
-        await db.blackboard.where('owner').equals('local')
-            .and(item => item.branchId === branchId)
-            .modify({ owner: syncedOwner });
-
-        return true;
     },
 
     /**
@@ -135,12 +130,10 @@ export const BBVCS = {
         // 1. 如果目標是雲端分支，不論本地有無資料都先進行同步 (確保最新)
         if (targetOwner !== "local") {
             BBMessage.info("SYNCING BRANCH DATA FROM CLOUD...");
-            const res = await fetch(`/api/blackboard/branches/${targetBranchId}`, {
-                credentials: 'include'
-            });
+            
+            try {
+                const data = await BlackboardService.fetchBranchDetails(targetBranchId);
 
-            if (res.ok) {
-                const data = await res.json();
                 // 獲取當前 UID
                 const currentUser = localStorage.getItem("currentUser") || "unknown";
                 
@@ -160,8 +153,8 @@ export const BBVCS = {
 
                 // 同步後執行數據清洗
                 await BBCore.scrubBranch("local", targetBranchId, state.maxSlot || 10);
-            } else {
-                console.warn("CLOUD SYNC FAILED. USING LOCAL CACHE.");
+            } catch (e) {
+                console.warn("CLOUD SYNC FAILED. USING LOCAL CACHE.", e);
             }
         }
 

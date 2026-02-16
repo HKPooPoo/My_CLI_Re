@@ -15,6 +15,7 @@ import { BBMessage } from "./blackboard-msg.js";
 import { MultiStepButton } from "./multiStepButton.js";
 import { BBCore } from "./blackboard-core.js";
 import toast from "./toast.js";
+import { AuthService } from "./services/auth-service.js";
 
 export const AuthManager = {
     // --- DOM 引用 ---
@@ -44,7 +45,7 @@ export const AuthManager = {
 
             // 設定 Email Placeholder
             if (this.elements.emailInput) {
-                this.elements.emailInput.placeholder = "EMAIL: " + userData.email || "EMAIL";
+                this.elements.emailInput.placeholder = "EMAIL: " + (userData.email || "EMAIL");
             }
         } else {
             this.elements.loginContainer.style.display = "flex";
@@ -64,10 +65,7 @@ export const AuthManager = {
 
         // 恢復上次登入狀態 (從後端獲取完整資料)
         try {
-            const res = await fetch('/api/auth-status', {
-                headers: { 'Accept': 'application/json' }
-            });
-            const data = await res.json();
+            const data = await AuthService.getStatus();
             this.updateUI(data.isLoggedIn ? data : null);
         } catch (e) {
             const currentUser = localStorage.getItem("currentUser");
@@ -97,30 +95,15 @@ export const AuthManager = {
 
                     const msg = BBMessage.info("AUTH...");
                     try {
-                        const res = await fetch('/api/login', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'Accept': 'application/json'
-                            },
-                            credentials: 'include',
-                            body: JSON.stringify({ uid, passcode })
-                        });
-                        const data = await res.json();
-
-                        if (res.ok) {
-                            msg.update(`WELCOME BACK, ${data.user.uid.toUpperCase()}`);
-                            // 登入成功後重新初始化以獲取完整資訊
-                            this.init();
-                            this.elements.uidInput.value = "";
-                            this.elements.passcodeInput.value = "";
-                        } else {
-                            msg.close();
-                            BBMessage.error(data.message || "AUTH FAILED.");
-                        }
+                        const data = await AuthService.login({ uid, passcode });
+                        msg.update(`WELCOME BACK, ${data.user.uid.toUpperCase()}`);
+                        // 登入成功後重新初始化以獲取完整資訊
+                        this.init();
+                        this.elements.uidInput.value = "";
+                        this.elements.passcodeInput.value = "";
                     } catch (e) {
                         msg.close();
-                        BBMessage.error("OFFLINE.");
+                        BBMessage.error(e.message || "AUTH FAILED.");
                     }
                 }
             });
@@ -146,25 +129,11 @@ export const AuthManager = {
 
                         const msg = BBMessage.info("SENDING...");
                         try {
-                            const res = await fetch('/api/register', {
-                                method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/json',
-                                    'Accept': 'application/json'
-                                },
-                                body: JSON.stringify({ uid, passcode })
-                            });
-                            const data = await res.json();
-
-                            if (res.ok) {
-                                msg.update("REG COMPLETE.");
-                            } else {
-                                msg.close();
-                                BBMessage.error(data.message || "FAILED.");
-                            }
+                            const data = await AuthService.register({ uid, passcode });
+                            msg.update("REG COMPLETE.");
                         } catch (e) {
                             msg.close();
-                            BBMessage.error("OFFLINE.");
+                            BBMessage.error(e.message || "FAILED.");
                         }
                     }
                 }
@@ -177,7 +146,7 @@ export const AuthManager = {
                 sound: "UISelectOff.mp3",
                 action: async () => {
                     try {
-                        await fetch('/api/logout', { method: 'POST', headers: { 'Accept': 'application/json' } });
+                        await AuthService.logout();
                         
                         // 抹除本地同步資料
                         await BBCore.wipeSyncedData();
@@ -200,53 +169,35 @@ export const AuthManager = {
                 if (this.isResetting) return;
                 this.isResetting = true;
 
-                try {
-                    const uid = this.elements.uidInput.value.trim();
-                    const input = this.elements.passcodeInput.value.trim();
+                const uid = this.elements.uidInput.value.trim();
+                const input = this.elements.passcodeInput.value.trim();
 
+                try {
                     const isCommand = input.startsWith("/passwd");
 
                     if (isCommand) {
                         const msg = toast.addMessage("EXECUTING COMMAND...");
                         try {
-                            const res = await fetch('/api/auth/command', {
-                                method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/json',
-                                    'Accept': 'application/json'
-                                },
-                                body: JSON.stringify({ command: input })
-                            });
-                            const data = await res.json();
+                            const data = await AuthService.executeCommand({ command: input });
                             msg.update(data.message);
-                            if (res.ok) this.elements.passcodeInput.value = "";
+                            this.elements.passcodeInput.value = "";
                         } catch (e) {
-                            msg.update("OFFLINE.");
+                            msg.update(e.message || "OFFLINE.");
                         }
                     } else {
                         if (!uid) {
-                            // unlock early if validation fails
-                            this.isResetting = false;
                             return toast.addMessage("UID REQUIRED FOR RESTORE.");
                         }
                         const msg = toast.addMessage("REQUESTING RESTORE...");
                         try {
-                            const res = await fetch('/api/auth/request-reset', {
-                                method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/json',
-                                    'Accept': 'application/json'
-                                },
-                                body: JSON.stringify({ uid })
-                            });
-                            const data = await res.json();
+                            const data = await AuthService.requestPasswordReset({ uid });
                             msg.update(data.message);
                         } catch (e) {
-                            msg.update("OFFLINE.");
+                            msg.update(e.message || "OFFLINE.");
                         }
                     }
                 } finally {
-                    setTimeout(() => { this.isResetting = false; }, 2000);
+                    this.isResetting = false;
                 }
             });
         }
@@ -257,39 +208,35 @@ export const AuthManager = {
                 if (this.isBinding) return;
                 this.isBinding = true;
 
+                const input = this.elements.emailInput.value.trim();
+                if (!input) {
+                    this.isBinding = false;
+                    return toast.addMessage("INPUT EMAIL OR COMMAND.");
+                }
+
                 try {
-                    const input = this.elements.emailInput.value.trim();
-                    if (!input) {
-                         this.isBinding = false;
-                         return toast.addMessage("INPUT EMAIL OR COMMAND.");
-                    }
-
                     const isCommand = input.startsWith("/bind");
-                    const endpoint = isCommand ? '/api/auth/command' : '/api/auth/request-bind';
-                    const body = isCommand ? { command: input } : { email: input };
-
                     const msg = toast.addMessage("PROCESSING...");
+
                     try {
-                        const res = await fetch(endpoint, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'Accept': 'application/json'
-                            },
-                            body: JSON.stringify(body)
-                        });
-                        const data = await res.json();
+                        let data;
+                        if (isCommand) {
+                            data = await AuthService.executeCommand({ command: input });
+                        } else {
+                            data = await AuthService.requestEmailBinding({ email: input });
+                        }
+
                         msg.update(data.message);
-                        if (res.ok && isCommand) {
+                        if (isCommand) {
                             this.elements.emailInput.value = "";
                             // 綁定成功後刷新 UI 以更新 placeholder
                             this.init();
                         }
                     } catch (e) {
-                        msg.update("OFFLINE.");
+                        msg.update(e.message || "OFFLINE.");
                     }
                 } finally {
-                    setTimeout(() => { this.isBinding = false; }, 2000);
+                    this.isBinding = false;
                 }
             });
         }

@@ -11,6 +11,7 @@
 import { BBMessage } from "./blackboard-msg.js";
 import { MultiStepButton } from "./multiStepButton.js";
 import { getHKTTimestamp } from "./blackboard-core.js";
+import { WalkieTypieService } from "./services/walkie-typie-service.js";
 
 export const WTList = {
     elements: {
@@ -39,28 +40,14 @@ export const WTList = {
 
                     const msg = BBMessage.info("LINKING...");
                     try {
-                        const res = await fetch('/api/walkie-typie/connections', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'Accept': 'application/json'
-                            },
-                            body: JSON.stringify({ uid })
-                        });
-                        const data = await res.json();
-
-                        if (res.ok) {
-                            msg.update("LINKED.");
-                            this.elements.input.value = "";
-                            // The list will update via WebSocket or we can manually refresh
-                            await this.fetchConnections(); 
-                        } else {
-                            msg.close();
-                            BBMessage.error(data.message || "LINK FAILED.");
-                        }
+                        await WalkieTypieService.createConnection({ uid });
+                        msg.update("LINKED.");
+                        this.elements.input.value = "";
+                        // The list will update via WebSocket or we can manually refresh
+                        await this.fetchConnections(); 
                     } catch (e) {
                         msg.close();
-                        BBMessage.error("OFFLINE.");
+                        BBMessage.error(e.message || "LINK FAILED.");
                     }
                 }
             });
@@ -75,9 +62,7 @@ export const WTList = {
 
     async fetchConnections() {
         try {
-            const res = await fetch('/api/walkie-typie/connections');
-            if (!res.ok) return; // Maybe unauthorized
-            const data = await res.json();
+            const data = await WalkieTypieService.getConnections();
             this.connections = data.connections;
             this.render();
         } catch (e) {
@@ -125,14 +110,7 @@ export const WTList = {
             tagInput.addEventListener("change", async (e) => {
                 const newTag = e.target.value.trim();
                 try {
-                    await fetch(`/api/walkie-typie/connections/${conn.partner_uid}`, {
-                        method: 'PATCH',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Accept': 'application/json'
-                        },
-                        body: JSON.stringify({ tag: newTag })
-                    });
+                    await WalkieTypieService.updateConnectionTag(conn.partner_uid, { tag: newTag });
                     // Update local cache
                     conn.partner_tag = newTag;
                 } catch (err) {

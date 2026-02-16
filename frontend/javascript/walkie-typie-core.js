@@ -9,6 +9,7 @@
  */
 
 import { BBMessage } from "./blackboard-msg.js";
+import { WalkieTypieService } from "./services/walkie-typie-service.js";
 
 export const WTCore = {
     echo: null,
@@ -20,8 +21,7 @@ export const WTCore = {
 
         try {
             // Fetch Reverb Config
-            const res = await fetch('/api/walkie-typie/config');
-            const config = await res.json();
+            const config = await WalkieTypieService.getConfig();
 
             // Initialize Echo
             // Assumes Pusher and Echo are loaded globally via <script> tags

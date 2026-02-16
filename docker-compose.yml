@@ -37,6 +37,8 @@ services:
       MAIL_FROM_NAME: ${MAIL_FROM_NAME:-MyCLI_System}
       BROADCAST_CONNECTION: reverb
       REVERB_HOST: reverb
+      REVERB_PORT: 8081
+      REVERB_SCHEME: http
     depends_on:
       - db
       - redis
@@ -68,6 +70,8 @@ services:
       MAIL_FROM_NAME: ${MAIL_FROM_NAME:-MyCLI_System}
       BROADCAST_CONNECTION: reverb
       REVERB_HOST: reverb
+      REVERB_PORT: 8081
+      REVERB_SCHEME: http
     command: php artisan queue:listen --tries=1 --timeout=0
     depends_on:
       - db
@@ -131,6 +135,8 @@ services:
       REVERB_SERVER_HOST: 0.0.0.0
       REVERB_SERVER_PORT: 8081
       REVERB_HOST: reverb
+      REVERB_PORT: 8081
+      REVERB_SCHEME: http
       BROADCAST_CONNECTION: reverb
     command: php artisan reverb:start --host=0.0.0.0 --port=8081
     depends_on:

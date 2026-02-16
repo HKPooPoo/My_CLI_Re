@@ -18,6 +18,7 @@ import { BBMessage } from "./blackboard-msg.js";
 import { initAllInfiniteLists } from "./blackboard-ui-list.js"
 import db from "./indexedDB.js"
 import { MultiStepButton } from "./multiStepButton.js";
+import { BlackboardService } from "./services/blackboard-service.js";
 
 // --- 全域狀態聲明 ---
 const state = {
@@ -110,8 +111,7 @@ async function updateBranchList() {
     // 處理雲端數據 (若已登入)
     if (loggedInUser) {
         try {
-            const res = await fetch('/api/blackboard/branches', { credentials: 'include' });
-            const data = await res.json();
+            const data = await BlackboardService.fetchBranches();
 
             data.branches.forEach(sb => {
                 const sid = parseInt(sb.branch_id);
@@ -327,15 +327,12 @@ if (dropBtnEl) {
 
                     // Stage 2: 如果雲端有資料且本地已清空歷史，則刪除雲端 (WIPED)
                     if (selected.isServer) {
-                        const res = await fetch(`/api/blackboard/branches/${targetId}`, {
-                            method: 'DELETE',
-                            credentials: 'include'
-                        });
-                        if (res.ok) {
+                        try {
+                            await BlackboardService.deleteBranch(targetId);
                             msg.update("STAGE 2: WIPED.");
                             await updateBranchList();
                             return;
-                        } else {
+                        } catch (e) {
                             throw new Error("SERVER_DELETE_FAILED");
                         }
                     }
