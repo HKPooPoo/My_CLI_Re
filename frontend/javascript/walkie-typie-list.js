@@ -12,6 +12,7 @@ import { BBMessage } from "./blackboard-msg.js";
 import { MultiStepButton } from "./multiStepButton.js";
 import { getHKTTimestamp } from "./blackboard-core.js";
 import { WalkieTypieService } from "./services/walkie-typie-service.js";
+import { InfiniteList } from "./blackboard-ui-list.js";
 
 export const WTList = {
     elements: {
@@ -21,6 +22,7 @@ export const WTList = {
     },
     
     connections: [], // Local cache of connections
+    infiniteList: null,
 
     async init() {
         this.bindEvents();
@@ -57,6 +59,25 @@ export const WTList = {
         window.addEventListener("walkie-typie:connection-update", (e) => {
             const newConn = e.detail;
             this.handleUpdate(newConn);
+        });
+
+        // Listen for list selection (Keyboard/Mouse via InfiniteList)
+        window.addEventListener("blackboard:selectionChanged", (e) => {
+            const { item } = e.detail;
+            // Ensure this selection event comes from our list container
+            if (item && this.elements.container.contains(item)) {
+                const partnerUid = item.dataset.partnerUid;
+                const conn = this.connections.find(c => c.partner_uid === partnerUid);
+                
+                if (conn) {
+                    // [Requirement]: Select directly updates text interface content in 1s
+                    // We dispatch immediate selection, let Receiver handle the delay (already implemented in text.js)
+                    // Or we can debounce here. Existing text.js has 1s delay.
+                    window.dispatchEvent(new CustomEvent("walkie-typie:selected", {
+                        detail: conn
+                    }));
+                }
+            }
         });
     },
 
@@ -122,33 +143,13 @@ export const WTList = {
             // Prevent row selection when clicking input
             tagInput.addEventListener("click", (e) => e.stopPropagation());
 
-            // Add click listener for selection
-            item.addEventListener("click", () => {
-                document.querySelectorAll(".walkie-typie-list-list-item").forEach(el => el.classList.remove("active"));
-                item.classList.add("active");
-                
-                // Notify selection change
-                // We delay slightly to allow UI feedback
-                setTimeout(() => {
-                    // Update the Text interface (Twin Blackboard)
-                    // We need to implement walkie-typie-text.js to listen to this event
-                    // But for now, we just dispatch the event.
-                    // The logic for "update text UI" will be in the next step/module.
-                    
-                    // However, per requirements: "Select directly updates text interface content in 1s"
-                    // Wait, requirement says "1秒後直接更新text界面的内容" (updates text interface content directly after 1 second).
-                    // This implies the list selection triggers a delayed update.
-                    
-                    // But here we just dispatch event or call a global handler.
-                    // Let's dispatch a custom event with the connection details.
-                     window.dispatchEvent(new CustomEvent("walkie-typie:selected", {
-                        detail: conn
-                    }));
-                }, 100); // Small delay for visual click feedback, actual content load might handle the 1s delay or just be instant.
-            });
-
             this.elements.container.appendChild(item);
         });
+
+        // Initialize Infinite List for keyboard/mouse navigation
+        if (this.elements.container) {
+            this.infiniteList = new InfiniteList(this.elements.container, ".walkie-typie-list-list-item");
+        }
     }
 };
 

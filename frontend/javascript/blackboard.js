@@ -19,6 +19,7 @@ import { initAllInfiniteLists } from "./blackboard-ui-list.js"
 import db from "./indexedDB.js"
 import { MultiStepButton } from "./multiStepButton.js";
 import { BlackboardService } from "./services/blackboard-service.js";
+import { playAudio } from "./audio.js";
 
 // --- 全域狀態聲明 ---
 const state = {
@@ -151,7 +152,7 @@ async function updateBranchList() {
     }
 
     const combinedBranches = Array.from(branchMap.values());
-    
+
     // [Fix]: 移除將當前分支強制置頂的排序邏輯，僅依時間排序
     combinedBranches.sort((a, b) => {
         return b.lastUpdate - a.lastUpdate;
@@ -188,7 +189,7 @@ if (BBUI.elements.pushBtn) {
         sound: "Click.mp3",
         action: async () => {
             const updated = await BBVCS.push(state, BBUI.getTextareaValue());
-            if (updated) { 
+            if (updated) {
                 await syncView();
                 // [Optimization]: 移除 updateBranchList 以消除網絡延遲
             }
@@ -201,8 +202,8 @@ if (BBUI.elements.pullBtn) {
         sound: "Click.mp3",
         action: async () => {
             const updated = await BBVCS.pull(state, BBUI.getTextareaValue());
-            if (updated) { 
-                await syncView(); 
+            if (updated) {
+                await syncView();
                 // [Optimization]: 移除 updateBranchList 以消除網絡延遲
             }
         }
@@ -231,7 +232,7 @@ if (BBUI.elements.branchBtn) {
 
                 // [Fix]: Fork 後不自動切換，停留在當前分支
                 // 僅更新列表以顯示新分支
-                
+
                 msg.update("FORK COMPLETE.");
                 // await syncView(); // 不需要同步視圖，因為沒切換
                 await updateBranchList();
@@ -310,7 +311,7 @@ let dropButtonTimer = null;
 
 async function updateDropButtonState() {
     if (!dropBtnEl) return;
-    
+
     const selected = getSelectedBranchInfo();
     if (!selected) {
         dropBtnEl.textContent = "N/A";
@@ -339,7 +340,7 @@ async function updateDropButtonState() {
     if (selected.isLocal && hasContent) {
         dropBtnEl.textContent = "CLEAN";
         currentDropAction = "clean";
-    } 
+    }
     // 2. Cloud (且無 Local Content 需清理) -> DROP
     else if (selected.isServer) {
         dropBtnEl.textContent = "DROP";
@@ -359,7 +360,7 @@ if (dropBtnEl) {
     // 點擊事件：執行當前決策的動作
     dropBtnEl.addEventListener("click", async () => {
         if (!currentDropAction) return;
-        
+
         const selected = getSelectedBranchInfo();
         if (!selected) return;
 
@@ -375,22 +376,22 @@ if (dropBtnEl) {
                     await syncView();
                 }
                 BBMessage.success("HISTORY CLEARED");
-            } 
+            }
             else if (currentDropAction === "drop") {
                 BBMessage.info("DROPPING FROM CLOUD...");
                 await BlackboardService.deleteBranch(selected.id);
                 BBMessage.success("CLOUD BRANCH DROPPED");
-            } 
+            }
             else if (currentDropAction === "delete") {
                 BBMessage.info("DELETING LOCAL...");
                 await BBCore.deleteLocalBranch("local", selected.id);
-                
+
                 if (selected.id === state.branchId) {
-                    await initBoard(); 
+                    await initBoard();
                 }
                 BBMessage.success("LOCAL BRANCH DELETED");
             }
-            
+
             // 操作完成後刷新列表與按鈕狀態
             await updateBranchList();
             await updateDropButtonState();
@@ -421,11 +422,11 @@ BBUI.elements.textarea?.addEventListener("input", () => {
     clearTimeout(debounceTimer);
     debounceTimer = setTimeout(async () => {
         await BBVCS.save(state, BBUI.getTextareaValue());
-        
+
         // [Fix]: 狀態更新後，依據是否仍為虛擬狀態顯示指標
         const headIndicator = state.isVirtual ? "NEW" : state.currentHead;
         BBUI.updateIndicators(state.branch || "NAMELESS_BRANCH", headIndicator, true);
-        
+
         await updateBranchList(); // 立即更新清單同步狀態
     }, 200);
 });
