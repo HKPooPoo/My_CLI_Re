@@ -6033,4 +6033,3 @@ DexiePromise.rejectionMapper = mapError;
 setDebug(debug);
 
 export { Dexie$1 as Dexie, Entity, PropModification, RangeSet, add, cmp, Dexie$1 as default, liveQuery, mergeRanges, rangesOverlap, remove, replacePrefix };
-//# sourceMappingURL=dexie.mjs.map

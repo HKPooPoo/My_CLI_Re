@@ -25,6 +25,13 @@ export const WTList = {
     infiniteList: null,
 
     async init() {
+        const user = localStorage.getItem("currentUser");
+        if (!user || user === "local") {
+            this.connections = [];
+            this.render();
+            return;
+        }
+
         this.bindEvents();
         await this.fetchConnections();
     },
@@ -73,6 +80,7 @@ export const WTList = {
                     // [Requirement]: Select directly updates text interface content in 1s
                     // We dispatch immediate selection, let Receiver handle the delay (already implemented in text.js)
                     // Or we can debounce here. Existing text.js has 1s delay.
+                    console.log(`WTList: Dispatching selection for ${conn.partner_uid}`);
                     window.dispatchEvent(new CustomEvent("walkie-typie:selected", {
                         detail: conn
                     }));
@@ -108,6 +116,28 @@ export const WTList = {
 
     render() {
         if (!this.elements.container) return;
+
+        // Capture current selection to preserve state across updates
+        const activeItem = this.elements.container.querySelector(".walkie-typie-list-list-item.active");
+        const activeUid = activeItem ? activeItem.dataset.partnerUid : null;
+
+        // Capture focused input state to prevent typing interruption
+        const activeElement = document.activeElement;
+        let focusedUid = null;
+        let focusedValue = "";
+        let selectionStart = 0;
+        let selectionEnd = 0;
+
+        if (activeElement && activeElement.classList.contains("walkie-typie-list-tag")) {
+            const parentItem = activeElement.closest(".walkie-typie-list-list-item");
+            if (parentItem) {
+                focusedUid = parentItem.dataset.partnerUid;
+                focusedValue = activeElement.value;
+                selectionStart = activeElement.selectionStart;
+                selectionEnd = activeElement.selectionEnd;
+            }
+        }
+
         this.elements.container.innerHTML = "";
 
         this.connections.forEach(conn => {
@@ -115,13 +145,21 @@ export const WTList = {
             item.className = "walkie-typie-list-list-item";
             item.dataset.partnerUid = conn.partner_uid;
             
-            // Use getHKTTimestamp if possible, or fallback
-            // conn.last_signal is a timestamp (bigint/number)
+            // Restore selection
+            if (activeUid && conn.partner_uid === activeUid) {
+                item.classList.add("active");
+            }
+            
+            // Determine display value: Use focused value if user is typing, otherwise database value
+            let displayTag = (conn.partner_tag || "").replace(/"/g, "&quot;");
+            if (focusedUid && conn.partner_uid === focusedUid) {
+                displayTag = focusedValue.replace(/"/g, "&quot;"); // Use dirty value
+            }
+
             const timeStr = getHKTTimestamp(Number(conn.last_signal));
-            const safeTag = (conn.partner_tag || "").replace(/"/g, "&quot;");
 
             item.innerHTML = `
-                <input type="text" class="walkie-typie-list-tag" value="${safeTag}" placeholder="Name this guy..." name="walkie-typie-list-tag" maxlength="64">
+                <input type="text" class="walkie-typie-list-tag" value="${displayTag}" placeholder="Name this guy..." id="" name="walkie-typie-list-tag" maxlength="64">
                 <div class="walkie-typie-list-last-signal">${timeStr}</div>
                 <div class="walkie-typie-list-uid">${conn.partner_uid}</div>
             `;
@@ -146,9 +184,22 @@ export const WTList = {
             this.elements.container.appendChild(item);
         });
 
-        // Initialize Infinite List for keyboard/mouse navigation
+        // Restore focus
+        if (focusedUid) {
+            const inputToFocus = this.elements.container.querySelector(`.walkie-typie-list-list-item[data-partner-uid="${focusedUid}"] .walkie-typie-list-tag`);
+            if (inputToFocus) {
+                inputToFocus.focus();
+                inputToFocus.setSelectionRange(selectionStart, selectionEnd);
+            }
+        }
+
+        // Initialize or Update Infinite List
         if (this.elements.container) {
-            this.infiniteList = new InfiniteList(this.elements.container, ".walkie-typie-list-list-item");
+            if (this.infiniteList) {
+                this.infiniteList.refresh();
+            } else {
+                this.infiniteList = new InfiniteList(this.elements.container, ".walkie-typie-list-list-item");
+            }
         }
     }
 };

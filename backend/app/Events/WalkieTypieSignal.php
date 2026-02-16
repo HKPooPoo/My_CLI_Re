@@ -4,6 +4,7 @@ namespace App\Events;
 
 use Illuminate\Broadcasting\Channel;
 use Illuminate\Broadcasting\InteractsWithSockets;
+use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
@@ -15,7 +16,7 @@ class WalkieTypieSignal implements ShouldBroadcast
     public $senderUid;
     public $partnerUid;
     public $branchId;
-    public $timestamp;
+    public $contentData; // Use unified structure if possible
 
     /**
      * Create a new event instance.
@@ -25,7 +26,16 @@ class WalkieTypieSignal implements ShouldBroadcast
         $this->senderUid = $senderUid;
         $this->partnerUid = $partnerUid;
         $this->branchId = $branchId;
-        $this->timestamp = (int) (microtime(true) * 1000);
+        // Construct payload similar to WalkieTypieContentUpdated
+        $this->contentData = [
+            'branch_id' => $branchId,
+            'sender_uid' => $senderUid,
+            'timestamp' => (int) (microtime(true) * 1000),
+            'text' => null // Signal implies update, but maybe we should include text?
+            // BlackboardService calls this AFTER DB update.
+            // But BlackboardService doesn't pass text to the event constructor!
+            // This is a problem. The receiver needs to know WHAT changed or Fetch it.
+        ];
     }
 
     /**
@@ -33,14 +43,13 @@ class WalkieTypieSignal implements ShouldBroadcast
      */
     public function broadcastOn(): array
     {
-        // For XP agile prototyping, using a public channel with UID in name
         return [
-            new Channel('walkie-typie.' . $this->partnerUid),
+            new PrivateChannel('App.Models.User.' . $this->partnerUid),
         ];
     }
 
     public function broadcastAs(): string
     {
-        return 'signal';
+        return 'walkie-typie.content';
     }
 }

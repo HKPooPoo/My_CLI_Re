@@ -13,6 +13,8 @@ import { BBCore } from "./blackboard-core.js";
 import { BBMessage } from "./blackboard-msg.js";
 import { WTCore } from "./walkie-typie-core.js"; // For accessing echo if needed, or listen to global events
 import { WalkieTypieService } from "./services/walkie-typie-service.js";
+import { BBVCS } from "./blackboard-vcs.js";
+import { BlackboardService } from "./services/blackboard-service.js";
 
 export const WTText = {
     elements: {
@@ -22,13 +24,21 @@ export const WTText = {
         weTextarea: document.getElementById("walkie-typie-we-blackboard"),
         theyTextarea: document.getElementById("walkie-typie-they-blackboard"),
         switchBtn: document.getElementById("walkie-typie-blackboard-feature-switch"),
-        // Buttons (optional, per requirement A can push/pull but limited?)
-        // "A用戶可以push and pull雙方的頁面，但是不能編輯對方的textarea"
-        // We might need to implement push/pull logic later or hook into existing.
+        
+        wePushBtn: document.querySelector(".we-push-btn"),
+        wePullBtn: document.querySelector(".we-pull-btn"),
+        theyPushBtn: document.querySelector(".they-push-btn"),
+        theyPullBtn: document.querySelector(".they-pull-btn"),
     },
 
     currentConnection: null,
-    isSwapped: false, // Default: Theirs on Top (DOM order: We first? Wait, CSS check needed)
+    isSwapped: false, 
+    saveTimer: null,
+    commitTimer: null,
+    
+    // VCS States
+    weState: { owner: "local", branchId: 0, branch: "WE", currentHead: 0, maxSlot: 10, isVirtual: false },
+    theyState: { owner: "local", branchId: 0, branch: "THEY", currentHead: 0, maxSlot: 10, isVirtual: false },
 
     init() {
         this.bindEvents();
@@ -53,6 +63,27 @@ export const WTText = {
             });
         }
 
+        // VCS Buttons
+        this.elements.wePushBtn?.addEventListener("click", async () => {
+            await BBVCS.push(this.weState, this.elements.weTextarea.value);
+            await this.refreshBoards();
+        });
+        this.elements.wePullBtn?.addEventListener("click", async () => {
+            await BBVCS.pull(this.weState, this.elements.weTextarea.value);
+            await this.refreshBoards();
+        });
+        this.elements.theyPushBtn?.addEventListener("click", async () => {
+            // "They" board is read-only for us, so Push (Create New) might not make sense unless we want to "Fork"?
+            // Or just navigate history forward.
+            // Since we can't edit, we pass current text but it won't be saved if unchanged.
+            await BBVCS.push(this.theyState, this.elements.theyTextarea.value);
+            await this.refreshBoards();
+        });
+        this.elements.theyPullBtn?.addEventListener("click", async () => {
+            await BBVCS.pull(this.theyState, this.elements.theyTextarea.value);
+            await this.refreshBoards();
+        });
+
         // Real-time updates from partner (Their Blackboard)
         window.addEventListener("walkie-typie:content-update", (e) => {
             if (!this.currentConnection) return;
@@ -63,7 +94,7 @@ export const WTText = {
                 this.updateTheirBoard(text, timestamp);
             }
         });
-
+        
         // My Blackboard Input (Auto-save & Broadcast)
         if (this.elements.weTextarea) {
             this.elements.weTextarea.addEventListener("input", this.handleMyInput.bind(this));
@@ -77,11 +108,6 @@ export const WTText = {
         const container = this.elements.container;
         if (!container) return;
 
-        // CSS flex-direction handles this easily if container is flex col
-        // Default walkie-typie-text page is block? Need to check CSS.
-        // If it's flex column, we just change order.
-        // Let's assume we toggle a class `swapped` on the container.
-        
         if (this.isSwapped) {
             container.classList.add("swapped");
         } else {
@@ -90,91 +116,157 @@ export const WTText = {
     },
 
     async loadConnection(connection) {
+        console.group("WTText: Loading Connection");
+        console.log("Connection Data:", connection);
+        
         this.currentConnection = connection;
         
-        // 1s Delay as per requirement (simulated loading)
-        // "選中後在1秒後直接更新text界面的内容"
-        // We can show a loading state if needed, or just wait.
-        // Let's assume we navigate immediately but content loads after 1s?
-        // Or navigation happens 1s later? 
-        // "Using blackboard list cursor logic... select then 1s later update text interface"
-        // I'll simulate the delay here.
+        // Update State IDs
+        this.weState.branchId = connection.my_branch_id;
+        this.theyState.branchId = connection.partner_branch_id;
+        console.log(`State Updated: WE=${this.weState.branchId}, THEY=${this.theyState.branchId}`);
         
-        // Trigger Page Navigation (using navi.js logic? or just manually switching?)
-        // Usually navigation is handled by navi.js clicking menu items.
-        // Here we are in LIST page, selecting an item. We should probably auto-switch to TEXT page.
-        // Dispatch event to Navi to switch page?
-        // Let's wait 1s then switch and load.
+        // Reset Heads
+        this.weState.currentHead = 0;
+        this.theyState.currentHead = 0;
+        this.weState.isVirtual = false;
+        this.theyState.isVirtual = false;
         
+        // Wait a bit to ensure UI transitions don't block logic
         setTimeout(async () => {
-            // Switch to Text Page
-            const naviItem = document.querySelector("[data-sub-navi-item='walkie-typie-text']");
-            if (naviItem) naviItem.click(); // Trigger navi logic
+            try {
+                // [Sync] Fetch latest data from backend for partner's branch
+                await this.syncPartnerBranch();
+                await this.refreshBoards();
+            } catch (err) {
+                console.error("WTText: Critical Error in load sequence", err);
+            } finally {
+                console.groupEnd();
+            }
+        }, 500);
+    },
 
-            await this.refreshBoards();
-        }, 1000);
+    /**
+     * Pulls the latest data for the partner's branch from the backend
+     * and updates the local IndexedDB.
+     */
+    async syncPartnerBranch() {
+        if (!this.currentConnection) {
+            console.error("WTText: No current connection during sync");
+            return;
+        }
+
+        const partnerBranchId = this.currentConnection.partner_branch_id;
+        console.log(`WT: Syncing Partner Branch ${partnerBranchId}...`);
+        
+        try {
+            const data = await BlackboardService.fetchBranchDetails(partnerBranchId);
+            console.log(`WT: API Response for Branch ${partnerBranchId}:`, data);
+
+            if (data && data.records && data.records.length > 0) {
+                // Bulk add/update local cache
+                const records = data.records.map(r => ({
+                    owner: "local", // Keep using local so we can query it easily
+                    branchId: partnerBranchId,
+                    branch: "THEY",
+                    timestamp: parseInt(r.timestamp),
+                    text: r.text,
+                    bin: r.bin
+                }));
+                
+                const lastRecord = records[records.length-1];
+                console.log("WT: Saving latest record to Dexie:", lastRecord);
+
+                // We shouldn't overwrite "WE" records, but branchId differs so it's safe.
+                // Use bulkPut to upsert
+                await BBCore.addRecord("local", partnerBranchId, "THEY", lastRecord.text);
+                console.log(`WT: Saved successfully.`);
+            } else {
+                console.warn("WT: No records found in API response.");
+            }
+        } catch (e) {
+            console.error("WTText: Sync Failed Exception:", e);
+        }
     },
 
     async refreshBoards() {
-        if (!this.currentConnection) return;
-
-        const myBranchId = this.currentConnection.my_branch_id;
-        const theirBranchId = this.currentConnection.partner_branch_id;
+        console.group("WTText: Refresh Boards");
+        if (!this.currentConnection) {
+            console.error("No connection");
+            console.groupEnd();
+            return;
+        }
 
         // Update Titles
-        // "Theirs" title should use partner tag/uid
-        this.elements.theyTitle.textContent = (this.currentConnection.partner_tag || this.currentConnection.partner_uid).toUpperCase();
+        const title = (this.currentConnection.partner_tag || this.currentConnection.partner_uid).toUpperCase();
+        this.elements.theyTitle.textContent = title;
+        console.log(`Set Title: ${title}`);
         
-        // Load "My" Content (Local)
-        // We need a way to get the latest text for a specific branch ID from IndexedDB
-        const myRecord = await BBCore.getRecord("local", myBranchId, 0);
-        this.elements.weTextarea.value = myRecord ? myRecord.text : "";
+        // Load "My" Content (Local) using state.currentHead
+        try {
+            const myRecord = await BBCore.getRecord("local", this.weState.branchId, this.weState.currentHead);
+            this.elements.weTextarea.value = myRecord ? myRecord.text : "";
+            if (this.weState.isVirtual && this.weState.currentHead === 0) {
+                 this.elements.weTextarea.value = ""; // Virtual page is blank
+            }
+        } catch (err) {
+            console.error("Error reading MY record:", err);
+        }
 
-        // Load "Their" Content (Local Cache or Fetch?)
-        // Ideally "Their" content is also stored locally if we pulled it.
-        // But for "Twin" logic, we might not have it yet.
-        // We should try to fetch from DB first (synced copy).
-        // Since we can't "Edit" theirs, we are just a viewer.
-        // We treat their branch as "remote" owner?
-        // Actually, for Walkie-Typie, we might store their data with owner=`partner_${uid}`?
-        // Or just use `local` owner but different branch ID?
-        // If we use `local` owner, we can edit it.
-        // Requirement: "不能編輯對方的textarea". So we should enforce readonly on UI.
-        
-        // Let's assume we store it as `local` but UI blocks editing.
-        // OR we store it as `synced`?
-        
-        const theirRecord = await BBCore.getRecord("local", theirBranchId, 0); 
-        // Note: getRecord("local") gets what we have.
-        this.elements.theyTextarea.value = theirRecord ? theirRecord.text : "";
+        // Load "Their" Content using state.currentHead
+        console.log(`WT: Reading IDB for THEY: Branch=${this.theyState.branchId}, Head=${this.theyState.currentHead}`);
+        try {
+            const theirRecord = await BBCore.getRecord("local", this.theyState.branchId, this.theyState.currentHead); 
+            console.log(`WT: Read Result (THEY):`, theirRecord);
+
+            this.elements.theyTextarea.value = theirRecord ? theirRecord.text : "";
+        } catch (err) {
+            console.error("Error reading THEIR record:", err);
+        }
         
         // Ensure read-only
         this.elements.theyTextarea.setAttribute("readonly", "true");
+        console.groupEnd();
     },
 
     handleMyInput(e) {
         if (!this.currentConnection) return;
         
-        // Debounce logic could be here, or just save/broadcast frequently.
-        // "Action refers to input and save updates update time"
-        // We should save to IndexedDB and Broadcast.
-        
         const text = e.target.value;
         const branchId = this.currentConnection.my_branch_id;
         
-        // Save to Local DB (debounced usually, but for "Walkie-Typie" maybe faster?)
-        // Let's reuse a debounce approach.
+        // User typed: Reset to Head 0 (Present)
+        this.weState.currentHead = 0;
+        this.weState.isVirtual = false; 
+
+        // 1. Instant Local Save & Broadcast (Fast/Optimistic)
         clearTimeout(this.saveTimer);
         this.saveTimer = setTimeout(async () => {
             await BBCore.addRecord("local", branchId, "WE", text);
-            // Broadcast to partner via API
-            // We need a new API endpoint for sending signals/text?
-            // Or reuse "commit"? Walkie-Typie usually implies lighter weight signal.
-            // Requirement says "Websocketing rather than polling".
-            // We need to trigger an event on the server that broadcasts to the partner.
-            
             this.broadcastUpdate(text);
-        }, 500);
+        }, 200); 
+
+        // 2. Persistent Backend Commit (Slower/Reliable)
+        clearTimeout(this.commitTimer);
+        this.commitTimer = setTimeout(async () => {
+            try {
+                if (!text || !text.trim()) return;
+
+                const record = {
+                    timestamp: Date.now(), 
+                    text: text,
+                    bin: null
+                };
+                
+                await BlackboardService.commit({
+                    branchId: branchId,
+                    branchName: "WE", 
+                    records: [record]
+                });
+            } catch (err) {
+                console.error("WT: Cloud Save Failed", err);
+            }
+        }, 2000); 
     },
     
     async broadcastUpdate(text) {
@@ -182,19 +274,25 @@ export const WTText = {
             await WalkieTypieService.sendSignal({
                 partner_uid: this.currentConnection.partner_uid,
                 text: text,
-                branch_id: this.currentConnection.partner_branch_id // Tell them which branch to update (THEIR copy of MY branch)
+                branch_id: this.currentConnection.partner_branch_id 
             });
         } catch (e) {
             console.error("Signal failed", e);
         }
     },
 
-    updateTheirBoard(text, timestamp) {
-        this.elements.theyTextarea.value = text;
-        // Optionally flash or highlight
-        // Also save to local DB as cached "Theirs"
-        if (this.currentConnection) {
-             BBCore.addRecord("local", this.currentConnection.partner_branch_id, "THEY", text); // Cache it
+    async updateTheirBoard(text, timestamp) {
+        if (text !== null && text !== undefined) {
+            // Instant update with content
+            this.elements.theyTextarea.value = text;
+            if (this.currentConnection) {
+                 BBCore.addRecord("local", this.currentConnection.partner_branch_id, "THEY", text); // Cache it
+            }
+        } else {
+            // Signal only (Persistent update or check) -> Sync from Backend
+            console.log("WT: Received Signal (No Content), Syncing...");
+            await this.syncPartnerBranch();
+            await this.refreshBoards();
         }
     }
 };

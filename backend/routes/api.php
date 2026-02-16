@@ -7,8 +7,11 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BlackboardController;
 use App\Http\Controllers\WalkieTypieController;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Broadcast;
 
 use App\Mail\ResetPasscodeMail;
+
+Broadcast::routes(['prefix' => 'api', 'middleware' => ['web', 'auth']]);
 
 Route::get('/mail-preview', function () {
     // 模擬資料

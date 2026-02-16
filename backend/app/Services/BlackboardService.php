@@ -87,10 +87,32 @@ class BlackboardService
         });
     }
 
-    public function fetchBranchDetails(User $user, string $branchId)
+    public function fetchBranchDetails($user, $branchId)
     {
-        return DB::table('blackboards')
+        // 1. Check if user owns the branch
+        $isOwner = DB::table('blackboards')
+            ->where('branch_id', $branchId)
             ->where('owner', $user->uid)
+            ->exists();
+
+        // 2. Check if user has access via Walkie-Typie connection
+        $hasConnection = false;
+        if (!$isOwner) {
+            $hasConnection = DB::table('walkie_typie_connections')
+                ->where('user_uid', $user->uid)
+                ->where(function ($query) use ($branchId) {
+                    $query->where('my_branch_id', $branchId)
+                          ->orWhere('partner_branch_id', $branchId);
+                })
+                ->exists();
+        }
+
+        if (!$isOwner && !$hasConnection) {
+            return []; // Unauthorized or Not Found
+        }
+
+        // Fetch records (ignoring owner check since access is verified)
+        return DB::table('blackboards')
             ->where('branch_id', $branchId)
             ->orderBy('timestamp', 'asc')
             ->get();

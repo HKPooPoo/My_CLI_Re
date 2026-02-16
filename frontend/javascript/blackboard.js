@@ -472,10 +472,11 @@ window.addEventListener("focus", () => {
  */
 setInterval(() => {
     const loggedInUser = localStorage.getItem("currentUser");
-    const blackboardPage = document.getElementById("page-blackboard");
-    const isVisible = blackboardPage && blackboardPage.style.display !== "none";
+    // [Fix]: Check active page class instead of non-existent ID
+    const activePage = document.querySelector(".page.active");
+    const isBlackboardVisible = activePage && activePage.dataset.page && activePage.dataset.page.startsWith("blackboard-");
 
-    if (document.visibilityState === 'visible' && isVisible && loggedInUser && !isInitializing) {
+    if (document.visibilityState === 'visible' && isBlackboardVisible && loggedInUser && !isInitializing) {
         updateBranchList();
     }
 }, 500);
