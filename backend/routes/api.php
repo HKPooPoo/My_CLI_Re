@@ -45,6 +45,7 @@ Route::prefix('blackboard')->group(function () {
 Route::prefix('walkie-typie')->group(function () {
     Route::get('/connections', [WalkieTypieController::class, 'index']);
     Route::post('/connections', [WalkieTypieController::class, 'store']);
+    Route::post('/signal', [WalkieTypieController::class, 'signal']);
     Route::patch('/connections/{partnerUid}', [WalkieTypieController::class, 'updateTag']);
     Route::get('/config', [WalkieTypieController::class, 'config']);
 });

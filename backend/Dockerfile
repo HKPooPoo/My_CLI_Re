@@ -7,7 +7,9 @@ RUN apt-get update && apt-get install -y \
     libpq-dev \
     libcurl4-openssl-dev \
     unzip \
+    && pecl install redis \
     && docker-php-ext-install pdo pdo_pgsql curl pcntl \
+    && docker-php-ext-enable redis \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Composer (for artisan commands inside container)
@@ -26,6 +28,9 @@ WORKDIR /var/www/html
 # Set permissions for Laravel storage and cache
 RUN mkdir -p /var/www/html/storage /var/www/html/bootstrap/cache \
     && chown -R www-data:www-data /var/www/html
+
+# Ensure PHP-FPM listens on port 9000
+RUN echo "[www]\nlisten = 9000" > /usr/local/etc/php-fpm.d/zz-custom.conf
 
 EXPOSE 9000
 CMD ["php-fpm"]

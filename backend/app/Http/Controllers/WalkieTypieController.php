@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Events\WalkieTypieConnectionUpdated;
+use App\Events\WalkieTypieContentUpdated;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -25,6 +26,60 @@ class WalkieTypieController extends Controller
             ->get();
 
         return response()->json(['connections' => $connections]);
+    }
+
+    /**
+     * Send a signal (content update) to a partner
+     */
+    public function signal(Request $request)
+    {
+        $user = Auth::user();
+        if (!$user) return response()->json(['message' => 'Unauthorized'], 401);
+
+        $request->validate([
+            'partner_uid' => 'required|string',
+            'text' => 'nullable|string',
+            'branch_id' => 'required'
+        ]);
+
+        $partnerUid = $request->input('partner_uid');
+        $text = $request->input('text') ?? '';
+        $branchId = $request->input('branch_id'); // This is the partner's branch ID that should be updated
+
+        // Verify connection exists (security check)
+        $exists = DB::table('walkie_typie_connections')
+            ->where('user_uid', $user->uid)
+            ->where('partner_uid', $partnerUid)
+            ->exists();
+
+        if (!$exists) {
+            return response()->json(['message' => 'NOT CONNECTED'], 403);
+        }
+
+        // Update last signal time for sorting
+        $now = (int) (microtime(true) * 1000);
+        
+        DB::table('walkie_typie_connections')
+            ->where('user_uid', $user->uid)
+            ->where('partner_uid', $partnerUid)
+            ->update(['last_signal' => $now, 'updated_at' => now()]);
+            
+        // Also update partner's view of me? (Optional, maybe not to avoid double write lock)
+        // Usually good to update both so list bubbles up for both.
+        DB::table('walkie_typie_connections')
+            ->where('user_uid', $partnerUid)
+            ->where('partner_uid', $user->uid)
+            ->update(['last_signal' => $now, 'updated_at' => now()]);
+
+        // Broadcast content
+        broadcast(new WalkieTypieContentUpdated($partnerUid, [
+            'text' => $text,
+            'branch_id' => $branchId, // Partner will use this to identify WHICH board to update
+            'sender_uid' => $user->uid,
+            'timestamp' => $now
+        ]));
+
+        return response()->json(['message' => 'SIGNAL SENT']);
     }
 
     /**

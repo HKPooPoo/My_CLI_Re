@@ -67,6 +67,13 @@ export const WTCore = {
                     }));
                     
                     BBMessage.info(`SIGNAL: ${e.connectionData.partner_uid}`);
+                })
+                .listen('.walkie-typie.content', (e) => {
+                    window.dispatchEvent(new CustomEvent("walkie-typie:content-update", {
+                        detail: e.contentData
+                    }));
+                    // Silent update or minimal log?
+                    // console.log("Content received");
                 });
 
             console.log(`WT: Listening on App.Models.User.${this.uid}`);
