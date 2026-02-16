@@ -11,12 +11,15 @@ export const BBVCS = {
      * 執行推播 (向上翻頁或回到前端)
      */
     async push(state, currentText) {
-        // [Fix]: 如果當前頁面為空白，直接返回（不執行動作）
-        if (!currentText || !currentText.trim()) {
+        // [Fix]: 虛擬狀態下不允許再次 Push (避免無限疊加空白頁)
+        if (state.isVirtual) {
             return false;
         }
 
-        // 先儲存當前內容
+        // [Fix]: 若當前頁面為空白 (且不是虛擬頁)，直接視為無效操作，除非它本來就是 Head 0 的有效空白頁?
+        // 不，如果我在 Head 0 且它是空的，再 push 會怎樣? 
+        // 應該允許 Push 到 Virtual 狀態，即使當前頁是空的 (因為 Virtual 狀態是為了輸入新內容)
+        // 但為了避免資料庫累積空白頁，我們先 Save
         await this.save(state, currentText);
 
         // 數據清洗
@@ -28,10 +31,9 @@ export const BBVCS = {
             return true;
         }
 
-        // 2. 如果在 Head 0，且內容不是空的 (已在開頭檢查)，則新增一頁
-        await BBCore.addRecord(state.owner, state.branchId, state.branch);
-        await BBCore.cleanupOldRecords(state.owner, state.branchId, state.maxSlot);
-        state.currentHead = 0;
+        // 2. 如果在 Head 0 (且已存檔)，則進入虛擬新頁面模式
+        // 不直接寫入 DB，而是標記狀態，等待用戶輸入
+        state.isVirtual = true;
         return true;
     },
 
@@ -39,28 +41,34 @@ export const BBVCS = {
      * 執行拉回 (向後翻閱歷史)
      */
     async pull(state, currentText) {
-        // 1. 先儲存當前狀態 (確保若使用者清空了當前頁，DB 也會更新為空白)
+        // [Fix]: 如果在虛擬新頁面，Pull 等於「取消新建」，直接回到 Head 0
+        if (state.isVirtual) {
+            state.isVirtual = false;
+            // 這裡不需要 save，因為虛擬頁面的內容若未存檔則視為丟棄
+            // 若用戶已輸入內容，auto-save 會觸發 save 並解除 isVirtual，所以這裡只會處理「未輸入」或「剛輸入還沒存」的情況
+            // 為了保險，如果 currentText 有內容，我們先存檔 (這會讓它變成真實 Head 0)，然後再執行 Pull
+            if (currentText && currentText.trim()) {
+                await this.save(state, currentText); // 這會解除 isVirtual
+                // 存檔後，現在是真實 Head 0，接著繼續執行標準 Pull 邏輯 (翻到 Head 1)
+            } else {
+                return true; // 純粹取消，回到 Head 0
+            }
+        }
+
+        // 標準 Pull 邏輯
+        // 1. 先儲存當前狀態
         await this.save(state, currentText);
 
-        // 2. 數據清洗：刪除所有空白紀錄 (包含剛才儲存的若為空白)
-        // 注意：若 save 儲存了空字串，scrubBranch 會在此時將其刪除
+        // 2. 數據清洗
         await BBCore.scrubBranch(state.owner, state.branchId, state.maxSlot);
 
         // 3. 重新計算紀錄數量
         const count = await BBCore.countRecords(state.owner, state.branchId);
 
-        // [Fix]: 若當前輸入框內容為空，代表使用者意圖清除當前頁（或當前頁已被 scrubBranch 刪除）
-        // 此時紀錄遞補，原 currentHead 位置已是下一筆舊歷史，因此不需移動指標 (stay)
-        // 我們只需刷新畫面以顯示遞補上來的紀錄
-        if (!currentText || !currentText.trim()) {
-            // 防呆：若刪光了，回到 0
-            if (state.currentHead >= count && count > 0) {
-                state.currentHead = count - 1;
-            } else if (count === 0) {
-                state.currentHead = 0;
-            }
-            return true; // 刷新畫面
-        }
+        // [Fix]: 若 Head 0 是空白，先刪除它 (防止歷史夾雜空白)
+        // 注意：save() 已經會更新 DB，scrubBranch() 會刪除空白。
+        // 所以如果現在 Head 0 還是空白，表示它被 scrub 刪掉了，或者根本沒存進去
+        // 我們檢查 count。如果 count 變少了，currentHead 可能需要調整
 
         // 正常拉回：往舊歷史移動
         if (state.currentHead < count - 1) {
@@ -75,6 +83,24 @@ export const BBVCS = {
      * 自動儲存：更新現有歷史點或新增初始點
      */
     async save(state, text) {
+        // [Fix]: 虛擬頁面存檔邏輯
+        if (state.isVirtual) {
+            // 只有當有內容時才真正建立紀錄
+            if (text && text.trim()) {
+                // 新增紀錄到 DB (這會成為新的 Head 0)
+                await BBCore.addRecord(state.owner, state.branchId, state.branch, text);
+                
+                // 解除虛擬狀態
+                state.isVirtual = false;
+                state.currentHead = 0;
+
+                // 執行溢出清理 (這時才會刪除最舊的紀錄)
+                await BBCore.cleanupOldRecords(state.owner, state.branchId, state.maxSlot);
+            }
+            return;
+        }
+
+        // 標準存檔邏輯
         const entry = await BBCore.getRecord(state.owner, state.branchId, state.currentHead);
         
         if (entry) {
@@ -88,15 +114,15 @@ export const BBVCS = {
                     }
                 }
 
-                // 更新現有紀錄 (這會改變 timestamp 並使該紀錄變為 Head 0)
+                // 更新現有紀錄
                 await BBCore.updateText(state.owner, state.branchId, entry.timestamp, text);
-                
-                // 無腦同步：不論原本在哪，編輯後該紀錄都變成了最新的 Head 0
-                state.currentHead = 0;
+                state.currentHead = 0; // 編輯後置頂
             }
         } else if (state.currentHead === 0) {
-            // 如果本地完全沒紀錄且在 Head 0，則視為初始點，直接新增
-            await BBCore.addRecord("local", state.branchId, state.branch, text);
+            // 初始狀態 (無紀錄時)
+            if (text && text.trim()) {
+                await BBCore.addRecord("local", state.branchId, state.branch, text);
+            }
         }
     },
 

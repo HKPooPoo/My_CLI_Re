@@ -95,6 +95,11 @@ export class InfiniteList {
             if (!silent && this.container.dataset.soundItem) {
                 playAudio(this.container.dataset.soundItem);
             }
+
+            // [Event]: 通知外部選取變更
+            window.dispatchEvent(new CustomEvent("blackboard:selectionChanged", {
+                detail: { index: this.activeIndex, item: newItem }
+            }));
         }
     }
 

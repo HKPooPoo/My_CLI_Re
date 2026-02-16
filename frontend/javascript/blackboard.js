@@ -26,7 +26,8 @@ const state = {
     branch: "",         // 當前分支名稱 (用於 UI 顯示)
     branchId: 0,        // 當前分支物理 ID
     currentHead: 0,     // 歷史深度指標 (0 表示最新)
-    maxSlot: 10         // 本地歷史保存上限
+    maxSlot: 10,        // 本地歷史保存上限
+    isVirtual: false    // 是否處於「新頁面」的虛擬狀態 (尚未存入 DB)
 };
 
 let debounceTimer = null;
@@ -79,6 +80,13 @@ export async function initBoard() {
  * 步驟：1. 從 Core 抓取當前 Head 對應的紀錄 2. 更新文字框 3. 更新 UI 指標
  */
 async function syncView() {
+    // [Fix]: 虛擬狀態處理 (New Page)
+    if (state.isVirtual) {
+        BBUI.setTextarea("");
+        BBUI.updateIndicators(state.branch || "NAMELESS_BRANCH", "NEW", false);
+        return;
+    }
+
     const entry = await BBCore.getRecord(state.owner, state.branchId, state.currentHead);
     BBUI.setTextarea(entry?.text ?? "");
     BBUI.updateIndicators(state.branch || "NAMELESS_BRANCH", state.currentHead, true);
@@ -295,76 +303,113 @@ if (BBUI.elements.checkoutBtn) {
     });
 }
 
-// DROP: 三階遞進刪除 (針對選中分支)
+// DROP: 動態三階刪除 (基於選取狀態)
 const dropBtnEl = document.getElementById("drop-btn");
-if (dropBtnEl) {
-    new MultiStepButton(dropBtnEl, [
-        {
-            label: "CLEAR",
-            sound: "Click.mp3",
-            action: async () => {
-                const selected = getSelectedBranchInfo();
-                if (!selected) return;
+let currentDropAction = null;
+let dropButtonTimer = null;
 
-                if (selected.isLocal) {
-                    BBMessage.info("CLEARING HISTORY...");
-                    await BBCore.clearBranchRecords("local", selected.id);
-                    await updateBranchList();
-                    if (selected.id === state.branchId) {
-                        state.currentHead = 0;
-                        await syncView();
-                    }
-                    BBMessage.success("HISTORY CLEARED");
-                } else {
-                    BBMessage.info("TARGET IS NOT LOCAL.");
-                }
-            }
-        },
-        {
-            label: "DROP CLOUD",
-            sound: "UIPipboyOK.mp3",
-            action: async () => {
-                const selected = getSelectedBranchInfo();
-                if (!selected) return;
+async function updateDropButtonState() {
+    if (!dropBtnEl) return;
+    
+    const selected = getSelectedBranchInfo();
+    if (!selected) {
+        dropBtnEl.textContent = "N/A";
+        dropBtnEl.disabled = true;
+        currentDropAction = null;
+        return;
+    }
+    dropBtnEl.disabled = false;
 
-                if (selected.isServer) {
-                    BBMessage.info("DROPPING FROM CLOUD...");
-                    try {
-                        await BlackboardService.deleteBranch(selected.id);
-                        await updateBranchList();
-                        BBMessage.success("CLOUD BRANCH DROPPED");
-                    } catch (e) {
-                        BBMessage.error("CLOUD DROP FAILED");
-                    }
-                } else {
-                    BBMessage.info("TARGET IS NOT ON CLOUD.");
-                }
-            }
-        },
-        {
-            label: "DELETE LOCAL",
-            sound: "UIGeneralCancel.mp3",
-            action: async () => {
-                const selected = getSelectedBranchInfo();
-                if (!selected) return;
-
-                if (selected.isLocal) {
-                    BBMessage.info("DELETING LOCAL...");
-                    await BBCore.deleteLocalBranch("local", selected.id);
-                    
-                    if (selected.id === state.branchId) {
-                        await initBoard(); // 強制重置以確保至少有一個本地分支 (master)
-                    } else {
-                        await updateBranchList();
-                    }
-                    BBMessage.success("LOCAL BRANCH DELETED");
-                } else {
-                    BBMessage.info("TARGET IS NOT LOCAL.");
-                }
+    // 檢測內容狀態 (Async)
+    let hasContent = false;
+    if (selected.isLocal) {
+        const count = await BBCore.countRecords("local", selected.id);
+        if (count > 1) {
+            hasContent = true;
+        } else if (count === 1) {
+            const latest = await BBCore.getRecord("local", selected.id, 0);
+            if (latest && latest.text && latest.text.trim() !== "") {
+                hasContent = true;
             }
         }
-    ], 3000);
+    }
+
+    // 決策矩陣
+    // 1. Local & Content -> CLEAN
+    if (selected.isLocal && hasContent) {
+        dropBtnEl.textContent = "CLEAN";
+        currentDropAction = "clean";
+    } 
+    // 2. Cloud (且無 Local Content 需清理) -> DROP
+    else if (selected.isServer) {
+        dropBtnEl.textContent = "DROP";
+        currentDropAction = "drop";
+    }
+    // 3. Local (且無 Content, 無 Cloud) -> DELETE
+    else if (selected.isLocal) {
+        dropBtnEl.textContent = "DELETE";
+        currentDropAction = "delete";
+    } else {
+        dropBtnEl.textContent = "N/A";
+        currentDropAction = null;
+    }
 }
+
+if (dropBtnEl) {
+    // 點擊事件：執行當前決策的動作
+    dropBtnEl.addEventListener("click", async () => {
+        if (!currentDropAction) return;
+        
+        const selected = getSelectedBranchInfo();
+        if (!selected) return;
+
+        playAudio("UIGeneralCancel.mp3");
+
+        try {
+            if (currentDropAction === "clean") {
+                BBMessage.info("CLEANING HISTORY...");
+                await BBCore.clearBranchRecords("local", selected.id);
+                // 若清理的是當前分支，需重置 Head
+                if (selected.id === state.branchId) {
+                    state.currentHead = 0;
+                    await syncView();
+                }
+                BBMessage.success("HISTORY CLEARED");
+            } 
+            else if (currentDropAction === "drop") {
+                BBMessage.info("DROPPING FROM CLOUD...");
+                await BlackboardService.deleteBranch(selected.id);
+                BBMessage.success("CLOUD BRANCH DROPPED");
+            } 
+            else if (currentDropAction === "delete") {
+                BBMessage.info("DELETING LOCAL...");
+                await BBCore.deleteLocalBranch("local", selected.id);
+                
+                if (selected.id === state.branchId) {
+                    await initBoard(); 
+                }
+                BBMessage.success("LOCAL BRANCH DELETED");
+            }
+            
+            // 操作完成後刷新列表與按鈕狀態
+            await updateBranchList();
+            await updateDropButtonState();
+        } catch (e) {
+            BBMessage.error("ACTION FAILED: " + e.message);
+        }
+    });
+}
+
+// 監聽選取變更與列表刷新
+window.addEventListener("blackboard:selectionChanged", () => {
+    // 防抖：避免快速滾動時頻繁查詢 DB
+    if (dropButtonTimer) clearTimeout(dropButtonTimer);
+    dropButtonTimer = setTimeout(updateDropButtonState, 100);
+});
+
+window.addEventListener("blackboard:listUpdated", () => {
+    setTimeout(updateDropButtonState, 50);
+});
 
 // --- 事件監聽區 ---
 
@@ -376,7 +421,11 @@ BBUI.elements.textarea?.addEventListener("input", () => {
     clearTimeout(debounceTimer);
     debounceTimer = setTimeout(async () => {
         await BBVCS.save(state, BBUI.getTextareaValue());
-        BBUI.updateIndicators(state.branch || "NAMELESS_BRANCH", state.currentHead, true);
+        
+        // [Fix]: 狀態更新後，依據是否仍為虛擬狀態顯示指標
+        const headIndicator = state.isVirtual ? "NEW" : state.currentHead;
+        BBUI.updateIndicators(state.branch || "NAMELESS_BRANCH", headIndicator, true);
+        
         await updateBranchList(); // 立即更新清單同步狀態
     }, 500);
 });
