@@ -46,6 +46,7 @@ export const WTCore = {
                 forceTLS: scheme,
                 enabledTransports: ['ws', 'wss'],
                 disableStats: true, // Often good to disable for self-hosted
+                authEndpoint: '/api/broadcasting/auth',
             });
 
             // Subscribe to Private Channel

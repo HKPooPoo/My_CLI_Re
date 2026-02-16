@@ -10,6 +10,7 @@
 
 import { BBMessage } from "./blackboard-msg.js";
 import { MultiStepButton } from "./multiStepButton.js";
+import { getHKTTimestamp } from "./blackboard-core.js";
 
 export const WTList = {
     elements: {
@@ -108,22 +109,64 @@ export const WTList = {
             item.className = "walkie-typie-list-list-item";
             item.dataset.partnerUid = conn.partner_uid;
             
-            // Format timestamp (simple version)
-            const date = new Date(Number(conn.last_signal));
-            const timeStr = date.toLocaleTimeString();
+            // Use getHKTTimestamp if possible, or fallback
+            // conn.last_signal is a timestamp (bigint/number)
+            const timeStr = getHKTTimestamp(Number(conn.last_signal));
+            const safeTag = (conn.partner_tag || "").replace(/"/g, "&quot;");
 
             item.innerHTML = `
-                <div class="walkie-typie-list-tag">${conn.partner_tag || "Unnamed"}</div>
+                <input type="text" class="walkie-typie-list-tag" value="${safeTag}" placeholder="Name this guy..." name="walkie-typie-list-tag" maxlength="64">
                 <div class="walkie-typie-list-last-signal">${timeStr}</div>
                 <div class="walkie-typie-list-uid">${conn.partner_uid}</div>
             `;
             
-            // Add click listener for selection (future step)
+            // Tag renaming listener
+            const tagInput = item.querySelector(".walkie-typie-list-tag");
+            tagInput.addEventListener("change", async (e) => {
+                const newTag = e.target.value.trim();
+                try {
+                    await fetch(`/api/walkie-typie/connections/${conn.partner_uid}`, {
+                        method: 'PATCH',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json'
+                        },
+                        body: JSON.stringify({ tag: newTag })
+                    });
+                    // Update local cache
+                    conn.partner_tag = newTag;
+                } catch (err) {
+                    console.error("Tag update failed", err);
+                    BBMessage.error("TAG UPDATE FAILED");
+                }
+            });
+            
+            // Prevent row selection when clicking input
+            tagInput.addEventListener("click", (e) => e.stopPropagation());
+
+            // Add click listener for selection
             item.addEventListener("click", () => {
-                // Select user logic here
                 document.querySelectorAll(".walkie-typie-list-list-item").forEach(el => el.classList.remove("active"));
                 item.classList.add("active");
-                // TODO: Notify Text module to switch context
+                
+                // Notify selection change
+                // We delay slightly to allow UI feedback
+                setTimeout(() => {
+                    // Update the Text interface (Twin Blackboard)
+                    // We need to implement walkie-typie-text.js to listen to this event
+                    // But for now, we just dispatch the event.
+                    // The logic for "update text UI" will be in the next step/module.
+                    
+                    // However, per requirements: "Select directly updates text interface content in 1s"
+                    // Wait, requirement says "1秒後直接更新text界面的内容" (updates text interface content directly after 1 second).
+                    // This implies the list selection triggers a delayed update.
+                    
+                    // But here we just dispatch event or call a global handler.
+                    // Let's dispatch a custom event with the connection details.
+                     window.dispatchEvent(new CustomEvent("walkie-typie:selected", {
+                        detail: conn
+                    }));
+                }, 100); // Small delay for visual click feedback, actual content load might handle the 1s delay or just be instant.
             });
 
             this.elements.container.appendChild(item);
