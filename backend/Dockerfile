@@ -7,7 +7,7 @@ RUN apt-get update && apt-get install -y \
     libpq-dev \
     libcurl4-openssl-dev \
     unzip \
-    && docker-php-ext-install pdo pdo_pgsql curl \
+    && docker-php-ext-install pdo pdo_pgsql curl pcntl \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Composer (for artisan commands inside container)

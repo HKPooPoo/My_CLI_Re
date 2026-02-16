@@ -5,6 +5,7 @@ use App\Http\Controllers\SpeechController;
 use App\Http\Controllers\StatusController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BlackboardController;
+use App\Http\Controllers\WalkieTypieController;
 use Illuminate\Support\Facades\Route;
 
 use App\Mail\ResetPasscodeMail;
@@ -38,5 +39,13 @@ Route::prefix('blackboard')->group(function () {
     Route::get('/branches', [BlackboardController::class, 'fetchBranches']);
     Route::get('/branches/{branchId}', [BlackboardController::class, 'fetchBranchDetails']);
     Route::delete('/branches/{branchId}', [BlackboardController::class, 'destroyBranch']);
+});
+
+// Walkie-Typie
+Route::prefix('walkie-typie')->group(function () {
+    Route::get('/connections', [WalkieTypieController::class, 'index']);
+    Route::post('/connections', [WalkieTypieController::class, 'store']);
+    Route::patch('/connections/{partnerUid}', [WalkieTypieController::class, 'updateTag']);
+    Route::get('/config', [WalkieTypieController::class, 'config']);
 });
 

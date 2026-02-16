@@ -66,6 +66,29 @@ class BlackboardController extends Controller
                 );
             }
 
+            // --- Walkie-Typie Integration ---
+            $connection = DB::table('walkie_typie_connections')
+                ->where('user_uid', $user->uid)
+                ->where('my_branch_id', $branchId)
+                ->first();
+
+            if ($connection) {
+                $nowMs = (int) (microtime(true) * 1000);
+                DB::table('walkie_typie_connections')
+                    ->where('user_uid', $user->uid)
+                    ->where('partner_uid', $connection->partner_uid)
+                    ->update(['last_signal' => $nowMs, 'updated_at' => now()]);
+
+                // 同步更新對方的 List 排序
+                DB::table('walkie_typie_connections')
+                    ->where('user_uid', $connection->partner_uid)
+                    ->where('partner_uid', $user->uid)
+                    ->update(['last_signal' => $nowMs, 'updated_at' => now()]);
+
+                // 廣播給對方
+                broadcast(new \App\Events\WalkieTypieSignal($user->uid, $connection->partner_uid, $branchId));
+            }
+
             return response()->json(['message' => 'Commit Successful']);
         });
     }
