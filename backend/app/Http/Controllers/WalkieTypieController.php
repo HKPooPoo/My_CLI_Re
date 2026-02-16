@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\WalkieTypieConnectionUpdated;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -46,49 +47,96 @@ class WalkieTypieController extends Controller
             return response()->json(['message' => 'USER NOT FOUND'], 404);
         }
 
-        // Check if already connected
-        $existing = DB::table('walkie_typie_connections')
-            ->where('user_uid', $user->uid)
-            ->where('partner_uid', $partnerUid)
-            ->first();
-
-        if ($existing) {
-            return response()->json(['message' => 'ALREADY CONNECTED', 'connection' => $existing]);
-        }
-
-        return DB::transaction(function () use ($user, $partnerUid) {
+        return DB::transaction(function () use ($user, $partner, $partnerUid) {
             $now = (int) (microtime(true) * 1000);
 
-            // Reciprocal check: did B already add A?
+            // Check existing connection (either direction) to reuse branch IDs
+            $existing = DB::table('walkie_typie_connections')
+                ->where('user_uid', $user->uid)
+                ->where('partner_uid', $partnerUid)
+                ->first();
+
             $reciprocal = DB::table('walkie_typie_connections')
                 ->where('user_uid', $partnerUid)
                 ->where('partner_uid', $user->uid)
                 ->first();
 
-            if ($reciprocal) {
-                // Reuse branch IDs to maintain "Twin" relationship
+            if ($existing) {
+                $myBranchId = $existing->my_branch_id;
+                $partnerBranchId = $existing->partner_branch_id;
+            } elseif ($reciprocal) {
                 $myBranchId = $reciprocal->partner_branch_id;
                 $partnerBranchId = $reciprocal->my_branch_id;
             } else {
-                // Generate new unique branch IDs for this pair
-                // We use timestamp as base and add small offset
                 $myBranchId = $now;
                 $partnerBranchId = $now + 1;
             }
 
-            $id = DB::table('walkie_typie_connections')->insertGetId([
-                'user_uid' => $user->uid,
-                'partner_uid' => $partnerUid,
-                'my_branch_id' => $myBranchId,
-                'partner_branch_id' => $partnerBranchId,
-                'last_signal' => $now,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
+            // Refined Logic for User -> Partner
+            $conn1 = DB::table('walkie_typie_connections')
+                ->where('user_uid', $user->uid)
+                ->where('partner_uid', $partnerUid)
+                ->first();
+            
+            if ($conn1) {
+                DB::table('walkie_typie_connections')
+                    ->where('id', $conn1->id)
+                    ->update(['last_signal' => $now, 'updated_at' => now()]);
+            } else {
+                DB::table('walkie_typie_connections')->insert([
+                    'user_uid' => $user->uid,
+                    'partner_uid' => $partnerUid,
+                    'my_branch_id' => $myBranchId,
+                    'partner_branch_id' => $partnerBranchId,
+                    'last_signal' => $now,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            }
+
+            // Refined Logic for Partner -> User
+            $conn2 = DB::table('walkie_typie_connections')
+                ->where('user_uid', $partnerUid)
+                ->where('partner_uid', $user->uid)
+                ->first();
+
+            if ($conn2) {
+                DB::table('walkie_typie_connections')
+                    ->where('id', $conn2->id)
+                    ->update(['last_signal' => $now, 'updated_at' => now()]);
+            } else {
+                DB::table('walkie_typie_connections')->insert([
+                    'user_uid' => $partnerUid,
+                    'partner_uid' => $user->uid,
+                    'my_branch_id' => $partnerBranchId, // Swapped
+                    'partner_branch_id' => $myBranchId, // Swapped
+                    'last_signal' => $now,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            }
+
+            // Fetch fresh records to broadcast
+            $c1 = DB::table('walkie_typie_connections')
+                ->where('user_uid', $user->uid)
+                ->where('partner_uid', $partnerUid)
+                ->first();
+                
+            $c2 = DB::table('walkie_typie_connections')
+                ->where('user_uid', $partnerUid)
+                ->where('partner_uid', $user->uid)
+                ->first();
+
+            // Convert object to array for event
+            $c1Array = (array)$c1;
+            $c2Array = (array)$c2;
+
+            broadcast(new WalkieTypieConnectionUpdated($user->uid, $c1Array));
+            broadcast(new WalkieTypieConnectionUpdated($partner->uid, $c2Array));
 
             return response()->json([
                 'message' => 'CONNECTED',
-                'connection' => DB::table('walkie_typie_connections')->where('id', $id)->first()
+                'connection' => $c1
             ]);
         });
     }
