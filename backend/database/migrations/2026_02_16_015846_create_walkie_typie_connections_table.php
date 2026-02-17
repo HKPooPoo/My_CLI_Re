@@ -15,8 +15,8 @@ return new class extends Migration {
             $table->string('user_uid');          // Who "owns" this entry in their list
             $table->string('partner_uid');       // Who they are connected to
             $table->string('partner_tag')->nullable();
-            $table->bigInteger('my_branch_id');     // The branch ID used for "WE" (Owner: user_uid)
-            $table->bigInteger('partner_branch_id');// The branch ID used for "THEY" (Owner: partner_uid)
+            $table->string('my_branch_id');     // The branch ID used for "WE" (Owner: user_uid)
+            $table->string('partner_branch_id');// The branch ID used for "THEY" (Owner: partner_uid)
             $table->bigInteger('last_signal');      // Last activity timestamp
             $table->timestamps();
 

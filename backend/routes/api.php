@@ -51,5 +51,9 @@ Route::prefix('walkie-typie')->group(function () {
     Route::post('/signal', [WalkieTypieController::class, 'signal']);
     Route::patch('/connections/{partnerUid}', [WalkieTypieController::class, 'updateTag']);
     Route::get('/config', [WalkieTypieController::class, 'config']);
+
+    // Board Operations (獨立於 Blackboard)
+    Route::post('/boards/commit', [WalkieTypieController::class, 'commitBoard']);
+    Route::get('/boards/{branchId}', [WalkieTypieController::class, 'fetchBoardRecords']);
 });
 

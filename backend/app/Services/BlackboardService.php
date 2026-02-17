@@ -5,7 +5,6 @@ namespace App\Services;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Cache;
 use App\Models\User;
-use App\Events\WalkieTypieSignal;
 
 class BlackboardService
 {
@@ -48,32 +47,9 @@ class BlackboardService
             }
 
             Cache::forget("user:{$user->uid}:branches");
-            $this->broadcastUpdate($user, $branchId);
         });
     }
 
-    protected function broadcastUpdate(User $user, string $branchId)
-    {
-        $connection = DB::table('walkie_typie_connections')
-            ->where('user_uid', $user->uid)
-            ->where('my_branch_id', $branchId)
-            ->first();
-
-        if ($connection) {
-            $nowMs = (int) (microtime(true) * 1000);
-            DB::table('walkie_typie_connections')
-                ->where('user_uid', $user->uid)
-                ->where('partner_uid', $connection->partner_uid)
-                ->update(['last_signal' => $nowMs, 'updated_at' => now()]);
-
-            DB::table('walkie_typie_connections')
-                ->where('user_uid', $connection->partner_uid)
-                ->where('partner_uid', $user->uid)
-                ->update(['last_signal' => $nowMs, 'updated_at' => now()]);
-
-            broadcast(new WalkieTypieSignal($user->uid, $connection->partner_uid, $branchId));
-        }
-    }
 
     public function fetchBranches(User $user)
     {
@@ -89,31 +65,19 @@ class BlackboardService
 
     public function fetchBranchDetails($user, $branchId)
     {
-        // 1. Check if user owns the branch
+        // Blackboard only: Check if user owns the branch
         $isOwner = DB::table('blackboards')
             ->where('branch_id', $branchId)
             ->where('owner', $user->uid)
             ->exists();
 
-        // 2. Check if user has access via Walkie-Typie connection
-        $hasConnection = false;
         if (!$isOwner) {
-            $hasConnection = DB::table('walkie_typie_connections')
-                ->where('user_uid', $user->uid)
-                ->where(function ($query) use ($branchId) {
-                    $query->where('my_branch_id', $branchId)
-                          ->orWhere('partner_branch_id', $branchId);
-                })
-                ->exists();
+            return [];
         }
 
-        if (!$isOwner && !$hasConnection) {
-            return []; // Unauthorized or Not Found
-        }
-
-        // Fetch records (ignoring owner check since access is verified)
         return DB::table('blackboards')
             ->where('branch_id', $branchId)
+            ->where('owner', $user->uid)
             ->orderBy('timestamp', 'asc')
             ->get();
     }

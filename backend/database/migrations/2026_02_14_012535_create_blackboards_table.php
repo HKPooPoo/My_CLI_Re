@@ -13,7 +13,7 @@ return new class extends Migration {
         Schema::create('blackboards', function (Blueprint $table) {
             $table->id();
             $table->string('owner');          // User UID
-            $table->bigInteger('branch_id'); // Immutable Branch ID (Frontend Timestamp)
+            $table->string('branch_id'); // Immutable Branch ID (Frontend Timestamp or String ID)
             $table->string('branch_name')->nullable(); 
             $table->bigInteger('timestamp'); // History Node Timestamp
             $table->longText('text')->nullable();

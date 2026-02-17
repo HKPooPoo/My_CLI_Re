@@ -24,5 +24,17 @@ export const WalkieTypieService = {
     },
     getConfig() {
         return apiRequest('/walkie-typie/config', { method: 'GET' });
+    },
+
+    // --- Board Operations (獨立於 Blackboard) ---
+
+    commitBoard(data) {
+        return apiRequest('/walkie-typie/boards/commit', {
+            method: 'POST',
+            body: JSON.stringify(data)
+        });
+    },
+    fetchBoardRecords(branchId) {
+        return apiRequest(`/walkie-typie/boards/${branchId}`, { method: 'GET' });
     }
 };
