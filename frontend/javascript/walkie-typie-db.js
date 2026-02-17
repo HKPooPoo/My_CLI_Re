@@ -2,32 +2,33 @@
  * Walkie-Typie DB - Dedicated IndexedDB Operations
  * =================================================================
  * 介紹：Walkie-Typie 專用的本地資料層，操作 Dexie 的 walkieTypie 表。
- * 職責：
- * 1. 與 BBCore 完全獨立，不共用 blackboard 表。
- * 2. 提供 WE/THEY 黑板的 CRUD 操作。
- * 3. 支援歷史翻閱 (getRecord by index)。
+ * 特性：
+ * 1. 無 owner 欄位 — WT 資料永遠只存在於本地。
+ * 2. 主鍵為 [branchId+timestamp]。
+ * 3. 透過 `branch` 索引區分 "WE" / "THEY" 紀錄。
  * 依賴：indexedDB.js (Dexie instance)
  * =================================================================
  */
 
 import db, { Dexie } from "./indexedDB.js";
 
+/**
+ * 將 Date.now() 格式化為 HKT ISO 字串 (自主，不依賴 blackboard-core)
+ */
+export function getHKTTimestamp(dateInput) {
+    const now = dateInput ? new Date(dateInput) : new Date();
+    const hktOffset = 8 * 60 * 60 * 1000;
+    const hktTime = new Date(now.getTime() + hktOffset);
+    return hktTime.toISOString().replace('Z', '+08:00');
+}
+
 export const WTDb = {
     /**
-     * 讀取特定索引的紀錄
+     * 讀取特定索引的紀錄 (index 0 = 最新, 1 = 次新...)
      */
-    async getRecord(owner, branchId, index) {
-        if (owner === "local") {
-            return await db.walkieTypie.where('[branchId+timestamp]')
-                .between([branchId, Dexie.minKey], [branchId, Dexie.maxKey])
-                .and(item => item.owner.startsWith('local'))
-                .reverse()
-                .offset(index)
-                .first();
-        }
-
-        return await db.walkieTypie.where('[owner+branchId+timestamp]')
-            .between([owner, branchId, Dexie.minKey], [owner, branchId, Dexie.maxKey])
+    async getRecord(branchId, index) {
+        return await db.walkieTypie.where('[branchId+timestamp]')
+            .between([branchId, Dexie.minKey], [branchId, Dexie.maxKey])
             .reverse()
             .offset(index)
             .first();
@@ -36,11 +37,10 @@ export const WTDb = {
     /**
      * 新增一筆紀錄
      */
-    async addRecord(owner, branchId, branchName, text = "") {
+    async addRecord(branchId, branch, text = "") {
         return await db.walkieTypie.add({
-            owner,
             branchId,
-            branch: branchName,
+            branch,
             timestamp: Date.now(),
             text,
             bin: null
@@ -48,33 +48,17 @@ export const WTDb = {
     },
 
     /**
-     * 更新紀錄的文字內容 (會同時更新 timestamp)
+     * 更新紀錄的文字內容 — 刪除舊紀錄 + 以新 timestamp 添加
      */
-    async updateText(owner, branchId, oldTimestamp, text) {
-        let oldRecord;
-        if (owner === "local") {
-            oldRecord = await db.walkieTypie.where('[branchId+timestamp]')
-                .equals([branchId, oldTimestamp])
-                .and(item => item.owner.startsWith('local'))
-                .first();
-        } else {
-            oldRecord = await db.walkieTypie.get({ owner, branchId, timestamp: oldTimestamp });
-        }
-
+    async updateText(branchId, oldTimestamp, text) {
+        const oldRecord = await db.walkieTypie.get([branchId, oldTimestamp]);
         if (!oldRecord) return oldTimestamp;
 
-        await db.walkieTypie.delete([oldRecord.owner, branchId, oldTimestamp]);
+        await db.walkieTypie.delete([branchId, oldTimestamp]);
 
         const newTimestamp = Date.now();
-
-        let finalOwner = oldRecord.owner;
-        if (finalOwner.includes("[synced]")) {
-            finalOwner = finalOwner.replace("[synced]", "[asynced]");
-        }
-
         await db.walkieTypie.add({
             ...oldRecord,
-            owner: finalOwner,
             text: text,
             timestamp: newTimestamp
         });
@@ -85,75 +69,44 @@ export const WTDb = {
     /**
      * 統計分支紀錄數量
      */
-    async countRecords(owner, branchId) {
-        if (owner === "local") {
-            return await db.walkieTypie.where('[branchId+timestamp]')
-                .between([branchId, Dexie.minKey], [branchId, Dexie.maxKey])
-                .and(item => item.owner.startsWith('local'))
-                .count();
-        }
-
-        return await db.walkieTypie.where('[owner+branchId+timestamp]')
-            .between([owner, branchId, Dexie.minKey], [owner, branchId, Dexie.maxKey])
+    async countRecords(branchId) {
+        return await db.walkieTypie.where('[branchId+timestamp]')
+            .between([branchId, Dexie.minKey], [branchId, Dexie.maxKey])
             .count();
     },
 
     /**
      * 清理溢出的舊紀錄
      */
-    async cleanupOldRecords(owner, branchId, maxSlot) {
-        let collection;
-        if (owner === "local") {
-            collection = db.walkieTypie.where('[branchId+timestamp]')
-                .between([branchId, Dexie.minKey], [branchId, Dexie.maxKey])
-                .and(item => item.owner.startsWith('local'));
-        } else {
-            collection = db.walkieTypie.where('[owner+branchId+timestamp]')
-                .between([owner, branchId, Dexie.minKey], [owner, branchId, Dexie.maxKey]);
-        }
+    async cleanupOldRecords(branchId, maxSlot) {
+        const records = await db.walkieTypie.where('[branchId+timestamp]')
+            .between([branchId, Dexie.minKey], [branchId, Dexie.maxKey])
+            .sortBy('timestamp');
 
-        const count = await collection.count();
-        if (count > maxSlot) {
-            const records = await collection.sortBy('timestamp');
-            const toDelete = records.slice(0, count - maxSlot);
-            const keysToDelete = toDelete.map(r => [r.owner, r.branchId, r.timestamp]);
+        if (records.length > maxSlot) {
+            const toDelete = records.slice(0, records.length - maxSlot);
+            const keysToDelete = toDelete.map(r => [r.branchId, r.timestamp]);
             await db.walkieTypie.bulkDelete(keysToDelete);
         }
     },
 
     /**
-     * 獲取一個分支的所有歷史紀錄
+     * 獲取一個分支的所有歷史紀錄 (新→舊排序)
      */
-    async getAllRecordsForBranch(owner, branchId) {
-        if (owner === "local") {
-            return await db.walkieTypie.where('[branchId+timestamp]')
-                .between([branchId, Dexie.minKey], [branchId, Dexie.maxKey])
-                .and(item => item.owner.startsWith('local'))
-                .reverse()
-                .toArray();
-        }
-
-        return await db.walkieTypie.where('[owner+branchId+timestamp]')
-            .between([owner, branchId, Dexie.minKey], [owner, branchId, Dexie.maxKey])
+    async getAllRecordsForBranch(branchId) {
+        return await db.walkieTypie.where('[branchId+timestamp]')
+            .between([branchId, Dexie.minKey], [branchId, Dexie.maxKey])
+            .reverse()
             .toArray();
     },
 
     /**
-     * 數據清洗：刪除空值紀錄並強制執行容量限制
+     * 數據清洗：刪除空值紀錄 + 溢出清理
      */
-    async scrubBranch(owner, branchId, maxSlot) {
-        let collection;
-        if (owner === "local") {
-            collection = db.walkieTypie.where('[branchId+timestamp]')
-                .between([branchId, Dexie.minKey], [branchId, Dexie.maxKey])
-                .and(item => item.owner.startsWith('local'));
-        } else {
-            collection = db.walkieTypie.where('[owner+branchId+timestamp]')
-                .between([owner, branchId, Dexie.minKey], [owner, branchId, Dexie.maxKey]);
-        }
-
-        // 1. 刪除空值紀錄
-        const emptyKeys = await collection
+    async scrubBranch(branchId, maxSlot) {
+        // 刪除空值紀錄
+        const emptyKeys = await db.walkieTypie.where('[branchId+timestamp]')
+            .between([branchId, Dexie.minKey], [branchId, Dexie.maxKey])
             .filter(item => !item.text || item.text.trim() === "")
             .primaryKeys();
 
@@ -161,36 +114,27 @@ export const WTDb = {
             await db.walkieTypie.bulkDelete(emptyKeys);
         }
 
-        // 2. 執行溢出清理
+        // 溢出清理
         if (maxSlot) {
-            await this.cleanupOldRecords(owner, branchId, maxSlot);
+            await this.cleanupOldRecords(branchId, maxSlot);
         }
     },
 
     /**
-     * 清空分支所有紀錄 (用於刪除連線時清除本地快取)
+     * 清空指定分支的所有紀錄 (用於 CUT 連線)
      */
-    async deleteBranchRecords(owner, branchId) {
-        if (owner === "local") {
-            const keys = await db.walkieTypie.where('[branchId+timestamp]')
-                .between([branchId, Dexie.minKey], [branchId, Dexie.maxKey])
-                .and(item => item.owner.startsWith('local'))
-                .primaryKeys();
-            return await db.walkieTypie.bulkDelete(keys);
-        }
-
-        const keys = await db.walkieTypie.where('[owner+branchId+timestamp]')
-            .between([owner, branchId, Dexie.minKey], [owner, branchId, Dexie.maxKey])
+    async deleteBranchRecords(branchId) {
+        const keys = await db.walkieTypie.where('[branchId+timestamp]')
+            .between([branchId, Dexie.minKey], [branchId, Dexie.maxKey])
             .primaryKeys();
         return await db.walkieTypie.bulkDelete(keys);
     },
 
     /**
-     * 抹除所有非 local 的同步資料 (登出時保護隱私)
+     * 登出時清除所有 THEY 快取 (隱私保護)
      */
-    async wipeSyncedData() {
-        const collection = db.walkieTypie.where('owner').notEqual('local');
-        const keys = await collection.primaryKeys();
+    async wipeTheyRecords() {
+        const keys = await db.walkieTypie.where('branch').equals('THEY').primaryKeys();
         return await db.walkieTypie.bulkDelete(keys);
     }
 };

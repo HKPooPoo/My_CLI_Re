@@ -36,5 +36,15 @@ db.version(8).stores({
     walkieTypie: '[owner+branchId+timestamp], owner, branchId, [branchId+timestamp]'
 });
 
+db.version(9).stores({
+    /**
+     * walkieTypie 表 (適配化 WT 特性)
+     * 主鍵：[branchId+timestamp] — WT 不需要 owner 區分
+     * 索引：branchId (查詢分支), branch (區分 WE/THEY)
+     * branchId 格式固定為字串 "wt_{A}_{B}"
+     */
+    walkieTypie: '[branchId+timestamp], branchId, branch'
+});
+
 export default db;
 export { Dexie };

@@ -50,6 +50,7 @@ Route::prefix('walkie-typie')->group(function () {
     Route::post('/connections', [WalkieTypieController::class, 'store']);
     Route::post('/signal', [WalkieTypieController::class, 'signal']);
     Route::patch('/connections/{partnerUid}', [WalkieTypieController::class, 'updateTag']);
+    Route::delete('/connections/{partnerUid}', [WalkieTypieController::class, 'destroy']);
     Route::get('/config', [WalkieTypieController::class, 'config']);
 
     // Board Operations (獨立於 Blackboard)

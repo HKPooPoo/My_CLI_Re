@@ -207,6 +207,54 @@ class WalkieTypieController extends Controller
         ]);
     }
 
+    /**
+     * Delete a connection and all associated data
+     */
+    public function destroy($partnerUid)
+    {
+        $user = Auth::user();
+        if (!$user)
+            return response()->json(['message' => 'Unauthorized'], 401);
+
+        // Find connection to get branch IDs
+        $conn = DB::table('walkie_typie_connections')
+            ->where('user_uid', $user->uid)
+            ->where('partner_uid', $partnerUid)
+            ->first();
+
+        if (!$conn) {
+            return response()->json(['message' => 'CONNECTION NOT FOUND'], 404);
+        }
+
+        $myBranchId = $conn->my_branch_id;
+        $partnerBranchId = $conn->partner_branch_id;
+
+        DB::transaction(function () use ($user, $partnerUid, $myBranchId, $partnerBranchId) {
+            // Delete both connection records
+            DB::table('walkie_typie_connections')
+                ->where('user_uid', $user->uid)
+                ->where('partner_uid', $partnerUid)
+                ->delete();
+
+            DB::table('walkie_typie_connections')
+                ->where('user_uid', $partnerUid)
+                ->where('partner_uid', $user->uid)
+                ->delete();
+
+            // Delete board records for both branches
+            $this->boardService->deleteBoards($user->uid, $myBranchId);
+            $this->boardService->deleteBoards($partnerUid, $partnerBranchId);
+        });
+
+        // Notify partner for real-time UI update
+        broadcast(new WalkieTypieConnectionUpdated($partnerUid, [
+            'deleted' => true,
+            'partner_uid' => $user->uid
+        ]));
+
+        return response()->json(['message' => 'CONNECTION DELETED']);
+    }
+
     // --- Board Operations (獨立於 Blackboard) ---
 
     /**

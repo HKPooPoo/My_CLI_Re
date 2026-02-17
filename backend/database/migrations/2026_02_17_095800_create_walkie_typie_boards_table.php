@@ -22,6 +22,9 @@ return new class extends Migration {
 
             // 複合唯一索引
             $table->unique(['owner', 'branch_id', 'timestamp']);
+            // WT 特性索引：deleteBoards 及 broadcastUpdate 查詢用
+            $table->index('owner');
+            $table->index('branch_id');
         });
     }
 

@@ -10,6 +10,11 @@ export const WalkieTypieService = {
             body: JSON.stringify(data)
         });
     },
+    deleteConnection(partnerUid) {
+        return apiRequest(`/walkie-typie/connections/${partnerUid}`, {
+            method: 'DELETE'
+        });
+    },
     updateConnectionTag(partnerUid, data) {
         return apiRequest(`/walkie-typie/connections/${partnerUid}`, {
             method: 'PATCH',
