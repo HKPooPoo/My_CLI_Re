@@ -62,6 +62,7 @@ export const AuthManager = {
      */
     async init() {
         this.bindEvents();
+        this.bindPWAEvents();
 
         // 恢復上次登入狀態 (從後端獲取完整資料)
         try {
@@ -240,6 +241,39 @@ export const AuthManager = {
                 }
             });
         }
+    },
+
+    /**
+     * PWA 事件綁定
+     */
+    bindPWAEvents() {
+        if (this.pwaEventsBound) return;
+        this.pwaEventsBound = true;
+
+        window.addEventListener("pwa:installable", () => {
+            console.log("PWA: Install event received, rendering buttons...");
+            this.renderInstallButton(this.elements.loginContainer);
+            this.renderInstallButton(this.elements.logoutContainer);
+        });
+    },
+
+    renderInstallButton(container) {
+        if (!container || container.querySelector(".btn-pwa-install")) return;
+
+        const btn = document.createElement("button");
+        btn.className = "auth-btn crt-text-green btn-pwa-install";
+        btn.textContent = "INSTALL APP";
+        btn.style.marginTop = "1rem";
+        btn.style.border = "1px dashed var(--crt-green)"; 
+        
+        btn.addEventListener("click", async () => {
+            if (window.installPWA) {
+                await window.installPWA();
+                btn.remove(); // 安裝後移除按鈕
+            }
+        });
+
+        container.appendChild(btn);
     }
 };
 

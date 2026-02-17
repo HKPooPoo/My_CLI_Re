@@ -123,21 +123,58 @@ export const WTText = {
 
         // --- Real-time Content from Partner (WebSocket) ---
 
-        window.addEventListener("walkie-typie:content-update", (e) => {
+        window.addEventListener("walkie-typie:content-update", async (e) => {
             if (!this.currentConnection) return;
             const { branch_id, text } = e.detail;
 
             if (String(branch_id) === String(this.currentConnection.partner_branch_id)) {
-                // Store live text + force Head 0 + direct display
-                this.theyLiveText = text;
-                this.theyState.currentHead = 0;
-                this.elements.theyTextarea.value = text;
+                if (text === null || text === undefined) {
+                    // Signal only -> Persistent Sync
+                    console.log("WT: Received Signal, Syncing...");
+                    await this.syncTHEY();
+                    this.refreshTHEY();
+                } else {
+                    // Store live text + force Head 0 + direct display
+                    this.theyLiveText = text;
+                    this.theyState.currentHead = 0;
+                    this.elements.theyTextarea.value = text;
+                    
+                    // Notification
+                    if (document.hidden) {
+                        this.notify(this.currentConnection.partner_uid, text);
+                    }
+                }
             }
         });
 
         // --- WE Input Handler ---
 
         this.elements.weTextarea?.addEventListener("input", this.handleMyInput.bind(this));
+        
+        // Request notification permission on interaction
+        this.elements.container?.addEventListener("click", () => this.tryRequestNotification(), { once: true });
+    },
+
+    // =====================================================================
+    //  NOTIFICATIONS
+    // =====================================================================
+
+    tryRequestNotification() {
+        if ("Notification" in window && Notification.permission === "default") {
+            Notification.requestPermission();
+        }
+    },
+
+    notify(sender, text) {
+        if ("Notification" in window && Notification.permission === "granted") {
+            const title = `New message from ${sender}`;
+            const options = {
+                body: text ? (text.length > 50 ? text.substring(0, 50) + "..." : text) : "Content updated",
+                icon: "/images/favicon.ico",
+                tag: "wt-message" // Prevent stacking
+            };
+            new Notification(title, options);
+        }
     },
 
     // =====================================================================

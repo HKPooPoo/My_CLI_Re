@@ -1,16 +1,19 @@
-const CACHE_NAME = 'blackboard-v1';
+const CACHE_NAME = 'blackboard-v2-dev-2026-02-17'; // Increment for immediate update
 const ASSETS = [
   '/',
   '/index.html',
-  '/stylesheets/style.css',
+  '/style.css',
   '/javascript/blackboard.js',
   '/javascript/indexedDB.js',
   '/javascript/vendor/dexie.js',
-  '/favicon.ico'
+  '/favicon.ico',
+  '/manifest.json'
 ];
 
 // 安裝：快取核心資源
 self.addEventListener('install', (event) => {
+  self.skipWaiting(); // 強制跳過等待，立即啟用新版 SW (Dev Friendly)
+  
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       return cache.addAll(ASSETS);
@@ -25,8 +28,15 @@ self.addEventListener('activate', (event) => {
       return Promise.all(
         keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key))
       );
-    })
+    }).then(() => self.clients.claim()) // 立即接管頁面
   );
+});
+
+// 處理訊息 (SKIP_WAITING)
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
 });
 
 // 攔截請求：Stale-While-Revalidate 策略
@@ -34,6 +44,16 @@ self.addEventListener('fetch', (event) => {
   // 僅處理 GET 請求且不處理 API
   if (event.request.method !== 'GET' || event.request.url.includes('/api/')) {
     return;
+  }
+
+  // 對於 HTML，優先使用 Network (確保首屏最新)
+  if (event.request.mode === 'navigate') {
+      event.respondWith(
+          fetch(event.request).catch(() => {
+              return caches.match(event.request);
+          })
+      );
+      return;
   }
 
   event.respondWith(

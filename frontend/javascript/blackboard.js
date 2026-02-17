@@ -482,12 +482,65 @@ setInterval(() => {
 }, 500);
 
 /**
- * PWA Service Worker 註冊
+ * PWA Service Worker 註冊與更新邏輯
  */
+let deferredPrompt;
+
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js').catch(err => {
+        navigator.serviceWorker.register('/sw.js').then(registration => {
+            console.log('PWA: SW registered: ', registration);
+
+            // 檢測是否有等待中的更新
+            if (registration.waiting) {
+                showUpdateToast(registration);
+            }
+
+            // 監聽新的更新發現
+            registration.addEventListener('updatefound', () => {
+                const newWorker = registration.installing;
+                newWorker.addEventListener('statechange', () => {
+                    if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                        showUpdateToast(registration);
+                    }
+                });
+            });
+        }).catch(err => {
             console.warn('PWA: Service Worker registration failed:', err);
+        });
+
+        // 監聽控制器變更 (刷新頁面)
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+            window.location.reload();
         });
     });
 }
+
+// 顯示更新提示 Toast
+function showUpdateToast(registration) {
+    const msg = BBMessage.info("NEW VERSION AVAILABLE.");
+    // 這裡我們簡單地自動更新，或者您可以添加一個按鈕讓用戶點擊
+    // 為了符合 "I want it to auto re-cache" 的開發者需求，我們自動 skipWaiting
+    if (registration.waiting) {
+        registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+    }
+}
+
+// 安裝提示 (A2HS)
+window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    // 顯示安裝按鈕 (例如在 Auth 頁面或 HUD)
+    // 這裡我們先廣播一個事件，讓 UI 組件決定如何顯示
+    window.dispatchEvent(new CustomEvent("pwa:installable"));
+});
+
+// 全域安裝函式
+window.installPWA = async () => {
+    if (deferredPrompt) {
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        console.log(`PWA: User response to install prompt: ${outcome}`);
+        deferredPrompt = null;
+    }
+};
