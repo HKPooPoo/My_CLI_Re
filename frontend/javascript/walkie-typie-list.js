@@ -10,7 +10,7 @@
  * 6. Tag renaming (nickname).
  * 7. Initial cursor at top.
  * =================================================================
- * Dependencies: WalkieTypieService, WTDb, InfiniteList, MultiStepButton
+ * Dependencies: WalkieTypieService, WTDb, InfiniteList, MultiStepButton, BBMessage
  * =================================================================
  */
 
@@ -18,6 +18,7 @@ import { WalkieTypieService } from "./services/walkie-typie-service.js";
 import { WTDb, getHKTTimestamp } from "./walkie-typie-db.js";
 import { InfiniteList } from "./blackboard-ui-list.js";
 import { MultiStepButton } from "./multiStepButton.js";
+import { BBMessage } from "./blackboard-msg.js";
 
 export const WTList = {
     elements: {
@@ -29,8 +30,8 @@ export const WTList = {
 
     connections: [],
     infiniteList: null,
-    selectionTimer: null,  // 500ms debounce timer
-    selectedConnection: null, // Current cursor-pointed connection
+    selectionTimer: null,
+    selectedConnection: null,
 
     init() {
         this.bindEvents();
@@ -38,68 +39,80 @@ export const WTList = {
     },
 
     bindEvents() {
-        // ADD Button — MultiStepButton confirmation
+        // ADD Button — MultiStepButton: [click -> show SURE? -> click again -> execute]
         if (this.elements.addBtn) {
-            new MultiStepButton(this.elements.addBtn, {
-                onConfirm: async () => {
-                    const uid = this.elements.uidInput?.value?.trim();
-                    if (!uid) return;
-
-                    try {
-                        const result = await WalkieTypieService.createConnection({ uid });
-                        if (result.connection) {
-                            this.handleUpdate(result.connection);
-                            this.elements.uidInput.value = "";
+            new MultiStepButton(this.elements.addBtn, [
+                { label: "ADD", sound: "UIGeneralFocus.mp3", action: () => { } },
+                {
+                    label: "SURE?",
+                    sound: "UIGeneralOK.mp3",
+                    action: async () => {
+                        const uid = this.elements.uidInput?.value?.trim();
+                        if (!uid) {
+                            BBMessage.error("UID REQUIRED");
+                            return;
                         }
-                    } catch (e) {
-                        console.error("WTList: Add Failed", e);
+
+                        try {
+                            BBMessage.info("CONNECTING...");
+                            const result = await WalkieTypieService.createConnection({ uid });
+                            if (result.connection) {
+                                this.handleUpdate(result.connection);
+                                this.elements.uidInput.value = "";
+                                BBMessage.success("CONNECTED");
+                            }
+                        } catch (e) {
+                            BBMessage.error("CONNECT FAILED: " + (e.message || "UNKNOWN"));
+                        }
                     }
                 }
-            });
+            ]);
         }
 
-        // CUT Button — MultiStepButton confirmation, delete selected connection
+        // CUT Button — MultiStepButton: delete selected connection
         if (this.elements.cutBtn) {
-            new MultiStepButton(this.elements.cutBtn, {
-                onConfirm: async () => {
-                    if (!this.selectedConnection) {
-                        console.warn("WTList: No connection selected for CUT");
-                        return;
-                    }
-
-                    const partnerUid = this.selectedConnection.partner_uid;
-                    const myBranchId = this.selectedConnection.my_branch_id;
-                    const partnerBranchId = this.selectedConnection.partner_branch_id;
-
-                    try {
-                        // 1. API DELETE
-                        await WalkieTypieService.deleteConnection(partnerUid);
-
-                        // 2. Wipe local IndexedDB data for both branches
-                        await WTDb.deleteBranchRecords(myBranchId);
-                        await WTDb.deleteBranchRecords(partnerBranchId);
-
-                        // 3. Remove from local array
-                        const index = this.connections.findIndex(c => c.partner_uid === partnerUid);
-                        if (index !== -1) {
-                            this.connections.splice(index, 1);
+            new MultiStepButton(this.elements.cutBtn, [
+                { label: "CUT", sound: "UIGeneralFocus.mp3", action: () => { } },
+                {
+                    label: "SURE?",
+                    sound: "UIGeneralCancel.mp3",
+                    action: async () => {
+                        if (!this.selectedConnection) {
+                            BBMessage.error("NO TARGET SELECTED");
+                            return;
                         }
 
-                        // 4. Dispatch disconnection event
-                        window.dispatchEvent(new CustomEvent("walkie-typie:disconnected", {
-                            detail: { partnerUid }
-                        }));
+                        const partnerUid = this.selectedConnection.partner_uid;
+                        const myBranchId = this.selectedConnection.my_branch_id;
+                        const partnerBranchId = this.selectedConnection.partner_branch_id;
 
-                        // 5. Re-render
-                        this.selectedConnection = null;
-                        this.render();
+                        try {
+                            BBMessage.info("CUTTING...");
 
-                        console.log(`WTList: Connection to ${partnerUid} deleted.`);
-                    } catch (e) {
-                        console.error("WTList: CUT Failed", e);
+                            await WalkieTypieService.deleteConnection(partnerUid);
+
+                            // Wipe local IndexedDB
+                            await WTDb.deleteBranchRecords(myBranchId);
+                            await WTDb.deleteBranchRecords(partnerBranchId);
+
+                            // Remove from array
+                            const index = this.connections.findIndex(c => c.partner_uid === partnerUid);
+                            if (index !== -1) this.connections.splice(index, 1);
+
+                            // Dispatch disconnection event
+                            window.dispatchEvent(new CustomEvent("walkie-typie:disconnected", {
+                                detail: { partnerUid }
+                            }));
+
+                            this.selectedConnection = null;
+                            this.render();
+                            BBMessage.success("CONNECTION SEVERED");
+                        } catch (e) {
+                            BBMessage.error("CUT FAILED: " + (e.message || "UNKNOWN"));
+                        }
                     }
                 }
-            });
+            ]);
         }
 
         // Listen for real-time connection updates (from WebSocket)
@@ -113,9 +126,10 @@ export const WTList = {
         });
 
         // Listen for InfiniteList cursor changes → 500ms debounce
+        // Filter: ONLY process events from WT list container
         window.addEventListener("blackboard:selectionChanged", (e) => {
             const { item } = e.detail;
-            if (!item || !this.elements.container.contains(item)) return;
+            if (!item || !this.elements.container || !this.elements.container.contains(item)) return;
 
             const partnerUid = item.dataset.partnerUid;
             const conn = this.connections.find(c => c.partner_uid === partnerUid);
@@ -132,6 +146,11 @@ export const WTList = {
                 }, 500);
             }
         });
+
+        // Window Focus → re-fetch connections (partner may have added us)
+        window.addEventListener("focus", () => {
+            this.fetchConnections();
+        });
     },
 
     async fetchConnections() {
@@ -143,7 +162,8 @@ export const WTList = {
                 this.render();
             }
         } catch (e) {
-            console.error("WTList: Fetch Failed", e);
+            // Silent on auth errors — user might not be logged in
+            console.warn("WTList: Fetch Failed", e);
         }
     },
 
@@ -165,11 +185,9 @@ export const WTList = {
             const conn = this.connections[index];
             this.connections.splice(index, 1);
 
-            // Wipe local data
             WTDb.deleteBranchRecords(conn.my_branch_id);
             WTDb.deleteBranchRecords(conn.partner_branch_id);
 
-            // Notify text page
             window.dispatchEvent(new CustomEvent("walkie-typie:disconnected", {
                 detail: { partnerUid }
             }));
@@ -182,7 +200,6 @@ export const WTList = {
     render() {
         if (!this.elements.container) return;
 
-        // Clear
         this.elements.container.innerHTML = "";
 
         this.connections.forEach(conn => {
@@ -204,7 +221,7 @@ export const WTList = {
                     await WalkieTypieService.updateConnectionTag(conn.partner_uid, { tag: newTag });
                     conn.partner_tag = newTag;
                 } catch (err) {
-                    console.error("Tag update failed", err);
+                    BBMessage.error("TAG UPDATE FAILED");
                 }
             });
 
@@ -228,7 +245,7 @@ export const WTList = {
             this.elements.container.appendChild(item);
         });
 
-        // Initialize / Refresh InfiniteList — initial cursor at top (index 0)
+        // Initialize / Refresh InfiniteList — cursor at top (index 0)
         if (this.infiniteList) {
             this.infiniteList.refresh();
         } else if (this.connections.length > 0) {
