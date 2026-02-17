@@ -38,6 +38,8 @@ class WalkieTypieController extends Controller
 
     /**
      * Send a signal (content update) to a partner
+     * LIGHTWEIGHT: No DB writes. Only validate connection + broadcast.
+     * last_signal is updated via commit endpoint instead.
      */
     public function signal(Request $request)
     {
@@ -53,9 +55,9 @@ class WalkieTypieController extends Controller
 
         $partnerUid = $request->input('partner_uid');
         $text = $request->input('text') ?? '';
-        $branchId = $request->input('branch_id'); // This is the partner's branch ID that should be updated
+        $branchId = $request->input('branch_id');
 
-        // Verify connection exists (security check)
+        // Security: verify connection exists (1 SELECT only, no writes)
         $exists = DB::table('walkie_typie_connections')
             ->where('user_uid', $user->uid)
             ->where('partner_uid', $partnerUid)
@@ -65,33 +67,11 @@ class WalkieTypieController extends Controller
             return response()->json(['message' => 'NOT CONNECTED'], 403);
         }
 
-        // Update last signal time for sorting (Throttled: only once per second)
-        $now = (int) (microtime(true) * 1000);
-
-        $connection = DB::table('walkie_typie_connections')
-            ->where('user_uid', $user->uid)
-            ->where('partner_uid', $partnerUid)
-            ->first();
-
-        if ($connection && ($now - $connection->last_signal) > 1000) {
-            DB::table('walkie_typie_connections')
-                ->where('user_uid', $user->uid)
-                ->where('partner_uid', $partnerUid)
-                ->update(['last_signal' => $now, 'updated_at' => now()]);
-
-            DB::table('walkie_typie_connections')
-                ->where('user_uid', $partnerUid)
-                ->where('partner_uid', $user->uid)
-                ->update(['last_signal' => $now, 'updated_at' => now()]);
-        }
-
-
-        // Broadcast content
+        // Broadcast content immediately (no queue, no DB)
         broadcast(new WalkieTypieContentUpdated($partnerUid, [
             'text' => $text,
-            'branch_id' => $branchId, // Partner will use this to identify WHICH board to update
+            'branch_id' => $branchId,
             'sender_uid' => $user->uid,
-            'timestamp' => $now
         ]));
 
         return response()->json(['message' => 'SIGNAL SENT']);

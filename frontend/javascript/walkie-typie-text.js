@@ -1,16 +1,21 @@
 /**
  * Walkie-Typie Text - Twin Blackboard Controller
  * =================================================================
- * Responsibilities:
- * 1. Handle selection from list (load twin blackboards).
- * 2. Manage WE blackboard (editable, syncs to DB & Cloud).
- * 3. Manage THEY blackboard (read-only, real-time from WebSocket).
- * 4. Handle Switch button to toggle view positions.
- * 5. Lock textareas when no active connection.
- * 6. Display both side UIDs in titles.
- * 7. Reset THEY head on incoming updates (partner positions to edited page).
- * =================================================================
- * Dependencies: WTDb, WTVCS, WalkieTypieService (完全獨立於 Blackboard)
+ * Architecture (Server-Authoritative):
+ *
+ * WE 側 (editable):
+ *   Input → 200ms → WTVCS.save() → IndexedDB (local cache)
+ *         → 200ms → signal → Broadcast (no DB writes)
+ *         → 2s   → commit → Postgres + last_signal update
+ *   Push/Pull → IndexedDB
+ *
+ * THEY 側 (read-only):
+ *   WebSocket → 直接顯示文字 (不存 IndexedDB)
+ *   Push/Pull → theyRecords[] 記憶體陣列 (from Postgres API)
+ *   loadConnection → API GET → theyRecords[]
+ *   不可建新頁
+ *
+ * Dependencies: WTDb, WTVCS, WalkieTypieService
  * =================================================================
  */
 
@@ -36,17 +41,21 @@ export const WTText = {
     currentConnection: null,
     isSwapped: false,
     saveTimer: null,
+    signalTimer: null,
     commitTimer: null,
 
-    // VCS States — no owner field (WT-specific)
+    // WE: IndexedDB-backed VCS state (same as Blackboard)
     weState: { branchId: 0, branch: "WE", currentHead: 0, maxSlot: 10, isVirtual: false },
-    theyState: { branchId: 0, branch: "THEY", currentHead: 0, maxSlot: 10, isVirtual: false },
+
+    // THEY: Memory-based, server-authoritative
+    theyState: { currentHead: 0 },
+    theyRecords: [],     // Committed records from Postgres API (oldest→newest)
+    theyLiveText: null,  // Latest text from WebSocket (null = no live update yet)
 
     init() {
         this.bindEvents();
-        this.lockBoards(); // #13: Lock on init — no active connection
+        this.lockBoards();
 
-        // Load swap preference
         const savedSwap = localStorage.getItem("wt_swap_pref");
         if (savedSwap === "true") {
             this.toggleSwap(true);
@@ -54,103 +63,100 @@ export const WTText = {
     },
 
     bindEvents() {
-        // Connection selected from list (500ms debounced)
+        // --- Connection Lifecycle ---
+
         window.addEventListener("walkie-typie:selected", (e) => {
             this.loadConnection(e.detail);
         });
 
-        // Connection deleted — lock and clear boards
         window.addEventListener("walkie-typie:disconnected", (e) => {
-            // 清除所有 pending timers，避免 stale save/commit
             clearTimeout(this.saveTimer);
+            clearTimeout(this.signalTimer);
             clearTimeout(this.commitTimer);
 
             if (this.currentConnection &&
                 this.currentConnection.partner_uid === e.detail.partnerUid) {
                 this.currentConnection = null;
+                this.theyRecords = [];
+                this.theyLiveText = null;
                 this.lockBoards();
                 this.clearBoards();
             }
         });
 
-        // Switch button
-        if (this.elements.switchBtn) {
-            this.elements.switchBtn.addEventListener("click", () => {
-                this.toggleSwap();
-            });
-        }
+        // --- Switch Button ---
 
-        // VCS Buttons — WE side (editable)
+        this.elements.switchBtn?.addEventListener("click", () => this.toggleSwap());
+
+        // --- WE Push/Pull (IndexedDB, same as Blackboard) ---
+
         this.elements.wePushBtn?.addEventListener("click", async () => {
             if (!this.currentConnection) return;
             await WTVCS.push(this.weState, this.elements.weTextarea.value, false);
-            await this.refreshBoards();
+            this.refreshWE();
         });
+
         this.elements.wePullBtn?.addEventListener("click", async () => {
             if (!this.currentConnection) return;
             await WTVCS.pull(this.weState, this.elements.weTextarea.value, false);
-            await this.refreshBoards();
+            this.refreshWE();
         });
 
-        // VCS Buttons — THEY side (readOnly: no save, no virtual page)
-        this.elements.theyPushBtn?.addEventListener("click", async () => {
-            if (!this.currentConnection) return;
-            await WTVCS.push(this.theyState, this.elements.theyTextarea.value, true);
-            await this.refreshBoards();
-        });
-        this.elements.theyPullBtn?.addEventListener("click", async () => {
-            if (!this.currentConnection) return;
-            await WTVCS.pull(this.theyState, this.elements.theyTextarea.value, true);
-            await this.refreshBoards();
-        });
+        // --- THEY Push/Pull (Memory array, read-only) ---
 
-        // Real-time updates from partner (THEY side)
-        window.addEventListener("walkie-typie:content-update", (e) => {
+        this.elements.theyPushBtn?.addEventListener("click", () => {
             if (!this.currentConnection) return;
-            const { branchId, text, timestamp } = e.detail;
-
-            if (String(branchId) === String(this.currentConnection.partner_branch_id)) {
-                // #9: Reset THEY head to 0 — partner positions to edited page
-                this.theyState.currentHead = 0;
-                this.theyState.isVirtual = false;
-                this.updateTheirBoard(text, timestamp);
+            if (this.theyState.currentHead > 0) {
+                this.theyState.currentHead--;
+                this.refreshTHEY();
             }
         });
 
-        // WE input handler — mirrors blackboard's approach: WTVCS.save() + broadcast
-        if (this.elements.weTextarea) {
-            this.elements.weTextarea.addEventListener("input", this.handleMyInput.bind(this));
-        }
+        this.elements.theyPullBtn?.addEventListener("click", () => {
+            if (!this.currentConnection) return;
+            const maxHead = this.theyRecords.length - 1;
+            if (this.theyState.currentHead < maxHead) {
+                this.theyState.currentHead++;
+                this.refreshTHEY();
+            }
+        });
+
+        // --- Real-time Content from Partner (WebSocket) ---
+
+        window.addEventListener("walkie-typie:content-update", (e) => {
+            if (!this.currentConnection) return;
+            const { branch_id, text } = e.detail;
+
+            if (String(branch_id) === String(this.currentConnection.partner_branch_id)) {
+                // Store live text + force Head 0 + direct display
+                this.theyLiveText = text;
+                this.theyState.currentHead = 0;
+                this.elements.theyTextarea.value = text;
+            }
+        });
+
+        // --- WE Input Handler ---
+
+        this.elements.weTextarea?.addEventListener("input", this.handleMyInput.bind(this));
     },
 
-    /**
-     * #13: Lock both textareas when no active connection
-     */
+    // =====================================================================
+    //  BOARD LIFECYCLE
+    // =====================================================================
+
     lockBoards() {
-        if (this.elements.weTextarea) {
-            this.elements.weTextarea.setAttribute("disabled", "true");
-        }
-        if (this.elements.theyTextarea) {
-            this.elements.theyTextarea.setAttribute("disabled", "true");
-        }
+        this.elements.weTextarea?.setAttribute("disabled", "true");
+        this.elements.theyTextarea?.setAttribute("disabled", "true");
     },
 
-    /**
-     * Unlock boards: WE=editable, THEY=readonly
-     */
     unlockBoards() {
-        if (this.elements.weTextarea) {
-            this.elements.weTextarea.removeAttribute("disabled");
-        }
+        this.elements.weTextarea?.removeAttribute("disabled");
         if (this.elements.theyTextarea) {
             this.elements.theyTextarea.removeAttribute("disabled");
             this.elements.theyTextarea.setAttribute("readonly", "true");
         }
     },
 
-    /**
-     * Clear both textareas and reset titles
-     */
     clearBoards() {
         if (this.elements.weTextarea) this.elements.weTextarea.value = "";
         if (this.elements.theyTextarea) this.elements.theyTextarea.value = "";
@@ -161,143 +167,187 @@ export const WTText = {
     toggleSwap(forceState = null) {
         this.isSwapped = forceState !== null ? forceState : !this.isSwapped;
         localStorage.setItem("wt_swap_pref", this.isSwapped);
-
-        const container = this.elements.container;
-        if (!container) return;
-
-        if (this.isSwapped) {
-            container.classList.add("swapped");
-        } else {
-            container.classList.remove("swapped");
+        if (this.elements.container) {
+            this.elements.container.classList.toggle("swapped", this.isSwapped);
         }
     },
 
+    // =====================================================================
+    //  STEP 3: LOAD CONNECTION (Download both sides)
+    // =====================================================================
+
     async loadConnection(connection) {
-        // 先清除上一個 connection 的 pending timers
+        // Clear pending operations from previous connection
         clearTimeout(this.saveTimer);
+        clearTimeout(this.signalTimer);
         clearTimeout(this.commitTimer);
 
         this.currentConnection = connection;
 
-        // Update State IDs
+        // Reset states
         this.weState.branchId = connection.my_branch_id;
-        this.theyState.branchId = connection.partner_branch_id;
-
-        // Reset Heads
         this.weState.currentHead = 0;
-        this.theyState.currentHead = 0;
         this.weState.isVirtual = false;
-        this.theyState.isVirtual = false;
+        this.theyState.currentHead = 0;
+        this.theyRecords = [];
+        this.theyLiveText = null;
 
-        // #13: Unlock boards now that we have an active connection
         this.unlockBoards();
 
         try {
-            // Sync THEY data from backend
-            await this.syncPartnerBranch();
-            await this.refreshBoards();
+            // Download BOTH sides from server
+            await Promise.all([
+                this.syncWE(),
+                this.syncTHEY()
+            ]);
+
+            // STEP 4: Show twin blackboard content at Head 0
+            this.refreshWE();
+            this.refreshTHEY();
+            this.refreshTitles();
         } catch (err) {
             console.error("WTText: Load Failed", err);
         }
     },
 
     /**
-     * Pull latest records for partner's branch from backend → save to IndexedDB
+     * Sync WE side: Fetch my committed records from Postgres → merge into IndexedDB.
+     * Purpose: Cross-device sync (if I committed from another device).
      */
-    async syncPartnerBranch() {
+    async syncWE() {
         if (!this.currentConnection) return;
-
-        const partnerBranchId = this.currentConnection.partner_branch_id;
+        const branchId = this.currentConnection.my_branch_id;
 
         try {
-            const data = await WalkieTypieService.fetchBoardRecords(partnerBranchId);
-
+            const data = await WalkieTypieService.fetchBoardRecords(branchId);
             if (data?.records?.length > 0) {
-                // 清除舊的本地 THEY 快取
-                await WTDb.deleteBranchRecords(partnerBranchId);
-
-                // 匯入所有後端紀錄 (保留原始 timestamp 以保持歷史順序)
-                for (const record of data.records) {
+                // Server-authoritative: clear local + import server records
+                await WTDb.deleteBranchRecords(branchId);
+                for (const r of data.records) {
                     await WTDb.addRecordWithTimestamp(
-                        partnerBranchId,
-                        "THEY",
-                        record.text || "",
-                        parseInt(record.timestamp)
+                        branchId, "WE", r.text || "", parseInt(r.timestamp)
                     );
                 }
             }
+            // If no server records: keep whatever is in IndexedDB (first time use)
         } catch (e) {
-            console.error("WTText: Sync Failed", e);
+            console.warn("WTText: WE Sync Failed (using local cache)", e);
         }
     },
 
-    async refreshBoards() {
+    /**
+     * Sync THEY side: Fetch partner's committed records from Postgres → memory array.
+     * NO IndexedDB writes. Server is the sole truth for THEY data.
+     */
+    async syncTHEY() {
         if (!this.currentConnection) return;
 
-        // #8: Display both side UIDs
+        try {
+            const data = await WalkieTypieService.fetchBoardRecords(
+                this.currentConnection.partner_branch_id
+            );
+            // Records sorted oldest→newest from server (orderBy timestamp ASC)
+            this.theyRecords = data?.records || [];
+        } catch (e) {
+            console.warn("WTText: THEY Sync Failed", e);
+            this.theyRecords = [];
+        }
+    },
+
+    // =====================================================================
+    //  STEP 4: DISPLAY
+    // =====================================================================
+
+    /**
+     * WE display: Read from IndexedDB (same as Blackboard)
+     */
+    async refreshWE() {
+        if (!this.currentConnection) return;
+
+        try {
+            if (this.weState.isVirtual) {
+                this.elements.weTextarea.value = "";
+            } else {
+                const record = await WTDb.getRecord(
+                    this.weState.branchId,
+                    this.weState.currentHead
+                );
+                this.elements.weTextarea.value = record?.text || "";
+            }
+        } catch (err) {
+            console.error("WE read error:", err);
+        }
+    },
+
+    /**
+     * THEY display: Read from memory array or live WebSocket text.
+     *
+     * Head 0 = theyLiveText (if available) or theyRecords[last] (newest committed)
+     * Head N = theyRecords[length - 1 - N] (committed history)
+     */
+    refreshTHEY() {
+        if (!this.currentConnection) return;
+
+        if (this.theyState.currentHead === 0) {
+            // Head 0: show live text if available, else newest committed
+            if (this.theyLiveText !== null) {
+                this.elements.theyTextarea.value = this.theyLiveText;
+            } else {
+                const last = this.theyRecords[this.theyRecords.length - 1];
+                this.elements.theyTextarea.value = last?.text || "";
+            }
+        } else {
+            // Head N: committed history from theyRecords[]
+            const idx = this.theyRecords.length - 1 - this.theyState.currentHead;
+            this.elements.theyTextarea.value =
+                (idx >= 0 && idx < this.theyRecords.length)
+                    ? (this.theyRecords[idx].text || "")
+                    : "";
+        }
+    },
+
+    refreshTitles() {
+        if (!this.currentConnection) return;
         const myUid = localStorage.getItem("currentUser") || "LOCAL";
         if (this.elements.weTitle) this.elements.weTitle.textContent = myUid.toUpperCase();
 
         const theyLabel = (this.currentConnection.partner_tag || this.currentConnection.partner_uid).toUpperCase();
         if (this.elements.theyTitle) this.elements.theyTitle.textContent = theyLabel;
-
-        // Read WE content
-        try {
-            if (this.weState.isVirtual) {
-                this.elements.weTextarea.value = "";
-            } else {
-                const myRecord = await WTDb.getRecord(this.weState.branchId, this.weState.currentHead);
-                this.elements.weTextarea.value = myRecord ? myRecord.text : "";
-            }
-        } catch (err) {
-            console.error("Error reading WE record:", err);
-        }
-
-        // Read THEY content (always read-only)
-        try {
-            const theirRecord = await WTDb.getRecord(this.theyState.branchId, this.theyState.currentHead);
-            this.elements.theyTextarea.value = theirRecord ? theirRecord.text : "";
-        } catch (err) {
-            console.error("Error reading THEY record:", err);
-        }
     },
 
+    // =====================================================================
+    //  STEP 6: INPUT → SAVE → SIGNAL → COMMIT
+    // =====================================================================
+
     /**
-     * WE input handler — mirrors blackboard approach:
-     * 核心：呼叫 WTVCS.save() 更新現有紀錄，而非 WTDb.addRecord() 新增紀錄。
-     * 這確保 Push/Pull 翻的是使用者自己建立的「頁面」，而非每次打字的快照。
+     * Mirrors Blackboard's input handler:
+     * 200ms → WTVCS.save() (local) + signal (broadcast)
+     * 2s → commit (Postgres + last_signal)
      */
     handleMyInput(e) {
         if (!this.currentConnection) return;
-
         const text = e.target.value;
 
-        // 200ms debounce — 與 blackboard 一致
+        // 200ms: Local save (IndexedDB, same as Blackboard)
         clearTimeout(this.saveTimer);
         this.saveTimer = setTimeout(async () => {
-            // 使用 WTVCS.save() — 更新現有紀錄，不新增
             await WTVCS.save(this.weState, text);
-            // 廣播給對方
-            this.broadcastUpdate(text);
         }, 200);
 
-        // 2s debounce — 後端持久化
+        // 200ms: Real-time signal to partner (lightweight broadcast, no DB)
+        clearTimeout(this.signalTimer);
+        this.signalTimer = setTimeout(() => {
+            this.broadcastSignal(text);
+        }, 200);
+
+        // 2s: Persistent commit to Postgres (also updates last_signal)
         clearTimeout(this.commitTimer);
-        this.commitTimer = setTimeout(async () => {
-            try {
-                if (!text || !text.trim()) return;
-                await WalkieTypieService.commitBoard({
-                    branchId: this.currentConnection.my_branch_id,
-                    branchName: "WE",
-                    records: [{ timestamp: Date.now(), text: text, bin: null }]
-                });
-            } catch (err) {
-                console.error("WT: Cloud Save Failed", err);
-            }
+        this.commitTimer = setTimeout(() => {
+            this.commitWE(text);
         }, 2000);
     },
 
-    async broadcastUpdate(text) {
+    async broadcastSignal(text) {
         if (!this.currentConnection) return;
         try {
             await WalkieTypieService.sendSignal({
@@ -310,31 +360,16 @@ export const WTText = {
         }
     },
 
-    /**
-     * 接收對方即時更新 — 更新而非新增 THEY 紀錄。
-     * 核心：找到現有 Head 0 紀錄並更新，避免累積快照歷史。
-     * 新的 THEY 頁面只在 syncPartnerBranch() 同步後端資料時產生。
-     */
-    async updateTheirBoard(text, timestamp) {
-        if (!this.currentConnection) return;
-
-        if (text !== null && text !== undefined) {
-            // 直接顯示在 textarea
-            this.elements.theyTextarea.value = text;
-
-            const branchId = this.currentConnection.partner_branch_id;
-
-            // 更新現有 Head 0 紀錄，而非新增
-            const existing = await WTDb.getRecord(branchId, 0);
-            if (existing) {
-                await WTDb.updateText(branchId, existing.timestamp, text);
-            } else {
-                await WTDb.addRecord(branchId, "THEY", text);
-            }
-        } else {
-            // No content in signal → fallback to sync
-            await this.syncPartnerBranch();
-            await this.refreshBoards();
+    async commitWE(text) {
+        if (!this.currentConnection || !text?.trim()) return;
+        try {
+            await WalkieTypieService.commitBoard({
+                branchId: this.currentConnection.my_branch_id,
+                branchName: "WE",
+                records: [{ timestamp: Date.now(), text: text, bin: null }]
+            });
+        } catch (err) {
+            console.error("WT: Commit Failed", err);
         }
     }
 };
