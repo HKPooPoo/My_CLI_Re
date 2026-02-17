@@ -59,8 +59,12 @@ export const WTText = {
             this.loadConnection(e.detail);
         });
 
-        // Connection deleted — lock boards
+        // Connection deleted — lock and clear boards
         window.addEventListener("walkie-typie:disconnected", (e) => {
+            // 清除所有 pending timers，避免 stale save/commit
+            clearTimeout(this.saveTimer);
+            clearTimeout(this.commitTimer);
+
             if (this.currentConnection &&
                 this.currentConnection.partner_uid === e.detail.partnerUid) {
                 this.currentConnection = null;
@@ -113,7 +117,7 @@ export const WTText = {
             }
         });
 
-        // WE input handler (auto-save & broadcast)
+        // WE input handler — mirrors blackboard's approach: WTVCS.save() + broadcast
         if (this.elements.weTextarea) {
             this.elements.weTextarea.addEventListener("input", this.handleMyInput.bind(this));
         }
@@ -145,7 +149,7 @@ export const WTText = {
     },
 
     /**
-     * Clear both textareas and titles
+     * Clear both textareas and reset titles
      */
     clearBoards() {
         if (this.elements.weTextarea) this.elements.weTextarea.value = "";
@@ -169,6 +173,10 @@ export const WTText = {
     },
 
     async loadConnection(connection) {
+        // 先清除上一個 connection 的 pending timers
+        clearTimeout(this.saveTimer);
+        clearTimeout(this.commitTimer);
+
         this.currentConnection = connection;
 
         // Update State IDs
@@ -205,8 +213,18 @@ export const WTText = {
             const data = await WalkieTypieService.fetchBoardRecords(partnerBranchId);
 
             if (data?.records?.length > 0) {
-                const lastRecord = data.records[data.records.length - 1];
-                await WTDb.addRecord(partnerBranchId, "THEY", lastRecord.text);
+                // 清除舊的本地 THEY 快取
+                await WTDb.deleteBranchRecords(partnerBranchId);
+
+                // 匯入所有後端紀錄 (保留原始 timestamp 以保持歷史順序)
+                for (const record of data.records) {
+                    await WTDb.addRecordWithTimestamp(
+                        partnerBranchId,
+                        "THEY",
+                        record.text || "",
+                        parseInt(record.timestamp)
+                    );
+                }
             }
         } catch (e) {
             console.error("WTText: Sync Failed", e);
@@ -218,10 +236,10 @@ export const WTText = {
 
         // #8: Display both side UIDs
         const myUid = localStorage.getItem("currentUser") || "LOCAL";
-        this.elements.weTitle.textContent = myUid.toUpperCase();
+        if (this.elements.weTitle) this.elements.weTitle.textContent = myUid.toUpperCase();
 
         const theyLabel = (this.currentConnection.partner_tag || this.currentConnection.partner_uid).toUpperCase();
-        this.elements.theyTitle.textContent = theyLabel;
+        if (this.elements.theyTitle) this.elements.theyTitle.textContent = theyLabel;
 
         // Read WE content
         try {
@@ -244,30 +262,32 @@ export const WTText = {
         }
     },
 
+    /**
+     * WE input handler — mirrors blackboard approach:
+     * 核心：呼叫 WTVCS.save() 更新現有紀錄，而非 WTDb.addRecord() 新增紀錄。
+     * 這確保 Push/Pull 翻的是使用者自己建立的「頁面」，而非每次打字的快照。
+     */
     handleMyInput(e) {
         if (!this.currentConnection) return;
 
         const text = e.target.value;
-        const branchId = this.currentConnection.my_branch_id;
 
-        // Editing always brings to Head 0
-        this.weState.currentHead = 0;
-        this.weState.isVirtual = false;
-
-        // 1. Fast local save + broadcast (200ms debounce)
+        // 200ms debounce — 與 blackboard 一致
         clearTimeout(this.saveTimer);
         this.saveTimer = setTimeout(async () => {
-            await WTDb.addRecord(branchId, "WE", text);
+            // 使用 WTVCS.save() — 更新現有紀錄，不新增
+            await WTVCS.save(this.weState, text);
+            // 廣播給對方
             this.broadcastUpdate(text);
         }, 200);
 
-        // 2. Persistent backend commit (2s debounce)
+        // 2s debounce — 後端持久化
         clearTimeout(this.commitTimer);
         this.commitTimer = setTimeout(async () => {
             try {
                 if (!text || !text.trim()) return;
                 await WalkieTypieService.commitBoard({
-                    branchId: branchId,
+                    branchId: this.currentConnection.my_branch_id,
                     branchName: "WE",
                     records: [{ timestamp: Date.now(), text: text, bin: null }]
                 });
@@ -278,6 +298,7 @@ export const WTText = {
     },
 
     async broadcastUpdate(text) {
+        if (!this.currentConnection) return;
         try {
             await WalkieTypieService.sendSignal({
                 partner_uid: this.currentConnection.partner_uid,
@@ -289,12 +310,26 @@ export const WTText = {
         }
     },
 
+    /**
+     * 接收對方即時更新 — 更新而非新增 THEY 紀錄。
+     * 核心：找到現有 Head 0 紀錄並更新，避免累積快照歷史。
+     * 新的 THEY 頁面只在 syncPartnerBranch() 同步後端資料時產生。
+     */
     async updateTheirBoard(text, timestamp) {
+        if (!this.currentConnection) return;
+
         if (text !== null && text !== undefined) {
-            // Direct content update
+            // 直接顯示在 textarea
             this.elements.theyTextarea.value = text;
-            if (this.currentConnection) {
-                WTDb.addRecord(this.currentConnection.partner_branch_id, "THEY", text);
+
+            const branchId = this.currentConnection.partner_branch_id;
+
+            // 更新現有 Head 0 紀錄，而非新增
+            const existing = await WTDb.getRecord(branchId, 0);
+            if (existing) {
+                await WTDb.updateText(branchId, existing.timestamp, text);
+            } else {
+                await WTDb.addRecord(branchId, "THEY", text);
             }
         } else {
             // No content in signal → fallback to sync

@@ -48,6 +48,19 @@ export const WTDb = {
     },
 
     /**
+     * 新增一筆紀錄 (保留原始 timestamp，用於後端同步匯入)
+     */
+    async addRecordWithTimestamp(branchId, branch, text, timestamp) {
+        return await db.walkieTypie.put({
+            branchId,
+            branch,
+            timestamp,
+            text,
+            bin: null
+        });
+    },
+
+    /**
      * 更新紀錄的文字內容 — 刪除舊紀錄 + 以新 timestamp 添加
      */
     async updateText(branchId, oldTimestamp, text) {
