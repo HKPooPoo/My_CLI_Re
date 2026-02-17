@@ -65,19 +65,26 @@ class WalkieTypieController extends Controller
             return response()->json(['message' => 'NOT CONNECTED'], 403);
         }
 
-        // Update last signal time for sorting
+        // Update last signal time for sorting (Throttled: only once per second)
         $now = (int) (microtime(true) * 1000);
 
-        DB::table('walkie_typie_connections')
+        $connection = DB::table('walkie_typie_connections')
             ->where('user_uid', $user->uid)
             ->where('partner_uid', $partnerUid)
-            ->update(['last_signal' => $now, 'updated_at' => now()]);
+            ->first();
 
-        // Also update partner's view of me
-        DB::table('walkie_typie_connections')
-            ->where('user_uid', $partnerUid)
-            ->where('partner_uid', $user->uid)
-            ->update(['last_signal' => $now, 'updated_at' => now()]);
+        if ($connection && ($now - $connection->last_signal) > 1000) {
+            DB::table('walkie_typie_connections')
+                ->where('user_uid', $user->uid)
+                ->where('partner_uid', $partnerUid)
+                ->update(['last_signal' => $now, 'updated_at' => now()]);
+
+            DB::table('walkie_typie_connections')
+                ->where('user_uid', $partnerUid)
+                ->where('partner_uid', $user->uid)
+                ->update(['last_signal' => $now, 'updated_at' => now()]);
+        }
+
 
         // Broadcast content
         broadcast(new WalkieTypieContentUpdated($partnerUid, [

@@ -111,6 +111,10 @@
     box-shadow: 0 0 10px var(--text-green);
 }
 
+.walkie-typie-list-list-item.active .walkie-typie-list-tag {
+    color: var(--bg-primary);
+}
+
 .walkie-typie-list-list-item.active ::selection {
     background: var(--bg-primary);
     color: var(--text-green);
@@ -205,6 +209,8 @@
 #walkie-typie-we-blackboard,
 #walkie-typie-they-blackboard {
     font-size: var(--textbox-font-size);
+    height: 100%;
+    width: 100%;
 }
 
 .page[data-page="walkie-typie-text"].swapped {

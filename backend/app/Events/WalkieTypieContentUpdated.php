@@ -6,11 +6,11 @@ use Illuminate\Broadcasting\Channel;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Broadcasting\PresenceChannel;
 use Illuminate\Broadcasting\PrivateChannel;
-use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
+use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
-class WalkieTypieContentUpdated implements ShouldBroadcast
+class WalkieTypieContentUpdated implements ShouldBroadcastNow
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
@@ -40,7 +40,7 @@ class WalkieTypieContentUpdated implements ShouldBroadcast
             new PrivateChannel('App.Models.User.' . $this->userUid),
         ];
     }
-    
+
     public function broadcastAs(): string
     {
         return 'walkie-typie.content';
