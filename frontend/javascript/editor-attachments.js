@@ -45,6 +45,7 @@ export const EditorAttachments = {
      * @param {HTMLInputElement} config.fileInput - Hidden file input
      * @param {HTMLElement} config.chipsContainer - Chips container
      * @param {HTMLElement} config.dropOverlay - Drop overlay element
+     * @param {boolean} [config.readOnly=false] - If true, disable editing/removal
      * @param {Function} config.onAttach - Callback when file is attached (hash)
      * @param {Function} config.onDetach - Callback when file is detached (hash)
      * @returns {Object} Attachment manager instance
@@ -55,6 +56,7 @@ export const EditorAttachments = {
             fileInput: config.fileInput,
             chipsContainer: config.chipsContainer,
             dropOverlay: config.dropOverlay,
+            readOnly: config.readOnly || false,
             onAttach: config.onAttach || (() => { }),
             onDetach: config.onDetach || (() => { }),
 
@@ -68,57 +70,61 @@ export const EditorAttachments = {
              * Initialize drag-and-drop and file input event listeners.
              */
             init() {
-                if (!this.dropZone) return this;
+                if (!this.dropZone && !this.chipsContainer) return this;
 
-                // --- Drag Events ---
-                this.dropZone.addEventListener('dragenter', (e) => {
-                    e.preventDefault();
-                    this._dragCounter++;
-                    if (this._dragCounter === 1) {
-                        this.dropOverlay?.classList.add('active');
-                    }
-                });
+                // --- Drag Events (Edit Mode Only) ---
+                if (!this.readOnly && this.dropZone) {
+                    this.dropZone.addEventListener('dragenter', (e) => {
+                        e.preventDefault();
+                        this._dragCounter++;
+                        if (this._dragCounter === 1) {
+                            this.dropOverlay?.classList.add('active');
+                        }
+                    });
 
-                this.dropZone.addEventListener('dragover', (e) => {
-                    e.preventDefault(); // Required to allow drop
-                });
+                    this.dropZone.addEventListener('dragover', (e) => {
+                        e.preventDefault(); // Required to allow drop
+                    });
 
-                this.dropZone.addEventListener('dragleave', (e) => {
-                    e.preventDefault();
-                    this._dragCounter--;
-                    if (this._dragCounter <= 0) {
+                    this.dropZone.addEventListener('dragleave', (e) => {
+                        e.preventDefault();
+                        this._dragCounter--;
+                        if (this._dragCounter <= 0) {
+                            this._dragCounter = 0;
+                            this.dropOverlay?.classList.remove('active');
+                        }
+                    });
+
+                    this.dropZone.addEventListener('drop', (e) => {
+                        e.preventDefault();
                         this._dragCounter = 0;
                         this.dropOverlay?.classList.remove('active');
-                    }
-                });
 
-                this.dropZone.addEventListener('drop', (e) => {
-                    e.preventDefault();
-                    this._dragCounter = 0;
-                    this.dropOverlay?.classList.remove('active');
+                        const files = e.dataTransfer?.files;
+                        if (files && files.length > 0) {
+                            this.handleFile(files[0]);
+                        }
+                    });
 
-                    const files = e.dataTransfer?.files;
-                    if (files && files.length > 0) {
-                        this.handleFile(files[0]);
-                    }
-                });
-
-                // --- File Input (button trigger) ---
-                this.fileInput?.addEventListener('change', (e) => {
-                    const files = e.target.files;
-                    if (files && files.length > 0) {
-                        this.handleFile(files[0]);
-                    }
-                    if (this.fileInput) this.fileInput.value = '';
-                });
+                    // --- File Input (button trigger) ---
+                    this.fileInput?.addEventListener('change', (e) => {
+                        const files = e.target.files;
+                        if (files && files.length > 0) {
+                            this.handleFile(files[0]);
+                        }
+                        if (this.fileInput) this.fileInput.value = '';
+                    });
+                }
 
                 // --- Chip Remove (event delegation) ---
-                this.chipsContainer?.addEventListener('click', (e) => {
-                    const removeBtn = e.target.closest('.attachment-chip-remove');
-                    if (!removeBtn) return;
-                    const hash = removeBtn.dataset.hash;
-                    this.detach(hash);
-                });
+                if (!this.readOnly) {
+                    this.chipsContainer?.addEventListener('click', (e) => {
+                        const removeBtn = e.target.closest('.attachment-chip-remove');
+                        if (!removeBtn) return;
+                        const hash = removeBtn.dataset.hash;
+                        this.detach(hash);
+                    });
+                }
 
                 return this;
             },
@@ -333,11 +339,13 @@ export const EditorAttachments = {
                 // Add class if local or cloud
                 if (isLocal) chip.classList.add('is-local');
 
-                const iconText = isLocal ? '[LOCAL]' : '[CLOUD]';
+                const iconText = isLocal ? '[LOC]' : '[CLD]';
+                const removeHtml = this.readOnly ? '' :
+                    `<button class="attachment-chip-remove" data-hash="${hash}" title="Remove">[X]</button>`;
 
                 chip.innerHTML = `
                     <span class="attachment-chip-icon" style="cursor: pointer;" title="Open File">${iconText}</span>
-                    <button class="attachment-chip-remove" data-hash="${hash}" title="Remove">[X]</button>
+                    ${removeHtml}
                 `;
 
                 // Click icon -> Open

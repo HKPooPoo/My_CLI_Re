@@ -37,13 +37,13 @@ export const WTDb = {
     /**
      * 新增一筆紀錄
      */
-    async addRecord(branchId, branch, text = "") {
+    async addRecord(branchId, branch, text = "", bin = null) {
         return await db.walkieTypie.add({
             branchId,
             branch,
             timestamp: Date.now(),
             text,
-            bin: null
+            bin
         });
     },
 
@@ -82,8 +82,8 @@ export const WTDb = {
     /**
      * 更新紀錄的 bin 欄位 (檔案 hash)
      */
-    async updateBin(branchId, timestamp, hash) {
-        await db.walkieTypie.update([branchId, timestamp], { bin: hash });
+    async updateBin(branchId, timestamp, binData) {
+        await db.walkieTypie.update([branchId, timestamp], { bin: binData });
     },
 
     /**

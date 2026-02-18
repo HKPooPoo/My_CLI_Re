@@ -209,7 +209,7 @@
 #walkie-typie-we-blackboard,
 #walkie-typie-they-blackboard {
     font-size: var(--textbox-font-size);
-    height: 100%;
+    flex: 1;
     width: 100%;
 }
 

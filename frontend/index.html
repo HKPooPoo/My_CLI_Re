@@ -329,16 +329,20 @@
                 <div class="walkie-typie-blackboard">
                     <div class="walkie-typie-blackboard-they-title crt-text-orange">THEIR BLACKBOARD</div>
                     <button class="they-push-btn">PUSH</button>
-                    <textarea name="" id="walkie-typie-they-blackboard">
-                    </textarea>
+                    <div class="attachment-chips readonly" id="wt-they-attachments"></div>
+                    <textarea name="" id="walkie-typie-they-blackboard"></textarea>
                     <button class="they-pull-btn">PULL</button>
                 </div>
                 <button class="walkie-typie-feature-btn" id="walkie-typie-blackboard-feature-switch"></button>
                 <div class="walkie-typie-blackboard">
                     <div class="walkie-typie-blackboard-we-title crt-text-orange">OUR BLACKBOARD</div>
                     <button class="we-push-btn">PUSH</button>
-                    <textarea name="" id="walkie-typie-we-blackboard">
-                    </textarea>
+                    <div class="editor-wrapper" id="wt-drop-zone">
+                        <div class="attachment-chips" id="wt-we-attachments"></div>
+                        <textarea name="" id="walkie-typie-we-blackboard"></textarea>
+                        <input type="file" id="wt-file-input" multiple hidden accept="*/*">
+                        <div class="drop-overlay" id="wt-drop-overlay">DROP FILES HERE</div>
+                    </div>
                     <button class="we-pull-btn">PULL</button>
                 </div>
             </div>

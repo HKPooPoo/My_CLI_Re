@@ -23,6 +23,7 @@ import { WTDb } from "./walkie-typie-db.js";
 import { WTVCS } from "./walkie-typie-vcs.js";
 import { WalkieTypieService } from "./services/walkie-typie-service.js";
 import { WTCore } from "./walkie-typie-core.js";
+import { EditorAttachments } from "./editor-attachments.js";
 
 export const WTText = {
     elements: {
@@ -46,6 +47,11 @@ export const WTText = {
     signalTimer: null,
     commitTimer: null,
 
+    wtWeAttach: null,
+    wtTheyAttach: null,
+
+    currentBin: null,
+
     // WE: IndexedDB-backed VCS state (same as Blackboard)
     weState: { branchId: 0, branch: "WE", currentHead: 0, maxSlot: 10, isVirtual: false },
 
@@ -53,8 +59,10 @@ export const WTText = {
     theyState: { currentHead: 0 },
     theyRecords: [],     // Committed records from Postgres API (oldest→newest)
     theyLiveText: null,  // Latest text from WebSocket (null = no live update yet)
+    theyLiveBin: null,   // Latest attachment from WebSocket
 
     init() {
+        this.initAttachments();
         this.bindEvents();
         this.lockBoards();
 
@@ -62,6 +70,66 @@ export const WTText = {
         if (savedSwap === "true") {
             this.toggleSwap(true);
         }
+    },
+
+    initAttachments() {
+        // --- WE Side (Editable) ---
+        this.wtWeAttach = EditorAttachments.create({
+            dropZone: document.getElementById('wt-drop-zone'),
+            fileInput: document.getElementById('wt-file-input'),
+            chipsContainer: document.getElementById('wt-we-attachments'),
+            dropOverlay: document.getElementById('wt-drop-overlay'),
+            readOnly: false,
+            onAttach: async (hash, meta) => {
+                if (!this.currentConnection) return;
+
+                const binData = { hash, ...meta };
+                this.currentBin = binData;
+
+                // 1. Ensure Record Exists (Handle Virtual State)
+                if (this.weState.isVirtual) {
+                    await WTDb.addRecord(
+                        this.weState.branchId,
+                        this.weState.branch,
+                        this.elements.weTextarea.value || "",
+                        binData
+                    );
+                    this.weState.isVirtual = false;
+                    this.weState.currentHead = 0;
+                } else {
+                    // Update Existing Record
+                    const entry = await WTDb.getRecord(this.weState.branchId, this.weState.currentHead);
+                    if (entry) {
+                        await WTDb.updateBin(entry.branchId, entry.timestamp, binData);
+                    }
+                }
+
+                // 2. Broadcast Signal
+                this.broadcastSignal(this.elements.weTextarea.value);
+            },
+            onDetach: async (hash) => {
+                if (!this.currentConnection) return;
+
+                this.currentBin = null;
+
+                // Remove bin from current record
+                if (!this.weState.isVirtual) {
+                    const entry = await WTDb.getRecord(this.weState.branchId, this.weState.currentHead);
+                    if (entry) {
+                        await WTDb.updateBin(entry.branchId, entry.timestamp, null);
+                    }
+                }
+
+                // Broadcast Signal
+                this.broadcastSignal(this.elements.weTextarea.value);
+            }
+        });
+
+        // --- THEY Side (ReadOnly) ---
+        this.wtTheyAttach = EditorAttachments.create({
+            chipsContainer: document.getElementById('wt-they-attachments'),
+            readOnly: true
+        });
     },
 
     bindEvents() {
@@ -93,6 +161,7 @@ export const WTText = {
                 this.currentConnection = null;
                 this.theyRecords = [];
                 this.theyLiveText = null;
+                this.theyLiveBin = null;
                 this.lockBoards();
                 this.clearBoards();
             }
@@ -212,6 +281,10 @@ export const WTText = {
         if (this.elements.theyTextarea) this.elements.theyTextarea.value = "";
         if (this.elements.weTitle) this.elements.weTitle.textContent = "OUR BLACKBOARD";
         if (this.elements.theyTitle) this.elements.theyTitle.textContent = "THEIR BLACKBOARD";
+        
+        this.wtWeAttach?.setFromRecord(null);
+        this.wtTheyAttach?.setFromRecord(null);
+        this.currentBin = null;
     },
 
     toggleSwap(forceState = null) {
@@ -257,10 +330,14 @@ export const WTText = {
 
             this.activeChannel.listenForWhisper('typing', (e) => {
                 // Client Event received! Fast path.
-                const { text } = e;
+                const { text, bin } = e;
                 this.theyLiveText = text;
+                this.theyLiveBin = bin;
                 this.theyState.currentHead = 0;
                 this.elements.theyTextarea.value = text;
+                
+                // Live Attachment Update
+                this.wtTheyAttach?.setFromRecord(bin?.hash, bin);
 
                 if (document.hidden) {
                     this.notify(partnerUid, text);
@@ -275,6 +352,7 @@ export const WTText = {
         this.theyState.currentHead = 0;
         this.theyRecords = [];
         this.theyLiveText = null;
+        this.theyLiveBin = null;
 
         this.unlockBoards();
 
@@ -351,12 +429,19 @@ export const WTText = {
         try {
             if (this.weState.isVirtual) {
                 this.elements.weTextarea.value = "";
+                this.currentBin = null;
+                this.wtWeAttach?.setFromRecord(null);
             } else {
                 const record = await WTDb.getRecord(
                     this.weState.branchId,
                     this.weState.currentHead
                 );
                 this.elements.weTextarea.value = record?.text || "";
+                
+                // Load Attachment
+                const bin = record?.bin || null;
+                this.currentBin = bin;
+                this.wtWeAttach?.setFromRecord(bin?.hash, bin);
             }
         } catch (err) {
             console.error("WE read error:", err);
@@ -373,15 +458,17 @@ export const WTText = {
         if (!this.currentConnection) return;
 
         let theyRecord = null;
+        let theyBin = null;
 
         if (this.theyState.currentHead === 0) {
             // Head 0: show live text if available, else newest committed
             if (this.theyLiveText !== null) {
                 this.elements.theyTextarea.value = this.theyLiveText;
-                return;
+                theyBin = this.theyLiveBin;
             } else {
                 theyRecord = this.theyRecords[this.theyRecords.length - 1];
                 this.elements.theyTextarea.value = theyRecord?.text || "";
+                theyBin = theyRecord?.bin || null;
             }
         } else {
             // Head N: committed history from theyRecords[]
@@ -389,7 +476,11 @@ export const WTText = {
             theyRecord = (idx >= 0 && idx < this.theyRecords.length)
                 ? this.theyRecords[idx] : null;
             this.elements.theyTextarea.value = theyRecord?.text || "";
+            theyBin = theyRecord?.bin || null;
         }
+
+        // Render Attachment
+        this.wtTheyAttach?.setFromRecord(theyBin?.hash, theyBin);
     },
 
     refreshTitles() {
@@ -442,7 +533,8 @@ export const WTText = {
         try {
             this.activeChannel.whisper('typing', {
                 text: text,
-                branch_id: this.currentConnection.partner_branch_id // Include context if needed
+                branch_id: this.currentConnection.partner_branch_id,
+                bin: this.currentBin // Sync attachment metadata immediately
             });
         } catch (e) {
             console.error("Whisper failed", e);
