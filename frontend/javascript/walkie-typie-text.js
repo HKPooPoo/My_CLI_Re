@@ -81,7 +81,7 @@ export const WTText = {
             dropOverlay: document.getElementById('wt-drop-overlay'),
             readOnly: false,
             onAttach: async (hash, meta) => {
-                if (!this.currentConnection) return;
+                if (!this.currentConnection) throw new Error("NO CONNECTION SELECTED");
 
                 const binData = { hash, ...meta };
                 this.currentBin = binData;
@@ -106,9 +106,12 @@ export const WTText = {
 
                 // 2. Broadcast Signal
                 this.broadcastSignal(this.elements.weTextarea.value);
+
+                // 3. Force Refresh to verify persistence
+                await this.refreshWE();
             },
             onDetach: async (hash) => {
-                if (!this.currentConnection) return;
+                if (!this.currentConnection) throw new Error("NO CONNECTION SELECTED");
 
                 this.currentBin = null;
 
@@ -373,6 +376,23 @@ export const WTText = {
     },
 
     /**
+     * Helper: Reconstruct bin object from backend flat structure
+     */
+    reconstructBin(r) {
+        if (!r.bin) return null;
+        // If r.bin is already an object (local check), return it
+        if (typeof r.bin === 'object') return r.bin;
+
+        // Otherwise, it's a hash string, and metadata is in r (from join)
+        return {
+            hash: r.bin,
+            name: r.file_name || 'unknown',
+            size: r.file_size || 0,
+            mime: r.file_mime || 'application/octet-stream'
+        };
+    },
+
+    /**
      * Sync WE side: Fetch my committed records from Postgres → merge into IndexedDB.
      * Purpose: Cross-device sync (if I committed from another device).
      */
@@ -386,8 +406,9 @@ export const WTText = {
                 // Server-authoritative: clear local + import server records
                 await WTDb.deleteBranchRecords(branchId);
                 for (const r of data.records) {
+                    const binObj = this.reconstructBin(r);
                     await WTDb.addRecordWithTimestamp(
-                        branchId, "WE", r.text || "", parseInt(r.timestamp), r.bin || null
+                        branchId, "WE", r.text || "", parseInt(r.timestamp), binObj
                     );
                 }
             }
@@ -409,7 +430,11 @@ export const WTText = {
                 this.currentConnection.partner_branch_id
             );
             // Records sorted oldest→newest from server (orderBy timestamp ASC)
-            this.theyRecords = data?.records || [];
+            // Transform bin data
+            this.theyRecords = (data?.records || []).map(r => ({
+                ...r,
+                bin: this.reconstructBin(r)
+            }));
         } catch (e) {
             console.warn("WTText: THEY Sync Failed", e);
             this.theyRecords = [];
@@ -424,6 +449,7 @@ export const WTText = {
      * WE display: Read from IndexedDB (same as Blackboard)
      */
     async refreshWE() {
+        // console.log("WTText: refreshWE called");
         if (!this.currentConnection) return;
 
         try {

@@ -12,6 +12,10 @@
 
 import { WTDb } from "./walkie-typie-db.js";
 import { WalkieTypieService } from "./services/walkie-typie-service.js";
+import { FileService } from "./services/file-service.js";
+import { BBMessage } from "./blackboard-msg.js";
+// Import db for direct operations in save() and commit()
+import db from "./indexedDB.js";
 
 export const WTVCS = {
     /**
@@ -127,15 +131,54 @@ export const WTVCS = {
             throw new Error("LOCAL DATA NOT FOUND OR EMPTY.");
         }
 
+        // --- 1. Prepare Uploads ---
+        // Iterate records, find attached files, and upload if needed.
+        const apiRecords = [];
+
+        for (const r of records) {
+            let binHash = null;
+
+            if (r.bin) {
+                // r.bin is object { hash, name, size, mime }
+                const hash = r.bin.hash;
+                binHash = hash;
+
+                // Check local blob
+                const localFile = await db.fileBlobs.get(hash);
+                if (localFile && localFile.blob) {
+                    // Upload (FileService handles exists check)
+                    try {
+                        BBMessage.info(`UPLOADING: ${r.bin.name || hash.substring(0, 8)}`);
+                        await FileService.upload(localFile.blob, hash);
+                    } catch (e) {
+                        console.error(`WT Commit: Upload failed for ${hash}`, e);
+                        // Continue? Or fail? Usually better to fail or warn.
+                        // Let's warn but try to commit text.
+                        BBMessage.error(`UPLOAD FAILED: ${hash.substring(0, 8)}`);
+                    }
+                } else {
+                    // File not in local blob store?
+                    // Maybe it was downloaded from server before?
+                    // Or maybe it's missing.
+                    console.warn(`WT Commit: Local file missing for hash ${hash}`);
+                }
+            }
+
+            // --- 2. Sanitize for API ---
+            // Replace 'bin' object with hash string
+            apiRecords.push({
+                ...r,
+                bin: binHash // String or null
+            });
+        }
+
+        // --- 3. Send to Server ---
         await WalkieTypieService.commitBoard({
             branchId: branchId,
             branchName: branch,
-            records: records
+            records: apiRecords
         });
 
         return true;
     }
 };
-
-// Import db for direct operations in save()
-import db from "./indexedDB.js";

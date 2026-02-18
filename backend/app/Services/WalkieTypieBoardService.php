@@ -5,6 +5,7 @@ namespace App\Services;
 use Illuminate\Support\Facades\DB;
 use App\Models\User;
 use App\Events\WalkieTypieSignal;
+use App\Services\FileService;
 
 class WalkieTypieBoardService
 {
@@ -129,8 +130,15 @@ class WalkieTypieBoardService
         }
 
         return DB::table('walkie_typie_boards')
+            ->leftJoin('files', 'walkie_typie_boards.bin', '=', 'files.hash')
             ->where('branch_id', $branchId)
             ->orderBy('timestamp', 'asc')
+            ->select(
+                'walkie_typie_boards.*',
+                'files.original_name as file_name',
+                'files.size as file_size',
+                'files.mime_type as file_mime'
+            )
             ->get();
     }
 

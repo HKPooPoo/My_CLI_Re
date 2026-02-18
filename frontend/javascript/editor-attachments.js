@@ -97,10 +97,12 @@ export const EditorAttachments = {
 
                     this.dropZone.addEventListener('drop', (e) => {
                         e.preventDefault();
+                        console.log("EditorAttachments: drop event", e);
                         this._dragCounter = 0;
                         this.dropOverlay?.classList.remove('active');
 
                         const files = e.dataTransfer?.files;
+                        console.log("EditorAttachments: dropped files", files);
                         if (files && files.length > 0) {
                             this.handleFile(files[0]);
                         }
@@ -133,61 +135,64 @@ export const EditorAttachments = {
              * Handle a single file: Hash -> IndexedDB -> Render.
              * @param {File} file
              */
-            async handleFile(file) {
-                if (this.currentHash) {
-                    this.detach(this.currentHash);
-                }
-
-                this._renderLoadingChip(file.name, file.size);
-
-                try {
-                    // 1. Compute Hash (Local)
-                    const hash = await FileService.computeHash(file);
-
-                    // 2. Store in IndexedDB (fileBlobs)
-                    // We try-catch put() to handle QuotaExceededError
-                    try {
-                        await db.fileBlobs.put({
-                            hash: hash,
-                            blob: file,
-                            name: file.name,
-                            type: file.type,
-                            size: file.size,
-                            status: 'local' // Needs sync
-                        });
-                    } catch (dbErr) {
-                        if (dbErr.name === 'QuotaExceededError') {
-                            alert("STORAGE FULL. CANNOT SAVE FILE LOCALLY.");
-                            this._clearChips();
-                            return;
-                        }
-                        throw dbErr;
-                    }
-
-                    this.currentHash = hash;
-
-                    // 3. Render Chip (Local)
-                    this._renderChip({
-                        hash: hash,
-                        name: file.name,
-                        size: file.size,
-                        mime: file.type,
-                        isLocal: true
-                    });
-
-                    this.onAttach(hash, {
-                        name: file.name,
-                        size: file.size,
-                        mime: file.type
-                    });
-
-                } catch (err) {
-                    console.error('File processing failed:', err);
-                    this._clearChips();
-                }
-            },
-
-            /**
+                        async handleFile(file) {
+                            console.log("EditorAttachments: handleFile started", file);
+                            if (this.currentHash) {
+                                this.detach(this.currentHash);
+                            }
+            
+                            this._renderLoadingChip(file.name, file.size);
+            
+                            try {
+                                // 1. Compute Hash (Local)
+                                const hash = await FileService.computeHash(file);
+                                console.log("EditorAttachments: computed hash", hash);
+            
+                                // 2. Store in IndexedDB (fileBlobs)
+                                // We try-catch put() to handle QuotaExceededError
+                                try {
+                                    await db.fileBlobs.put({
+                                        hash: hash,
+                                        blob: file,
+                                        name: file.name,
+                                        type: file.type,
+                                        size: file.size,
+                                        status: 'local' // Needs sync
+                                    });
+                                    console.log("EditorAttachments: saved to IDB");
+                                } catch (dbErr) {
+                                    if (dbErr.name === 'QuotaExceededError') {
+                                        alert("STORAGE FULL. CANNOT SAVE FILE LOCALLY.");
+                                        this._clearChips();
+                                        return;
+                                    }
+                                    throw dbErr;
+                                }
+            
+                                this.currentHash = hash;
+            
+                                // 3. Render Chip (Local)
+                                this._renderChip({
+                                    hash: hash,
+                                    name: file.name,
+                                    size: file.size,
+                                    mime: file.type,
+                                    isLocal: true
+                                });
+                                console.log("EditorAttachments: chip rendered");
+            
+                                this.onAttach(hash, {
+                                    name: file.name,
+                                    size: file.size,
+                                    mime: file.type
+                                });
+            
+                                            } catch (err) {
+                                                console.error('File processing failed:', err);
+                                                alert("ATTACH ERROR: " + (err.message || err));
+                                                this._clearChips();
+                                            }
+                                        },            /**
              * Detach a file.
              * @param {string} hash
              */
