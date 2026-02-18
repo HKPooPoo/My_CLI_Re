@@ -1,14 +1,20 @@
-const CACHE_NAME = 'blackboard-v3-dev-2026-02-18'; // Bump: file upload feature
+const CACHE_NAME = 'blackboard-v4-dev-2026-02-18-WT-Files'; // Bump: WT file upload fixes
 const ASSETS = [
   '/',
   '/index.html',
   '/style.css',
   '/stylesheets/editor-attachments.css',
+  '/stylesheets/walkie-typie.css',
   '/javascript/blackboard.js',
   '/javascript/editor-attachments.js',
   '/javascript/services/file-service.js',
   '/javascript/indexedDB.js',
   '/javascript/vendor/dexie.js',
+  '/javascript/walkie-typie-core.js',
+  '/javascript/walkie-typie-list.js',
+  '/javascript/walkie-typie-text.js',
+  '/javascript/walkie-typie-vcs.js',
+  '/javascript/walkie-typie-db.js',
   '/favicon.ico',
   '/manifest.json'
 ];

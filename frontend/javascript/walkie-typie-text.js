@@ -109,6 +109,9 @@ export const WTText = {
 
                 // 3. Force Refresh to verify persistence
                 await this.refreshWE();
+
+                // 4. Trigger Commit
+                this.triggerCommit(this.elements.weTextarea.value);
             },
             onDetach: async (hash) => {
                 if (!this.currentConnection) throw new Error("NO CONNECTION SELECTED");
@@ -125,6 +128,9 @@ export const WTText = {
 
                 // Broadcast Signal
                 this.broadcastSignal(this.elements.weTextarea.value);
+
+                // Trigger Commit
+                this.triggerCommit(this.elements.weTextarea.value);
             }
         });
 
@@ -523,6 +529,16 @@ export const WTText = {
     // =====================================================================
 
     /**
+     * Trigger a delayed commit (debounced).
+     */
+    triggerCommit(text) {
+        clearTimeout(this.commitTimer);
+        this.commitTimer = setTimeout(() => {
+            this.commitWE(text);
+        }, 2000);
+    },
+
+    /**
      * Mirrors Blackboard's input handler:
      * 200ms → WTVCS.save() (local) + signal (Whisper - instant)
      * 2s → commit (Postgres + last_signal)
@@ -544,11 +560,8 @@ export const WTText = {
             this.broadcastSignal(text);
         }, 50);
 
-        // 2s: Persistent commit to Postgres (also updates last_signal)
-        clearTimeout(this.commitTimer);
-        this.commitTimer = setTimeout(() => {
-            this.commitWE(text);
-        }, 2000);
+        // 2s: Persistent commit
+        this.triggerCommit(text);
     },
 
     async broadcastSignal(text) {
@@ -568,10 +581,13 @@ export const WTText = {
     },
 
     async commitWE(text) {
-        if (!this.currentConnection || !text?.trim()) return;
+        // Allow commit if text exists OR bin exists
+        const hasContent = (text && text.trim()) || this.currentBin;
+        if (!this.currentConnection || !hasContent) return;
+        
         try {
             // 先確保當前內容已存入 IndexedDB
-            await WTVCS.save(this.weState, text);
+            await WTVCS.save(this.weState, text || "");
             // 整批 commit（同 Blackboard 邏輯：從 IndexedDB 讀取全部 records 再上傳）
             await WTVCS.commit({
                 branchId: this.currentConnection.my_branch_id,
