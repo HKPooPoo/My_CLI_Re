@@ -69,3 +69,8 @@
 .page {
     z-index: 996;
 }
+
+/* editor-attachments.css */
+.drop-overlay {
+    z-index: 995;
+}

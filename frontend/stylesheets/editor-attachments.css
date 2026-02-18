@@ -1,0 +1,190 @@
+/**
+ * Editor Wrapper & File Attachment System
+ * =================================================================
+ * Shared styles for Blackboard and Walkie-Typie file attachment UI.
+ * Structure:
+ *   .editor-wrapper  (drop zone container)
+ *     .attachment-chips  (file chip display area)
+ *     textarea           (unchanged original textarea)
+ *     input[type=file]   (hidden, triggered by JS)
+ *     .drop-overlay      (drag-over visual feedback)
+ *
+ * Note: style.css sets all div to flex-column + position:relative.
+ *       This file builds on top of that without overriding.
+ * Note: page-blackboard-log.css has `.page > *` translateX offset.
+ *       editor-wrapper inherits this as the new direct child of .page.
+ * =================================================================
+ */
+
+/* --- Editor Wrapper (Drop Zone Container) --- */
+
+.editor-wrapper {
+    /* flex-direction: column is inherited from style.css div rule */
+    flex: 1;
+    min-height: 0;
+    /* Allow textarea inside to fill remaining space */
+}
+
+/* BB context: editor-wrapper is the direct child of .page,
+   so it inherits the .page > * translateX offset from page-blackboard-log.css.
+   The textarea inside should no longer be a direct child of .page. */
+
+/* --- Attachment Chips Area --- */
+
+.attachment-chips {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 0;
+    min-height: 0;
+    /* Hidden when empty — no space consumed */
+    display: none;
+}
+
+.attachment-chips.has-items {
+    /* JS toggles this class when chips exist */
+    display: flex;
+    padding: 8px;
+    border-bottom: 1px dashed var(--text-green);
+}
+
+/* Individual chip — JS will inject these */
+.attachment-chip {
+    flex-direction: row;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 8px;
+    border: 1px solid var(--text-green);
+    border-radius: calc(var(--border-radius) / 2);
+    font-size: calc(var(--font-size) * 0.85);
+    max-width: 200px;
+    overflow: hidden;
+    cursor: default;
+    transition: background var(--transition-normal),
+        box-shadow var(--transition-normal);
+}
+
+@media (hover: hover) {
+    .attachment-chip:hover {
+        background: rgba(50, 255, 50, 0.1);
+        box-shadow: 0 0 4px var(--text-green);
+    }
+}
+
+.attachment-chip-icon {
+    flex-shrink: 0;
+    font-size: calc(var(--font-size) * 1.1);
+}
+
+.attachment-chip-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex: 1;
+    min-width: 0;
+}
+
+.attachment-chip-size {
+    flex-shrink: 0;
+    color: var(--text-orange);
+    font-size: calc(var(--font-size) * 0.75);
+    text-shadow: var(--text-shadow-orange);
+}
+
+.attachment-chip-remove {
+    flex-shrink: 0;
+    width: 1.2em;
+    height: 1.2em;
+    padding: 0;
+    border: none;
+    cursor: pointer;
+    font-size: calc(var(--font-size) * 0.85);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color var(--transition-normal),
+        text-shadow var(--transition-normal);
+}
+
+@media (hover: hover) {
+    .attachment-chip-remove:hover {
+        color: var(--text-red);
+        text-shadow: var(--text-shadow-red);
+        background: transparent;
+        box-shadow: none;
+    }
+}
+
+/* Readonly chips (THEY side) — no remove button */
+.attachment-chips.readonly .attachment-chip-remove {
+    display: none;
+}
+
+/* --- Drop Overlay --- */
+
+.drop-overlay {
+    /* position: absolute is NOT set here because style.css div 
+       already sets position:relative on all divs. We override to absolute. */
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    align-items: center;
+    justify-content: center;
+    border: 2px dashed var(--text-green);
+    border-radius: var(--border-radius);
+    background: rgba(0, 17, 0, 0.85);
+    color: var(--text-green);
+    font-size: calc(var(--font-size) * 1.4);
+    font-weight: bold;
+    text-shadow: var(--text-shadow-green);
+    letter-spacing: 0.2em;
+    pointer-events: none;
+    /* Hidden by default — JS adds .active on dragover */
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity var(--transition-normal),
+        visibility var(--transition-normal);
+}
+
+.drop-overlay.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* Light theme adaptation */
+:root[data-theme="light"] .drop-overlay {
+    background: rgba(255, 255, 255, 0.9);
+    border-color: var(--text-green);
+}
+
+:root[data-theme="light"] .attachment-chips.has-items {
+    border-bottom-color: var(--text-green);
+}
+
+/* --- BB Context Specifics --- */
+
+/* In BB, the editor-wrapper is inside .page[data-page="blackboard-log"],
+   and the textarea inside uses #log-textarea which already has styles
+   in page-blackboard-log.css. No changes needed to those styles;
+   the textarea margin and font-size remain the same. */
+
+/* --- WT Context Specifics --- */
+
+/* In WT, editor-wrapper sits inside .walkie-typie-blackboard.
+   The textarea (#walkie-typie-we-blackboard) already has styles
+   in walkie-typie.css. editor-wrapper takes flex:1 (inherited above)
+   so it fills the walkie-typie-blackboard.
+
+   THEY side attachment-chips.readonly sits directly
+   inside .walkie-typie-blackboard (no wrapper needed) */
+
+.walkie-typie-blackboard>.attachment-chips {
+    /* WT THEY side: chips inside the blackboard panel but without wrapper */
+    margin: 0 4px;
+}
+
+.walkie-typie-blackboard>.attachment-chips.has-items {
+    padding: 6px;
+}

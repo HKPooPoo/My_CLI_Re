@@ -23,6 +23,7 @@
     <link rel="stylesheet" href="stylesheets/page-blackboard-vcs.css">
     <link rel="stylesheet" href="stylesheets/toast.css">
     <link rel="stylesheet" href="stylesheets/walkie-typie.css">
+    <link rel="stylesheet" href="stylesheets/editor-attachments.css">
     <!--注意@media放在尾！！！-->
     <link rel="stylesheet" href="stylesheets/@media.css">
     <link rel="stylesheet" href="stylesheets/layer.css">
@@ -153,7 +154,12 @@
                 <div class="branch-head">&#36;{branch_head}</div>
             </div>
             <div class="page can-push-pull have-feature show-branch" data-page="blackboard-log">
-                <textarea name="" id="log-textarea" placeholder="Enter..."></textarea>
+                <div class="editor-wrapper" id="bb-drop-zone">
+                    <div class="attachment-chips" id="bb-attachment-chips"></div>
+                    <textarea name="" id="log-textarea" placeholder="Enter..."></textarea>
+                    <input type="file" id="bb-file-input" multiple hidden accept="*/*">
+                    <div class="drop-overlay" id="bb-drop-overlay">DROP FILES HERE</div>
+                </div>
             </div>
             <!--try to use version control, instead of todo1 todo2 log1 log2...-->
             <!-- <div class="page can-push-pull" data-page="blackboard-todo">
@@ -321,9 +327,9 @@
                 <!-- <div class="walkie-typie-feature-container"> -->
                 <!-- </div> -->
                 <div class="walkie-typie-blackboard">
-                    <!--Need to replace by corresponding uid-->
                     <div class="walkie-typie-blackboard-they-title crt-text-orange">THEIR BLACKBOARD</div>
                     <button class="they-push-btn">PUSH</button>
+                    <div class="attachment-chips readonly" id="wt-they-attachment-chips"></div>
                     <textarea name="" id="walkie-typie-they-blackboard">
                     </textarea>
                     <button class="they-pull-btn">PULL</button>
@@ -332,8 +338,13 @@
                 <div class="walkie-typie-blackboard">
                     <div class="walkie-typie-blackboard-we-title crt-text-orange">OUR BLACKBOARD</div>
                     <button class="we-push-btn">PUSH</button>
-                    <textarea name="" id="walkie-typie-we-blackboard">
-                    </textarea>
+                    <div class="editor-wrapper" id="wt-drop-zone">
+                        <div class="attachment-chips" id="wt-we-attachment-chips"></div>
+                        <textarea name="" id="walkie-typie-we-blackboard">
+                        </textarea>
+                        <input type="file" id="wt-file-input" multiple hidden accept="*/*">
+                        <div class="drop-overlay" id="wt-drop-overlay">DROP FILES HERE</div>
+                    </div>
                     <button class="we-pull-btn">PULL</button>
                 </div>
             </div>
