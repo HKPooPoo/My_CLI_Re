@@ -309,7 +309,7 @@ export const WTText = {
                 await WTDb.deleteBranchRecords(branchId);
                 for (const r of data.records) {
                     await WTDb.addRecordWithTimestamp(
-                        branchId, "WE", r.text || "", parseInt(r.timestamp)
+                        branchId, "WE", r.text || "", parseInt(r.timestamp), r.bin || null
                     );
                 }
             }
@@ -372,21 +372,23 @@ export const WTText = {
     refreshTHEY() {
         if (!this.currentConnection) return;
 
+        let theyRecord = null;
+
         if (this.theyState.currentHead === 0) {
             // Head 0: show live text if available, else newest committed
             if (this.theyLiveText !== null) {
                 this.elements.theyTextarea.value = this.theyLiveText;
+                return;
             } else {
-                const last = this.theyRecords[this.theyRecords.length - 1];
-                this.elements.theyTextarea.value = last?.text || "";
+                theyRecord = this.theyRecords[this.theyRecords.length - 1];
+                this.elements.theyTextarea.value = theyRecord?.text || "";
             }
         } else {
             // Head N: committed history from theyRecords[]
             const idx = this.theyRecords.length - 1 - this.theyState.currentHead;
-            this.elements.theyTextarea.value =
-                (idx >= 0 && idx < this.theyRecords.length)
-                    ? (this.theyRecords[idx].text || "")
-                    : "";
+            theyRecord = (idx >= 0 && idx < this.theyRecords.length)
+                ? this.theyRecords[idx] : null;
+            this.elements.theyTextarea.value = theyRecord?.text || "";
         }
     },
 

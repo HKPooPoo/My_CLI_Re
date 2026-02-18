@@ -35,10 +35,8 @@ export const WTList = {
 
     init() {
         this.bindEvents();
-        // [Auth Guard]: Initial fetch only if logged in
-        if (localStorage.getItem("currentUser")) {
-            this.fetchConnections();
-        }
+        // [Optimization]: 移除立即請求，改由 AuthManager 初始化完畢後觸發 "blackboard:authUpdated" 時執行
+        // 這能確保 Session Cookie 已準備就緒，避免 401 Unauthorized 錯誤
     },
 
     bindEvents() {

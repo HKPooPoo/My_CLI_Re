@@ -8,6 +8,13 @@ use App\Events\WalkieTypieSignal;
 
 class WalkieTypieBoardService
 {
+    protected FileService $fileService;
+
+    public function __construct(FileService $fileService)
+    {
+        $this->fileService = $fileService;
+    }
+
     /**
      * Commit board records to walkie_typie_boards table.
      * Same as BlackboardService::commit(): delete-then-upsert to keep history in sync.
@@ -25,10 +32,16 @@ class WalkieTypieBoardService
                 ->delete();
 
             $insertData = [];
+            $fileHashes = [];
             foreach ($records as $record) {
                 $text = $record['text'] ?? '';
                 if (trim($text) === "" && empty($record['bin'])) {
                     continue;
+                }
+
+                $bin = $record['bin'] ?? null;
+                if ($bin) {
+                    $fileHashes[] = $bin;
                 }
 
                 $insertData[] = [
@@ -37,7 +50,7 @@ class WalkieTypieBoardService
                     'branch_name' => $branchName,
                     'timestamp' => $record['timestamp'],
                     'text' => $text,
-                    'bin' => $record['bin'] ?? null,
+                    'bin' => $bin,
                     'created_at' => now(),
                     'updated_at' => now(),
                 ];
@@ -49,6 +62,11 @@ class WalkieTypieBoardService
                     ['owner', 'branch_id', 'timestamp'],
                     ['branch_name', 'text', 'bin', 'updated_at']
                 );
+            }
+
+            // Mark referenced files as committed
+            foreach ($fileHashes as $hash) {
+                $this->fileService->markCommitted($hash);
             }
 
             // Broadcast to partner if connection exists

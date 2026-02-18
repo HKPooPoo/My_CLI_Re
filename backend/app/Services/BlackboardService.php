@@ -8,6 +8,13 @@ use App\Models\User;
 
 class BlackboardService
 {
+    protected FileService $fileService;
+
+    public function __construct(FileService $fileService)
+    {
+        $this->fileService = $fileService;
+    }
+
     public function commit(User $user, string $branchId, string $branchName, array $records)
     {
         return DB::transaction(function () use ($user, $branchId, $branchName, $records) {
@@ -20,10 +27,16 @@ class BlackboardService
                 ->delete();
 
             $insertData = [];
+            $fileHashes = [];
             foreach ($records as $record) {
                 $text = $record['text'] ?? '';
                 if (trim($text) === "" && empty($record['bin'])) {
                     continue;
+                }
+
+                $bin = $record['bin'] ?? null;
+                if ($bin) {
+                    $fileHashes[] = $bin;
                 }
 
                 $insertData[] = [
@@ -32,7 +45,7 @@ class BlackboardService
                     'branch_name' => $branchName,
                     'timestamp' => $record['timestamp'],
                     'text' => $text,
-                    'bin' => $record['bin'] ?? null,
+                    'bin' => $bin,
                     'created_at' => now(),
                     'updated_at' => now(),
                 ];
@@ -44,6 +57,11 @@ class BlackboardService
                     ['owner', 'branch_id', 'timestamp'],
                     ['branch_name', 'text', 'bin', 'updated_at']
                 );
+            }
+
+            // Mark referenced files as committed
+            foreach ($fileHashes as $hash) {
+                $this->fileService->markCommitted($hash);
             }
 
             Cache::forget("user:{$user->uid}:branches");
@@ -76,9 +94,16 @@ class BlackboardService
         }
 
         return DB::table('blackboards')
-            ->where('branch_id', $branchId)
-            ->where('owner', $user->uid)
-            ->orderBy('timestamp', 'asc')
+            ->leftJoin('files', 'blackboards.bin', '=', 'files.hash')
+            ->where('blackboards.branch_id', $branchId)
+            ->where('blackboards.owner', $user->uid)
+            ->orderBy('blackboards.timestamp', 'asc')
+            ->select(
+                'blackboards.*',
+                'files.original_name as file_name',
+                'files.size as file_size',
+                'files.mime_type as file_mime'
+            )
             ->get();
     }
 

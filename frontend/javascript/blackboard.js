@@ -20,6 +20,7 @@ import db from "./indexedDB.js"
 import { MultiStepButton } from "./multiStepButton.js";
 import { BlackboardService } from "./services/blackboard-service.js";
 import { playAudio } from "./audio.js";
+import { EditorAttachments } from "./editor-attachments.js";
 
 // --- 全域狀態聲明 ---
 const state = {
@@ -33,6 +34,33 @@ const state = {
 
 let debounceTimer = null;
 let isInitializing = false;
+
+// --- File Attachment Instance ---
+const bbAttach = EditorAttachments.create({
+    dropZone: document.getElementById('bb-drop-zone'),
+    fileInput: document.getElementById('bb-file-input'),
+    chipsContainer: document.getElementById('bb-attachment-chips'),
+    dropOverlay: document.getElementById('bb-drop-overlay'),
+    onAttach: async (hash, meta) => {
+        // Immediately persist the attachment to the current record
+        const entry = await BBCore.getRecord(state.owner, state.branchId, state.currentHead);
+        if (entry) {
+            // [Meta]: Store full object in bin for offline hint
+            const binData = { hash, ...meta };
+            await db.blackboard.update([entry.owner, entry.branchId, entry.timestamp], { bin: binData });
+        }
+    },
+    onDetach: async (hash) => {
+        // Clear the bin reference from the current record
+        const entry = await BBCore.getRecord(state.owner, state.branchId, state.currentHead);
+        // Handle bin as object or string
+        const currentHash = (entry && typeof entry.bin === 'object') ? entry.bin.hash : entry?.bin;
+        
+        if (entry && currentHash === hash) {
+            await db.blackboard.update([entry.owner, entry.branchId, entry.timestamp], { bin: null });
+        }
+    },
+});
 
 /**
  * 系統初始化
@@ -85,12 +113,21 @@ async function syncView() {
     if (state.isVirtual) {
         BBUI.setTextarea("");
         BBUI.updateIndicators(state.branch || "NAMELESS_BRANCH", "NEW", false);
+        bbAttach?.clear();
         return;
     }
 
     const entry = await BBCore.getRecord(state.owner, state.branchId, state.currentHead);
     BBUI.setTextarea(entry?.text ?? "");
     BBUI.updateIndicators(state.branch || "NAMELESS_BRANCH", state.currentHead, true);
+
+    // Sync attachment chip display
+    // Handle both string hash (legacy) and object meta (new)
+    const binData = entry?.bin;
+    const hash = (typeof binData === 'object') ? binData?.hash : binData;
+    const hint = (typeof binData === 'object') ? binData : null;
+
+    bbAttach?.setFromRecord(hash || null, hint);
 }
 
 /**

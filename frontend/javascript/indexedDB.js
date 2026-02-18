@@ -54,5 +54,16 @@ db.version(10).stores({
     walkieTypie: '[branchId+timestamp], branchId, branch'
 });
 
+db.version(11).stores({
+    /**
+     * V11: 新增 fileBlobs 用於儲存二進制檔案 (Local-First)
+     * hash: SHA-256 雜湊值 (Primary Key)
+     * 內容包含: blob, originalName, mimeType, size
+     */
+    blackboard: '[owner+branchId+timestamp], owner, branchId, [branchId+timestamp]',
+    walkieTypie: '[branchId+timestamp], branchId, branch',
+    fileBlobs: 'hash'
+});
+
 export default db;
 export { Dexie };

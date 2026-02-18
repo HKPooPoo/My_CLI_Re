@@ -26,7 +26,8 @@ WORKDIR /var/www/html
 # RUN composer dump-autoload --optimize
 
 # Set permissions for Laravel storage and cache
-RUN mkdir -p /var/www/html/storage /var/www/html/bootstrap/cache \
+RUN mkdir -p /var/www/html/storage/app/private/files \
+    /var/www/html/storage /var/www/html/bootstrap/cache \
     && chown -R www-data:www-data /var/www/html
 
 # Ensure PHP-FPM listens on port 9000

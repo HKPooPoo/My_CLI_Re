@@ -98,5 +98,9 @@ document.getElementById("theme-change-btn").addEventListener("click", () => {
 // --- 初始化啟動 ---
 updateLoginStatus();
 replaceCrtTextColorBy("crt-text-orange"); // 最初顯示為 orange (CONNECTING...)
-updateDatabaseStatus();
-setInterval(updateDatabaseStatus, 1000); // 每  秒檢索一次連線狀態
+
+// [Optimization]: 延遲首次檢測，避免頁面加載時的 NetworkError
+setTimeout(() => {
+    updateDatabaseStatus();
+    setInterval(updateDatabaseStatus, 2000); // 放寬輪詢間隔至 2 秒
+}, 2000);

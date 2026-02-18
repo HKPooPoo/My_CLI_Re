@@ -50,13 +50,13 @@ export const WTDb = {
     /**
      * 新增一筆紀錄 (保留原始 timestamp，用於後端同步匯入)
      */
-    async addRecordWithTimestamp(branchId, branch, text, timestamp) {
+    async addRecordWithTimestamp(branchId, branch, text, timestamp, bin = null) {
         return await db.walkieTypie.put({
             branchId,
             branch,
             timestamp,
             text,
-            bin: null
+            bin
         });
     },
 
@@ -77,6 +77,13 @@ export const WTDb = {
         });
 
         return newTimestamp;
+    },
+
+    /**
+     * 更新紀錄的 bin 欄位 (檔案 hash)
+     */
+    async updateBin(branchId, timestamp, hash) {
+        await db.walkieTypie.update([branchId, timestamp], { bin: hash });
     },
 
     /**
@@ -120,7 +127,7 @@ export const WTDb = {
         // 刪除空值紀錄
         const emptyKeys = await db.walkieTypie.where('[branchId+timestamp]')
             .between([branchId, Dexie.minKey], [branchId, Dexie.maxKey])
-            .filter(item => !item.text || item.text.trim() === "")
+            .filter(item => (!item.text || item.text.trim() === "") && !item.bin)
             .primaryKeys();
 
         if (emptyKeys.length > 0) {

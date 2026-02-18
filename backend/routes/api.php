@@ -6,6 +6,7 @@ use App\Http\Controllers\StatusController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BlackboardController;
 use App\Http\Controllers\WalkieTypieController;
+use App\Http\Controllers\FileController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Broadcast;
 
@@ -57,4 +58,13 @@ Route::prefix('walkie-typie')->group(function () {
     Route::post('/boards/commit', [WalkieTypieController::class, 'commitBoard']);
     Route::get('/boards/{branchId}', [WalkieTypieController::class, 'fetchBoardRecords']);
 });
+
+// File Upload & Download
+Route::prefix('files')->group(function () {
+    Route::post('/', [FileController::class, 'upload']);
+    Route::get('/{hash}', [FileController::class, 'download']);
+    Route::get('/{hash}/meta', [FileController::class, 'meta']);
+    Route::get('/{hash}/exists', [FileController::class, 'exists']);
+});
+
 

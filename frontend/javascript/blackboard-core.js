@@ -64,9 +64,9 @@ export const BBCore = {
 
         // 刪除舊紀錄
         await db.blackboard.delete([oldRecord.owner, branchId, oldTimestamp]);
-        
+
         const newTimestamp = Date.now();
-        
+
         // 保持原始 owner 標籤，但如果原本是 [synced]，則改為 [asynced]
         // 這確保了它依然不等於 "local"，登出時會被抹除
         let finalOwner = oldRecord.owner;
@@ -80,7 +80,7 @@ export const BBCore = {
             text: text,
             timestamp: newTimestamp
         });
-        
+
         return newTimestamp;
     },
 
@@ -281,9 +281,9 @@ export const BBCore = {
 
         // 1. 刪除空值紀錄 (text 為空或全空白)
         const emptyKeys = await collection
-            .filter(item => !item.text || item.text.trim() === "")
+            .filter(item => (!item.text || item.text.trim() === "") && !item.bin)
             .primaryKeys();
-        
+
         if (emptyKeys.length > 0) {
             await db.blackboard.bulkDelete(emptyKeys);
         }

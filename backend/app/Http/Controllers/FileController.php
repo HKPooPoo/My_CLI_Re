@@ -1,0 +1,98 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Services\FileService;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+
+class FileController extends Controller
+{
+    protected FileService $fileService;
+
+    public function __construct(FileService $fileService)
+    {
+        $this->fileService = $fileService;
+    }
+
+    /**
+     * Upload a file. Returns the file hash and metadata.
+     * POST /api/files  (multipart/form-data)
+     * Auth: optional — guest uploads use 'guest' as owner_uid.
+     */
+    public function upload(Request $request)
+    {
+        $request->validate([
+            'file' => 'required|file',
+        ]);
+
+        $user = Auth::user();
+        $ownerUid = $user ? $user->uid : 'guest';
+
+        $uploadedFile = $request->file('file');
+
+        $file = $this->fileService->upload($uploadedFile, $ownerUid);
+
+        return response()->json([
+            'hash' => $file->hash,
+            'name' => $file->original_name,
+            'mime' => $file->mime_type,
+            'size' => $file->size,
+        ]);
+    }
+
+    /**
+     * Download / stream a file by hash.
+     * GET /api/files/{hash}
+     * Auth: none — the SHA-256 hash itself is the access token.
+     */
+    public function download(string $hash)
+    {
+        $file = $this->fileService->getByHash($hash);
+        if (!$file) {
+            return response()->json(['message' => 'FILE NOT FOUND'], 404);
+        }
+
+        $fullPath = $this->fileService->getFullPath($file);
+        if (!$fullPath) {
+            return response()->json(['message' => 'FILE MISSING FROM DISK'], 404);
+        }
+
+        return response()->download(
+            $fullPath,
+            $file->original_name,
+            ['Content-Type' => $file->mime_type]
+        );
+    }
+
+    /**
+     * Check if a file exists by hash.
+     * GET /api/files/{hash}/exists
+     */
+    public function exists(string $hash)
+    {
+        $file = $this->fileService->getByHash($hash);
+        return response()->json(['exists' => (bool)$file]);
+    }
+
+    /**
+     * Get file metadata by hash (without downloading the content).
+     * GET /api/files/{hash}/meta
+     * Auth: none.
+     */
+    public function meta(string $hash)
+    {
+        $file = $this->fileService->getByHash($hash);
+        if (!$file) {
+            return response()->json(['message' => 'FILE NOT FOUND'], 404);
+        }
+
+        return response()->json([
+            'hash' => $file->hash,
+            'name' => $file->original_name,
+            'mime' => $file->mime_type,
+            'size' => $file->size,
+            'status' => $file->status,
+        ]);
+    }
+}

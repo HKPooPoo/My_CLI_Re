@@ -2,6 +2,7 @@ import { BBCore } from "./blackboard-core.js";
 import { BBMessage } from "./blackboard-msg.js";
 import db from "./indexedDB.js";
 import { BlackboardService } from "./services/blackboard-service.js";
+import { FileService } from "./services/file-service.js";
 
 /**
  * Blackboard 版本控制邏輯層 (大腦)
@@ -89,7 +90,7 @@ export const BBVCS = {
             if (text && text.trim()) {
                 // 新增紀錄到 DB (這會成為新的 Head 0)
                 await BBCore.addRecord(state.owner, state.branchId, state.branch, text);
-                
+
                 // 解除虛擬狀態
                 state.isVirtual = false;
                 state.currentHead = 0;
@@ -102,14 +103,14 @@ export const BBVCS = {
 
         // 標準存檔邏輯
         const entry = await BBCore.getRecord(state.owner, state.branchId, state.currentHead);
-        
+
         if (entry) {
             if (entry.text !== text) {
                 // 如果我們修改的是歷史節點 (Head > 0)
                 if (state.currentHead > 0) {
                     // 檢查當前的 Head 0 是否為空，是的話就刪掉它避免廢頁
                     const head0 = await BBCore.getRecord(state.owner, state.branchId, 0);
-                    if (head0 && (!head0.text || head0.text.trim() === "")) {
+                    if (head0 && (!head0.text || head0.text.trim() === "") && !head0.bin) {
                         await db.blackboard.delete([head0.owner, head0.branchId, head0.timestamp]);
                     }
                 }
@@ -144,18 +145,53 @@ export const BBVCS = {
         let records = await BBCore.getAllRecordsForBranch("local", branchId);
 
         // [Fix]: 再次過濾空白紀錄，確保不提交空資料
-        records = records.filter(r => r.text && r.text.trim() !== "");
+        records = records.filter(r => (r.text && r.text.trim() !== "") || r.bin);
 
         if (records.length === 0) {
             throw new Error("LOCAL DATA NOT FOUND OR EMPTY. CHECKOUT FIRST.");
         }
 
+        // 1.5 [File Sync]: Upload pending files first
+        const fileUploadPromises = records
+            .filter(r => r.bin)
+            .map(async (r) => {
+                const hash = typeof r.bin === 'object' ? r.bin.hash : r.bin;
+                try {
+                    // Check if file exists on server
+                    const exists = await FileService.exists(hash);
+                    if (exists) return;
+
+                    // If not, fetch from local DB and upload
+                    const fileData = await db.fileBlobs.get(hash);
+                    if (!fileData || !fileData.blob) {
+                        console.warn(`Local file missing for hash ${hash}, skipping upload.`);
+                        return;
+                    }
+
+                    await FileService.upload(fileData.blob);
+                } catch (err) {
+                    console.error(`Failed to sync file ${hash}:`, err);
+                    throw new Error(`FILE SYNC FAILED: ${hash.substring(0, 8)}...`);
+                }
+            });
+
+        if (fileUploadPromises.length > 0) {
+            BBMessage.info(`SYNCING ${fileUploadPromises.length} FILES...`);
+            await Promise.all(fileUploadPromises);
+        }
+
         // 2. 上傳至伺服器
         try {
+            // [Fix]: Ensure bin is sent as hash string, not object
+            const payloadRecords = records.map(r => ({
+                ...r,
+                bin: typeof r.bin === 'object' ? r.bin.hash : r.bin
+            }));
+
             await BlackboardService.commit({
                 branchId: branchId,
                 branchName: branch,
-                records: records
+                records: payloadRecords
             });
 
             // Commit 成功後，將本地紀錄標記為 Synced 狀態
@@ -178,23 +214,36 @@ export const BBVCS = {
         // 1. 如果目標是雲端分支，不論本地有無資料都先進行同步 (確保最新)
         if (targetOwner !== "local") {
             BBMessage.info("SYNCING BRANCH DATA FROM CLOUD...");
-            
+
             try {
                 const data = await BlackboardService.fetchBranchDetails(targetBranchId);
 
                 // 獲取當前 UID
                 const currentUser = localStorage.getItem("currentUser") || "unknown";
-                
+
                 // 轉換格式並存入本地，使用特殊 owner 標籤以支援登出抹除
                 // 格式：local, online/uid [synced]
-                const downloadRecords = data.records.map(r => ({
-                    owner: `local, online/${r.owner} [synced]`, 
-                    branchId: parseInt(r.branch_id),
-                    branch: r.branch_name,
-                    timestamp: parseInt(r.timestamp),
-                    text: r.text,
-                    bin: r.bin
-                }));
+                const downloadRecords = data.records.map(r => {
+                    // [File Meta]: Construct bin object if file exists
+                    let binData = r.bin;
+                    if (r.bin && r.file_name) {
+                        binData = {
+                            hash: r.bin,
+                            name: r.file_name,
+                            size: r.file_size,
+                            mime: r.file_mime
+                        };
+                    }
+
+                    return {
+                        owner: `local, online/${r.owner} [synced]`,
+                        branchId: parseInt(r.branch_id),
+                        branch: r.branch_name,
+                        timestamp: parseInt(r.timestamp),
+                        text: r.text,
+                        bin: binData
+                    };
+                });
 
                 // 使用 bulkPut 強制覆蓋本地舊有的同 ID/timestamp 紀錄
                 await db.blackboard.bulkPut(downloadRecords);

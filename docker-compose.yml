@@ -16,6 +16,8 @@ services:
     container_name: my-cli-api
     volumes:
       - ./backend:/var/www/html
+      - file-storage:/var/www/html/storage/app/private/files
+      - ./docker/php/uploads.ini:/usr/local/etc/php/conf.d/uploads.ini:ro
     environment:
       APP_ENV: local
       APP_DEBUG: "true"
@@ -172,3 +174,4 @@ volumes:
   db-data:
   pgadmin-data:
   redis-data:
+  file-storage:

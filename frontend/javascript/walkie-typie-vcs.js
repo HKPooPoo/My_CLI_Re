@@ -94,7 +94,7 @@ export const WTVCS = {
                 // 如果在歷史頁面編輯，檢查並清除空白的 Head 0
                 if (state.currentHead > 0) {
                     const head0 = await WTDb.getRecord(state.branchId, 0);
-                    if (head0 && (!head0.text || head0.text.trim() === "")) {
+                    if (head0 && (!head0.text || head0.text.trim() === "") && !head0.bin) {
                         await db.walkieTypie.delete([head0.branchId, head0.timestamp]);
                     }
                 }
@@ -121,7 +121,7 @@ export const WTVCS = {
         await WTDb.scrubBranch(branchId, 10);
 
         let records = await WTDb.getAllRecordsForBranch(branchId);
-        records = records.filter(r => r.text && r.text.trim() !== "");
+        records = records.filter(r => (r.text && r.text.trim() !== "") || r.bin);
 
         if (records.length === 0) {
             throw new Error("LOCAL DATA NOT FOUND OR EMPTY.");
