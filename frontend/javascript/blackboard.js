@@ -135,71 +135,83 @@ async function syncView() {
  * 步驟：1. 抓取本地分支 2. 抓取遠端分支 3. 透過 Map 進行 ID 合併 4. 判斷 IsDirty 狀態 5. 排序並渲染
  */
 async function updateBranchList() {
-    const localBranches = await BBCore.getAllBranches("local");
-    const loggedInUser = localStorage.getItem("currentUser");
-    const branchMap = new Map();
+    try {
+        const localBranches = await BBCore.getAllBranches("local");
+        const loggedInUser = localStorage.getItem("currentUser");
+        const branchMap = new Map();
 
-    // 處理本地數據
-    localBranches.forEach(b => {
-        branchMap.set(b.id, {
-            id: b.id,
-            name: b.name,
-            owner: "local",
-            lastUpdate: Number(b.lastUpdate),
-            displayTime: getHKTTimestamp(b.id),
-            isLocal: true,
-            isServer: false,
-            isDirty: false,
-            serverOwner: ""
-        });
-    });
+        // 處理本地數據
+        if (localBranches && Array.isArray(localBranches)) {
+            localBranches.forEach(b => {
+                branchMap.set(b.id, {
+                    id: b.id,
+                    name: b.name,
+                    owner: "local",
+                    lastUpdate: Number(b.lastUpdate),
+                    displayTime: getHKTTimestamp(b.id),
+                    isLocal: true,
+                    isServer: false,
+                    isDirty: false,
+                    serverOwner: ""
+                });
+            });
+        }
 
-    // 處理雲端數據 (若已登入)
-    if (loggedInUser) {
-        try {
-            const data = await BlackboardService.fetchBranches();
+        // 處理雲端數據 (若已登入)
+        if (loggedInUser) {
+            try {
+                const data = await BlackboardService.fetchBranches();
 
-            data.branches.forEach(sb => {
-                const sid = parseInt(sb.branch_id);
-                const serverLastUpdate = Number(sb.last_update);
-                const existing = branchMap.get(sid);
+                if (data && Array.isArray(data.branches)) {
+                    data.branches.forEach(sb => {
+                        const sid = parseInt(sb.branch_id);
+                        const serverLastUpdate = Number(sb.last_update);
+                        const existing = branchMap.get(sid);
 
-                if (existing) {
-                    existing.isServer = true;
-                    existing.serverOwner = sb.owner;
-                    // 無腦比對：只要時間戳不一致，就是 asynced
-                    existing.isDirty = (serverLastUpdate !== existing.lastUpdate);
-                } else {
-                    branchMap.set(sid, {
-                        id: sid,
-                        name: sb.branch_name,
-                        owner: "local", // 即使僅在雲端，為了 UI 統一也設為 local
-                        lastUpdate: serverLastUpdate,
-                        displayTime: getHKTTimestamp(sid),
-                        isLocal: false,
-                        isServer: true,
-                        isDirty: true,
-                        serverOwner: sb.owner
+                        if (existing) {
+                            existing.isServer = true;
+                            existing.serverOwner = sb.owner;
+                            // 無腦比對：只要時間戳不一致，就是 asynced
+                            existing.isDirty = (serverLastUpdate !== existing.lastUpdate);
+                        } else {
+                            branchMap.set(sid, {
+                                id: sid,
+                                name: sb.branch_name,
+                                owner: "local", // 即使僅在雲端，為了 UI 統一也設為 local
+                                lastUpdate: serverLastUpdate,
+                                displayTime: getHKTTimestamp(sid),
+                                isLocal: false,
+                                isServer: true,
+                                isDirty: true,
+                                serverOwner: sb.owner
+                            });
+                        }
                     });
                 }
-            });
-        } catch (e) {
-            console.error("FAILED TO LOAD CLOUD BRANCHES", e);
+            } catch (e) {
+                console.error("FAILED TO LOAD CLOUD BRANCHES", e);
+            }
         }
+
+        const combinedBranches = Array.from(branchMap.values());
+
+        // [Fix]: 移除將當前分支強制置頂的排序邏輯，僅依時間排序
+        combinedBranches.sort((a, b) => {
+            return b.lastUpdate - a.lastUpdate;
+        });
+
+        // [Fix]: 嘗試保留當前選中的分支，若無 (首次加載) 則可考慮預設為當前分支
+        const currentSelection = getSelectedBranchInfo();
+        const targetSelectionId = currentSelection ? currentSelection.id : state.branchId;
+
+        BBUI.renderBranchList(combinedBranches, targetSelectionId, state.owner, state.branchId);
+
+    } catch (criticalError) {
+        console.error("CRITICAL: Failed to update branch list", criticalError);
+        // Fallback: render empty to avoid stuck UI, or try to render what we have?
+        // If we are here, likely branchMap construction failed. 
+        // We can't do much but log.
     }
-
-    const combinedBranches = Array.from(branchMap.values());
-
-    // [Fix]: 移除將當前分支強制置頂的排序邏輯，僅依時間排序
-    combinedBranches.sort((a, b) => {
-        return b.lastUpdate - a.lastUpdate;
-    });
-
-    // [Fix]: 嘗試保留當前選中的分支，若無 (首次加載) 則可考慮預設為當前分支
-    const currentSelection = getSelectedBranchInfo();
-    const targetSelectionId = currentSelection ? currentSelection.id : state.branchId;
-
-    BBUI.renderBranchList(combinedBranches, targetSelectionId, state.owner, state.branchId);
 }
 
 /**
@@ -255,7 +267,7 @@ if (BBUI.elements.branchBtn) {
             const selected = getSelectedBranchInfo();
             if (!selected) return;
 
-            const msg = BBMessage.info("FORK INITIATED...");
+            const msg = BBMessage.info("FORKING...");
             try {
                 // 如果 Fork 的是對象是當前編輯的分支，先存檔
                 if (selected.id === state.branchId) {
@@ -270,12 +282,13 @@ if (BBUI.elements.branchBtn) {
                 // [Fix]: Fork 後不自動切換，停留在當前分支
                 // 僅更新列表以顯示新分支
 
-                msg.update("FORK COMPLETE.");
+                msg.update("FORK COMPLETE");
                 // await syncView(); // 不需要同步視圖，因為沒切換
                 await updateBranchList();
             } catch (e) {
+                console.error("FORK ERROR:", e);
                 msg.close();
-                BBMessage.error("FORK FAILED.");
+                BBMessage.error("ERROR: FORK FAILED");
             }
         }
     });
@@ -291,11 +304,11 @@ if (BBUI.elements.commitBtn) {
 
             // [Git Logic]: 必須先有本地資料才能 Commit
             if (!selected.isLocal) {
-                BBMessage.error("ERROR: LOCAL SYNC REQUIRED. PULL FIRST.");
+                BBMessage.error("ERROR: PULL REQUIRED");
                 return;
             }
 
-            const msg = BBMessage.info("SYNCING TO CLOUD...");
+            const msg = BBMessage.info("SYNCING...");
             try {
                 // 如果 Commit 的是對象是當前編輯的分支，先存檔
                 if (selected.id === state.branchId) {
@@ -303,11 +316,12 @@ if (BBUI.elements.commitBtn) {
                 }
 
                 await BBVCS.commit({ branchId: selected.id, branch: selected.name });
-                msg.update("SYNC COMPLETE.");
+                msg.update("SYNC COMPLETE");
                 await updateBranchList();
             } catch (e) {
+                console.error("SYNC ERROR:", e);
                 msg.close();
-                BBMessage.error(e.message || "SYNC FAILED.");
+                BBMessage.error("ERROR: SYNC FAILED");
             }
         }
     });
@@ -321,21 +335,22 @@ if (BBUI.elements.checkoutBtn) {
             const selected = getSelectedBranchInfo();
             if (!selected) return;
 
-            const msg = BBMessage.info("LOADING BRANCH...");
+            const msg = BBMessage.info("LOADING...");
             try {
                 // [Fix]: 如果本地已存在，優先使用本地 (不強制同步)；僅在純雲端分支時才下載
                 const targetOwner = selected.isLocal ? "local" : "remote";
                 await BBVCS.checkout(state, selected.id, targetOwner);
 
-                msg.update("BRANCH READY.");
+                msg.update("LOAD COMPLETE");
                 await syncView();
                 // [Fix]: 切換後，列表選取狀態應跟隨切換到新分支 (可選，視 UX 需求而定，這裡保持自動更新)
                 // 由於 updateBranchList 會抓取 DOM 選取狀態，這裡不需要額外操作，
                 // 但為了讓使用者知道切換成功，清單刷新後選取項通常會停留在該分支上。
                 await updateBranchList();
             } catch (e) {
+                console.error("LOAD ERROR:", e);
                 msg.close();
-                BBMessage.error("LOAD FAILED.");
+                BBMessage.error("ERROR: LOAD FAILED");
             }
         }
     });
@@ -405,35 +420,36 @@ if (dropBtnEl) {
 
         try {
             if (currentDropAction === "clean") {
-                BBMessage.info("CLEANING HISTORY...");
+                BBMessage.info("CLEANING...");
                 await BBCore.clearBranchRecords("local", selected.id);
                 // 若清理的是當前分支，需重置 Head
                 if (selected.id === state.branchId) {
                     state.currentHead = 0;
                     await syncView();
                 }
-                BBMessage.success("HISTORY CLEARED");
+                BBMessage.success("CLEAN COMPLETE");
             }
             else if (currentDropAction === "drop") {
-                BBMessage.info("DROPPING FROM CLOUD...");
+                BBMessage.info("DROPPING...");
                 await BlackboardService.deleteBranch(selected.id);
-                BBMessage.success("CLOUD BRANCH DROPPED");
+                BBMessage.success("DROP COMPLETE");
             }
             else if (currentDropAction === "delete") {
-                BBMessage.info("DELETING LOCAL...");
+                BBMessage.info("DELETING...");
                 await BBCore.deleteLocalBranch("local", selected.id);
 
                 if (selected.id === state.branchId) {
                     await initBoard();
                 }
-                BBMessage.success("LOCAL BRANCH DELETED");
+                BBMessage.success("DELETE COMPLETE");
             }
 
             // 操作完成後刷新列表與按鈕狀態
             await updateBranchList();
             await updateDropButtonState();
         } catch (e) {
-            BBMessage.error("ACTION FAILED: " + e.message);
+            console.error("DROP ACTION FAILED:", e);
+            BBMessage.error("ERROR: ACTION FAILED");
         }
     });
 }
@@ -481,6 +497,8 @@ window.addEventListener("blackboard:branchRename", async (e) => {
 
 // 監聽授權變動 (登入/登出)
 window.addEventListener("blackboard:authUpdated", async () => {
+    // [Fix]: Ensure we don't lose local state visibility on auth change
+    // Force a re-init to ensure UI reflects current data
     await initBoard();
 });
 
@@ -555,7 +573,7 @@ if ('serviceWorker' in navigator) {
 
 // 顯示更新提示 Toast
 function showUpdateToast(registration) {
-    const msg = BBMessage.info("NEW VERSION AVAILABLE.");
+    const msg = BBMessage.info("UPDATE AVAILABLE");
     // 這裡我們簡單地自動更新，或者您可以添加一個按鈕讓用戶點擊
     // 為了符合 "I want it to auto re-cache" 的開發者需求，我們自動 skipWaiting
     if (registration.waiting) {

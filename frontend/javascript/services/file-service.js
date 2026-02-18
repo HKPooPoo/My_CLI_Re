@@ -45,12 +45,16 @@ export const FileService = {
         const formData = new FormData();
         formData.append('file', file);
 
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+        const headers = {};
+        if (csrfToken) {
+            headers['X-CSRF-TOKEN'] = csrfToken;
+        }
+
         const response = await fetch('/api/files', {
             method: 'POST',
             body: formData,
-            headers: {
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-            }
+            headers: headers
         });
 
         if (!response.ok) {

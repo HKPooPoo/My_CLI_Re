@@ -68,7 +68,7 @@ export const EditorAttachments = {
              * Initialize drag-and-drop and file input event listeners.
              */
             init() {
-                if (!this.dropZone) return;
+                if (!this.dropZone) return this;
 
                 // --- Drag Events ---
                 this.dropZone.addEventListener('dragenter', (e) => {
@@ -137,7 +137,7 @@ export const EditorAttachments = {
                 try {
                     // 1. Compute Hash (Local)
                     const hash = await FileService.computeHash(file);
-                    
+
                     // 2. Store in IndexedDB (fileBlobs)
                     // We try-catch put() to handle QuotaExceededError
                     try {
@@ -258,12 +258,12 @@ export const EditorAttachments = {
 
                 if (!localFile || !localFile.blob) {
                     // Not local? Download and Cache!
-                    const loadingMsg = this._findChip(hash); 
-                    if (loadingMsg) loadingMsg.querySelector('.attachment-chip-icon').textContent = '⏳';
+                    const loadingMsg = this._findChip(hash);
+                    if (loadingMsg) loadingMsg.querySelector('.attachment-chip-icon').textContent = '[LOADING...]';
 
                     try {
                         const blob = await FileService.download(hash);
-                        
+
                         // We need metadata. If we don't have it locally, fetch meta or use defaults
                         let meta = { name: 'downloaded_file', type: blob.type, size: blob.size };
                         try {
@@ -324,7 +324,7 @@ export const EditorAttachments = {
                 }
             },
 
-            _renderChip({ hash, name, size, mime, isLocal }) {
+            _renderChip({ hash, isLocal }) {
                 if (!this.chipsContainer) return;
                 this._clearChips();
 
@@ -332,21 +332,17 @@ export const EditorAttachments = {
                 chip.className = 'attachment-chip';
                 // Add class if local or cloud
                 if (isLocal) chip.classList.add('is-local');
-                
-                const icon = isLocal ? '💾' : '☁️';
-                const mimeChar = mimeIcon(mime);
+
+                const iconText = isLocal ? '[LOCAL]' : '[CLOUD]';
 
                 chip.innerHTML = `
-                    <span class="attachment-chip-icon">${icon} ${mimeChar}</span>
-                    <span class="attachment-chip-name" title="${name}">${name}</span>
-                    <span class="attachment-chip-size">${formatSize(size)}</span>
-                    <button class="attachment-chip-remove" data-hash="${hash}">✕</button>
+                    <span class="attachment-chip-icon" style="cursor: pointer;" title="Open File">${iconText}</span>
+                    <button class="attachment-chip-remove" data-hash="${hash}" title="Remove">[X]</button>
                 `;
 
-                // Click name -> Open
-                const nameEl = chip.querySelector('.attachment-chip-name');
-                nameEl.style.cursor = 'pointer';
-                nameEl.addEventListener('click', () => {
+                // Click icon -> Open
+                const iconEl = chip.querySelector('.attachment-chip-icon');
+                iconEl.addEventListener('click', () => {
                     this.openFile(hash);
                 });
 
@@ -354,16 +350,14 @@ export const EditorAttachments = {
                 this.chipsContainer.classList.add('has-items');
             },
 
-            _renderLoadingChip(name, size) {
+            _renderLoadingChip() {
                 if (!this.chipsContainer) return;
                 this._clearChips();
 
                 const chip = document.createElement('div');
                 chip.className = 'attachment-chip';
                 chip.innerHTML = `
-                    <span class="attachment-chip-icon">⏳</span>
-                    <span class="attachment-chip-name">${name}</span>
-                    <span class="attachment-chip-size">${formatSize(size)}</span>
+                    <span class="attachment-chip-icon">[WAIT]</span>
                 `;
 
                 this.chipsContainer.appendChild(chip);

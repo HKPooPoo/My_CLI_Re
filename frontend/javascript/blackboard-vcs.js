@@ -134,7 +134,7 @@ export const BBVCS = {
         const { branchId, branch } = branchMeta;
 
         const loggedInUser = localStorage.getItem("currentUser");
-        if (!loggedInUser) throw new Error("LOGIN REQUIRED FOR COMMIT.");
+        if (!loggedInUser) throw new Error("ERROR: LOGIN REQUIRED");
 
         // 0. Commit 前執行數據清洗 (移除空值與溢出)
         // 嘗試從環境中取得 maxSlot，若無則預設 10
@@ -148,14 +148,14 @@ export const BBVCS = {
         records = records.filter(r => (r.text && r.text.trim() !== "") || r.bin);
 
         if (records.length === 0) {
-            throw new Error("LOCAL DATA NOT FOUND OR EMPTY. CHECKOUT FIRST.");
+            throw new Error("ERROR: NO DATA");
         }
 
         // 1.5 [File Sync]: Upload pending files first
         const fileUploadPromises = records
             .filter(r => r.bin)
             .map(async (r) => {
-                const hash = typeof r.bin === 'object' ? r.bin.hash : r.bin;
+                const hash = (r.bin && typeof r.bin === 'object') ? r.bin.hash : r.bin;
                 try {
                     // Check if file exists on server
                     const exists = await FileService.exists(hash);
@@ -171,12 +171,12 @@ export const BBVCS = {
                     await FileService.upload(fileData.blob);
                 } catch (err) {
                     console.error(`Failed to sync file ${hash}:`, err);
-                    throw new Error(`FILE SYNC FAILED: ${hash.substring(0, 8)}...`);
+                    throw new Error("ERROR: FILE SYNC FAILED");
                 }
             });
 
         if (fileUploadPromises.length > 0) {
-            BBMessage.info(`SYNCING ${fileUploadPromises.length} FILES...`);
+            BBMessage.info("SYNCING FILES...");
             await Promise.all(fileUploadPromises);
         }
 
@@ -185,7 +185,7 @@ export const BBVCS = {
             // [Fix]: Ensure bin is sent as hash string, not object
             const payloadRecords = records.map(r => ({
                 ...r,
-                bin: typeof r.bin === 'object' ? r.bin.hash : r.bin
+                bin: (r.bin && typeof r.bin === 'object') ? r.bin.hash : r.bin
             }));
 
             await BlackboardService.commit({
@@ -203,7 +203,7 @@ export const BBVCS = {
 
             return true;
         } catch (e) {
-            throw new Error(e.message || "UPLOAD FAILED.");
+            throw new Error(e.message || "ERROR: UPLOAD FAILED");
         }
     },
 
@@ -213,7 +213,7 @@ export const BBVCS = {
     async checkout(state, targetBranchId, targetOwner) {
         // 1. 如果目標是雲端分支，不論本地有無資料都先進行同步 (確保最新)
         if (targetOwner !== "local") {
-            BBMessage.info("SYNCING BRANCH DATA FROM CLOUD...");
+            BBMessage.info("SYNCING...");
 
             try {
                 const data = await BlackboardService.fetchBranchDetails(targetBranchId);

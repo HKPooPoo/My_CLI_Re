@@ -58,7 +58,7 @@ async function toggleRecording() {
     if (!isRecording) {
         if (!isTextareaFocused) {
             flashError();
-            BBMessage.error("SELECT BOARD.");
+            BBMessage.error("ERROR: SELECT BOARD");
             return;
         }
         savedCursorPosition = $textarea.selectionStart;
@@ -124,7 +124,7 @@ async function stopRecording() {
     playAudio("UISelectOff.mp3"); // 停止錄音音效
 
     if (window.voiceMsg) {
-        window.voiceMsg.update("DECODING...");
+        window.voiceMsg.update("PROCESSING...");
     }
 }
 
@@ -146,18 +146,18 @@ async function transcribeAudio(audioBlob) {
                 playAudio("UIGeneralOK.mp3"); // 識別成功音效
 
                 if (window.voiceMsg) {
-                    window.voiceMsg.update("VERIFIED.");
+                    window.voiceMsg.update("VERIFIED");
                 }
             } else {
                 if (window.voiceMsg) window.voiceMsg.close();
-                BBMessage.error("NO SPEECH.");
+                BBMessage.error("ERROR: NO SPEECH");
             }
 
         } catch (error) {
             console.error("Transcribe Request Error:", error);
             flashError();
             if (window.voiceMsg) window.voiceMsg.close();
-            BBMessage.error("OFLINE.");
+            BBMessage.error("ERROR: OFFLINE");
         } finally {
             $voiceBtn.classList.remove("active", "recording", "processing");
             isRecording = false;

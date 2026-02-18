@@ -61,7 +61,7 @@ export const WTList = {
                     action: async () => {
                         const uid = this.elements.uidInput?.value?.trim();
                         if (!uid) {
-                            BBMessage.error("UID REQUIRED");
+                            BBMessage.error("ERROR: UID REQUIRED");
                             return;
                         }
 
@@ -71,10 +71,11 @@ export const WTList = {
                             if (result.connection) {
                                 this.handleUpdate(result.connection);
                                 this.elements.uidInput.value = "";
-                                BBMessage.success("CONNECTED");
+                                BBMessage.success("CONNECTION ESTABLISHED");
                             }
                         } catch (e) {
-                            BBMessage.error("CONNECT FAILED: " + (e.message || "UNKNOWN"));
+                            console.error("CONNECT ERROR:", e);
+                            BBMessage.error("ERROR: CONNECT FAILED");
                         }
                     }
                 }
@@ -90,7 +91,7 @@ export const WTList = {
                     sound: "UIGeneralCancel.mp3",
                     action: async () => {
                         if (!this.selectedConnection) {
-                            BBMessage.error("NO TARGET SELECTED");
+                            BBMessage.error("ERROR: NO TARGET");
                             return;
                         }
 
@@ -118,9 +119,10 @@ export const WTList = {
 
                             this.selectedConnection = null;
                             this.render();
-                            BBMessage.success("CONNECTION SEVERED");
+                            BBMessage.success("CONNECTION TERMINATED");
                         } catch (e) {
-                            BBMessage.error("CUT FAILED: " + (e.message || "UNKNOWN"));
+                            console.error("CUT ERROR:", e);
+                            BBMessage.error("ERROR: CUT FAILED");
                         }
                     }
                 }
@@ -233,7 +235,8 @@ export const WTList = {
                     await WalkieTypieService.updateConnectionTag(conn.partner_uid, { tag: newTag });
                     conn.partner_tag = newTag;
                 } catch (err) {
-                    BBMessage.error("TAG UPDATE FAILED");
+                    console.error("TAG UPDATE ERROR:", err);
+                    BBMessage.error("ERROR: TAG UPDATE FAILED");
                 }
             });
 

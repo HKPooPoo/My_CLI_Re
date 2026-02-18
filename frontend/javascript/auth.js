@@ -90,21 +90,22 @@ export const AuthManager = {
                     const passcode = this.elements.passcodeInput.value.trim();
 
                     if (!uid || !passcode) {
-                        BBMessage.error("INPUT UID/PASS.");
+                        BBMessage.error("ERROR: INPUT REQUIRED");
                         return;
                     }
 
-                    const msg = BBMessage.info("AUTH...");
+                    const msg = BBMessage.info("AUTHENTICATING...");
                     try {
                         const data = await AuthService.login({ uid, passcode });
-                        msg.update(`WELCOME BACK, ${data.user.uid.toUpperCase()}`);
+                        msg.update(`WELCOME ${data.user.uid.toUpperCase()}`);
                         // 登入成功後重新初始化以獲取完整資訊
                         this.init();
                         this.elements.uidInput.value = "";
                         this.elements.passcodeInput.value = "";
                     } catch (e) {
+                        console.error("LOGIN ERROR:", e);
                         msg.close();
-                        BBMessage.error(e.message || "AUTH FAILED.");
+                        BBMessage.error(e.message || "ERROR: AUTH FAILED");
                     }
                 }
             });
@@ -124,17 +125,18 @@ export const AuthManager = {
                         const passcode = this.elements.passcodeInput.value.trim();
 
                         if (!uid || !passcode) {
-                            BBMessage.error("INPUT UID/PASS.");
+                            BBMessage.error("ERROR: INPUT REQUIRED");
                             return;
                         }
 
-                        const msg = BBMessage.info("SENDING...");
+                        const msg = BBMessage.info("REGISTERING...");
                         try {
                             const data = await AuthService.register({ uid, passcode });
-                            msg.update("REG COMPLETE.");
+                            msg.update("REGISTRATION COMPLETE");
                         } catch (e) {
+                            console.error("REGISTER ERROR:", e);
                             msg.close();
-                            BBMessage.error(e.message || "FAILED.");
+                            BBMessage.error(e.message || "ERROR: REGISTRATION FAILED");
                         }
                     }
                 }
@@ -153,11 +155,12 @@ export const AuthManager = {
                         await BBCore.wipeSyncedData();
                         
                         this.updateUI(null);
-                        BBMessage.info("LOGOUT & SYNCED DATA ERASED.");
+                        BBMessage.info("LOGOUT COMPLETE");
                         
                         // 通知 UI 刷新分支清單
                         window.dispatchEvent(new CustomEvent("blackboard:branchUpdated"));
                     } catch (e) {
+                        console.error("LOGOUT ERROR:", e);
                         this.updateUI(null);
                     }
                 }
@@ -177,24 +180,26 @@ export const AuthManager = {
                     const isCommand = input.startsWith("/passwd");
 
                     if (isCommand) {
-                        const msg = toast.addMessage("EXECUTING COMMAND...");
+                        const msg = toast.addMessage("EXECUTING...");
                         try {
                             const data = await AuthService.executeCommand({ command: input });
                             msg.update(data.message);
                             this.elements.passcodeInput.value = "";
                         } catch (e) {
-                            msg.update(e.message || "OFFLINE.");
+                            console.error("CMD ERROR:", e);
+                            msg.update(e.message || "ERROR: OFFLINE");
                         }
                     } else {
                         if (!uid) {
-                            return toast.addMessage("UID REQUIRED FOR RESTORE.");
+                            return toast.addMessage("ERROR: UID REQUIRED");
                         }
-                        const msg = toast.addMessage("REQUESTING RESTORE...");
+                        const msg = toast.addMessage("REQUESTING...");
                         try {
                             const data = await AuthService.requestPasswordReset({ uid });
                             msg.update(data.message);
                         } catch (e) {
-                            msg.update(e.message || "OFFLINE.");
+                            console.error("RESET ERROR:", e);
+                            msg.update(e.message || "ERROR: OFFLINE");
                         }
                     }
                 } finally {
@@ -212,7 +217,7 @@ export const AuthManager = {
                 const input = this.elements.emailInput.value.trim();
                 if (!input) {
                     this.isBinding = false;
-                    return toast.addMessage("INPUT EMAIL OR COMMAND.");
+                    return toast.addMessage("ERROR: INPUT REQUIRED");
                 }
 
                 try {
@@ -234,7 +239,8 @@ export const AuthManager = {
                             this.init();
                         }
                     } catch (e) {
-                        msg.update(e.message || "OFFLINE.");
+                        console.error("BIND ERROR:", e);
+                        msg.update(e.message || "ERROR: OFFLINE");
                     }
                 } finally {
                     this.isBinding = false;
