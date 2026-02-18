@@ -2,10 +2,7 @@
  * Editor Attachments - Drop Zone & Chip Management (Local-First)
  * =================================================================
  * Shared module for file attachment UI.
- * Now implements Local-First architecture:
- * 1. Drop -> SHA-256 -> IndexedDB (fileBlobs)
- * 2. Commit -> Sync to Server
- * 3. Checkout -> Lazy Download
+ * Refactored to use Lazy Loading of DOM elements to prevent null reference issues.
  * =================================================================
  */
 
@@ -41,21 +38,23 @@ export const EditorAttachments = {
     /**
      * Create a new attachment manager instance.
      * @param {Object} config
-     * @param {HTMLElement} config.dropZone - The editor-wrapper element
-     * @param {HTMLInputElement} config.fileInput - Hidden file input
-     * @param {HTMLElement} config.chipsContainer - Chips container
-     * @param {HTMLElement} config.dropOverlay - Drop overlay element
+     * @param {string} config.dropZoneSelector - Selector for drop zone
+     * @param {string} config.fileInputSelector - Selector for file input
+     * @param {string} config.chipsContainerSelector - Selector for chips container
+     * @param {string} config.dropOverlaySelector - Selector for drop overlay
      * @param {boolean} [config.readOnly=false] - If true, disable editing/removal
-     * @param {Function} config.onAttach - Callback when file is attached (hash)
+     * @param {Function} config.onAttach - Callback when file is attached (hash, meta)
      * @param {Function} config.onDetach - Callback when file is detached (hash)
      * @returns {Object} Attachment manager instance
      */
     create(config) {
         const instance = {
-            dropZone: config.dropZone,
-            fileInput: config.fileInput,
-            chipsContainer: config.chipsContainer,
-            dropOverlay: config.dropOverlay,
+            selectors: {
+                dropZone: config.dropZoneSelector,
+                fileInput: config.fileInputSelector,
+                chipsContainer: config.chipsContainerSelector,
+                dropOverlay: config.dropOverlaySelector
+            },
             readOnly: config.readOnly || false,
             onAttach: config.onAttach || (() => { }),
             onDetach: config.onDetach || (() => { }),
@@ -66,61 +65,69 @@ export const EditorAttachments = {
             /** Prevent dragenter/dragleave flickering */
             _dragCounter: 0,
 
+            /** Lazy lookup for DOM elements */
+            _getEl(key) {
+                const selector = this.selectors[key];
+                return selector ? document.querySelector(selector) : null;
+            },
+
             /**
-             * Initialize drag-and-drop and file input event listeners.
+             * Initialize event listeners.
              */
             init() {
-                if (!this.dropZone && !this.chipsContainer) return this;
+                const dropZone = this._getEl('dropZone');
+                const fileInput = this._getEl('fileInput');
+                const chipsContainer = this._getEl('chipsContainer');
 
                 // --- Drag Events (Edit Mode Only) ---
-                if (!this.readOnly && this.dropZone) {
-                    this.dropZone.addEventListener('dragenter', (e) => {
+                if (!this.readOnly && dropZone) {
+                    dropZone.addEventListener('dragenter', (e) => {
                         e.preventDefault();
                         this._dragCounter++;
                         if (this._dragCounter === 1) {
-                            this.dropOverlay?.classList.add('active');
+                            this._getEl('dropOverlay')?.classList.add('active');
                         }
                     });
 
-                    this.dropZone.addEventListener('dragover', (e) => {
-                        e.preventDefault(); // Required to allow drop
+                    dropZone.addEventListener('dragover', (e) => {
+                        e.preventDefault();
                     });
 
-                    this.dropZone.addEventListener('dragleave', (e) => {
+                    dropZone.addEventListener('dragleave', (e) => {
                         e.preventDefault();
                         this._dragCounter--;
                         if (this._dragCounter <= 0) {
                             this._dragCounter = 0;
-                            this.dropOverlay?.classList.remove('active');
+                            this._getEl('dropOverlay')?.classList.remove('active');
                         }
                     });
 
-                    this.dropZone.addEventListener('drop', (e) => {
+                    dropZone.addEventListener('drop', (e) => {
                         e.preventDefault();
-                        console.log("EditorAttachments: drop event", e);
                         this._dragCounter = 0;
-                        this.dropOverlay?.classList.remove('active');
+                        this._getEl('dropOverlay')?.classList.remove('active');
 
                         const files = e.dataTransfer?.files;
-                        console.log("EditorAttachments: dropped files", files);
                         if (files && files.length > 0) {
                             this.handleFile(files[0]);
                         }
                     });
 
                     // --- File Input (button trigger) ---
-                    this.fileInput?.addEventListener('change', (e) => {
-                        const files = e.target.files;
-                        if (files && files.length > 0) {
-                            this.handleFile(files[0]);
-                        }
-                        if (this.fileInput) this.fileInput.value = '';
-                    });
+                    if (fileInput) {
+                        fileInput.addEventListener('change', (e) => {
+                            const files = e.target.files;
+                            if (files && files.length > 0) {
+                                this.handleFile(files[0]);
+                            }
+                            e.target.value = '';
+                        });
+                    }
                 }
 
                 // --- Chip Remove (event delegation) ---
-                if (!this.readOnly) {
-                    this.chipsContainer?.addEventListener('click', (e) => {
+                if (!this.readOnly && chipsContainer) {
+                    chipsContainer.addEventListener('click', (e) => {
                         const removeBtn = e.target.closest('.attachment-chip-remove');
                         if (!removeBtn) return;
                         const hash = removeBtn.dataset.hash;
@@ -132,67 +139,58 @@ export const EditorAttachments = {
             },
 
             /**
-             * Handle a single file: Hash -> IndexedDB -> Render.
+             * Handle a single file.
              * @param {File} file
              */
-                        async handleFile(file) {
-                            console.log("EditorAttachments: handleFile started", file);
-                            if (this.currentHash) {
-                                this.detach(this.currentHash);
-                            }
-            
-                            this._renderLoadingChip(file.name, file.size);
-            
-                            try {
-                                // 1. Compute Hash (Local)
-                                const hash = await FileService.computeHash(file);
-                                console.log("EditorAttachments: computed hash", hash);
-            
-                                // 2. Store in IndexedDB (fileBlobs)
-                                // We try-catch put() to handle QuotaExceededError
-                                try {
-                                    await db.fileBlobs.put({
-                                        hash: hash,
-                                        blob: file,
-                                        name: file.name,
-                                        type: file.type,
-                                        size: file.size,
-                                        status: 'local' // Needs sync
-                                    });
-                                    console.log("EditorAttachments: saved to IDB");
-                                } catch (dbErr) {
-                                    if (dbErr.name === 'QuotaExceededError') {
-                                        alert("STORAGE FULL. CANNOT SAVE FILE LOCALLY.");
-                                        this._clearChips();
-                                        return;
-                                    }
-                                    throw dbErr;
-                                }
-            
-                                this.currentHash = hash;
-            
-                                // 3. Render Chip (Local)
-                                this._renderChip({
-                                    hash: hash,
-                                    name: file.name,
-                                    size: file.size,
-                                    mime: file.type,
-                                    isLocal: true
-                                });
-                                console.log("EditorAttachments: chip rendered");
-            
-                                this.onAttach(hash, {
-                                    name: file.name,
-                                    size: file.size,
-                                    mime: file.type
-                                });
-            
-                                            } catch (err) {
-                                                console.error('File processing failed:', err);
-                                                alert("ATTACH ERROR: " + (err.message || err));
-                                                this._clearChips();
-                                            }
-                                        },            /**
+            async handleFile(file) {
+                if (this.currentHash) {
+                    this.detach(this.currentHash);
+                }
+
+                this._renderLoadingChip();
+
+                try {
+                    const hash = await FileService.computeHash(file);
+                    
+                    try {
+                        await db.fileBlobs.put({
+                            hash: hash,
+                            blob: file,
+                            name: file.name,
+                            type: file.type,
+                            size: file.size,
+                            status: 'local'
+                        });
+                    } catch (dbErr) {
+                        if (dbErr.name === 'QuotaExceededError') {
+                            alert("STORAGE FULL.");
+                            this._clearChips();
+                            return;
+                        }
+                        throw dbErr;
+                    }
+
+                    this.currentHash = hash;
+
+                    this._renderChip({
+                        hash: hash,
+                        isLocal: true
+                    });
+
+                    this.onAttach(hash, {
+                        name: file.name,
+                        size: file.size,
+                        mime: file.type
+                    });
+
+                } catch (err) {
+                    console.error('File processing failed:', err);
+                    alert("ATTACH ERROR: " + (err.message || err));
+                    this._clearChips();
+                }
+            },
+
+            /**
              * Detach a file.
              * @param {string} hash
              */
@@ -205,116 +203,79 @@ export const EditorAttachments = {
             },
 
             /**
-             * Set attachment from existing record (Lazy Load).
+             * Set attachment from existing record.
              * @param {string|null} hash
-             * @param {Object} [hint] - Optional metadata hint { name, size, mime } from record
+             * @param {Object} [hint]
              */
             async setFromRecord(hash, hint) {
                 this._clearChips();
                 this.currentHash = hash || null;
                 if (!hash) return;
 
-                // 1. Check Local DB
                 const localFile = await db.fileBlobs.get(hash);
 
                 if (localFile) {
                     this._renderChip({
                         hash: hash,
-                        name: localFile.name,
-                        size: localFile.size,
-                        mime: localFile.type,
                         isLocal: true
                     });
                 } else {
-                    // 2. Not local? Show placeholder or hint immediately
-                    if (hint) {
-                        this._renderChip({
-                            hash: hash,
-                            name: hint.name,
-                            size: hint.size,
-                            mime: hint.mime,
-                            isLocal: false // Cloud
-                        });
-                    } else {
-                        // 3. No hint? Fetch Meta
-                        try {
-                            this._renderLoadingChip("LOADING META...", 0);
-                            const meta = await FileService.meta(hash);
-                            this._renderChip({
-                                hash: hash,
-                                name: meta.name,
-                                size: meta.size,
-                                mime: meta.mime,
-                                isLocal: false
-                            });
-                        } catch (e) {
-                            this._renderChip({
-                                hash: hash,
-                                name: "MISSING FILE",
-                                size: 0,
-                                mime: null,
-                                isLocal: false
-                            });
-                        }
-                    }
+                    this._renderChip({
+                        hash: hash,
+                        isLocal: false
+                    });
                 }
             },
 
             /**
-             * Helper to open a file (Local Blob or Remote Download).
-             * If remote, it downloads, caches, and then opens.
+             * Clear all chips and reset state.
+             */
+            clear() {
+                this.currentHash = null;
+                this._clearChips();
+            },
+
+            /**
+             * Helper to open a file.
              */
             async openFile(hash) {
                 let localFile = await db.fileBlobs.get(hash);
 
                 if (!localFile || !localFile.blob) {
-                    // Not local? Download and Cache!
                     const loadingMsg = this._findChip(hash);
-                    if (loadingMsg) loadingMsg.querySelector('.attachment-chip-icon').textContent = '[LOADING...]';
+                    if (loadingMsg) {
+                        const icon = loadingMsg.querySelector('.attachment-chip-icon');
+                        if (icon) icon.textContent = '[WAIT]';
+                    }
 
                     try {
                         const blob = await FileService.download(hash);
-
-                        // We need metadata. If we don't have it locally, fetch meta or use defaults
                         let meta = { name: 'downloaded_file', type: blob.type, size: blob.size };
                         try {
                             const serverMeta = await FileService.meta(hash);
                             meta = { name: serverMeta.name, type: serverMeta.mime, size: serverMeta.size };
-                        } catch (e) {
-                            console.warn("Meta fetch failed during cache, using blob props", e);
-                        }
+                        } catch (e) {}
 
-                        // Store in IDB
                         localFile = {
                             hash: hash,
                             blob: blob,
                             name: meta.name,
                             type: meta.type,
                             size: meta.size,
-                            status: 'synced' // It came from server
+                            status: 'synced'
                         };
 
                         await db.fileBlobs.put(localFile);
-
-                        // Update UI to Local
-                        this._renderChip({
-                            hash: hash,
-                            name: localFile.name,
-                            size: localFile.size,
-                            mime: localFile.type,
-                            isLocal: true
-                        });
+                        this._renderChip({ hash: hash, isLocal: true });
 
                     } catch (e) {
                         console.error("Download failed", e);
                         alert("DOWNLOAD FAILED.");
-                        // Fallback to direct link if cache fails
                         window.open(FileService.downloadUrl(hash), '_blank');
                         return;
                     }
                 }
 
-                // Open Local Blob
                 if (localFile && localFile.blob) {
                     const url = URL.createObjectURL(localFile.blob);
                     window.open(url, '_blank');
@@ -325,23 +286,25 @@ export const EditorAttachments = {
             // === Private Rendering Methods ===
 
             _findChip(hash) {
-                return this.chipsContainer ? this.chipsContainer.querySelector(`.attachment-chip-remove[data-hash="${hash}"]`)?.closest('.attachment-chip') : null;
+                const container = this._getEl('chipsContainer');
+                return container ? container.querySelector(`.attachment-chip-remove[data-hash="${hash}"]`)?.closest('.attachment-chip') : null;
             },
 
             _clearChips() {
-                if (this.chipsContainer) {
-                    this.chipsContainer.innerHTML = '';
-                    this.chipsContainer.classList.remove('has-items');
+                const container = this._getEl('chipsContainer');
+                if (container) {
+                    container.innerHTML = '';
+                    container.classList.remove('has-items');
                 }
             },
 
             _renderChip({ hash, isLocal }) {
-                if (!this.chipsContainer) return;
+                const container = this._getEl('chipsContainer');
+                if (!container) return;
                 this._clearChips();
 
                 const chip = document.createElement('div');
                 chip.className = 'attachment-chip';
-                // Add class if local or cloud
                 if (isLocal) chip.classList.add('is-local');
 
                 const iconText = isLocal ? '[LOC]' : '[CLD]';
@@ -353,28 +316,26 @@ export const EditorAttachments = {
                     ${removeHtml}
                 `;
 
-                // Click icon -> Open
                 const iconEl = chip.querySelector('.attachment-chip-icon');
                 iconEl.addEventListener('click', () => {
                     this.openFile(hash);
                 });
 
-                this.chipsContainer.appendChild(chip);
-                this.chipsContainer.classList.add('has-items');
+                container.appendChild(chip);
+                container.classList.add('has-items');
             },
 
             _renderLoadingChip() {
-                if (!this.chipsContainer) return;
+                const container = this._getEl('chipsContainer');
+                if (!container) return;
                 this._clearChips();
 
                 const chip = document.createElement('div');
                 chip.className = 'attachment-chip';
-                chip.innerHTML = `
-                    <span class="attachment-chip-icon">[WAIT]</span>
-                `;
+                chip.innerHTML = `<span class="attachment-chip-icon">[WAIT]</span>`;
 
-                this.chipsContainer.appendChild(chip);
-                this.chipsContainer.classList.add('has-items');
+                container.appendChild(chip);
+                container.classList.add('has-items');
             }
         };
 

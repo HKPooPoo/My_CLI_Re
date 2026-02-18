@@ -33,14 +33,14 @@ export const BBCore = {
     /**
      * 新增一筆紀錄
      */
-    async addRecord(owner, branchId, branchName, text = "") {
+    async addRecord(owner, branchId, branchName, text = "", bin = null) {
         return await db.blackboard.add({
             owner,
             branchId,
             branch: branchName,
             timestamp: Date.now(),
             text,
-            bin: null
+            bin
         });
     },
 

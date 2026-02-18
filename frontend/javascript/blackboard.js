@@ -37,17 +37,32 @@ let isInitializing = false;
 
 // --- File Attachment Instance ---
 const bbAttach = EditorAttachments.create({
-    dropZone: document.getElementById('bb-drop-zone'),
-    fileInput: document.getElementById('bb-file-input'),
-    chipsContainer: document.getElementById('bb-attachment-chips'),
-    dropOverlay: document.getElementById('bb-drop-overlay'),
+    dropZoneSelector: '#bb-drop-zone',
+    fileInputSelector: '#bb-file-input',
+    chipsContainerSelector: '#bb-attachment-chips',
+    dropOverlaySelector: '#bb-drop-overlay',
     onAttach: async (hash, meta) => {
-        // Immediately persist the attachment to the current record
-        const entry = await BBCore.getRecord(state.owner, state.branchId, state.currentHead);
-        if (entry) {
-            // [Meta]: Store full object in bin for offline hint
-            const binData = { hash, ...meta };
-            await db.blackboard.update([entry.owner, entry.branchId, entry.timestamp], { bin: binData });
+        const binData = { hash, ...meta };
+
+        // [Fix]: Handle Virtual State (New Page)
+        if (state.isVirtual) {
+            // Create new record immediately
+            await BBCore.addRecord(
+                state.owner,
+                state.branchId,
+                state.branch,
+                BBUI.getTextareaValue() || "",
+                binData
+            );
+            state.isVirtual = false;
+            state.currentHead = 0;
+            BBUI.updateIndicators(state.branch || "NAMELESS_BRANCH", state.currentHead, true);
+        } else {
+            // Immediately persist the attachment to the current record
+            const entry = await BBCore.getRecord(state.owner, state.branchId, state.currentHead);
+            if (entry) {
+                await db.blackboard.update([entry.owner, entry.branchId, entry.timestamp], { bin: binData });
+            }
         }
     },
     onDetach: async (hash) => {
@@ -109,6 +124,7 @@ export async function initBoard() {
  * 步驟：1. 從 Core 抓取當前 Head 對應的紀錄 2. 更新文字框 3. 更新 UI 指標
  */
 async function syncView() {
+    // console.log("syncView called. isVirtual:", state.isVirtual);
     // [Fix]: 虛擬狀態處理 (New Page)
     if (state.isVirtual) {
         BBUI.setTextarea("");

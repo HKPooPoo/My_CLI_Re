@@ -1,4 +1,4 @@
-const CACHE_NAME = 'blackboard-v4-dev-2026-02-18-WT-Files'; // Bump: WT file upload fixes
+const CACHE_NAME = 'blackboard-v8-dev-2026-02-18-WT-Files'; // Bump: WT file upload fixes
 const ASSETS = [
   '/',
   '/index.html',

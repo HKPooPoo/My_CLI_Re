@@ -75,10 +75,10 @@ export const WTText = {
     initAttachments() {
         // --- WE Side (Editable) ---
         this.wtWeAttach = EditorAttachments.create({
-            dropZone: document.getElementById('wt-drop-zone'),
-            fileInput: document.getElementById('wt-file-input'),
-            chipsContainer: document.getElementById('wt-we-attachments'),
-            dropOverlay: document.getElementById('wt-drop-overlay'),
+            dropZoneSelector: '#wt-drop-zone',
+            fileInputSelector: '#wt-file-input',
+            chipsContainerSelector: '#wt-we-attachments',
+            dropOverlaySelector: '#wt-drop-overlay',
             readOnly: false,
             onAttach: async (hash, meta) => {
                 if (!this.currentConnection) throw new Error("NO CONNECTION SELECTED");
@@ -136,7 +136,7 @@ export const WTText = {
 
         // --- THEY Side (ReadOnly) ---
         this.wtTheyAttach = EditorAttachments.create({
-            chipsContainer: document.getElementById('wt-they-attachments'),
+            chipsContainerSelector: '#wt-they-attachments',
             readOnly: true
         });
     },
