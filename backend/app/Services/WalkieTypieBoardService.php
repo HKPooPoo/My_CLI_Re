@@ -10,12 +10,20 @@ class WalkieTypieBoardService
 {
     /**
      * Commit board records to walkie_typie_boards table.
-     * Unlike BlackboardService::commit(), this does NOT delete old records.
-     * It performs upsert only, preserving history.
+     * Same as BlackboardService::commit(): delete-then-upsert to keep history in sync.
      */
     public function commit(User $user, string $branchId, string $branchName, array $records)
     {
         return DB::transaction(function () use ($user, $branchId, $branchName, $records) {
+            $incomingTimestamps = array_column($records, 'timestamp');
+
+            // 同 Blackboard：先刪除不在新列表中的舊記錄，防止歷史膨脹
+            DB::table('walkie_typie_boards')
+                ->where('owner', $user->uid)
+                ->where('branch_id', $branchId)
+                ->whereNotIn('timestamp', $incomingTimestamps)
+                ->delete();
+
             $insertData = [];
             foreach ($records as $record) {
                 $text = $record['text'] ?? '';

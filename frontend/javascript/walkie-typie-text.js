@@ -78,7 +78,7 @@ export const WTText = {
 
             if (this.currentConnection &&
                 this.currentConnection.partner_uid === e.detail.partnerUid) {
-                
+
                 // LEAVE CHANNEL
                 if (this.activeChannel) {
                     const myUid = localStorage.getItem("currentUser");
@@ -147,7 +147,7 @@ export const WTText = {
                     console.log("WT: Received Signal (Backend), Syncing...");
                     await this.syncTHEY();
                     this.refreshTHEY();
-                } 
+                }
                 // Note: We prioritize Whisper for live typing, so we might ignore text here 
                 // if we trust whisper, BUT backend events are more reliable for persistence.
                 // Let's treat backend text updates as "authoritative" overwrites.
@@ -163,7 +163,7 @@ export const WTText = {
         // --- WE Input Handler ---
 
         this.elements.weTextarea?.addEventListener("input", this.handleMyInput.bind(this));
-        
+
         // Request notification permission on interaction
         this.elements.container?.addEventListener("click", () => this.tryRequestNotification(), { once: true });
     },
@@ -250,18 +250,18 @@ export const WTText = {
             const myUid = localStorage.getItem("currentUser");
             const partnerUid = connection.partner_uid;
             const channelName = `walkie-typie.${[myUid, partnerUid].sort().join('.')}`;
-            
+
             console.log(`WT: Joining Shared Channel ${channelName}`);
-            
+
             this.activeChannel = WTCore.echo.private(channelName);
-            
+
             this.activeChannel.listenForWhisper('typing', (e) => {
                 // Client Event received! Fast path.
                 const { text } = e;
                 this.theyLiveText = text;
                 this.theyState.currentHead = 0;
                 this.elements.theyTextarea.value = text;
-                
+
                 if (document.hidden) {
                     this.notify(partnerUid, text);
                 }
@@ -434,7 +434,7 @@ export const WTText = {
 
     async broadcastSignal(text) {
         if (!this.currentConnection || !this.activeChannel) return;
-        
+
         // Use Client Event (Whisper)
         // This sends directly via WebSocket server, bypassing Laravel API
         try {
@@ -450,10 +450,12 @@ export const WTText = {
     async commitWE(text) {
         if (!this.currentConnection || !text?.trim()) return;
         try {
-            await WalkieTypieService.commitBoard({
+            // 先確保當前內容已存入 IndexedDB
+            await WTVCS.save(this.weState, text);
+            // 整批 commit（同 Blackboard 邏輯：從 IndexedDB 讀取全部 records 再上傳）
+            await WTVCS.commit({
                 branchId: this.currentConnection.my_branch_id,
-                branchName: "WE",
-                records: [{ timestamp: Date.now(), text: text, bin: null }]
+                branch: "WE"
             });
         } catch (err) {
             console.error("WT: Commit Failed", err);
