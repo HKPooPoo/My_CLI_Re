@@ -46,6 +46,11 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  // [FIX]: Ignore chrome-extension scheme to prevent "unsupported scheme" errors
+  if (event.request.url.startsWith('chrome-extension://')) {
+      return;
+  }
+
   // 對於 HTML，優先使用 Network (確保首屏最新)
   if (event.request.mode === 'navigate') {
       event.respondWith(
@@ -59,6 +64,11 @@ self.addEventListener('fetch', (event) => {
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
       const fetchPromise = fetch(event.request).then((networkResponse) => {
+        // [FIX]: 忽略 206 Partial Content (影片/音頻串流)，Cache API 不支援
+        if (networkResponse.status === 206) {
+            return networkResponse;
+        }
+
         // [FIX]: 必須立即克隆響應，否則在寫入快取前可能已被瀏覽器消耗
         const responseToCache = networkResponse.clone();
         

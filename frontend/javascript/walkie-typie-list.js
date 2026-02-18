@@ -35,10 +35,24 @@ export const WTList = {
 
     init() {
         this.bindEvents();
-        this.fetchConnections();
+        // [Auth Guard]: Initial fetch only if logged in
+        if (localStorage.getItem("currentUser")) {
+            this.fetchConnections();
+        }
     },
 
     bindEvents() {
+        // [Auth Event]: Re-fetch when auth state changes (Login)
+        window.addEventListener("blackboard:authUpdated", () => {
+            if (localStorage.getItem("currentUser")) {
+                this.fetchConnections();
+            } else {
+                // Clear list on logout
+                this.connections = [];
+                this.render();
+            }
+        });
+
         // ADD Button — MultiStepButton: [click -> show SURE? -> click again -> execute]
         if (this.elements.addBtn) {
             new MultiStepButton(this.elements.addBtn, [

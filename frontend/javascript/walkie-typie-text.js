@@ -22,6 +22,7 @@
 import { WTDb } from "./walkie-typie-db.js";
 import { WTVCS } from "./walkie-typie-vcs.js";
 import { WalkieTypieService } from "./services/walkie-typie-service.js";
+import { WTCore } from "./walkie-typie-core.js";
 
 export const WTText = {
     elements: {
@@ -39,6 +40,7 @@ export const WTText = {
     },
 
     currentConnection: null,
+    activeChannel: null, // The shared Echo channel instance
     isSwapped: false,
     saveTimer: null,
     signalTimer: null,
@@ -76,6 +78,18 @@ export const WTText = {
 
             if (this.currentConnection &&
                 this.currentConnection.partner_uid === e.detail.partnerUid) {
+                
+                // LEAVE CHANNEL
+                if (this.activeChannel) {
+                    const myUid = localStorage.getItem("currentUser");
+                    const partnerUid = this.currentConnection.partner_uid;
+                    const channelName = `walkie-typie.${[myUid, partnerUid].sort().join('.')}`;
+                    if (WTCore.echo) {
+                        WTCore.echo.leave(channelName);
+                    }
+                    this.activeChannel = null;
+                }
+
                 this.currentConnection = null;
                 this.theyRecords = [];
                 this.theyLiveText = null;
@@ -121,28 +135,27 @@ export const WTText = {
             }
         });
 
-        // --- Real-time Content from Partner (WebSocket) ---
+        // --- Real-time Content from Partner (Backend Events - Fallback/Sync) ---
 
         window.addEventListener("walkie-typie:content-update", async (e) => {
             if (!this.currentConnection) return;
             const { branch_id, text } = e.detail;
 
             if (String(branch_id) === String(this.currentConnection.partner_branch_id)) {
+                // Keep backend events for "commit" synchronization or signals not via whisper
                 if (text === null || text === undefined) {
-                    // Signal only -> Persistent Sync
-                    console.log("WT: Received Signal, Syncing...");
+                    console.log("WT: Received Signal (Backend), Syncing...");
                     await this.syncTHEY();
                     this.refreshTHEY();
-                } else {
-                    // Store live text + force Head 0 + direct display
+                } 
+                // Note: We prioritize Whisper for live typing, so we might ignore text here 
+                // if we trust whisper, BUT backend events are more reliable for persistence.
+                // Let's treat backend text updates as "authoritative" overwrites.
+                else {
                     this.theyLiveText = text;
                     this.theyState.currentHead = 0;
                     this.elements.theyTextarea.value = text;
-                    
-                    // Notification
-                    if (document.hidden) {
-                        this.notify(this.currentConnection.partner_uid, text);
-                    }
+                    if (document.hidden) this.notify(this.currentConnection.partner_uid, text);
                 }
             }
         });
@@ -219,7 +232,41 @@ export const WTText = {
         clearTimeout(this.signalTimer);
         clearTimeout(this.commitTimer);
 
+        // LEAVE OLD CHANNEL
+        if (this.activeChannel) {
+            const oldUid = this.currentConnection?.partner_uid;
+            if (oldUid) {
+                const myUid = localStorage.getItem("currentUser");
+                const channelName = `walkie-typie.${[myUid, oldUid].sort().join('.')}`;
+                WTCore.echo?.leave(channelName);
+            }
+            this.activeChannel = null;
+        }
+
         this.currentConnection = connection;
+
+        // JOIN NEW SHARED CHANNEL
+        if (WTCore.echo) {
+            const myUid = localStorage.getItem("currentUser");
+            const partnerUid = connection.partner_uid;
+            const channelName = `walkie-typie.${[myUid, partnerUid].sort().join('.')}`;
+            
+            console.log(`WT: Joining Shared Channel ${channelName}`);
+            
+            this.activeChannel = WTCore.echo.private(channelName);
+            
+            this.activeChannel.listenForWhisper('typing', (e) => {
+                // Client Event received! Fast path.
+                const { text } = e;
+                this.theyLiveText = text;
+                this.theyState.currentHead = 0;
+                this.elements.theyTextarea.value = text;
+                
+                if (document.hidden) {
+                    this.notify(partnerUid, text);
+                }
+            });
+        }
 
         // Reset states
         this.weState.branchId = connection.my_branch_id;
@@ -358,7 +405,7 @@ export const WTText = {
 
     /**
      * Mirrors Blackboard's input handler:
-     * 200ms → WTVCS.save() (local) + signal (broadcast)
+     * 200ms → WTVCS.save() (local) + signal (Whisper - instant)
      * 2s → commit (Postgres + last_signal)
      */
     handleMyInput(e) {
@@ -371,11 +418,12 @@ export const WTText = {
             await WTVCS.save(this.weState, text);
         }, 200);
 
-        // 200ms: Real-time signal to partner (lightweight broadcast, no DB)
+        // 50ms: Whisper signal to partner (Client Event, bypassing API)
+        // Reduced debounce for snappier feel
         clearTimeout(this.signalTimer);
         this.signalTimer = setTimeout(() => {
             this.broadcastSignal(text);
-        }, 200);
+        }, 50);
 
         // 2s: Persistent commit to Postgres (also updates last_signal)
         clearTimeout(this.commitTimer);
@@ -385,15 +433,17 @@ export const WTText = {
     },
 
     async broadcastSignal(text) {
-        if (!this.currentConnection) return;
+        if (!this.currentConnection || !this.activeChannel) return;
+        
+        // Use Client Event (Whisper)
+        // This sends directly via WebSocket server, bypassing Laravel API
         try {
-            await WalkieTypieService.sendSignal({
-                partner_uid: this.currentConnection.partner_uid,
+            this.activeChannel.whisper('typing', {
                 text: text,
-                branch_id: this.currentConnection.partner_branch_id
+                branch_id: this.currentConnection.partner_branch_id // Include context if needed
             });
         } catch (e) {
-            console.error("Signal failed", e);
+            console.error("Whisper failed", e);
         }
     },
 

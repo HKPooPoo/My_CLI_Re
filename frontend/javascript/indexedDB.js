@@ -46,5 +46,13 @@ db.version(9).stores({
     walkieTypie: '[branchId+timestamp], branchId, branch'
 });
 
+db.version(10).stores({
+    /**
+     * V10: 強制刷新 Schema，確保 string 類型的 branchId 被正確索引
+     */
+    blackboard: '[owner+branchId+timestamp], owner, branchId, [branchId+timestamp]',
+    walkieTypie: '[branchId+timestamp], branchId, branch'
+});
+
 export default db;
 export { Dexie };
