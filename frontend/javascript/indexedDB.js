@@ -16,24 +16,30 @@ const db = new Dexie('blackboardDB');
 
 // --- 版本與 Schema 定義 ---
 db.version(1).stores({
-    /**
-     * blackboard 表
-     * 欄位：[owner+branchId+timestamp], owner, branchId, [branchId+timestamp]
-     */
     blackboard: '[owner+branchId+timestamp], owner, branchId, [branchId+timestamp]',
-
-    /**
-     * walkieTypie 表
-     * 主鍵：[branchId+timestamp]
-     * 索引：branchId, branch
-     */
     walkieTypie: '[branchId+timestamp], branchId, branch',
+    fileBlobs: 'hash'
+});
+
+db.version(2).stores({
+    // Carry forward all v1 stores unchanged
+    blackboard: '[owner+branchId+timestamp], owner, branchId, [branchId+timestamp]',
+    walkieTypie: '[branchId+timestamp], branchId, branch',
+    fileBlobs: 'hash',
 
     /**
-     * fileBlobs 表
-     * 主鍵：hash
+     * broadcastBoards 表 (BC 頻道內容歷史)
+     * 主鍵：[localChannelId+timestamp]
+     * 特性：timestamp 是創建時間，永不更新（BC 排序機制）
      */
-    fileBlobs: 'hash'
+    broadcastBoards: '[localChannelId+timestamp], localChannelId',
+
+    /**
+     * broadcastChannels 表 (BC 本地頻道元數據)
+     * 主鍵：++localId（自動遞增）
+     * 索引：name（唯一）, serverChannelId（cast 後才有值）
+     */
+    broadcastChannels: '++localId, &name, serverChannelId'
 });
 
 export default db;

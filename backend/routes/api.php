@@ -7,6 +7,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BlackboardController;
 use App\Http\Controllers\WalkieTypieController;
 use App\Http\Controllers\FileController;
+use App\Http\Controllers\BroadcastChannelController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Broadcast;
 
@@ -57,6 +58,20 @@ Route::prefix('walkie-typie')->group(function () {
     // Board Operations (獨立於 Blackboard)
     Route::post('/boards/commit', [WalkieTypieController::class, 'commitBoard']);
     Route::get('/boards/{branchId}', [WalkieTypieController::class, 'fetchBoardRecords']);
+});
+
+// Broadcast Channels
+Route::prefix('broadcast')->group(function () {
+    // Public — no auth gate (service handles optional auth for is_pinned)
+    Route::get('/channels', [BroadcastChannelController::class, 'index']);
+    Route::get('/channels/{channelId}/boards', [BroadcastChannelController::class, 'fetchBoards']);
+
+    // Requires auth (checked inside controller/service)
+    Route::post('/channels/cast', [BroadcastChannelController::class, 'cast']);
+    Route::patch('/channels/{channelId}', [BroadcastChannelController::class, 'rename']);
+    Route::delete('/channels/{channelId}', [BroadcastChannelController::class, 'destroy']);
+    Route::post('/channels/{channelId}/pin', [BroadcastChannelController::class, 'pin']);
+    Route::delete('/channels/{channelId}/pin', [BroadcastChannelController::class, 'unpin']);
 });
 
 // File Upload & Download

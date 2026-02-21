@@ -23,7 +23,7 @@
     max-height: 86%;
 }
 
-.broadcast-list-title {
+.broadcast-list-container > .broadcast-list-title {
     position: absolute;
     top: 0px;
     transform: translateY(-50%);
@@ -34,6 +34,14 @@
     width: max-content;
     /* transition: left 0.16s ease-in, transform 0.16s ease-in; */
     transition: left var(--transition-normal) ease-in, transform var(--transition-normal) ease-in;
+}
+
+.broadcast-list-list-item .broadcast-list-title {
+    position: static;
+    transform: none;
+    background-color: transparent;
+    padding: 0;
+    width: auto;
 }
 
 .broadcast-list-list-container {

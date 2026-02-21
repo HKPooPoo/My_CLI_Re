@@ -249,10 +249,17 @@ function getSelectedBranchInfo() {
 // --- 按鈕組件初始化 ---
 
 // PUSH / PULL (操作對象：編輯中分支)
+// [Guard]: Only act when a blackboard page is active. Prevents interference with BC's shared buttons.
+function isBlackboardPageActive() {
+    const p = document.querySelector('.page.active');
+    return p && p.dataset.page && p.dataset.page.startsWith('blackboard-');
+}
+
 if (BBUI.elements.pushBtn) {
     new MultiStepButton(BBUI.elements.pushBtn, {
         sound: "Click.mp3",
         action: async () => {
+            if (!isBlackboardPageActive()) return;
             const updated = await BBVCS.push(state, BBUI.getTextareaValue());
             if (updated) {
                 await syncView();
@@ -266,6 +273,7 @@ if (BBUI.elements.pullBtn) {
     new MultiStepButton(BBUI.elements.pullBtn, {
         sound: "Click.mp3",
         action: async () => {
+            if (!isBlackboardPageActive()) return;
             const updated = await BBVCS.pull(state, BBUI.getTextareaValue());
             if (updated) {
                 await syncView();
