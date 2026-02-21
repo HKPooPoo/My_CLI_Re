@@ -227,6 +227,8 @@ function updatePage(subNaviItem) {
             $page.classList.remove("active");
         }
     });
+
+    window.dispatchEvent(new CustomEvent('navi:pageChanged', { detail: { page: subNaviItem } }));
 }
 
 // --- 全域事件應選 ---

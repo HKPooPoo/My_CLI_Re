@@ -168,6 +168,10 @@ export const WTList = {
     },
 
     async fetchConnections() {
+        // [Focus Protection]: Skip update if user is currently renaming a tag
+        const isTyping = document.activeElement && document.activeElement.classList.contains('walkie-typie-list-tag');
+        if (isTyping) return;
+
         try {
             const data = await WalkieTypieService.getConnections();
             if (data?.connections) {

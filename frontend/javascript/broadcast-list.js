@@ -33,11 +33,11 @@ const $bcNaviText = document.querySelector(
 
 export const BCList = {
     elements: {
-        container:  document.querySelector('.broadcast-list-list-container'),
-        pinBtn:     document.getElementById('broadcast-pin-btn'),
-        castBtn:    document.getElementById('broadcast-cast-btn'),
-        createBtn:  document.getElementById('broadcast-create-btn'),
-        deleteBtn:  document.getElementById('broadcast-delete-btn'),
+        container: document.querySelector('.broadcast-list-list-container'),
+        pinBtn: document.getElementById('broadcast-pin-btn'),
+        castBtn: document.getElementById('broadcast-cast-btn'),
+        createBtn: document.getElementById('broadcast-create-btn'),
+        deleteBtn: document.getElementById('broadcast-delete-btn'),
     },
 
     channels: [],          // Merged list: { localId, serverChannelId, name, lastSignal, ownerTitle, ownerUid, isPinned, isLocal }
@@ -68,7 +68,7 @@ export const BCList = {
      */
     lockTitleButtons() {
         const show = this.hasTitle();
-        if (this.elements.castBtn)   this.elements.castBtn.style.display   = show ? '' : 'none';
+        if (this.elements.castBtn) this.elements.castBtn.style.display = show ? '' : 'none';
         if (this.elements.createBtn) this.elements.createBtn.style.display = show ? '' : 'none';
         if (this.elements.deleteBtn) this.elements.deleteBtn.style.display = show ? '' : 'none';
     },
@@ -152,7 +152,7 @@ export const BCList = {
         // --- CAST ---
         if (this.elements.castBtn) {
             new MultiStepButton(this.elements.castBtn, [
-                { label: 'CAST', sound: 'UIGeneralFocus.mp3', action: () => {} },
+                { label: 'CAST', sound: 'UIGeneralFocus.mp3', action: () => { } },
                 {
                     label: 'SURE?',
                     sound: 'UIPipboyOK.mp3',
@@ -204,7 +204,7 @@ export const BCList = {
         // --- CREATE --- (regardless of selected item)
         if (this.elements.createBtn) {
             new MultiStepButton(this.elements.createBtn, [
-                { label: 'CREATE', sound: 'UIGeneralFocus.mp3', action: () => {} },
+                { label: 'CREATE', sound: 'UIGeneralFocus.mp3', action: () => { } },
                 {
                     label: 'SURE?',
                     sound: 'UIPipboyOKPress.mp3',
@@ -242,7 +242,7 @@ export const BCList = {
         // --- DELETE ---
         if (this.elements.deleteBtn) {
             new MultiStepButton(this.elements.deleteBtn, [
-                { label: 'DELETE', sound: 'UIGeneralFocus.mp3', action: () => {} },
+                { label: 'DELETE', sound: 'UIGeneralFocus.mp3', action: () => { } },
                 {
                     label: 'SURE?',
                     sound: 'UIGeneralCancel.mp3',
@@ -284,6 +284,10 @@ export const BCList = {
     // =====================================================================
 
     async fetchAndRender() {
+        // [Focus Protection]: Skip update if user is currently renaming a channel
+        const isTyping = document.activeElement && document.activeElement.classList.contains('broadcast-list-tag');
+        if (isTyping) return;
+
         try {
             // 1. Fetch server public channels
             const data = await BroadcastService.listChannels();
@@ -298,15 +302,15 @@ export const BCList = {
             // Add local channels first
             for (const meta of localMetas) {
                 merged.set(meta.localId, {
-                    localId:         meta.localId,
+                    localId: meta.localId,
                     serverChannelId: meta.serverChannelId ?? null,
-                    name:            meta.name,
-                    lastSignal:      meta.lastSignal ?? 0,
-                    ownerUid:        meta.ownerUid ?? '',
-                    ownerTitle:      '',  // will fill from server if cast
-                    isPinned:        false,
-                    isLocal:         true,
-                    isLocalOnly:     !meta.serverChannelId
+                    name: meta.name,
+                    lastSignal: meta.lastSignal ?? 0,
+                    ownerUid: meta.ownerUid ?? '',
+                    ownerTitle: '',  // will fill from server if cast
+                    isPinned: false,
+                    isLocal: true,
+                    isLocalOnly: !meta.serverChannelId
                 });
             }
 
@@ -323,25 +327,25 @@ export const BCList = {
 
                 if (found) {
                     // Update with fresh server data
-                    found.name       = sch.name;
+                    found.name = sch.name;
                     found.lastSignal = sch.last_signal;
-                    found.ownerUid   = sch.owner_uid;
+                    found.ownerUid = sch.owner_uid;
                     found.ownerTitle = sch.owner_title ?? '';
-                    found.isPinned   = sch.is_pinned ?? false;
+                    found.isPinned = sch.is_pinned ?? false;
                     found.isLocalOnly = false;
                 } else {
                     // Server-only channel (not owned locally)
                     const pseudoLocalId = -(sch.id); // negative to avoid collision with Dexie auto-increment
                     merged.set(pseudoLocalId, {
-                        localId:         pseudoLocalId,
+                        localId: pseudoLocalId,
                         serverChannelId: sch.id,
-                        name:            sch.name,
-                        lastSignal:      sch.last_signal,
-                        ownerUid:        sch.owner_uid,
-                        ownerTitle:      sch.owner_title ?? '',
-                        isPinned:        sch.is_pinned ?? false,
-                        isLocal:         false,
-                        isLocalOnly:     false
+                        name: sch.name,
+                        lastSignal: sch.last_signal,
+                        ownerUid: sch.owner_uid,
+                        ownerTitle: sch.owner_title ?? '',
+                        isPinned: sch.is_pinned ?? false,
+                        isLocal: false,
+                        isLocalOnly: false
                     });
                 }
             }
@@ -350,7 +354,8 @@ export const BCList = {
             this.sortChannels();
             this.render();
         } catch (e) {
-            console.warn('BCList: Fetch failed', e);
+            console.error('BCList: Fetch failed', e);
+            BBMessage.error('SYNC FAILED');
         }
     },
 

@@ -70,7 +70,7 @@ const bbAttach = EditorAttachments.create({
         const entry = await BBCore.getRecord(state.owner, state.branchId, state.currentHead);
         // Handle bin as object or string
         const currentHash = (entry && typeof entry.bin === 'object') ? entry.bin.hash : entry?.bin;
-        
+
         if (entry && currentHash === hash) {
             await db.blackboard.update([entry.owner, entry.branchId, entry.timestamp], { bin: null });
         }
@@ -151,6 +151,10 @@ async function syncView() {
  * 步驟：1. 抓取本地分支 2. 抓取遠端分支 3. 透過 Map 進行 ID 合併 4. 判斷 IsDirty 狀態 5. 排序並渲染
  */
 async function updateBranchList() {
+    // [Focus Protection]: If user is typing in the list, skip update to prevent focus loss/overwrite
+    const isTyping = document.activeElement && document.activeElement.classList.contains('vcs-list-branch');
+    if (isTyping) return;
+
     try {
         const localBranches = await BBCore.getAllBranches("local");
         const loggedInUser = localStorage.getItem("currentUser");
@@ -526,6 +530,13 @@ window.addEventListener("blackboard:authUpdated", async () => {
     await initBoard();
 });
 
+// 頁面切換時重繪指標 (無需讀 DB，使用記憶體中的狀態)
+window.addEventListener('navi:pageChanged', (e) => {
+    if (!e.detail?.page?.startsWith('blackboard-')) return;
+    const head = state.isVirtual ? 'NEW' : state.currentHead;
+    BBUI.updateIndicators(state.branch || 'NAMELESS_BRANCH', head, true);
+});
+
 // 監聽列表刷新 (Infinite List 初始化)
 window.addEventListener("blackboard:listUpdated", () => {
     setTimeout(() => initAllInfiniteLists(), 10);
@@ -558,7 +569,7 @@ setInterval(() => {
     if (document.visibilityState === 'visible' && isBlackboardVisible && loggedInUser && !isInitializing) {
         updateBranchList();
     }
-}, 500);
+}, 5000);
 
 /**
  * PWA Service Worker 註冊與更新邏輯

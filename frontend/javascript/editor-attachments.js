@@ -8,6 +8,7 @@
 
 import { FileService } from './services/file-service.js';
 import db from './indexedDB.js';
+import { BBMessage } from './blackboard-msg.js';
 
 /**
  * Format file size in human-readable format.
@@ -254,7 +255,7 @@ export const EditorAttachments = {
                         try {
                             const serverMeta = await FileService.meta(hash);
                             meta = { name: serverMeta.name, type: serverMeta.mime, size: serverMeta.size };
-                        } catch (e) {}
+                        } catch (e) { console.warn('EditorAttachments: meta fetch failed', e); }
 
                         localFile = {
                             hash: hash,
@@ -270,7 +271,7 @@ export const EditorAttachments = {
 
                     } catch (e) {
                         console.error("Download failed", e);
-                        alert("DOWNLOAD FAILED.");
+                        BBMessage.error('DOWNLOAD FAILED');
                         window.open(FileService.downloadUrl(hash), '_blank');
                         return;
                     }

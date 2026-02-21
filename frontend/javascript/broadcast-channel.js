@@ -30,6 +30,8 @@
 import { BCDb, BCMeta, getHKTTimestamp } from './broadcast-db.js';
 import { BroadcastService } from './services/broadcast-service.js';
 import { EditorAttachments } from './editor-attachments.js';
+import { playAudio } from './audio.js';
+import { BBMessage } from './blackboard-msg.js';
 
 // --- Shared global head-indicator elements (same as BB) ---
 const $branchName  = document.querySelector('.branch-name');
@@ -86,6 +88,7 @@ export const BCChannel = {
             readOnly: false,
             onAttach: async (hash, meta) => {
                 if (!this.isOwnerMode || !this.currentChannel) return;
+                playAudio('Cassette.mp3');
                 const binData = { hash, ...meta };
 
                 if (this.state.isVirtual) {
@@ -102,6 +105,7 @@ export const BCChannel = {
             },
             onDetach: async (hash) => {
                 if (!this.isOwnerMode || !this.currentChannel) return;
+                playAudio('Erase.mp3');
                 if (!this.state.isVirtual) {
                     const entry = await BCDb.getRecord(this.state.localChannelId, this.state.currentHead);
                     if (entry) {
@@ -154,6 +158,17 @@ export const BCChannel = {
             await this.handlePull();
         });
 
+        // Page switch → re-sync BC view so head indicator is always current
+        window.addEventListener('navi:pageChanged', (e) => {
+            if (e.detail?.page !== 'broadcast-channel') return;
+            if (this.currentChannel) {
+                if (this.isOwnerMode) this.syncOwnerView();
+                else this.syncReaderView();
+            } else {
+                this.clearIndicators();
+            }
+        });
+
         // Textarea input — auto-save (owner mode only)
         this.elements.textarea?.addEventListener('input', () => {
             if (!this.isOwnerMode) return;
@@ -173,6 +188,7 @@ export const BCChannel = {
 
     async loadChannel(channel) {
         clearTimeout(this.saveTimer);
+        playAudio('UIGeneralFocus.mp3');
         this.currentChannel = channel;
 
         const me = localStorage.getItem('currentUser');
@@ -213,7 +229,8 @@ export const BCChannel = {
             // API returns ASC (oldest first). Reverse so index 0 = newest.
             this.serverRecords = (data?.records ?? []).reverse();
         } catch (e) {
-            console.warn('BCChannel: fetch boards failed', e);
+            console.error('BCChannel: fetch boards failed', e);
+            BBMessage.error('FETCH FAILED');
             this.serverRecords = [];
         }
 
@@ -302,28 +319,32 @@ export const BCChannel = {
     async save(text) {
         if (!this.isOwnerMode) return;
 
-        if (this.state.isVirtual) {
-            if (text && text.trim()) {
-                await BCDb.addRecord(this.state.localChannelId, text);
-                this.state.isVirtual = false;
-                this.state.currentHead = 0;
+        try {
+            if (this.state.isVirtual) {
+                if (text && text.trim()) {
+                    await BCDb.addRecord(this.state.localChannelId, text);
+                    this.state.isVirtual = false;
+                    this.state.currentHead = 0;
+                }
+                return;
             }
-            return;
-        }
 
-        const entry = await BCDb.getRecord(this.state.localChannelId, this.state.currentHead);
+            const entry = await BCDb.getRecord(this.state.localChannelId, this.state.currentHead);
 
-        if (entry) {
-            if (entry.text !== text) {
-                // BC core mechanic: update in-place, timestamp stays the same
-                await BCDb.updateTextInPlace(this.state.localChannelId, entry.timestamp, text);
-                // currentHead does NOT change — position is fixed by creation order
+            if (entry) {
+                if (entry.text !== text) {
+                    // BC core mechanic: update in-place, timestamp stays the same
+                    await BCDb.updateTextInPlace(this.state.localChannelId, entry.timestamp, text);
+                    // currentHead does NOT change — position is fixed by creation order
+                }
+            } else if (this.state.currentHead === 0) {
+                // Initial state (no records yet)
+                if (text && text.trim()) {
+                    await BCDb.addRecord(this.state.localChannelId, text);
+                }
             }
-        } else if (this.state.currentHead === 0) {
-            // Initial state (no records yet)
-            if (text && text.trim()) {
-                await BCDb.addRecord(this.state.localChannelId, text);
-            }
+        } catch (e) {
+            console.error('BCChannel: save failed', e);
         }
     },
 
@@ -339,17 +360,21 @@ export const BCChannel = {
             return;
         }
 
-        const entry = await BCDb.getRecord(this.state.localChannelId, this.state.currentHead);
-        if (this.elements.textarea) {
-            this.elements.textarea.value = entry?.text ?? '';
+        try {
+            const entry = await BCDb.getRecord(this.state.localChannelId, this.state.currentHead);
+            if (this.elements.textarea) {
+                this.elements.textarea.value = entry?.text ?? '';
+            }
+
+            // Sync attachment chip
+            const bin = entry?.bin ?? null;
+            const hash = (typeof bin === 'object') ? bin?.hash : bin;
+            this.bcAttach?.setFromRecord(hash || null, typeof bin === 'object' ? bin : null);
+
+            this.updateIndicators();
+        } catch (e) {
+            console.error('BCChannel: syncOwnerView failed', e);
         }
-
-        // Sync attachment chip
-        const bin = entry?.bin ?? null;
-        const hash = (typeof bin === 'object') ? bin?.hash : bin;
-        this.bcAttach?.setFromRecord(hash || null, typeof bin === 'object' ? bin : null);
-
-        this.updateIndicators();
     },
 
     syncReaderView() {
