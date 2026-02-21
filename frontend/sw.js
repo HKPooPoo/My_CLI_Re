@@ -1,4 +1,4 @@
-const CACHE_NAME = 'blackboard-v8-dev-2026-02-18-WT-Files'; // Bump: WT file upload fixes
+const CACHE_NAME = 'blackboard-v9-2026-02-21-fixes'; // Bump: SW cross-origin fix, audio precache
 const ASSETS = [
   '/',
   '/index.html',
@@ -15,6 +15,20 @@ const ASSETS = [
   '/javascript/walkie-typie-text.js',
   '/javascript/walkie-typie-vcs.js',
   '/javascript/walkie-typie-db.js',
+  '/javascript/echo-service.js',
+  '/javascript/broadcast-channel.js',
+  '/javascript/broadcast-list.js',
+  '/javascript/audio.js',
+  '/audio/Cassette.mp3',
+  '/audio/Click.mp3',
+  '/audio/Erase.mp3',
+  '/audio/UIGeneralCancel.mp3',
+  '/audio/UIGeneralFocus.mp3',
+  '/audio/UIGeneralOK.mp3',
+  '/audio/UIPipboyOK.mp3',
+  '/audio/UIPipboyOKPress.mp3',
+  '/audio/UISelectOff.mp3',
+  '/audio/UISelectOn.mp3',
   '/favicon.ico',
   '/manifest.json'
 ];
@@ -57,6 +71,14 @@ self.addEventListener('fetch', (event) => {
 
   // [FIX]: Ignore chrome-extension scheme to prevent "unsupported scheme" errors
   if (event.request.url.startsWith('chrome-extension://')) {
+    return;
+  }
+
+  // [FIX]: Only intercept same-origin requests — never try to cache/fetch
+  // third-party resources (analytics, CDN, Cloudflare beacon, etc.) as
+  // cross-origin fetches from SW context fail with NetworkError and the
+  // rejected promise surfaces as a console error on the page.
+  if (new URL(event.request.url).origin !== location.origin) {
     return;
   }
 

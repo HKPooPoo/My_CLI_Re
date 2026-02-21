@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Cache;
 use App\Models\User;
 use App\Events\WalkieTypieSignal;
 use App\Services\FileService;
@@ -70,6 +71,8 @@ class WalkieTypieBoardService
                 $this->fileService->markCommitted($hash);
             }
 
+            Cache::forget("wt:boards:{$branchId}");
+
             // Broadcast to partner if connection exists
             $this->broadcastUpdate($user, $branchId);
         });
@@ -129,17 +132,19 @@ class WalkieTypieBoardService
             return [];
         }
 
-        return DB::table('walkie_typie_boards')
-            ->leftJoin('files', 'walkie_typie_boards.bin', '=', 'files.hash')
-            ->where('branch_id', $branchId)
-            ->orderBy('timestamp', 'asc')
-            ->select(
-                'walkie_typie_boards.*',
-                'files.original_name as file_name',
-                'files.size as file_size',
-                'files.mime_type as file_mime'
-            )
-            ->get();
+        return Cache::remember("wt:boards:{$branchId}", 30, fn() =>
+            DB::table('walkie_typie_boards')
+                ->leftJoin('files', 'walkie_typie_boards.bin', '=', 'files.hash')
+                ->where('branch_id', $branchId)
+                ->orderBy('timestamp', 'asc')
+                ->select(
+                    'walkie_typie_boards.*',
+                    'files.original_name as file_name',
+                    'files.size as file_size',
+                    'files.mime_type as file_mime'
+                )
+                ->get()
+        );
     }
 
     /**

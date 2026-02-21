@@ -32,6 +32,10 @@ import { BroadcastService } from './services/broadcast-service.js';
 import { EditorAttachments } from './editor-attachments.js';
 import { playAudio } from './audio.js';
 import { BBMessage } from './blackboard-msg.js';
+import { getEcho } from './echo-service.js';
+
+const _readerCache = new Map();  // serverChannelId → { records, fetchedAt }
+const READER_CACHE_TTL = 30_000; // 30 seconds
 
 // --- Shared global head-indicator elements (same as BB) ---
 const $branchName  = document.querySelector('.branch-name');
@@ -67,6 +71,9 @@ export const BCChannel = {
 
     // Attachment instance
     bcAttach: null,
+
+    // Echo subscription for the currently open channel
+    _echoChannel: null,
 
     init() {
         this.initAttachments();
@@ -117,6 +124,50 @@ export const BCChannel = {
     },
 
     // =====================================================================
+    //  WebSocket Subscription
+    // =====================================================================
+
+    async _subscribeToChannel(serverChannelId) {
+        if (!serverChannelId) return;
+        try {
+            const echo = await getEcho();
+            this._echoChannel = echo.channel(`broadcast-channel.${serverChannelId}`)
+                .listen('.broadcast.channel.updated', (e) => {
+                    if (this.currentChannel?.serverChannelId !== e.channelId) return;
+
+                    if (e.action === 'destroy') {
+                        window.dispatchEvent(new CustomEvent('broadcast:cleared'));
+                        return;
+                    }
+                    if (e.action === 'rename') {
+                        this.currentChannel.name = e.name;
+                        this.updateIndicators();
+                        window.dispatchEvent(new CustomEvent('broadcast:channelRenamed', {
+                            detail: { localId: this.currentChannel.localId, newName: e.name,
+                                      serverChannelId: e.channelId }
+                        }));
+                        return;
+                    }
+                    // action === 'cast': invalidate cache + reload for readers
+                    _readerCache.delete(e.channelId);
+                    if (!this.isOwnerMode) this.loadReaderMode(this.currentChannel);
+                    // Notify BCList to update sort order without a full re-fetch
+                    window.dispatchEvent(new CustomEvent('broadcast:signalUpdated', {
+                        detail: { serverChannelId: e.channelId, lastSignal: e.lastSignal }
+                    }));
+                });
+        } catch (err) {
+            console.error('BCChannel: subscribe failed', err);
+        }
+    },
+
+    _unsubscribeFromChannel(serverChannelId) {
+        if (!serverChannelId) return;
+        this._echoChannel = null;
+        getEcho().then(echo => echo.leaveChannel(`broadcast-channel.${serverChannelId}`)).catch(() => {});
+    },
+
+    // =====================================================================
     //  Events
     // =====================================================================
 
@@ -128,6 +179,7 @@ export const BCChannel = {
 
         // Channel deleted → clear display
         window.addEventListener('broadcast:cleared', () => {
+            this._unsubscribeFromChannel(this.currentChannel?.serverChannelId);
             this.currentChannel = null;
             this.isOwnerMode = false;
             this.lockTextarea();
@@ -188,6 +240,10 @@ export const BCChannel = {
 
     async loadChannel(channel) {
         clearTimeout(this.saveTimer);
+        // Unsubscribe from previous channel before switching
+        if (this.currentChannel?.serverChannelId !== channel.serverChannelId) {
+            this._unsubscribeFromChannel(this.currentChannel?.serverChannelId);
+        }
         playAudio('UIGeneralFocus.mp3');
         this.currentChannel = channel;
 
@@ -200,6 +256,9 @@ export const BCChannel = {
         } else {
             await this.loadReaderMode(channel);
         }
+
+        // Subscribe for live updates (works for both owner and reader)
+        this._subscribeToChannel(channel.serverChannelId);
     },
 
     async loadOwnerMode(channel) {
@@ -214,20 +273,27 @@ export const BCChannel = {
     async loadReaderMode(channel) {
         this.serverRecords = [];
         this.readerHead = 0;
-
         this.lockTextarea();
 
         if (!channel.serverChannelId) {
-            // Local-only channel not owned by us — cannot read
             if (this.elements.textarea) this.elements.textarea.value = '';
             this.updateIndicators();
             return;
         }
 
+        // Use cached records if still fresh
+        const cached = _readerCache.get(channel.serverChannelId);
+        if (cached && Date.now() - cached.fetchedAt < READER_CACHE_TTL) {
+            this.serverRecords = cached.records;
+            this.syncReaderView();
+            return;
+        }
+
         try {
             const data = await BroadcastService.fetchBoards(channel.serverChannelId);
-            // API returns ASC (oldest first). Reverse so index 0 = newest.
-            this.serverRecords = (data?.records ?? []).reverse();
+            const records = (data?.records ?? []).reverse();
+            this.serverRecords = records;
+            _readerCache.set(channel.serverChannelId, { records, fetchedAt: Date.now() });
         } catch (e) {
             console.error('BCChannel: fetch boards failed', e);
             BBMessage.error('FETCH FAILED');

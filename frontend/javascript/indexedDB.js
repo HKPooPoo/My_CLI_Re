@@ -42,5 +42,32 @@ db.version(2).stores({
     broadcastChannels: '++localId, &name, serverChannelId'
 });
 
+db.version(3).stores({
+    // All v1+v2 stores carried forward unchanged:
+    blackboard:       '[owner+branchId+timestamp], owner, branchId, [branchId+timestamp]',
+    walkieTypie:      '[branchId+timestamp], branchId, branch',
+    broadcastBoards:  '[localChannelId+timestamp], localChannelId',
+    broadcastChannels: '++localId, &name, serverChannelId',
+    // fileBlobs gains lastAccessed index for LRU eviction:
+    fileBlobs:        'hash, lastAccessed',
+}).upgrade(tx => {
+    const now = Date.now();
+    return tx.table('fileBlobs').toCollection().modify(blob => {
+        if (!blob.lastAccessed) blob.lastAccessed = now;
+    });
+});
+
+// v4: drop the unique constraint on broadcastChannels.name.
+// The &name unique index caused ConstraintErrors when two create actions
+// fired within the same millisecond (MultiStepButton resets synchronously
+// so a second click can race the first async action).
+db.version(4).stores({
+    blackboard:        '[owner+branchId+timestamp], owner, branchId, [branchId+timestamp]',
+    walkieTypie:       '[branchId+timestamp], branchId, branch',
+    broadcastBoards:   '[localChannelId+timestamp], localChannelId',
+    broadcastChannels: '++localId, name, serverChannelId',
+    fileBlobs:         'hash, lastAccessed',
+});
+
 export default db;
 export { Dexie };

@@ -105,7 +105,7 @@ export const BBUI = {
 
             item.innerHTML = `
                 <input type="text" class="vcs-list-branch" value="${safeName}" placeholder="Name your branch..." name="vcs-list-branch" maxlength="64">
-                <div class="vcs-list-timestamp">${branch.displayTime}</div>
+                <div class="vcs-list-timestamp">${this.escapeHTML(String(branch.displayTime ?? ''))}</div>
                 <div class="vcs-list-owner">${ownerDisplay}</div>
             `;
 

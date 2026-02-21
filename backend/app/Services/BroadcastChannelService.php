@@ -3,6 +3,8 @@
 namespace App\Services;
 
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Cache;
+use App\Events\BroadcastChannelUpdated;
 use App\Models\User;
 
 class BroadcastChannelService
@@ -20,20 +22,23 @@ class BroadcastChannelService
      */
     public function listChannels(?User $user): array
     {
-        $channels = DB::table('broadcast_channels')
-            ->leftJoin('users', 'broadcast_channels.owner_uid', '=', 'users.uid')
-            ->orderBy('broadcast_channels.last_signal', 'desc')
-            ->select('broadcast_channels.*', 'users.title as owner_title')
-            ->get();
+        // Base channel list is user-agnostic — cache 15s
+        $channels = Cache::remember('bc:channels:base', 15, fn() =>
+            DB::table('broadcast_channels')
+                ->leftJoin('users', 'broadcast_channels.owner_uid', '=', 'users.uid')
+                ->orderBy('broadcast_channels.last_signal', 'desc')
+                ->select('broadcast_channels.*', 'users.title as owner_title')
+                ->get()
+        );
 
-        $pinnedIds = [];
-        if ($user) {
-            $pinnedIds = DB::table('broadcast_pins')
-                ->where('user_uid', $user->uid)
-                ->pluck('channel_id')
-                ->flip()
-                ->toArray();
-        }
+        // Per-user pin list — cache 120s
+        $pinnedIds = $user
+            ? Cache::remember("bc:pins:{$user->uid}", 120, fn() =>
+                DB::table('broadcast_pins')
+                    ->where('user_uid', $user->uid)
+                    ->pluck('channel_id')->flip()->toArray()
+              )
+            : [];
 
         $result = $channels->map(function ($ch) use ($pinnedIds) {
             $ch = (array) $ch;
@@ -64,7 +69,7 @@ class BroadcastChannelService
             abort(403, 'TITLE REQUIRED');
         }
 
-        return DB::transaction(function () use ($user, $channelName, $records) {
+        $channel = DB::transaction(function () use ($user, $channelName, $records) {
             $nowMs = (int) (microtime(true) * 1000);
 
             // Find or create the channel by name
@@ -132,6 +137,15 @@ class BroadcastChannelService
 
             return DB::table('broadcast_channels')->where('id', $channelId)->first();
         });
+
+        Cache::forget('bc:channels:base');
+        Cache::forget("bc:boards:{$channel->id}");
+        broadcast(new BroadcastChannelUpdated(
+            (int) $channel->id, $channel->name, $channel->owner_uid,
+            (int) $channel->last_signal, 'cast'
+        ));
+
+        return $channel;
     }
 
     /**
@@ -166,6 +180,13 @@ class BroadcastChannelService
         DB::table('broadcast_channels')
             ->where('id', $channelId)
             ->update(['name' => $newName, 'updated_at' => now()]);
+
+        Cache::forget('bc:channels:base');
+        $updated = DB::table('broadcast_channels')->where('id', $channelId)->first();
+        broadcast(new BroadcastChannelUpdated(
+            $channelId, $newName, $updated->owner_uid,
+            (int) $updated->last_signal, 'rename'
+        ));
     }
 
     /**
@@ -192,6 +213,12 @@ class BroadcastChannelService
             DB::table('broadcast_pins')->where('channel_id', $channelId)->delete();
             DB::table('broadcast_channels')->where('id', $channelId)->delete();
         });
+
+        Cache::forget('bc:channels:base');
+        Cache::forget("bc:boards:{$channelId}");
+        broadcast(new BroadcastChannelUpdated(
+            $channelId, $channel->name, $channel->owner_uid, 0, 'destroy'
+        ));
     }
 
     /**
@@ -201,18 +228,20 @@ class BroadcastChannelService
      */
     public function fetchBoards(int $channelId): array
     {
-        return DB::table('broadcast_boards')
-            ->leftJoin('files', 'broadcast_boards.bin', '=', 'files.hash')
-            ->where('broadcast_boards.channel_id', $channelId)
-            ->orderBy('broadcast_boards.timestamp', 'asc')
-            ->select(
-                'broadcast_boards.*',
-                'files.original_name as file_name',
-                'files.size as file_size',
-                'files.mime_type as file_mime'
-            )
-            ->get()
-            ->toArray();
+        return Cache::remember("bc:boards:{$channelId}", 30, fn() =>
+            DB::table('broadcast_boards')
+                ->leftJoin('files', 'broadcast_boards.bin', '=', 'files.hash')
+                ->where('broadcast_boards.channel_id', $channelId)
+                ->orderBy('broadcast_boards.timestamp', 'asc')
+                ->select(
+                    'broadcast_boards.*',
+                    'files.original_name as file_name',
+                    'files.size as file_size',
+                    'files.mime_type as file_mime'
+                )
+                ->get()
+                ->toArray()
+        );
     }
 
     /**
@@ -230,6 +259,7 @@ class BroadcastChannelService
             ['user_uid', 'channel_id'],
             ['updated_at']
         );
+        Cache::forget("bc:pins:{$user->uid}");
     }
 
     /**
@@ -241,5 +271,6 @@ class BroadcastChannelService
             ->where('user_uid', $user->uid)
             ->where('channel_id', $channelId)
             ->delete();
+        Cache::forget("bc:pins:{$user->uid}");
     }
 }

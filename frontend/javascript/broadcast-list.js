@@ -44,6 +44,7 @@ export const BCList = {
     infiniteList: null,
     selectionTimer: null,
     selectedChannel: null,
+    _fetchController: null,
 
     init() {
         this.bindEvents();
@@ -114,6 +115,16 @@ export const BCList = {
                 this.selectedChannel.name = newName;
                 this.updateNaviText(newName);
             }
+        });
+
+        // WS-driven last_signal refresh — no network call
+        window.addEventListener('broadcast:signalUpdated', (e) => {
+            const { serverChannelId, lastSignal } = e.detail;
+            const ch = this.channels.find(c => c.serverChannelId === serverChannelId);
+            if (!ch) return;
+            ch.lastSignal = lastSignal;
+            this.sortChannels();
+            this.render();
         });
 
         // --- PIN ---
@@ -214,8 +225,9 @@ export const BCList = {
                         const autoName = `BC_${Date.now()}`;
                         const msg = BBMessage.info('CREATING...');
 
+                        let localId;
                         try {
-                            const localId = await BCMeta.createChannel(autoName);
+                            localId = await BCMeta.createChannel(autoName);
                             // Create initial empty board record
                             await BCDb.addRecord(localId, '');
 
@@ -231,6 +243,11 @@ export const BCList = {
                             }
                         } catch (e) {
                             console.error('CREATE ERROR:', e);
+                            // If createChannel succeeded but addRecord failed, clean up the
+                            // orphaned channel entry so it doesn't linger in the list.
+                            if (localId != null) {
+                                await BCMeta.deleteChannel(localId).catch(() => {});
+                            }
                             msg.close();
                             BBMessage.error('ERROR: CREATE FAILED');
                         }
@@ -288,9 +305,15 @@ export const BCList = {
         const isTyping = document.activeElement && document.activeElement.classList.contains('broadcast-list-tag');
         if (isTyping) return;
 
+        // Abort any in-flight request before starting a new one
+        this._fetchController?.abort();
+        this._fetchController = new AbortController();
+        const { signal } = this._fetchController;
+
         try {
             // 1. Fetch server public channels
-            const data = await BroadcastService.listChannels();
+            const data = await BroadcastService.listChannels(signal);
+            if (signal.aborted) return;
             const serverChannels = data?.channels ?? [];
 
             // 2. Fetch local channel metadata from IndexedDB
@@ -354,6 +377,7 @@ export const BCList = {
             this.sortChannels();
             this.render();
         } catch (e) {
+            if (signal.aborted || e.name === 'AbortError') return; // silent cancel
             console.error('BCList: Fetch failed', e);
             BBMessage.error('SYNC FAILED');
         }

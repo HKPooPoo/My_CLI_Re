@@ -51,9 +51,13 @@
     width: 70%;
     height: 70%;
     background-color: var(--text-green);
+    -webkit-mask-image: url('../images/swap_vert.svg');
     mask-image: url('../images/swap_vert.svg');
+    -webkit-mask-size: contain;
     mask-size: contain;
+    -webkit-mask-repeat: no-repeat;
     mask-repeat: no-repeat;
+    -webkit-mask-position: center;
     mask-position: center;
     transition: transform var(--transition-normal);
 }
@@ -99,6 +103,21 @@
     height: clamp(192px, calc(var(--container-width) / 2), 40vh);
     overflow-y: auto;
     overflow-x: hidden;
+    scrollbar-width: thin;
+    scrollbar-color: var(--text-green) var(--bg-primary);
+}
+
+.walkie-typie-list-list-container::-webkit-scrollbar {
+    width: 4px;
+}
+
+.walkie-typie-list-list-container::-webkit-scrollbar-track {
+    background: var(--bg-primary);
+}
+
+.walkie-typie-list-list-container::-webkit-scrollbar-thumb {
+    background-color: var(--text-green);
+    border-radius: 2px;
 }
 
 .walkie-typie-list-list-item {

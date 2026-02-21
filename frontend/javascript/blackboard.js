@@ -569,7 +569,7 @@ setInterval(() => {
     if (document.visibilityState === 'visible' && isBlackboardVisible && loggedInUser && !isInitializing) {
         updateBranchList();
     }
-}, 5000);
+}, 10_000);
 
 /**
  * PWA Service Worker 註冊與更新邏輯

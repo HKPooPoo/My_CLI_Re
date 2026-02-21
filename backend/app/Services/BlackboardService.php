@@ -65,6 +65,7 @@ class BlackboardService
             }
 
             Cache::forget("user:{$user->uid}:branches");
+            Cache::forget("bb:branch:{$user->uid}:{$branchId}:details");
         });
     }
 
@@ -93,18 +94,20 @@ class BlackboardService
             return [];
         }
 
-        return DB::table('blackboards')
-            ->leftJoin('files', 'blackboards.bin', '=', 'files.hash')
-            ->where('blackboards.branch_id', $branchId)
-            ->where('blackboards.owner', $user->uid)
-            ->orderBy('blackboards.timestamp', 'asc')
-            ->select(
-                'blackboards.*',
-                'files.original_name as file_name',
-                'files.size as file_size',
-                'files.mime_type as file_mime'
-            )
-            ->get();
+        return Cache::remember("bb:branch:{$user->uid}:{$branchId}:details", 30, fn() =>
+            DB::table('blackboards')
+                ->leftJoin('files', 'blackboards.bin', '=', 'files.hash')
+                ->where('blackboards.branch_id', $branchId)
+                ->where('blackboards.owner', $user->uid)
+                ->orderBy('blackboards.timestamp', 'asc')
+                ->select(
+                    'blackboards.*',
+                    'files.original_name as file_name',
+                    'files.size as file_size',
+                    'files.mime_type as file_mime'
+                )
+                ->get()
+        );
     }
 
     public function deleteBranch(User $user, string $branchId)
@@ -116,6 +119,7 @@ class BlackboardService
 
         if ($deleted) {
             Cache::forget("user:{$user->uid}:branches");
+            Cache::forget("bb:branch:{$user->uid}:{$branchId}:details");
         }
 
         return $deleted;

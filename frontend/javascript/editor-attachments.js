@@ -35,6 +35,20 @@ function mimeIcon(mime) {
     return '📎';
 }
 
+const BLOB_MAX = 50;
+const MAX_FILE_SIZE = 1 * 1024 * 1024 * 1024; // 1 GB
+
+async function _pruneFileBlobs() {
+    const count = await db.fileBlobs.count();
+    if (count <= BLOB_MAX) return;
+    // Only evict synced blobs (local-only blobs cannot be re-downloaded)
+    const synced = await db.fileBlobs.where('status').equals('synced').toArray();
+    synced.sort((a, b) => (a.lastAccessed ?? 0) - (b.lastAccessed ?? 0));
+    const excess = count - BLOB_MAX;
+    const toDelete = synced.slice(0, excess).map(b => b.hash);
+    if (toDelete.length) await db.fileBlobs.bulkDelete(toDelete);
+}
+
 export const EditorAttachments = {
     /**
      * Create a new attachment manager instance.
@@ -144,6 +158,11 @@ export const EditorAttachments = {
              * @param {File} file
              */
             async handleFile(file) {
+                if (file.size > MAX_FILE_SIZE) {
+                    BBMessage.error('FILE TOO LARGE: MAX 1 GB');
+                    return;
+                }
+
                 if (this.currentHash) {
                     this.detach(this.currentHash);
                 }
@@ -160,7 +179,8 @@ export const EditorAttachments = {
                             name: file.name,
                             type: file.type,
                             size: file.size,
-                            status: 'local'
+                            status: 'local',
+                            lastAccessed: Date.now()
                         });
                     } catch (dbErr) {
                         if (dbErr.name === 'QuotaExceededError') {
@@ -172,6 +192,7 @@ export const EditorAttachments = {
                     }
 
                     this.currentHash = hash;
+                    _pruneFileBlobs(); // fire-and-forget
 
                     this._renderChip({
                         hash: hash,
@@ -242,6 +263,10 @@ export const EditorAttachments = {
             async openFile(hash) {
                 let localFile = await db.fileBlobs.get(hash);
 
+                if (localFile?.blob) {
+                    await db.fileBlobs.update(hash, { lastAccessed: Date.now() });
+                }
+
                 if (!localFile || !localFile.blob) {
                     const loadingMsg = this._findChip(hash);
                     if (loadingMsg) {
@@ -263,7 +288,8 @@ export const EditorAttachments = {
                             name: meta.name,
                             type: meta.type,
                             size: meta.size,
-                            status: 'synced'
+                            status: 'synced',
+                            lastAccessed: Date.now()
                         };
 
                         await db.fileBlobs.put(localFile);

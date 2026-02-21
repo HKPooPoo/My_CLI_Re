@@ -19,7 +19,7 @@ return [
 
     'allowed_methods' => ['*'],
 
-    'allowed_origins' => ['*'], // In production, restrict this to your frontend domain
+    'allowed_origins' => [env('APP_URL', 'http://localhost')],
 
     'allowed_origins_patterns' => [],
 

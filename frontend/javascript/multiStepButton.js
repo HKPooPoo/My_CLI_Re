@@ -19,15 +19,18 @@ export class MultiStepButton {
      * @param {HTMLElement} element 目標按鈕元素
      * @param {Object[]|Object} steps 步驟配置 (支援單個物件或物件陣列)
      * @param {number} timeout 多階點擊的有效等待時間 (毫秒)
+     * @param {number} cooldown 點擊完成後的冷卻時間 (毫秒)
      */
-    constructor(element, steps, timeout = 3000) {
+    constructor(element, steps, timeout = 3000, cooldown = 500) {
         if (!element) return;
         this.element = element;
         // 靈活性擴充：若只傳入單一物件，自動包裹為單階陣列，簡化單音效按鈕的調用
         this.steps = Array.isArray(steps) ? steps : [steps];
         this.timeout = timeout;
+        this.cooldown = cooldown;
         this.state = 0;
         this.timer = null;
+        this.isCooldown = false;
 
         this.init();
     }
@@ -48,6 +51,8 @@ export class MultiStepButton {
      * 步驟：1. 提取當前狀態配置 2. 播音效 3. 執行 Action 4. 判定狀態轉移或重置
      */
     handleClick() {
+        if (this.isCooldown) return;
+
         const currentStep = this.steps[this.state];
 
         // --- 執行反饋 ---
@@ -56,7 +61,8 @@ export class MultiStepButton {
         }
 
         if (currentStep.action) {
-            currentStep.action();
+            // Prevent unhandled Promise rejection if action is async
+            Promise.resolve(currentStep.action()).catch(() => {});
         }
 
         // --- 狀態演進判定 ---
@@ -68,12 +74,26 @@ export class MultiStepButton {
                 this.resetTimer(); // 重新計時，逾時則重置
             } else {
                 // 已到達最後一階，迴圈回起點
+                this.enterCooldown();
                 this.reset();
             }
         } else {
             // 單階模式路徑：僅用於音效反饋，不演進狀態
+            this.enterCooldown();
             this.updateUI();
         }
+    }
+
+    /**
+     * 進入冷卻狀態，避免連續點擊
+     */
+    enterCooldown() {
+        this.isCooldown = true;
+        this.element.style.pointerEvents = "none";
+        setTimeout(() => {
+            this.isCooldown = false;
+            this.element.style.pointerEvents = "";
+        }, this.cooldown);
     }
 
     /**

@@ -49,7 +49,9 @@ export function playAudio(fileName) {
     if (!fileName || !audioCache[fileName] || isMobile()) return;
 
     audioCache[fileName].currentTime = 0;
-    audioCache[fileName].play();
+    audioCache[fileName].play().catch(() => {
+        // Silently ignore autoplay policy blocks (Firefox/Chrome first-load restriction)
+    });
 }
 
 /**

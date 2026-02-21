@@ -121,29 +121,37 @@
     width: 128%;
     height: 60%;
     background-color: var(--text-green);
+    -webkit-mask-size: contain;
     mask-size: contain;
+    -webkit-mask-repeat: no-repeat;
     mask-repeat: no-repeat;
+    -webkit-mask-position: center;
     mask-position: center;
     transition: background-color 0.2s, filter 0.2s;
 }
 
 .feature-btn[data-feature-btn="translate-zh-TW"]::after {
+    -webkit-mask-image: url('../images/translate_zh_tw.svg');
     mask-image: url('../images/translate_zh_tw.svg');
 }
 
 .feature-btn[data-feature-btn="translate-zh-CN"]::after {
+    -webkit-mask-image: url('../images/translate_zh_cn.svg');
     mask-image: url('../images/translate_zh_cn.svg');
 }
 
 .feature-btn[data-feature-btn="translate-en"]::after {
+    -webkit-mask-image: url('../images/translate_en.svg');
     mask-image: url('../images/translate_en.svg');
 }
 
 .feature-btn[data-feature-btn="translate-ja"]::after {
+    -webkit-mask-image: url('../images/translate_ja.svg');
     mask-image: url('../images/translate_ja.svg');
 }
 
 .feature-btn[data-feature-btn="voice-to-textbox"]::after {
+    -webkit-mask-image: url('../images/voice_to_textbox.svg');
     mask-image: url('../images/voice_to_textbox.svg');
 }
 
@@ -188,6 +196,7 @@
 /* Frosted glass effect */
 .frosted-glass {
     /* background: var(--frosted-glass-bg); */
+    -webkit-backdrop-filter: blur(10px);
     backdrop-filter: blur(10px);
     border: var(--frosted-glass-border);
     /* box-shadow: var(--frosted-glass-shadow); */

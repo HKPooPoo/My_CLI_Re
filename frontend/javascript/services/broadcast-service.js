@@ -1,8 +1,8 @@
 import { apiRequest } from './api.js';
 
 export const BroadcastService = {
-    listChannels() {
-        return apiRequest('/broadcast/channels', { method: 'GET' });
+    listChannels(signal) {
+        return apiRequest('/broadcast/channels', signal ? { signal } : {});
     },
     cast(data) {
         return apiRequest('/broadcast/channels/cast', {

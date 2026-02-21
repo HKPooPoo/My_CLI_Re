@@ -50,6 +50,21 @@
     height: clamp(192px, calc(var(--container-width) / 2), 40vh);
     overflow-y: auto;
     overflow-x: hidden;
+    scrollbar-width: thin;
+    scrollbar-color: var(--text-green) var(--bg-primary);
+}
+
+.broadcast-list-list-container::-webkit-scrollbar {
+    width: 4px;
+}
+
+.broadcast-list-list-container::-webkit-scrollbar-track {
+    background: var(--bg-primary);
+}
+
+.broadcast-list-list-container::-webkit-scrollbar-thumb {
+    background-color: var(--text-green);
+    border-radius: 2px;
 }
 
 .broadcast-list-list-item {

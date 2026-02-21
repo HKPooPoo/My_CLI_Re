@@ -23,7 +23,7 @@ class FileController extends Controller
     public function upload(Request $request)
     {
         $request->validate([
-            'file' => 'required|file',
+            'file' => 'required|file|max:1048576',  // 1 GB in kilobytes
         ]);
 
         $user = Auth::user();
