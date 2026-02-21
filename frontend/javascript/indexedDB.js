@@ -15,53 +15,24 @@ import Dexie from './vendor/dexie.js';
 const db = new Dexie('blackboardDB');
 
 // --- 版本與 Schema 定義 ---
-db.version(7).stores({
-    blackboard: '[owner+branchId+timestamp], owner, branchId, [branchId+timestamp]'
-});
-
-db.version(8).stores({
+db.version(1).stores({
     /**
      * blackboard 表
-     * 欄位：[owner+branchId+timestamp], branch_name, text, bin
-     * 索引：owner (用於登出抹除), branchId (用於快速查詢)
-     * 新增索引：[branchId+timestamp] (用於解決 local(synced) 與 local 混合時的排序問題)
+     * 欄位：[owner+branchId+timestamp], owner, branchId, [branchId+timestamp]
      */
     blackboard: '[owner+branchId+timestamp], owner, branchId, [branchId+timestamp]',
 
     /**
-     * walkieTypie 表 (從 blackboard 分離)
-     * 結構相同，但完全獨立的儲存空間
-     * 用於 Walkie-Typie 的 WE/THEY 雙面板歷史紀錄
+     * walkieTypie 表
+     * 主鍵：[branchId+timestamp]
+     * 索引：branchId, branch
      */
-    walkieTypie: '[owner+branchId+timestamp], owner, branchId, [branchId+timestamp]'
-});
-
-db.version(9).stores({
-    /**
-     * walkieTypie 表 (適配化 WT 特性)
-     * 主鍵：[branchId+timestamp] — WT 不需要 owner 區分
-     * 索引：branchId (查詢分支), branch (區分 WE/THEY)
-     * branchId 格式固定為字串 "wt_{A}_{B}"
-     */
-    walkieTypie: '[branchId+timestamp], branchId, branch'
-});
-
-db.version(10).stores({
-    /**
-     * V10: 強制刷新 Schema，確保 string 類型的 branchId 被正確索引
-     */
-    blackboard: '[owner+branchId+timestamp], owner, branchId, [branchId+timestamp]',
-    walkieTypie: '[branchId+timestamp], branchId, branch'
-});
-
-db.version(11).stores({
-    /**
-     * V11: 新增 fileBlobs 用於儲存二進制檔案 (Local-First)
-     * hash: SHA-256 雜湊值 (Primary Key)
-     * 內容包含: blob, originalName, mimeType, size
-     */
-    blackboard: '[owner+branchId+timestamp], owner, branchId, [branchId+timestamp]',
     walkieTypie: '[branchId+timestamp], branchId, branch',
+
+    /**
+     * fileBlobs 表
+     * 主鍵：hash
+     */
     fileBlobs: 'hash'
 });
 

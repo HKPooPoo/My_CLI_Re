@@ -14,10 +14,10 @@ return new class extends Migration {
             $table->id();
             $table->string('owner');          // User UID
             $table->string('branch_id'); // Immutable Branch ID (Frontend Timestamp or String ID)
-            $table->string('branch_name')->nullable(); 
+            $table->string('branch_name')->nullable();
             $table->bigInteger('timestamp'); // History Node Timestamp
             $table->longText('text')->nullable();
-            $table->binary('bin')->nullable(); // Reserved for binary files
+            $table->string('bin', 512)->nullable(); // Reserved for binary files, now stores file hash
             $table->timestamps(); // DB Internal: created_at, updated_at
 
             // 複合唯一索引，確保同步邏輯的原子性

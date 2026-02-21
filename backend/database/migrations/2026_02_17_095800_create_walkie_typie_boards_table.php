@@ -17,7 +17,7 @@ return new class extends Migration {
             $table->string('branch_name')->nullable();
             $table->bigInteger('timestamp');      // History Node Timestamp
             $table->longText('text')->nullable();
-            $table->binary('bin')->nullable();    // Reserved for binary files
+            $table->string('bin', 512)->nullable();    // Reserved for binary files, now stores file hash
             $table->timestamps();
 
             // 複合唯一索引

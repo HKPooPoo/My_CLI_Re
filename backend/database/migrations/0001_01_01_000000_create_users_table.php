@@ -14,6 +14,7 @@ return new class extends Migration {
             $table->id();
             $table->string('uid')->unique(); // 使用者選用的唯一識別
             $table->string('passcode');      // 你的命名規範：使用 passcode 而非 password
+            $table->string('title')->nullable();
             $table->string('email')->nullable();
             $table->rememberToken();
             $table->timestamps();

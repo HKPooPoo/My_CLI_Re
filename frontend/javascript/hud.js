@@ -26,8 +26,9 @@ const loginStatusDisplay = document.getElementById("login-status-display");
  */
 export function updateLoginStatus() {
     const currentUser = localStorage.getItem("currentUser") || "";
+    const currentTitle = localStorage.getItem("currentTitle") || "";
     if (loginStatusDisplay) {
-        loginStatusDisplay.textContent = currentUser;
+        loginStatusDisplay.textContent = currentTitle ? `${currentUser} [${currentTitle}]` : currentUser;
     }
 }
 

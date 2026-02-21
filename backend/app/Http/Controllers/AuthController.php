@@ -45,7 +45,7 @@ class AuthController extends Controller
 
             return response()->json([
                 'message' => 'LOGIN SUCCESSFUL',
-                'user' => ['uid' => $user->uid]
+                'user' => ['uid' => $user->uid, 'title' => $user->title]
             ]);
         } catch (\Exception $e) {
             Log::error('Login Error: ' . $e->getMessage());
@@ -66,6 +66,7 @@ class AuthController extends Controller
             return response()->json([
                 'isLoggedIn' => true,
                 'uid' => $user->uid,
+                'title' => $user->title,
                 'email' => $user->email
             ]);
         }
@@ -89,7 +90,8 @@ class AuthController extends Controller
 
         try {
             $user = Auth::user();
-            if (!$user) return response()->json(['message' => 'AUTH REQUIRED.'], 401);
+            if (!$user)
+                return response()->json(['message' => 'AUTH REQUIRED.'], 401);
 
             $this->authService->requestEmailBinding($request->email, $user);
             return response()->json(['message' => 'VERIFICATION COMMAND SENT.']);

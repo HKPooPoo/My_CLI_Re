@@ -40,8 +40,13 @@ export const AuthManager = {
         if (userData && userData.uid) {
             this.elements.loginContainer.style.display = "none";
             this.elements.logoutContainer.style.display = "flex";
-            this.elements.userInfoUid.textContent = userData.uid;
+            this.elements.userInfoUid.textContent = userData.title ? `${userData.uid} [${userData.title}]` : userData.uid;
             localStorage.setItem("currentUser", userData.uid);
+            if (userData.title) {
+                localStorage.setItem("currentTitle", userData.title);
+            } else {
+                localStorage.removeItem("currentTitle");
+            }
 
             // 設定 Email Placeholder
             if (this.elements.emailInput) {
@@ -150,13 +155,13 @@ export const AuthManager = {
                 action: async () => {
                     try {
                         await AuthService.logout();
-                        
+
                         // 抹除本地同步資料
                         await BBCore.wipeSyncedData();
-                        
+
                         this.updateUI(null);
                         BBMessage.info("LOGOUT COMPLETE");
-                        
+
                         // 通知 UI 刷新分支清單
                         window.dispatchEvent(new CustomEvent("blackboard:branchUpdated"));
                     } catch (e) {
@@ -270,8 +275,8 @@ export const AuthManager = {
         btn.className = "auth-btn crt-text-green btn-pwa-install";
         btn.textContent = "INSTALL APP";
         btn.style.marginTop = "1rem";
-        btn.style.border = "1px dashed var(--crt-green)"; 
-        
+        btn.style.border = "1px dashed var(--crt-green)";
+
         btn.addEventListener("click", async () => {
             if (window.installPWA) {
                 await window.installPWA();
