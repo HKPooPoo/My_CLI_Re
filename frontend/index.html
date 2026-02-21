@@ -9,7 +9,7 @@
     <meta name="theme-color" content="#32FF32">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <script type="module" src="./javascript/audio.js"></script>
+    <script type="module" src="./javascript/core/audio.js"></script>
     <link rel="icon" href="./images/favicon.ico">
     <link rel="apple-touch-icon" href="./images/favicon.ico">
     <link rel="stylesheet" href="style.css">
@@ -66,30 +66,12 @@
                         <div class="sub-navi-item" data-sub-navi-item="blackboard-branch">
                             <div class="sub-navi-item-text">BRANCH</div>
                         </div>
-                        <!-- <div class="sub-navi-item" data-sub-navi-item="blackboard-stash">
-                            <div class="sub-navi-item-text">STASH</div>
-                        </div> -->
                         <div class="sub-navi-item" data-sub-navi-item="auth">
                             <div class="sub-navi-item-text">AUTH</div>
                         </div>
                     </div>
                 </div>
             </div>
-            <!-- <div class="navi-item" data-navi-item="ai" data-sound-main="UIGeneralOK.mp3"
-                data-sound-sub="UIPipboyOK.mp3">
-                <div class="navi-item-text">AI</div>
-                <div class="sub-navi-indicator"></div>
-                <div class="sub-navi-container">
-                    <div class="sub-navi-track">
-                        <div class="sub-navi-item" data-sub-navi-item="ai-translate">
-                            <div class="sub-navi-item-text">TRANS</div>
-                        </div>
-                        <div class="sub-navi-item" data-sub-navi-item="ai-cqc">
-                            <div class="sub-navi-item-text">CQC</div>
-                        </div>
-                    </div>
-                </div>
-            </div> -->
             <div class="navi-item" data-navi-item="walkie-typie" data-sound-main="UIGeneralOK.mp3"
                 data-sound-sub="UIPipboyOK.mp3">
                 <div class="navi-item-text">WALKIE-TYPIE</div>
@@ -102,9 +84,6 @@
                         <div class="sub-navi-item" data-sub-navi-item="walkie-typie-text">
                             <div class="sub-navi-item-text">TEXT</div>
                         </div>
-                        <!-- <div class="sub-navi-item" data-sub-navi-item="walkie-typie-add">
-                            <div class="sub-navi-item-text">ADD</div>
-                        </div> -->
                     </div>
                 </div>
             </div>
@@ -161,10 +140,6 @@
                     <div class="drop-overlay" id="bb-drop-overlay">DROP FILES HERE</div>
                 </div>
             </div>
-            <!--try to use version control, instead of todo1 todo2 log1 log2...-->
-            <!-- <div class="page can-push-pull" data-page="blackboard-todo">
-                <textarea name="" id="todo-textarea" placeholder="Enter..."></textarea>
-            </div> -->
             <div class="page show-branch" data-page="blackboard-branch">
                 <div class="vcs-container">
                     <div class="vcs-title crt-text-orange">BRANCH CONTROLLER</div>
@@ -212,41 +187,6 @@
                             <button class="vcs-btn" id="drop-btn">DROP</button>
                         </div>
                     </div>
-                </div>
-            </div>
-            <div class="page show-branch" data-page="blackboard-stash">
-                <div class="vcs-container">
-                    <div class="vcs-title crt-text-orange">STASH CONTROLLER</div>
-                    <div class="vcs-list-container" data-sound-item="UIGeneralFocus.mp3">
-                        <div class="vcs-list-item active">
-                            <!--Stash is belonings of a branch-->
-                            <div class="vcs-list-timestamp">2026-02-13T14:05:27.123Z</div>
-                            <input type="text" name="vcs-list-stash-comment" id="" class="vcs-list-stash-comment"
-                                placeholder="comment">
-                        </div>
-                        <div class="vcs-list-item">
-                            <div class="vcs-list-timestamp">2026-02-13T14:05:27.123Z</div>
-                            <input type="text" name="vcs-list-stash-comment" id="" class="vcs-list-stash-comment"
-                                placeholder="comment">
-                        </div>
-                        <div class="vcs-list-item">
-                            <div class="vcs-list-timestamp">2026-02-13T14:05:27.123Z</div>
-                            <input type="text" name="vcs-list-stash-comment" id="" class="vcs-list-stash-comment"
-                                placeholder="comment">
-                        </div>
-                        <div class="vcs-list-item">
-                            <div class="vcs-list-timestamp">2026-02-13T14:05:27.123Z</div>
-                            <input type="text" name="vcs-list-stash-comment" id="" class="vcs-list-stash-comment"
-                                placeholder="comment">
-                        </div>
-                        <div class="vcs-list-item">
-                            <div class="vcs-list-timestamp">2026-02-13T14:05:27.123Z</div>
-                            <input type="text" name="vcs-list-stash-comment" id="" class="vcs-list-stash-comment"
-                                placeholder="comment">
-                        </div>
-                    </div>
-                    <button class="vcs-btn" id="stash-btn">STASH</button>
-                    <button class="vcs-btn" id="pop-btn">POP</button>
                 </div>
             </div>
             <div class="page" data-page="auth">
@@ -356,8 +296,31 @@
                 </div>
             </div> -->
             <!---->
-            <div class="page" data-page="broadcast-channel">qrs</div>
-            <div class="page" data-page="broadcast-list">tuv</div>
+            <div class="page can-push-pull have-feature show-branch" data-page="broadcast-channel">
+                <div class="editor-wrapper" id="bc-drop-zone">
+                    <div class="attachment-chips" id="bc-attachment-chips"></div>
+                    <textarea name="" id="channel-textarea" placeholder="Enter..."></textarea>
+                    <input type="file" id="bc-file-input" multiple hidden accept="*/*">
+                    <div class="drop-overlay" id="bc-drop-overlay">DROP FILES HERE</div>
+                </div>
+            </div>
+            <div class="page can-push-pull have-feature show-branch" data-page="broadcast-list">
+                <div class="broadcast-list-container">
+                    <div class="broadcast-list-title crt-text-orange">CHANNEL MODULATION</div>
+                    <div class="broadcast-list-list-container" data-sound-item="UIGeneralFocus.mp3">
+                        <!-- <div class="broadcast-list-list-item">
+                        <input type="text" class="broadcast-list-tag" placeholder="Name this guy..." id=""
+                            name="broadcast-list-tag">
+                        <div class="broadcast-list-last-signal">2026-02-15T20:45.186+08:00</div>
+                        <div class="broadcast-list-title">title</div>
+                    </div> -->
+                    </div>
+                    <button id="broadcast-pin-btn" class="crt-text-green">PIN</button>
+                    <button id="broadcast-cast-btn" class="crt-text-green">CAST</button>
+                    <button id="broadcast-create-btn" class="crt-text-green">CREATE</button>
+                    <button id="broadcast-delete-btn" class="crt-text-green">DELETE</button>
+                </div>
+            </div>
             <div id="toast-container"></div>
         </div>
     </div>
