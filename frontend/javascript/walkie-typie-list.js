@@ -19,6 +19,7 @@ import { WTDb, getHKTTimestamp } from "./walkie-typie-db.js";
 import { InfiniteList } from "./blackboard-ui-list.js";
 import { MultiStepButton } from "./multiStepButton.js";
 import { BBMessage } from "./blackboard-msg.js";
+import { t } from './i18n.js';
 
 export const WTList = {
     elements: {
@@ -54,28 +55,28 @@ export const WTList = {
         // ADD Button — MultiStepButton: [click -> show SURE? -> click again -> execute]
         if (this.elements.addBtn) {
             new MultiStepButton(this.elements.addBtn, [
-                { label: "ADD", sound: "UIGeneralFocus.mp3", action: () => { } },
+                { label: t('walkieTypie.addBtn'), sound: "UIGeneralFocus.mp3", action: () => { } },
                 {
-                    label: "SURE?",
+                    label: t('common.sure'),
                     sound: "UIGeneralOK.mp3",
                     action: async () => {
                         const uid = this.elements.uidInput?.value?.trim();
                         if (!uid) {
-                            BBMessage.error("ERROR: UID REQUIRED");
+                            BBMessage.error(t('walkieTypie.uidRequired'));
                             return;
                         }
 
                         try {
-                            BBMessage.info("CONNECTING...");
+                            BBMessage.info(t('walkieTypie.connecting'));
                             const result = await WalkieTypieService.createConnection({ uid });
                             if (result.connection) {
                                 this.handleUpdate(result.connection);
                                 this.elements.uidInput.value = "";
-                                BBMessage.info("CONNECTED");
+                                BBMessage.info(t('walkieTypie.connected'));
                             }
                         } catch (e) {
                             console.error("CONNECT ERROR:", e);
-                            BBMessage.error("ERROR: CONNECT FAILED");
+                            BBMessage.error(t('walkieTypie.connectFailed'));
                         }
                     }
                 }
@@ -85,13 +86,13 @@ export const WTList = {
         // CUT Button — MultiStepButton: delete selected connection
         if (this.elements.cutBtn) {
             new MultiStepButton(this.elements.cutBtn, [
-                { label: "CUT", sound: "UIGeneralFocus.mp3", action: () => { } },
+                { label: t('walkieTypie.cutStep1'), sound: "UIGeneralFocus.mp3", action: () => { } },
                 {
-                    label: "SURE?",
+                    label: t('common.sure'),
                     sound: "UIGeneralCancel.mp3",
                     action: async () => {
                         if (!this.selectedConnection) {
-                            BBMessage.error("ERROR: NO TARGET");
+                            BBMessage.error(t('walkieTypie.noTarget'));
                             return;
                         }
 
@@ -100,7 +101,7 @@ export const WTList = {
                         const partnerBranchId = this.selectedConnection.partner_branch_id;
 
                         try {
-                            BBMessage.info("CUTTING...");
+                            BBMessage.info(t('walkieTypie.cutting'));
 
                             await WalkieTypieService.deleteConnection(partnerUid);
 
@@ -122,7 +123,7 @@ export const WTList = {
                             BBMessage.success("CUT");
                         } catch (e) {
                             console.error("CUT ERROR:", e);
-                            BBMessage.error("ERROR: CUT FAILED");
+                            BBMessage.error(t('walkieTypie.cutFailed'));
                         }
                     }
                 }
@@ -233,7 +234,7 @@ export const WTList = {
             const tagInput = document.createElement("input");
             tagInput.type = "text";
             tagInput.classList.add("walkie-typie-list-tag");
-            tagInput.placeholder = "Name this guy...";
+            tagInput.placeholder = t('walkieTypie.tagPlaceholder');
             tagInput.name = "walkie-typie-list-tag";
             tagInput.value = conn.partner_tag || "";
 
@@ -244,7 +245,7 @@ export const WTList = {
                     conn.partner_tag = newTag;
                 } catch (err) {
                     console.error("TAG UPDATE ERROR:", err);
-                    BBMessage.error("ERROR: TAG UPDATE FAILED");
+                    BBMessage.error(t('walkieTypie.tagUpdateFailed'));
                 }
             });
 

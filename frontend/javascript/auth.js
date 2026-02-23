@@ -15,6 +15,7 @@ import { BBMessage } from "./blackboard-msg.js";
 import { MultiStepButton } from "./multiStepButton.js";
 import { BBCore } from "./blackboard-core.js";
 import { AuthService } from "./services/auth-service.js";
+import { t } from './i18n.js';
 
 export const AuthManager = {
     // --- DOM 引用 ---
@@ -94,14 +95,14 @@ export const AuthManager = {
                     const passcode = this.elements.passcodeInput.value.trim();
 
                     if (!uid || !passcode) {
-                        BBMessage.error("ERROR: INPUT REQUIRED");
+                        BBMessage.error(t('auth.inputRequired'));
                         return;
                     }
 
-                    const msg = BBMessage.info("AUTHENTICATING...");
+                    const msg = BBMessage.info(t('auth.authenticating'));
                     try {
                         const data = await AuthService.login({ uid, passcode });
-                        msg.update(`WELCOME ${data.user.uid.toUpperCase()}`);
+                        msg.update(t('auth.welcome', { uid: data.user.uid.toUpperCase() }));
                         // 登入成功後重新初始化以獲取完整資訊
                         this.init();
                         this.elements.uidInput.value = "";
@@ -109,7 +110,7 @@ export const AuthManager = {
                     } catch (e) {
                         console.error("LOGIN ERROR:", e);
                         msg.close();
-                        BBMessage.error(e.message || "ERROR: AUTH FAILED");
+                        BBMessage.error(e.message || t('auth.authFailed'));
                     }
                 }
             });
@@ -118,29 +119,29 @@ export const AuthManager = {
         // --- 註冊邏輯 ---
         if (this.elements.registerBtn) {
             new MultiStepButton(this.elements.registerBtn, [
-                { label: "REGISTER", sound: "Click.mp3" },
-                { label: "REGISTER x 3", sound: "Click.mp3" },
-                { label: "REGISTER x 2", sound: "Click.mp3" },
+                { label: t('auth.registerStep1'), sound: "Click.mp3" },
+                { label: t('auth.registerStep2'), sound: "Click.mp3" },
+                { label: t('auth.registerStep3'), sound: "Click.mp3" },
                 {
-                    label: "CONFIRM!",
+                    label: t('auth.registerStep4'),
                     sound: "Cassette.mp3",
                     action: async () => {
                         const uid = this.elements.uidInput.value.trim();
                         const passcode = this.elements.passcodeInput.value.trim();
 
                         if (!uid || !passcode) {
-                            BBMessage.error("ERROR: INPUT REQUIRED");
+                            BBMessage.error(t('auth.inputRequired'));
                             return;
                         }
 
-                        const msg = BBMessage.info("REGISTERING...");
+                        const msg = BBMessage.info(t('auth.registering'));
                         try {
                             const data = await AuthService.register({ uid, passcode });
-                            msg.update("REGISTRATION COMPLETE");
+                            msg.update(t('auth.registerComplete'));
                         } catch (e) {
                             console.error("REGISTER ERROR:", e);
                             msg.close();
-                            BBMessage.error(e.message || "ERROR: REGISTRATION FAILED");
+                            BBMessage.error(e.message || t('auth.registerFailed'));
                         }
                     }
                 }
@@ -159,7 +160,7 @@ export const AuthManager = {
                         await BBCore.wipeSyncedData();
 
                         this.updateUI(null);
-                        BBMessage.info("LOGOUT COMPLETE");
+                        BBMessage.info(t('auth.logoutComplete'));
                     } catch (e) {
                         console.error("LOGOUT ERROR:", e);
                         this.updateUI(null);
@@ -181,7 +182,7 @@ export const AuthManager = {
                     const isCommand = input.startsWith("/passwd");
 
                     if (isCommand) {
-                        const msg = BBMessage.info("EXECUTING...");
+                        const msg = BBMessage.info(t('auth.executing'));
                         try {
                             const data = await AuthService.executeCommand({ command: input });
                             msg.update(data.message);
@@ -190,16 +191,16 @@ export const AuthManager = {
                             console.error("CMD ERROR:", e);
                             msg.close();
                             if (e.status === 429) {
-                                BBMessage.error("TOO MANY ATTEMPTS");
+                                BBMessage.error(t('auth.tooManyAttempts'));
                             } else {
-                                BBMessage.error(e.message || "OFFLINE");
+                                BBMessage.error(e.message || t('auth.offlineError'));
                             }
                         }
                     } else {
                         if (!uid) {
-                            return BBMessage.error("UID REQUIRED");
+                            return BBMessage.error(t('auth.uidRequired'));
                         }
-                        const msg = BBMessage.info("REQUESTING...");
+                        const msg = BBMessage.info(t('auth.requesting'));
                         try {
                             const data = await AuthService.requestPasswordReset({ uid });
                             msg.update(data.message);
@@ -207,11 +208,11 @@ export const AuthManager = {
                             console.error("RESET ERROR:", e);
                             msg.close();
                             if (e.status === 429) {
-                                BBMessage.error("TOO MANY ATTEMPTS");
+                                BBMessage.error(t('auth.tooManyAttempts'));
                             } else if (e.message === "UID NOT FOUND OR EMAIL NOT BOUND.") {
-                                BBMessage.error("NO EMAIL REGISTERED");
+                                BBMessage.error(t('auth.noEmail'));
                             } else {
-                                BBMessage.error(e.message || "OFFLINE");
+                                BBMessage.error(e.message || t('auth.offlineError'));
                             }
                         }
                     }
@@ -230,7 +231,7 @@ export const AuthManager = {
                 const input = this.elements.emailInput.value.trim();
                 if (!input) {
                     this.isBinding = false;
-                    return BBMessage.error("INPUT REQUIRED");
+                    return BBMessage.error(t('auth.emailRequired'));
                 }
 
                 try {
@@ -240,11 +241,11 @@ export const AuthManager = {
                         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
                         if (!emailRegex.test(input)) {
                             this.isBinding = false;
-                            return BBMessage.error("INVALID EMAIL FORMAT");
+                            return BBMessage.error(t('auth.invalidEmail'));
                         }
                     }
 
-                    const msg = BBMessage.info("PROCESSING...");
+                    const msg = BBMessage.info(t('auth.processing'));
 
                     try {
                         let data;
@@ -264,11 +265,11 @@ export const AuthManager = {
                         console.error("BIND ERROR:", e);
                         msg.close();
                         if (e.status === 429) {
-                            BBMessage.error("TOO MANY ATTEMPTS");
+                            BBMessage.error(t('auth.tooManyAttempts'));
                         } else if (e.status === 422) {
-                            BBMessage.error("INVALID EMAIL FORMAT");
+                            BBMessage.error(t('auth.invalidEmail'));
                         } else {
-                            BBMessage.error(e.message || "OFFLINE");
+                            BBMessage.error(e.message || t('auth.offlineError'));
                         }
                     }
                 } finally {
@@ -297,7 +298,7 @@ export const AuthManager = {
 
         const btn = document.createElement("button");
         btn.className = "auth-btn crt-text-green btn-pwa-install";
-        btn.textContent = "INSTALL APP";
+        btn.textContent = t('auth.installBtn');
         btn.style.marginTop = "1rem";
         btn.style.border = "1px dashed var(--crt-green)";
 

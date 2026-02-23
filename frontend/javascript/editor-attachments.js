@@ -9,6 +9,7 @@
 import { FileService } from './services/file-service.js';
 import db from './indexedDB.js';
 import { BBMessage } from './blackboard-msg.js';
+import { t } from './i18n.js';
 
 /**
  * Format file size in human-readable format.
@@ -171,7 +172,7 @@ export const EditorAttachments = {
              */
             async handleFile(file) {
                 if (file.size > MAX_FILE_SIZE) {
-                    BBMessage.error('FILE TOO LARGE: MAX 1 GB');
+                    BBMessage.error(t('files.tooLarge'));
                     return;
                 }
 
@@ -207,7 +208,7 @@ export const EditorAttachments = {
                         });
                     } catch (dbErr) {
                         if (dbErr.name === 'QuotaExceededError') {
-                            BBMessage.error("STORAGE FULL");
+                            BBMessage.error(t('files.storageFull'));
                             this._clearChips();
                             return;
                         }
@@ -228,7 +229,7 @@ export const EditorAttachments = {
 
                 } catch (err) {
                     console.error('File processing failed:', err);
-                    BBMessage.error("ATTACH FAILED");
+                    BBMessage.error(t('files.attachFailed'));
                     this._clearChips();
                 }
             },
@@ -303,7 +304,7 @@ export const EditorAttachments = {
                     const loadingMsg = this._findChip(hash);
                     if (loadingMsg) {
                         const icon = loadingMsg.querySelector('.attachment-chip-icon');
-                        if (icon) icon.textContent = '[WAIT]';
+                        if (icon) icon.textContent = t('files.statusWait');
                     }
 
                     try {
@@ -329,7 +330,7 @@ export const EditorAttachments = {
 
                     } catch (e) {
                         console.error("Download failed", e);
-                        BBMessage.error('DOWNLOAD FAILED');
+                        BBMessage.error(t('files.downloadFailed'));
                         window.open(FileService.downloadUrl(hash), '_blank');
                         return;
                     }
@@ -372,17 +373,17 @@ export const EditorAttachments = {
 
                 let iconText;
                 if (status === 'local') {
-                    iconText = '[LOCAL]';
+                    iconText = t('files.statusLocal');
                     chip.classList.add('is-local');
                 } else if (status === 'synced') {
-                    iconText = '[SYNC]';
+                    iconText = t('files.statusSync');
                     chip.classList.add('is-synced');
                 } else {
-                    iconText = '[CLOUD]';
+                    iconText = t('files.statusCloud');
                 }
 
                 const removeHtml = this.readOnly ? '' :
-                    `<button class="attachment-chip-remove" data-hash="${hash}" title="Remove">[X]</button>`;
+                    `<button class="attachment-chip-remove" data-hash="${hash}" title="Remove">${t('files.removeBtn')}</button>`;
 
                 chip.innerHTML = `
                     <span class="attachment-chip-icon" style="cursor: pointer;" title="Open File">${iconText}</span>
@@ -405,7 +406,7 @@ export const EditorAttachments = {
 
                 const chip = document.createElement('div');
                 chip.className = 'attachment-chip';
-                chip.innerHTML = `<span class="attachment-chip-icon">[WAIT]</span>`;
+                chip.innerHTML = `<span class="attachment-chip-icon">${t('files.statusWait')}</span>`;
 
                 container.appendChild(chip);
                 container.classList.add('has-items');

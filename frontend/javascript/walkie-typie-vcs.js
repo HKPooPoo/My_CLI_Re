@@ -16,6 +16,7 @@ import { FileService } from "./services/file-service.js";
 import { BBMessage } from "./blackboard-msg.js";
 // Import db for direct operations in save() and commit()
 import db from "./indexedDB.js";
+import { t } from './i18n.js';
 
 export const WTVCS = {
     /**
@@ -120,7 +121,7 @@ export const WTVCS = {
         const { branchId, branch } = branchMeta;
 
         const loggedInUser = localStorage.getItem("currentUser");
-        if (!loggedInUser) throw new Error("LOGIN REQUIRED FOR COMMIT.");
+        if (!loggedInUser) throw new Error(t('walkieTypie.loginRequired'));
 
         await WTDb.scrubBranch(branchId, 10);
 
@@ -128,7 +129,7 @@ export const WTVCS = {
         records = records.filter(r => (r.text && r.text.trim() !== "") || r.bin);
 
         if (records.length === 0) {
-            throw new Error("LOCAL DATA NOT FOUND OR EMPTY.");
+            throw new Error(t('walkieTypie.noLocalData'));
         }
 
         // --- 1. Prepare Uploads ---
@@ -149,13 +150,13 @@ export const WTVCS = {
                     // Skip re-upload if already confirmed on server
                     if (localFile.status !== 'synced') {
                         try {
-                            BBMessage.info(`UPLOADING: ${r.bin.name || hash.substring(0, 8)}`);
+                            BBMessage.info(t('walkieTypie.uploading', { name: r.bin.name || hash.substring(0, 8) }));
                             await FileService.upload(localFile.blob);
                             // Mark as synced — chip transitions LOCAL → SYNC after refreshWE()
                             await db.fileBlobs.update(hash, { status: 'synced' });
                         } catch (e) {
                             console.error(`WT Commit: Upload failed for ${hash}`, e);
-                            BBMessage.error(`UPLOAD FAILED: ${hash.substring(0, 8)}`);
+                            BBMessage.error(t('walkieTypie.uploadFailed', { hash: hash.substring(0, 8) }));
                         }
                     }
                 } else {

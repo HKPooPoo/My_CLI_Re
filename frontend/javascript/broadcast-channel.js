@@ -33,6 +33,7 @@ import { EditorAttachments } from './editor-attachments.js';
 import { playAudio } from './audio.js';
 import { BBMessage } from './blackboard-msg.js';
 import { getEcho } from './echo-service.js';
+import { t } from './i18n.js';
 
 const _readerCache = new Map();  // serverChannelId → { records, fetchedAt }
 const READER_CACHE_TTL = 30_000; // 30 seconds
@@ -229,7 +230,7 @@ export const BCChannel = {
         // Textarea input — auto-save (owner mode only)
         this.elements.textarea?.addEventListener('input', () => {
             if (!this.isOwnerMode) return;
-            if ($savedStatus) $savedStatus.textContent = 'UNSAVED';
+            if ($savedStatus) $savedStatus.textContent = t('common.unsaved');
 
             clearTimeout(this.saveTimer);
             this.saveTimer = setTimeout(async () => {
@@ -301,7 +302,7 @@ export const BCChannel = {
             _readerCache.set(channel.serverChannelId, { records, fetchedAt: Date.now() });
         } catch (e) {
             console.error('BCChannel: fetch boards failed', e);
-            BBMessage.error('FETCH FAILED');
+            BBMessage.error(t('broadcast.fetchFailed'));
             this.serverRecords = [];
         }
 
@@ -429,7 +430,7 @@ export const BCChannel = {
         if (this.state.isVirtual) {
             if (this.elements.textarea) this.elements.textarea.value = '';
             this.bcAttach?.clear();
-            this.updateIndicators('NEW');
+            this.updateIndicators(t('broadcast.headNew'));
             return;
         }
 
@@ -478,7 +479,7 @@ export const BCChannel = {
                 $branchName.style.flexDirection = 'row';
                 const pinSpan = document.createElement('span');
                 pinSpan.className = 'crt-text-yellow';
-                pinSpan.textContent = ' [PIN]';
+                pinSpan.textContent = t('broadcast.pinLabel');
                 $branchName.appendChild(pinSpan);
             } else {
                 $branchName.style.flexDirection = '';
@@ -492,17 +493,17 @@ export const BCChannel = {
 
         if ($savedStatus) {
             if (this.isOwnerMode) {
-                $savedStatus.textContent = this.currentChannel.serverChannelId ? 'CAST' : 'LOCAL';
+                $savedStatus.textContent = this.currentChannel.serverChannelId ? t('broadcast.statusCast') : t('broadcast.statusLocal');
             } else {
-                $savedStatus.textContent = 'READ';
+                $savedStatus.textContent = t('broadcast.statusRead');
             }
         }
     },
 
     clearIndicators() {
-        if ($branchName)  $branchName.textContent  = '---';
-        if ($branchHead)  $branchHead.textContent  = '---';
-        if ($savedStatus) $savedStatus.textContent = '---';
+        if ($branchName)  $branchName.textContent  = t('broadcast.headFallback');
+        if ($branchHead)  $branchHead.textContent  = t('broadcast.headFallback');
+        if ($savedStatus) $savedStatus.textContent = t('broadcast.headFallback');
     },
 
     lockTextarea() {

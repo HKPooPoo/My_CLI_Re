@@ -12,6 +12,8 @@
  * =================================================================
  */
 
+import { t } from './i18n.js';
+
 export const BBUI = {
     // --- DOM 引用清單 ---
     elements: {
@@ -33,7 +35,7 @@ export const BBUI = {
         if (this.elements.branchName && branch !== undefined) this.elements.branchName.textContent = branch;
         if (this.elements.headIndex && head !== undefined) this.elements.headIndex.textContent = head;
         if (this.elements.savedStatus) {
-            this.elements.savedStatus.textContent = isSaved ? "SAVED" : "UNSAVED";
+            this.elements.savedStatus.textContent = isSaved ? t('blackboard.statusSaved') : t('blackboard.statusUnsaved');
         }
     },
 
@@ -92,19 +94,19 @@ export const BBUI = {
 
             // --- 狀態標籤生成邏輯 ---
             let ownerDisplay = "";
-            const localLabel = isHead ? "local [HEAD]" : "local";
+            const localLabel = isHead ? t('blackboard.statusLocal') : t('blackboard.statusLocalOld');
 
             if (branch.isLocal && branch.isServer) {
-                const syncStatus = branch.isDirty ? "asynced" : "synced";
+                const syncStatus = branch.isDirty ? t('blackboard.statusAsynced') : t('blackboard.statusSynced');
                 ownerDisplay = `${localLabel}, <br>online/${this.escapeHTML(branch.serverOwner)} [${syncStatus}]`;
             } else if (branch.isServer) {
-                ownerDisplay = `online/${this.escapeHTML(branch.serverOwner)} [asynced]`;
+                ownerDisplay = `online/${this.escapeHTML(branch.serverOwner)} [${t('blackboard.statusAsynced')}]`;
             } else {
                 ownerDisplay = localLabel;
             }
 
             item.innerHTML = `
-                <input type="text" class="vcs-list-branch" value="${safeName}" placeholder="Name your branch..." name="vcs-list-branch" maxlength="64">
+                <input type="text" class="vcs-list-branch" value="${safeName}" placeholder="${t('blackboard.namePlaceholder')}" name="vcs-list-branch" maxlength="64">
                 <div class="vcs-list-timestamp">${this.escapeHTML(String(branch.displayTime ?? ''))}</div>
                 <div class="vcs-list-owner">${ownerDisplay}</div>
             `;

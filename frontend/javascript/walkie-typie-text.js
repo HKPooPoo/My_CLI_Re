@@ -26,6 +26,7 @@ import { WTCore } from "./walkie-typie-core.js";
 import { EditorAttachments } from "./editor-attachments.js";
 import db from "./indexedDB.js";
 import { playAudio } from "./audio.js";
+import { t } from './i18n.js';
 
 export const WTText = {
     elements: {
@@ -302,9 +303,9 @@ export const WTText = {
 
     notify(sender, text) {
         if ("Notification" in window && Notification.permission === "granted") {
-            const title = `New message from ${sender}`;
+            const title = t('walkieTypie.newMessage', { sender });
             const options = {
-                body: text ? (text.length > 50 ? text.substring(0, 50) + "..." : text) : "Content updated",
+                body: text ? (text.length > 50 ? text.substring(0, 50) + "..." : text) : t('walkieTypie.contentUpdated'),
                 icon: "/images/favicon.ico",
                 tag: "wt-message" // Prevent stacking
             };
@@ -332,8 +333,8 @@ export const WTText = {
     clearBoards() {
         if (this.elements.weTextarea) this.elements.weTextarea.value = "";
         if (this.elements.theyTextarea) this.elements.theyTextarea.value = "";
-        if (this.elements.weTitle) this.elements.weTitle.textContent = "OUR BLACKBOARD";
-        if (this.elements.theyTitle) this.elements.theyTitle.textContent = "THEIR BLACKBOARD";
+        if (this.elements.weTitle) this.elements.weTitle.textContent = t('walkieTypie.weBoard');
+        if (this.elements.theyTitle) this.elements.theyTitle.textContent = t('walkieTypie.theyBoard');
         
         this.wtWeAttach?.setFromRecord(null);
         this.wtTheyAttach?.setFromRecord(null);

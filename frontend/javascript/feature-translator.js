@@ -12,6 +12,7 @@
 
 import { playAudio } from "./audio.js";
 import { TranslationService } from "./services/translation-service.js";
+import { t } from './i18n.js';
 
 // --- 配置與引用 ---
 const TRANSLATE_BTN_PREFIX = 'translate-';
@@ -28,19 +29,19 @@ $translateBtns.forEach($btn => {
 
         const text = $translatorInput.value.trim();
         if (!text) {
-            $translatorOutput.value = "PROTOCOL ERROR: BUFFER EMPTY. INPUT REQUIRED.";
+            $translatorOutput.value = t('translator.bufferEmpty');
             return;
         }
 
         const targetLang = $btn.dataset.featureBtn.replace(TRANSLATE_BTN_PREFIX, '');
-        $translatorOutput.value = "DECRYPTING LINGUISTICS... STANDBY.";
+        $translatorOutput.value = t('translator.decrypting');
 
         try {
             const translation = await translateText(text, targetLang);
-            $translatorOutput.value = translation || "RESULT: NULL. UNABLE TO DECODE.";
+            $translatorOutput.value = translation || t('translator.nullResult');
         } catch (e) {
             console.error("Translation Error:", e);
-            $translatorOutput.value = "CRITICAL BREACH: " + e.message.toUpperCase();
+            $translatorOutput.value = t('translator.criticalBreach', { error: e.message.toUpperCase() });
         }
     });
 });

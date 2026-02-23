@@ -11,6 +11,7 @@
  */
 
 import toast from "./toast.js";
+import { t } from './i18n.js';
 
 /**
  * Message Wrapper: Ensures prefixes are preserved during updates.
@@ -51,6 +52,6 @@ export const BBMessage = {
      * Auth requirement
      */
     requireLogin() {
-        return this.error("LOGIN REQUIRED FOR THIS OPERATION.");
+        return this.error(t('system.loginRequired'));
     }
 };

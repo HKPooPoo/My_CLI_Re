@@ -11,6 +11,7 @@
  */
 
 import { BBMessage } from "./blackboard-msg.js";
+import { t } from './i18n.js';
 
 let deferredPrompt;
 
@@ -46,7 +47,7 @@ if ('serviceWorker' in navigator) {
 
 // 顯示更新提示 Toast
 function showUpdateToast(registration) {
-    BBMessage.info("UPDATE AVAILABLE");
+    BBMessage.info(t('pwa.updateAvailable'));
     if (registration.waiting) {
         registration.waiting.postMessage({ type: 'SKIP_WAITING' });
     }

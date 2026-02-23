@@ -21,6 +21,7 @@ import { MultiStepButton } from "./multiStepButton.js";
 import { BlackboardService } from "./services/blackboard-service.js";
 import { playAudio } from "./audio.js";
 import { EditorAttachments } from "./editor-attachments.js";
+import { t } from './i18n.js';
 
 // --- 全域狀態聲明 ---
 const state = {
@@ -56,7 +57,7 @@ const bbAttach = EditorAttachments.create({
             );
             state.isVirtual = false;
             state.currentHead = 0;
-            BBUI.updateIndicators(state.branch || "NAMELESS_BRANCH", state.currentHead, true);
+            BBUI.updateIndicators(state.branch || t('blackboard.branchNameFallback'), state.currentHead, true);
         } else {
             // Immediately persist the attachment to the current record
             const entry = await BBCore.getRecord(state.owner, state.branchId, state.currentHead);
@@ -134,14 +135,14 @@ async function syncView() {
     // [Fix]: 虛擬狀態處理 (New Page)
     if (state.isVirtual) {
         BBUI.setTextarea("");
-        BBUI.updateIndicators(state.branch || "NAMELESS_BRANCH", "NEW", false);
+        BBUI.updateIndicators(state.branch || t('blackboard.branchNameFallback'), "NEW", false);
         bbAttach?.clear();
         return;
     }
 
     const entry = await BBCore.getRecord(state.owner, state.branchId, state.currentHead);
     BBUI.setTextarea(entry?.text ?? "");
-    BBUI.updateIndicators(state.branch || "NAMELESS_BRANCH", state.currentHead, true);
+    BBUI.updateIndicators(state.branch || t('blackboard.branchNameFallback'), state.currentHead, true);
 
     // Sync attachment chip display
     // Handle both string hash (legacy) and object meta (new)
@@ -301,7 +302,7 @@ if (BBUI.elements.branchBtn) {
             const selected = getSelectedBranchInfo();
             if (!selected) return;
 
-            const msg = BBMessage.info("FORKING...");
+            const msg = BBMessage.info(t('blackboard.forking'));
             try {
                 // 如果 Fork 的是對象是當前編輯的分支，先存檔
                 if (selected.id === state.branchId) {
@@ -316,13 +317,13 @@ if (BBUI.elements.branchBtn) {
                 // [Fix]: Fork 後不自動切換，停留在當前分支
                 // 僅更新列表以顯示新分支
 
-                msg.update("FORK COMPLETE");
+                msg.update(t('blackboard.forkComplete'));
                 // await syncView(); // 不需要同步視圖，因為沒切換
                 await updateBranchList();
             } catch (e) {
                 console.error("FORK ERROR:", e);
                 msg.close();
-                BBMessage.error("ERROR: FORK FAILED");
+                BBMessage.error(t('blackboard.forkFailed'));
             }
         }
     });
@@ -338,11 +339,11 @@ if (BBUI.elements.commitBtn) {
 
             // [Git Logic]: 必須先有本地資料才能 Commit
             if (!selected.isLocal) {
-                BBMessage.error("ERROR: PULL REQUIRED");
+                BBMessage.error(t('blackboard.pullRequired'));
                 return;
             }
 
-            const msg = BBMessage.info("SYNCING...");
+            const msg = BBMessage.info(t('blackboard.syncing'));
             try {
                 // 如果 Commit 的是對象是當前編輯的分支，先存檔
                 if (selected.id === state.branchId) {
@@ -350,12 +351,12 @@ if (BBUI.elements.commitBtn) {
                 }
 
                 await BBVCS.commit({ branchId: selected.id, branch: selected.name });
-                msg.update("SYNC COMPLETE");
+                msg.update(t('blackboard.syncComplete'));
                 await updateBranchList();
             } catch (e) {
                 console.error("SYNC ERROR:", e);
                 msg.close();
-                BBMessage.error("ERROR: SYNC FAILED");
+                BBMessage.error(t('blackboard.syncFailed'));
             }
         }
     });
@@ -369,13 +370,13 @@ if (BBUI.elements.checkoutBtn) {
             const selected = getSelectedBranchInfo();
             if (!selected) return;
 
-            const msg = BBMessage.info("LOADING...");
+            const msg = BBMessage.info(t('blackboard.loading'));
             try {
                 // [Fix]: 如果本地已存在，優先使用本地 (不強制同步)；僅在純雲端分支時才下載
                 const targetOwner = selected.isLocal ? "local" : "remote";
                 await BBVCS.checkout(state, selected.id, targetOwner);
 
-                msg.update("LOAD COMPLETE");
+                msg.update(t('blackboard.loadComplete'));
                 await syncView();
                 // [Fix]: 切換後，列表選取狀態應跟隨切換到新分支 (可選，視 UX 需求而定，這裡保持自動更新)
                 // 由於 updateBranchList 會抓取 DOM 選取狀態，這裡不需要額外操作，
@@ -384,7 +385,7 @@ if (BBUI.elements.checkoutBtn) {
             } catch (e) {
                 console.error("LOAD ERROR:", e);
                 msg.close();
-                BBMessage.error("ERROR: LOAD FAILED");
+                BBMessage.error(t('blackboard.loadFailed'));
             }
         }
     });
@@ -400,7 +401,7 @@ async function updateDropButtonState() {
 
     const selected = getSelectedBranchInfo();
     if (!selected) {
-        dropBtnEl.textContent = "N/A";
+        dropBtnEl.textContent = t('common.na');
         dropBtnEl.disabled = true;
         currentDropAction = null;
         return;
@@ -424,20 +425,20 @@ async function updateDropButtonState() {
     // 決策矩陣
     // 1. Local & Content -> CLEAN
     if (selected.isLocal && hasContent) {
-        dropBtnEl.textContent = "CLEAN";
+        dropBtnEl.textContent = t('blackboard.cleanStep1');
         currentDropAction = "clean";
     }
     // 2. Cloud (且無 Local Content 需清理) -> DROP
     else if (selected.isServer) {
-        dropBtnEl.textContent = "DROP";
+        dropBtnEl.textContent = t('blackboard.dropStep1');
         currentDropAction = "drop";
     }
     // 3. Local (且無 Content, 無 Cloud) -> DELETE
     else if (selected.isLocal) {
-        dropBtnEl.textContent = "DELETE";
+        dropBtnEl.textContent = t('blackboard.deleteStep1');
         currentDropAction = "delete";
     } else {
-        dropBtnEl.textContent = "N/A";
+        dropBtnEl.textContent = t('common.na');
         currentDropAction = null;
     }
 }
@@ -454,7 +455,7 @@ if (dropBtnEl) {
 
         try {
             if (currentDropAction === "clean") {
-                BBMessage.info("CLEANING...");
+                BBMessage.info(t('blackboard.cleaning'));
                 await BBCore.clearBranchRecords("local", selected.id);
                 // 若清理的是當前分支，需重置 Head
                 if (selected.id === state.branchId) {
@@ -464,12 +465,12 @@ if (dropBtnEl) {
                 BBMessage.success("CLEAN");
             }
             else if (currentDropAction === "drop") {
-                BBMessage.info("DROPPING...");
+                BBMessage.info(t('blackboard.dropping'));
                 await BlackboardService.deleteBranch(selected.id);
                 BBMessage.success("DROP");
             }
             else if (currentDropAction === "delete") {
-                BBMessage.info("DELETING...");
+                BBMessage.info(t('blackboard.deleting'));
                 await BBCore.deleteLocalBranch("local", selected.id);
 
                 if (selected.id === state.branchId) {
@@ -483,7 +484,7 @@ if (dropBtnEl) {
             await updateDropButtonState();
         } catch (e) {
             console.error("DROP ACTION FAILED:", e);
-            BBMessage.error("ERROR: ACTION FAILED");
+            BBMessage.error(t('blackboard.actionFailed'));
         }
     });
 }
@@ -504,7 +505,7 @@ window.addEventListener("list:updated", () => {
 // 自動儲存：監聽文字框輸入並防抖處理
 BBUI.elements.textarea?.addEventListener("input", () => {
     // 立即更新為 UNSAVED，但不要觸發完整的 DOM 重繪
-    if (BBUI.elements.savedStatus) BBUI.elements.savedStatus.textContent = "UNSAVED";
+    if (BBUI.elements.savedStatus) BBUI.elements.savedStatus.textContent = t('blackboard.statusUnsaved');
 
     clearTimeout(debounceTimer);
     debounceTimer = setTimeout(async () => {
@@ -512,7 +513,7 @@ BBUI.elements.textarea?.addEventListener("input", () => {
 
         // [Fix]: 狀態更新後，依據是否仍為虛擬狀態顯示指標
         const headIndicator = state.isVirtual ? "NEW" : state.currentHead;
-        BBUI.updateIndicators(state.branch || "NAMELESS_BRANCH", headIndicator, true);
+        BBUI.updateIndicators(state.branch || t('blackboard.branchNameFallback'), headIndicator, true);
     }, 200);
 });
 
@@ -522,7 +523,7 @@ window.addEventListener("blackboard:branchRename", async (e) => {
     await BBCore.renameBranch("local", branchId, newName);
     if (branchId === state.branchId) {
         state.branch = newName;
-        BBUI.updateIndicators(state.branch || "NAMELESS_BRANCH", state.currentHead, true);
+        BBUI.updateIndicators(state.branch || t('blackboard.branchNameFallback'), state.currentHead, true);
     }
     await updateBranchList();
 });
@@ -538,7 +539,7 @@ window.addEventListener("auth:updated", async () => {
 window.addEventListener('navi:pageChanged', (e) => {
     if (!e.detail?.page?.startsWith('blackboard-')) return;
     const head = state.isVirtual ? 'NEW' : state.currentHead;
-    BBUI.updateIndicators(state.branch || 'NAMELESS_BRANCH', head, true);
+    BBUI.updateIndicators(state.branch || t('blackboard.branchNameFallback'), head, true);
 });
 
 // 監聽列表刷新 (Infinite List 初始化)

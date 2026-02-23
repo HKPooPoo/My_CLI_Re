@@ -14,6 +14,7 @@
 import { playAudio } from "./audio.js";
 import { BBMessage } from "./blackboard-msg.js";
 import { SpeechService } from "./services/speech-service.js";
+import { t } from './i18n.js';
 
 // --- DOM 引用 ---
 const $voiceBtn = document.querySelector('[data-feature-btn="voice-to-textbox"]');
@@ -58,7 +59,7 @@ async function toggleRecording() {
     if (!isRecording) {
         if (!isTextareaFocused) {
             flashError();
-            BBMessage.error("ERROR: SELECT BOARD");
+            BBMessage.error(t('speech.selectBoard'));
             return;
         }
         savedCursorPosition = $textarea.selectionStart;
@@ -102,7 +103,7 @@ async function startRecording() {
         playAudio("UISelectOn.mp3"); // 開始錄音音效
 
         // 全域提示
-        window.voiceMsg = BBMessage.info("LISTENING...");
+        window.voiceMsg = BBMessage.info(t('speech.listening'));
 
     } catch (err) {
         console.error("Mic Access Error:", err);
@@ -124,7 +125,7 @@ async function stopRecording() {
     playAudio("UISelectOff.mp3"); // 停止錄音音效
 
     if (window.voiceMsg) {
-        window.voiceMsg.update("PROCESSING...");
+        window.voiceMsg.update(t('speech.processing'));
     }
 }
 
@@ -146,18 +147,18 @@ async function transcribeAudio(audioBlob) {
                 playAudio("UIGeneralOK.mp3"); // 識別成功音效
 
                 if (window.voiceMsg) {
-                    window.voiceMsg.update("VERIFIED");
+                    window.voiceMsg.update(t('speech.verified'));
                 }
             } else {
                 if (window.voiceMsg) window.voiceMsg.close();
-                BBMessage.error("ERROR: NO SPEECH");
+                BBMessage.error(t('speech.noSpeech'));
             }
 
         } catch (error) {
             console.error("Transcribe Request Error:", error);
             flashError();
             if (window.voiceMsg) window.voiceMsg.close();
-            BBMessage.error("ERROR: OFFLINE");
+            BBMessage.error(t('speech.offline'));
         } finally {
             $voiceBtn.classList.remove("active", "recording", "processing");
             isRecording = false;

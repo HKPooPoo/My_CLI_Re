@@ -25,6 +25,7 @@ import { BCDb, BCMeta, getHKTTimestamp } from './broadcast-db.js';
 import { InfiniteList } from './blackboard-ui-list.js';
 import { MultiStepButton } from './multiStepButton.js';
 import { BBMessage } from './blackboard-msg.js';
+import { t } from './i18n.js';
 
 // Sub-navi <---> text element — updated when channel is selected or renamed
 const $bcNaviText = document.querySelector(
@@ -137,25 +138,25 @@ export const BCList = {
         // --- PIN ---
         if (this.elements.pinBtn) {
             this.elements.pinBtn.addEventListener('click', async () => {
-                if (!this.selectedChannel) return BBMessage.error('ERROR: NO TARGET');
+                if (!this.selectedChannel) return BBMessage.error(t('broadcast.noTarget'));
 
                 const ch = this.selectedChannel;
                 const isLoggedIn = !!localStorage.getItem('currentUser');
 
                 if (!isLoggedIn || !ch.serverChannelId) {
                     // Cannot pin local-only or when not logged in
-                    return BBMessage.error('ERROR: LOGIN REQUIRED TO PIN');
+                    return BBMessage.error(t('broadcast.loginRequired'));
                 }
 
                 try {
                     if (ch.isPinned) {
                         await BroadcastService.unpin(ch.serverChannelId);
                         ch.isPinned = false;
-                        BBMessage.info('UNPINNED');
+                        BBMessage.info(t('broadcast.unpinned'));
                     } else {
                         await BroadcastService.pin(ch.serverChannelId);
                         ch.isPinned = true;
-                        BBMessage.info('PINNED');
+                        BBMessage.info(t('broadcast.pinned'));
                     }
                     // Re-sort and re-render to reflect new pin state
                     this.updatePinBtnText();
@@ -163,7 +164,7 @@ export const BCList = {
                     this.render();
                 } catch (e) {
                     console.error('PIN ERROR:', e);
-                    BBMessage.error('ERROR: PIN FAILED');
+                    BBMessage.error(t('broadcast.pinFailed'));
                 }
             });
         }
@@ -171,17 +172,17 @@ export const BCList = {
         // --- CAST ---
         if (this.elements.castBtn) {
             new MultiStepButton(this.elements.castBtn, [
-                { label: 'CAST', sound: 'UIGeneralFocus.mp3', action: () => { } },
+                { label: t('broadcast.castStep1'), sound: 'UIGeneralFocus.mp3', action: () => { } },
                 {
-                    label: 'SURE?',
+                    label: t('common.sure'),
                     sound: 'UIPipboyOK.mp3',
                     action: async () => {
-                        if (!this.hasTitle()) return BBMessage.error('ERROR: TITLE REQUIRED');
-                        if (!this.selectedChannel) return BBMessage.error('ERROR: NO TARGET');
-                        if (!this.isOwnerOf(this.selectedChannel)) return BBMessage.error('ERROR: NOT OWNER');
+                        if (!this.hasTitle()) return BBMessage.error(t('broadcast.titleRequired'));
+                        if (!this.selectedChannel) return BBMessage.error(t('broadcast.noTarget'));
+                        if (!this.isOwnerOf(this.selectedChannel)) return BBMessage.error(t('broadcast.notOwner'));
 
                         const ch = this.selectedChannel;
-                        const msg = BBMessage.info('CASTING...');
+                        const msg = BBMessage.info(t('broadcast.casting'));
 
                         try {
                             // Gather local board records
@@ -208,12 +209,12 @@ export const BCList = {
                             ch.serverChannelId = serverCh.id;
                             ch.lastSignal = serverCh.last_signal;
 
-                            msg.update('CAST COMPLETE');
+                            msg.update(t('broadcast.castComplete'));
                             await this.fetchAndRender();
                         } catch (e) {
                             console.error('CAST ERROR:', e);
                             msg.close();
-                            BBMessage.error('ERROR: CAST FAILED');
+                            BBMessage.error(t('broadcast.castFailed'));
                         }
                     }
                 }
@@ -223,15 +224,15 @@ export const BCList = {
         // --- CREATE --- (regardless of selected item)
         if (this.elements.createBtn) {
             new MultiStepButton(this.elements.createBtn, [
-                { label: 'CREATE', sound: 'UIGeneralFocus.mp3', action: () => { } },
+                { label: t('broadcast.createStep1'), sound: 'UIGeneralFocus.mp3', action: () => { } },
                 {
-                    label: 'SURE?',
+                    label: t('common.sure'),
                     sound: 'UIPipboyOKPress.mp3',
                     action: async () => {
-                        if (!this.hasTitle()) return BBMessage.error('ERROR: TITLE REQUIRED');
+                        if (!this.hasTitle()) return BBMessage.error(t('broadcast.titleRequired'));
 
                         const autoName = `BC_${Date.now()}`;
-                        const msg = BBMessage.info('CREATING...');
+                        const msg = BBMessage.info(t('broadcast.creating'));
 
                         let localId;
                         try {
@@ -239,7 +240,7 @@ export const BCList = {
                             // Create initial empty board record
                             await BCDb.addRecord(localId, '');
 
-                            msg.update('CREATE COMPLETE');
+                            msg.update(t('broadcast.createComplete'));
                             await this.fetchAndRender();
 
                             // Auto-select the new channel (it will be at top after sort)
@@ -257,7 +258,7 @@ export const BCList = {
                                 await BCMeta.deleteChannel(localId).catch(() => {});
                             }
                             msg.close();
-                            BBMessage.error('ERROR: CREATE FAILED');
+                            BBMessage.error(t('broadcast.createFailed'));
                         }
                     }
                 }
@@ -267,17 +268,17 @@ export const BCList = {
         // --- DELETE ---
         if (this.elements.deleteBtn) {
             new MultiStepButton(this.elements.deleteBtn, [
-                { label: 'DELETE', sound: 'UIGeneralFocus.mp3', action: () => { } },
+                { label: t('broadcast.deleteStep1'), sound: 'UIGeneralFocus.mp3', action: () => { } },
                 {
-                    label: 'SURE?',
+                    label: t('common.sure'),
                     sound: 'UIGeneralCancel.mp3',
                     action: async () => {
-                        if (!this.hasTitle()) return BBMessage.error('ERROR: TITLE REQUIRED');
-                        if (!this.selectedChannel) return BBMessage.error('ERROR: NO TARGET');
-                        if (!this.isOwnerOf(this.selectedChannel)) return BBMessage.error('ERROR: NOT OWNER');
+                        if (!this.hasTitle()) return BBMessage.error(t('broadcast.titleRequired'));
+                        if (!this.selectedChannel) return BBMessage.error(t('broadcast.noTarget'));
+                        if (!this.isOwnerOf(this.selectedChannel)) return BBMessage.error(t('broadcast.notOwner'));
 
                         const ch = this.selectedChannel;
-                        const msg = BBMessage.info('DELETING...');
+                        const msg = BBMessage.info(t('broadcast.deleting'));
 
                         try {
                             // Delete from server if cast
@@ -290,13 +291,13 @@ export const BCList = {
                             this.selectedChannel = null;
                             this.updateNaviText('');
 
-                            msg.update('DELETE COMPLETE');
+                            msg.update(t('broadcast.deleteComplete'));
                             window.dispatchEvent(new CustomEvent('broadcast:cleared'));
                             await this.fetchAndRender();
                         } catch (e) {
                             console.error('DELETE ERROR:', e);
                             msg.close();
-                            BBMessage.error('ERROR: DELETE FAILED');
+                            BBMessage.error(t('broadcast.deleteFailed'));
                         }
                     }
                 }
@@ -387,7 +388,7 @@ export const BCList = {
         } catch (e) {
             if (signal.aborted || e.name === 'AbortError') return; // silent cancel
             console.error('BCList: Fetch failed', e);
-            BBMessage.error('SYNC FAILED');
+            BBMessage.error(t('broadcast.syncFailed'));
         }
     },
 
@@ -418,7 +419,7 @@ export const BCList = {
             const nameInput = document.createElement('input');
             nameInput.type = 'text';
             nameInput.classList.add('broadcast-list-tag');
-            nameInput.placeholder = 'Channel name...';
+            nameInput.placeholder = t('broadcast.channelNamePlaceholder');
             nameInput.name = 'broadcast-list-tag';
             nameInput.value = ch.name;
 
@@ -426,11 +427,11 @@ export const BCList = {
                 const newName = e.target.value.trim();
                 if (!newName) {
                     e.target.value = ch.name;
-                    return BBMessage.error('ERROR: NAME CANNOT BE EMPTY');
+                    return BBMessage.error(t('broadcast.nameEmpty'));
                 }
                 if (!this.isOwnerOf(ch)) {
                     e.target.value = ch.name;
-                    return BBMessage.error('ERROR: NOT OWNER');
+                    return BBMessage.error(t('broadcast.notOwner'));
                 }
 
                 try {
@@ -448,7 +449,7 @@ export const BCList = {
                 } catch (err) {
                     console.error('RENAME ERROR:', err);
                     e.target.value = ch.name;
-                    BBMessage.error('ERROR: RENAME FAILED');
+                    BBMessage.error(t('broadcast.renameFailed'));
                 }
             });
 
@@ -464,13 +465,13 @@ export const BCList = {
             // Row 3: owner's title (or LOCAL if not yet cast) + pin tag
             const titleEl = document.createElement('div');
             titleEl.classList.add('broadcast-list-title');
-            const ownerLabel = ch.isLocalOnly ? 'LOCAL' : (ch.ownerTitle || ch.ownerUid || '---');
+            const ownerLabel = ch.isLocalOnly ? t('broadcast.statusLocal') : (ch.ownerTitle || ch.ownerUid || '---');
             titleEl.textContent = ownerLabel;
             if (ch.isPinned) {
                 titleEl.style.flexDirection = 'row';
                 const pinTag = document.createElement('span');
                 pinTag.classList.add('crt-text-yellow');
-                pinTag.textContent = ' [PIN]';
+                pinTag.textContent = t('broadcast.pinLabel');
                 titleEl.appendChild(pinTag);
             }
 
@@ -497,7 +498,7 @@ export const BCList = {
 
     updatePinBtnText() {
         if (!this.elements.pinBtn) return;
-        this.elements.pinBtn.textContent = this.selectedChannel?.isPinned ? 'UNPIN' : 'PIN';
+        this.elements.pinBtn.textContent = this.selectedChannel?.isPinned ? t('broadcast.unpinBtn') : t('broadcast.pinBtn');
     },
 
     updateNaviText(name) {

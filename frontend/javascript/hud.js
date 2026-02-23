@@ -12,6 +12,7 @@
 
 import { playAudio } from "./audio.js";
 import { StatusService } from "./services/status-service.js";
+import { t } from './i18n.js';
 
 // --- 常量定義 ---
 const ONLINE_STR = "ONLINE";
@@ -46,16 +47,16 @@ async function updateDatabaseStatus() {
         if (responseJSON.status === ONLINE_STR) {
             if (isStatusHasNoChange(ONLINE_STR)) return;
             replaceCrtTextColorBy("crt-text-green");
-            dbStatusDisplay.textContent = ONLINE_STR;
+            dbStatusDisplay.textContent = t('hud.online');
         } else if (responseJSON.status === OFFLINE_STR) {
             if (isStatusHasNoChange(OFFLINE_STR)) return;
             replaceCrtTextColorBy("crt-text-red");
-            dbStatusDisplay.textContent = OFFLINE_STR;
+            dbStatusDisplay.textContent = t('hud.offline');
         }
     } catch (error) {
         console.error("DB Status Check Failed:", error);
         replaceCrtTextColorBy("crt-text-red");
-        dbStatusDisplay.textContent = "ERROR";
+        dbStatusDisplay.textContent = t('hud.error');
     }
 }
 

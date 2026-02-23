@@ -3,6 +3,7 @@ import { BBMessage } from "./blackboard-msg.js";
 import db from "./indexedDB.js";
 import { BlackboardService } from "./services/blackboard-service.js";
 import { FileService } from "./services/file-service.js";
+import { t } from './i18n.js';
 
 /**
  * Blackboard 版本控制邏輯層 (大腦)
@@ -134,7 +135,7 @@ export const BBVCS = {
         const { branchId, branch } = branchMeta;
 
         const loggedInUser = localStorage.getItem("currentUser");
-        if (!loggedInUser) throw new Error("ERROR: LOGIN REQUIRED");
+        if (!loggedInUser) throw new Error(t('blackboard.loginRequired'));
 
         // 0. Commit 前執行數據清洗 (移除空值與溢出)
         // 嘗試從環境中取得 maxSlot，若無則預設 10
@@ -148,7 +149,7 @@ export const BBVCS = {
         records = records.filter(r => (r.text && r.text.trim() !== "") || r.bin);
 
         if (records.length === 0) {
-            throw new Error("ERROR: NO DATA");
+            throw new Error(t('blackboard.noData'));
         }
 
         // 1.5 [File Sync]: Upload pending files first
@@ -173,12 +174,12 @@ export const BBVCS = {
                     await db.fileBlobs.update(hash, { status: 'synced' });
                 } catch (err) {
                     console.error(`Failed to sync file ${hash}:`, err);
-                    throw new Error("ERROR: FILE SYNC FAILED");
+                    throw new Error(t('blackboard.fileSyncFailed'));
                 }
             });
 
         if (fileUploadPromises.length > 0) {
-            BBMessage.info("SYNCING FILES...");
+            BBMessage.info(t('blackboard.syncingFiles'));
             await Promise.all(fileUploadPromises);
         }
 
@@ -205,7 +206,7 @@ export const BBVCS = {
 
             return true;
         } catch (e) {
-            throw new Error(e.message || "ERROR: UPLOAD FAILED");
+            throw new Error(e.message || t('blackboard.uploadFailed'));
         }
     },
 

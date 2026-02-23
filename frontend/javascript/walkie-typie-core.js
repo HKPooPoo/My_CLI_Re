@@ -10,6 +10,7 @@
 
 import { BBMessage } from "./blackboard-msg.js";
 import { getEcho, releaseEcho } from './echo-service.js';
+import { t } from './i18n.js';
 
 export const WTCore = {
     uid: null,
@@ -29,7 +30,7 @@ export const WTCore = {
                     window.dispatchEvent(new CustomEvent("walkie-typie:connection-update", {
                         detail: e.connectionData
                     }));
-                    BBMessage.info(`SIGNAL: ${e.connectionData.partner_uid}`);
+                    BBMessage.info(t('walkieTypie.signal', { uid: e.connectionData.partner_uid }));
                 })
                 .listen('.walkie-typie.content', (e) => {
                     window.dispatchEvent(new CustomEvent("walkie-typie:content-update", {
