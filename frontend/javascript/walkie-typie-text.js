@@ -575,7 +575,7 @@ export const WTText = {
 
     refreshTitles() {
         if (!this.currentConnection) return;
-        const myUid = localStorage.getItem("currentUser") || "LOCAL";
+        const myUid = localStorage.getItem("currentUser") || t('common.local');
         if (this.elements.weTitle) this.elements.weTitle.textContent = myUid.toUpperCase();
 
         const theyLabel = (this.currentConnection.partner_tag || this.currentConnection.partner_uid).toUpperCase();

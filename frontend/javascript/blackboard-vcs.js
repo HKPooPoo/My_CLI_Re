@@ -216,7 +216,7 @@ export const BBVCS = {
     async checkout(state, targetBranchId, targetOwner) {
         // 1. 如果目標是雲端分支，不論本地有無資料都先進行同步 (確保最新)
         if (targetOwner !== "local") {
-            BBMessage.info("SYNCING...");
+            BBMessage.info(t('blackboard.syncing'));
 
             try {
                 const data = await BlackboardService.fetchBranchDetails(targetBranchId);

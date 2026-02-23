@@ -40,9 +40,9 @@
         <img src="./images/banner.png" class="header-img" alt="banner in header">
         <!--hud.css-->
         <div class="hud-bar">
-            <div id="login-status-bar">UID: <div class="crt-text-cyan" id="login-status-display">Connecting...</div>
+            <div id="login-status-bar">UID: <div class="crt-text-cyan" id="login-status-display" data-i18n="common.connecting">Connecting...</div>
             </div>
-            <div id="db-status-bar">DB: <div id="db-status-display">Connecting...</div>
+            <div id="db-status-bar">DB: <div id="db-status-display" data-i18n="common.connecting">Connecting...</div>
             </div>
         </div>
         <button id="theme-change-btn"></button>
@@ -67,13 +67,13 @@
                 <div class="sub-navi-container">
                     <div class="sub-navi-track">
                         <div class="sub-navi-item" data-sub-navi-item="blackboard-log">
-                            <div class="sub-navi-item-text">LOG</div>
+                            <div class="sub-navi-item-text" data-i18n="blackboard.logTab">LOG</div>
                         </div>
                         <div class="sub-navi-item" data-sub-navi-item="blackboard-branch">
-                            <div class="sub-navi-item-text">BRANCH</div>
+                            <div class="sub-navi-item-text" data-i18n="blackboard.vcsTab">BRANCH</div>
                         </div>
                         <div class="sub-navi-item" data-sub-navi-item="auth">
-                            <div class="sub-navi-item-text">AUTH</div>
+                            <div class="sub-navi-item-text" data-i18n="nav.account">AUTH</div>
                         </div>
                     </div>
                 </div>
@@ -85,10 +85,10 @@
                 <div class="sub-navi-container">
                     <div class="sub-navi-track">
                         <div class="sub-navi-item" data-sub-navi-item="walkie-typie-list">
-                            <div class="sub-navi-item-text">LIST</div>
+                            <div class="sub-navi-item-text" data-i18n="walkieTypie.listTab">LIST</div>
                         </div>
                         <div class="sub-navi-item" data-sub-navi-item="walkie-typie-text">
-                            <div class="sub-navi-item-text">TEXT</div>
+                            <div class="sub-navi-item-text" data-i18n="walkieTypie.boardTab">TEXT</div>
                         </div>
                     </div>
                 </div>
@@ -100,10 +100,10 @@
                 <div class="sub-navi-container">
                     <div class="sub-navi-track">
                         <div class="sub-navi-item" data-sub-navi-item="broadcast-channel">
-                            <div class="sub-navi-item-text">&lt;--&gt;</div>
+                            <div class="sub-navi-item-text" data-i18n="broadcast.channelTab">&lt;--&gt;</div>
                         </div>
                         <div class="sub-navi-item" data-sub-navi-item="broadcast-list">
-                            <div class="sub-navi-item-text">LIST</div>
+                            <div class="sub-navi-item-text" data-i18n="broadcast.listTab">LIST</div>
                         </div>
                     </div>
                 </div>
@@ -211,8 +211,7 @@
                     </div>
 
                     <div class="auth-logout-container" style="display: none;">
-                        <div class="auth-user-info-container">Welcome Back, <div id="auth-user-info-uid"></div>
-                        </div>
+                        <div class="auth-user-info-container"><div id="auth-user-info-uid"></div></div>
                         <button id="btn-logout" class="auth-btn crt-text-green" data-i18n="auth.logoutBtn">LOGOUT</button>
                         <hr style="border: var(--border-line);">
                         <!--later 32 + regex -> max length-->

@@ -120,7 +120,7 @@ export const WTList = {
 
                             this.selectedConnection = null;
                             this.render();
-                            BBMessage.success("CUT");
+                            BBMessage.success(t('walkieTypie.cutComplete'));
                         } catch (e) {
                             console.error("CUT ERROR:", e);
                             BBMessage.error(t('walkieTypie.cutFailed'));

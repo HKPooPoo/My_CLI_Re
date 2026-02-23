@@ -45,7 +45,7 @@ export const BBMessage = {
      */
     success(action) {
         const prefix = "SYSTEM > ";
-        return wrapHandler(toast.addMessage(`${prefix}${action} COMPLETE.`, 5000, 'success'), prefix);
+        return wrapHandler(toast.addMessage(`${prefix}${action}`, 5000, 'success'), prefix);
     },
 
     /**

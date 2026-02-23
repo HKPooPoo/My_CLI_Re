@@ -40,7 +40,8 @@ export const AuthManager = {
         if (userData && userData.uid) {
             this.elements.loginContainer.style.display = "none";
             this.elements.logoutContainer.style.display = "flex";
-            this.elements.userInfoUid.textContent = userData.title ? `${userData.uid} [${userData.title}]` : userData.uid;
+            const uidDisplay = userData.title ? `${userData.uid} [${userData.title}]` : userData.uid;
+            this.elements.userInfoUid.textContent = t('auth.welcome', { uid: uidDisplay });
             localStorage.setItem("currentUser", userData.uid);
             if (userData.title) {
                 localStorage.setItem("currentTitle", userData.title);
@@ -50,7 +51,7 @@ export const AuthManager = {
 
             // 設定 Email Placeholder
             if (this.elements.emailInput) {
-                this.elements.emailInput.placeholder = "EMAIL: " + (userData.email || "EMAIL");
+                this.elements.emailInput.placeholder = userData.email ? `${t('auth.emailPlaceholder')}: ${userData.email}` : t('auth.emailPlaceholder');
             }
         } else {
             this.elements.loginContainer.style.display = "flex";

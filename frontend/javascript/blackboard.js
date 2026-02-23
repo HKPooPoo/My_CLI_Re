@@ -462,12 +462,12 @@ if (dropBtnEl) {
                     state.currentHead = 0;
                     await syncView();
                 }
-                BBMessage.success("CLEAN");
+                BBMessage.success(t('blackboard.cleanComplete'));
             }
             else if (currentDropAction === "drop") {
                 BBMessage.info(t('blackboard.dropping'));
                 await BlackboardService.deleteBranch(selected.id);
-                BBMessage.success("DROP");
+                BBMessage.success(t('blackboard.dropComplete'));
             }
             else if (currentDropAction === "delete") {
                 BBMessage.info(t('blackboard.deleting'));
@@ -476,7 +476,7 @@ if (dropBtnEl) {
                 if (selected.id === state.branchId) {
                     await initBoard();
                 }
-                BBMessage.success("DELETE");
+                BBMessage.success(t('blackboard.deleteComplete'));
             }
 
             // 操作完成後刷新列表與按鈕狀態

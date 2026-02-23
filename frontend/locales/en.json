@@ -50,6 +50,7 @@
     "registerBtn": "REGISTER",
     "logoutBtn": "LOGOUT",
     "installBtn": "INSTALL APP",
+    "resetPasscodeBtn": "RESET PASSCODE",
     "cmdPlaceholder": "Enter command... (/passwd, /bind)",
 
     "inputRequired": "ERROR: INPUT REQUIRED",
@@ -87,7 +88,6 @@
     "forkBtn": "FORK",
     "dropBtn": "DROP",
     "checkoutBtn": "CHECKOUT",
-    "resetPasscodeBtn": "RESET PASSCODE",
 
     "namePlaceholder": "Name your branch...",
     "textPlaceholder": "Enter...",
@@ -121,6 +121,9 @@
     "cleaning": "CLEANING...",
     "dropping": "DROPPING...",
     "deleting": "DELETING...",
+    "cleanComplete": "CLEAN COMPLETE",
+    "dropComplete": "DROP COMPLETE",
+    "deleteComplete": "DELETE COMPLETE",
     "actionFailed": "ERROR: ACTION FAILED",
 
     "syncingFiles": "SYNCING FILES...",
@@ -155,6 +158,7 @@
     "cutStep1": "CUT",
     "noTarget": "ERROR: NO TARGET",
     "cutting": "CUTTING...",
+    "cutComplete": "CUT COMPLETE",
     "cutFailed": "ERROR: CUT FAILED",
 
     "tagUpdateFailed": "ERROR: TAG UPDATE FAILED",
