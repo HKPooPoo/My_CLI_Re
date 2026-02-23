@@ -41,7 +41,7 @@
     border: var(--border-line);
     border-top: none;
     border-left: none;
-    writing-mode: sideways-lr;
+    writing-mode: vertical-lr;
     flex-direction: row;
     justify-content: right;
     justify-content: right;
@@ -51,6 +51,33 @@
     overflow: hidden;
     /* transition: transform 0.4s ease-in; */
     transition: transform var(--transition-slow) ease-in;
+}
+
+@supports (writing-mode: sideways-lr) {
+    .head-indicator {
+        writing-mode: sideways-lr;
+    }
+}
+
+/* iOS WebKit (iPad Chrome, iPhone Safari) does not render writing-mode: sideways-lr
+   correctly — it appears as CW (+90°) instead of CCW (-90°).
+   Fix: use writing-mode: vertical-rl (CW, works correctly on iOS) combined with
+   scale: -1 -1 (CSS individual transform property). Double-flipping both axes
+   converts CW → CCW. Crucially, `scale` is a separate CSS property and is NOT
+   overridden when JS sets `style.transform` for the show/hide animation.
+   -webkit-touch-callout is iOS-only, so this does not affect Desktop Chrome/Safari. */
+@supports (-webkit-touch-callout: none) {
+    .head-indicator {
+        writing-mode: vertical-rl;
+        scale: -1 -1;
+        /* scale(-1,-1) flips physical left↔visual right and physical top↔visual bottom.
+           Re-declare borders so the correct visual sides are shown:
+           physical top (= visual bottom) and physical left (= visual right) get borders;
+           physical right (= visual left) and physical bottom (= visual top) do not. */
+        border: var(--border-line);
+        border-right: none;
+        border-bottom: none;
+    }
 }
 
 .pull-btn {

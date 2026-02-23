@@ -511,8 +511,13 @@ export const BCList = {
     updateNaviText(name) {
         if ($bcNaviText) {
             $bcNaviText.textContent = name ? name : '<-->';
-            // Refresh navi positioning as text width changed
-            updateNaviPosition('broadcast', true);
+            // Only reposition if broadcast is currently the active navi item.
+            // Calling updateNaviPosition also triggers updatePage(), which would
+            // forcibly switch the visible page — wrong when user is on another navi section.
+            const $activeNaviItem = document.querySelector('.navi-item.active');
+            if ($activeNaviItem && $activeNaviItem.dataset.naviItem === 'broadcast') {
+                updateNaviPosition('broadcast', true);
+            }
         }
     }
 };

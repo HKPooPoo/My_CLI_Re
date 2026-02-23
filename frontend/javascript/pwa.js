@@ -38,10 +38,10 @@ if ('serviceWorker' in navigator) {
             console.warn('PWA: Service Worker registration failed:', err);
         });
 
-        // 監聽控制器變更 (刷新頁面)
-        navigator.serviceWorker.addEventListener('controllerchange', () => {
-            window.location.reload();
-        });
+        // 新 SW 取得控制後靜默接管，不強制刷新頁面
+        // navigator.serviceWorker.addEventListener('controllerchange', () => {
+        //     window.location.reload();
+        // });
     });
 }
 

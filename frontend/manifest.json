@@ -1,21 +1,27 @@
 {
-  "name": "Blackboard CLI",
-  "short_name": "Blackboard",
-  "description": "A terminal-style blackboard system with VCS capabilities.",
+  "name": "MyCLI",
+  "short_name": "MyCLI",
+  "description": "A notebook PWA",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#000000",
   "theme_color": "#32FF32",
   "icons": [
     {
-      "src": "favicon.ico",
-      "sizes": "32x32 48x48 64x128 256x256",
+      "src": "images/favicon.ico",
+      "sizes": "256x256",
       "type": "image/x-icon"
     },
     {
-      "src": "images/favicon.ico",
-      "sizes": "any",
-      "type": "image/x-icon",
+      "src": "images/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "images/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
       "purpose": "any"
     }
   ]

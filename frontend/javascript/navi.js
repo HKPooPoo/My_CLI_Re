@@ -204,6 +204,10 @@ const $pushBtn = $pageContainer.querySelector(".push-btn");
 const $pullBtn = $pageContainer.querySelector(".pull-btn");
 const $headIndicator = $pageContainer.querySelector(".head-indicator");
 const $featureScaffold = $pageContainer.querySelector(".feature-container");
+// iOS WebKit uses scale(-1,-1) to fix writing-mode direction; this reverses the X axis,
+// so the hide translateX must be positive to move the element off-screen to the left.
+const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+              (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 
 /**
  * 更新展現內容 (Page)
@@ -226,11 +230,11 @@ function updatePage(subNaviItem) {
                 $featureScaffold.style.transform = "translateX(256%)";
             }
 
-            // 分支指標位移
+            // 分支指標位移 (iOS: scale(-1,-1) reverses X axis, so use positive value to hide left)
             if ($page.classList.contains("show-branch")) {
                 $headIndicator.style.transform = "translateX(0)";
             } else {
-                $headIndicator.style.transform = "translateX(-256%)";
+                $headIndicator.style.transform = isIOS ? "translateX(256%)" : "translateX(-256%)";
             }
         } else {
             $page.classList.remove("active");

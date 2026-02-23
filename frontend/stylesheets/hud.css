@@ -39,6 +39,7 @@
     cursor: pointer;
     border: none;
     background-color: var(--text-green);
+    -webkit-mask: url('../images/theme_switch.svg');
     mask: url('../images/theme_switch.svg');
     transition: all 0.16s ease-in;
 }
