@@ -40,9 +40,9 @@
         <img src="./images/banner.png" class="header-img" alt="banner in header">
         <!--hud.css-->
         <div class="hud-bar">
-            <div id="login-status-bar">UID: <div class="crt-text-cyan" id="login-status-display" data-i18n="common.connecting">Connecting...</div>
+            <div id="login-status-bar"><span data-i18n="hud.uidLabel">UID</span>: <div class="crt-text-cyan" id="login-status-display" data-i18n="common.connecting">Connecting...</div>
             </div>
-            <div id="db-status-bar">DB: <div id="db-status-display" data-i18n="common.connecting">Connecting...</div>
+            <div id="db-status-bar"><span data-i18n="hud.dbLabel">DB</span>: <div id="db-status-display" data-i18n="common.connecting">Connecting...</div>
             </div>
         </div>
         <button id="theme-change-btn"></button>
@@ -256,6 +256,9 @@
             <!-- <div class="page page-flex-direction-row can-push-pull" data-page="ai-cqc">cqc output</div> -->
             <!---->
             <div class="page" data-page="walkie-typie-list">
+                <div class="page-auth-overlay walkie-typie-auth-overlay">
+                    <div class="crt-text-orange" data-i18n="walkieTypie.loginRequiredOverlay">LOGIN REQUIRED</div>
+                </div>
                 <div class="walkie-typie-list-container">
                     <div class="walkie-typie-list-title crt-text-orange" data-i18n="walkieTypie.pageTitle">WALKIE-TYPIE CONTROLLER</div>
                     <div class="walkie-typie-list-list-container" data-sound-item="UIGeneralFocus.mp3">
@@ -272,6 +275,9 @@
                 </div>
             </div>
             <div class="page" data-page="walkie-typie-text">
+                <div class="page-auth-overlay walkie-typie-auth-overlay">
+                    <div class="crt-text-orange" data-i18n="walkieTypie.loginRequiredOverlay">LOGIN REQUIRED</div>
+                </div>
                 <!-- <div class="walkie-typie-feature-container"> -->
                 <!-- </div> -->
                 <div class="walkie-typie-blackboard">

@@ -34,7 +34,9 @@
     "dbOnline": "DB:ONLINE",
     "dbOffline": "DB:OFFLINE",
     "themeLight": "LIGHT",
-    "themeDark": "DARK"
+    "themeDark": "DARK",
+    "uidLabel": "UID",
+    "dbLabel": "DB"
   },
 
   "pressStart": {
@@ -151,6 +153,7 @@
     "theyBoard": "THEIR BLACKBOARD",
 
     "uidRequired": "ERROR: UID REQUIRED",
+    "loginRequiredOverlay": "LOGIN REQUIRED",
     "connecting": "CONNECTING...",
     "connected": "CONNECTED",
     "connectFailed": "ERROR: CONNECT FAILED",

@@ -70,6 +70,10 @@
     z-index: 996;
 }
 
+.page-auth-overlay {
+    z-index: 998;
+}
+
 /* editor-attachments.css */
 .drop-overlay {
     z-index: 995;

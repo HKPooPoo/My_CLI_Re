@@ -16,7 +16,16 @@ export const WTCore = {
     uid: null,
     echo: null,
 
+    updateAuthOverlay() {
+        const uid = localStorage.getItem("currentUser");
+        const isLoggedIn = !!uid && uid !== "local";
+        document.querySelectorAll('.walkie-typie-auth-overlay').forEach(el => {
+            el.style.display = isLoggedIn ? 'none' : 'flex';
+        });
+    },
+
     async init() {
+        this.updateAuthOverlay();
         this.uid = localStorage.getItem("currentUser");
         if (!this.uid || this.uid === "local") return;
         try {
@@ -44,8 +53,7 @@ export const WTCore = {
     }
 };
 
-const _storedUser = localStorage.getItem("currentUser");
-if (_storedUser && _storedUser !== "") WTCore.init();
+WTCore.init();
 
 window.addEventListener("auth:updated", () => {
     releaseEcho();

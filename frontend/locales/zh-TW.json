@@ -32,7 +32,9 @@
     "dbOnline": "資料庫：連線",
     "dbOffline": "資料庫：離線",
     "themeLight": "淺色",
-    "themeDark": "深色"
+    "themeDark": "深色",
+    "uidLabel": "使用者",
+    "dbLabel": "資料庫"
   },
   "pressStart": {
     "label": "按下開始"
@@ -132,6 +134,7 @@
     "weBoard": "我們的黑板",
     "theyBoard": "他們的黑板",
     "uidRequired": "錯誤：請輸入使用者名稱",
+    "loginRequiredOverlay": "請先登入",
     "connecting": "連接中...",
     "connected": "已連接",
     "connectFailed": "錯誤：連接失敗",

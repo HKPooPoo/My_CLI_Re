@@ -26,6 +26,7 @@ import { InfiniteList } from './blackboard-ui-list.js';
 import { MultiStepButton } from './multiStepButton.js';
 import { BBMessage } from './blackboard-msg.js';
 import { t } from './i18n.js';
+import { updateNaviPosition } from './navi.js';
 
 // Sub-navi <---> text element — updated when channel is selected or renamed
 const $bcNaviText = document.querySelector(
@@ -504,6 +505,8 @@ export const BCList = {
     updateNaviText(name) {
         if ($bcNaviText) {
             $bcNaviText.textContent = name ? name : '<-->';
+            // Refresh navi positioning as text width changed
+            updateNaviPosition('broadcast', true);
         }
     }
 };

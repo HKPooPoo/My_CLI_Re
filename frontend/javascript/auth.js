@@ -58,6 +58,7 @@ export const AuthManager = {
             this.elements.logoutContainer.style.display = "none";
             this.elements.userInfoUid.textContent = "";
             localStorage.removeItem("currentUser");
+            localStorage.removeItem("currentTitle");
         }
 
         window.dispatchEvent(new CustomEvent("auth:updated"));

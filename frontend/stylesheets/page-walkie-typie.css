@@ -235,3 +235,20 @@
 .page[data-page="walkie-typie-text"].swapped {
     flex-direction: column-reverse;
 }
+
+.page-auth-overlay {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    /* Use the standard frosted glass or simple backdrop */
+    background-color: var(--bg-primary);
+    opacity: 0.95;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: calc(var(--textbox-font-size) * 2);
+    font-weight: bold;
+    /* Z-index is handled in layer.css */
+}
