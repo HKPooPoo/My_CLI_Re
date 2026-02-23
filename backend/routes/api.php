@@ -55,6 +55,9 @@ Route::middleware('auth')->prefix('blackboard')->group(function () {
     Route::delete('/branches/{branchId}', [BlackboardController::class, 'destroyBranch']);
 });
 
+// Walkie-Typie — public config
+Route::get('/walkie-typie/config', [WalkieTypieController::class, 'config']);
+
 // Walkie-Typie — auth required
 Route::middleware('auth')->prefix('walkie-typie')->group(function () {
     Route::get('/connections', [WalkieTypieController::class, 'index']);
@@ -62,7 +65,6 @@ Route::middleware('auth')->prefix('walkie-typie')->group(function () {
     Route::post('/signal', [WalkieTypieController::class, 'signal']);
     Route::patch('/connections/{partnerUid}', [WalkieTypieController::class, 'updateTag']);
     Route::delete('/connections/{partnerUid}', [WalkieTypieController::class, 'destroy']);
-    Route::get('/config', [WalkieTypieController::class, 'config']);
 
     // Board Operations (獨立於 Blackboard)
     Route::post('/boards/commit', [WalkieTypieController::class, 'commitBoard']);

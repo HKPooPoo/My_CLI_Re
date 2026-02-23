@@ -76,7 +76,7 @@
   "blackboard": {
     "pageTitle": "分支控制器",
     "logTab": "日誌",
-    "vcsTab": "版控",
+    "vcsTab": "分支",
     "pushBtn": "推動",
     "pullBtn": "拉取",
     "commitBtn": "上傳至伺服器",

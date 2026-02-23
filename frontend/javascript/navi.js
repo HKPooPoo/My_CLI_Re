@@ -116,7 +116,7 @@ function saveNaviItemPositionToLocalStorage() {
  * 更新導航位置 (物理渲染)
  * 步驟：1. 計算 OffsetLeft 和位移量 2. 應用 CSS Transform 3. 高亮選中項 4. 切換 Page 5. 觸發震動效果
  */
-export function updateNaviPosition($naviItem, silent = false) {
+export function updateNaviPosition($naviItem, silent = false, instant = false) {
     const stateOfNaviItem = stateOfEachNaviItem[$naviItem];
     if (!stateOfNaviItem) return;
 
@@ -142,7 +142,16 @@ export function updateNaviPosition($naviItem, silent = false) {
     const offsetSummation = offsetLeft + (currentHeadSubNaviItemWidth / 2);
     const translateX = -offsetSummation;
 
+    if (instant) {
+        $subNaviTrack.style.transition = 'none';
+    }
+
     $subNaviTrack.style.transform = `translateX(${translateX}px)`;
+
+    if (instant) {
+        void $subNaviTrack.offsetWidth; // Force reflow
+        $subNaviTrack.style.transition = '';
+    }
 
     // 高亮對應文字
     Array.from($subNaviItems).forEach(($focusedSubNaviItem, index) => {
@@ -234,7 +243,7 @@ function updatePage(subNaviItem) {
 // --- 全域事件應選 ---
 window.addEventListener("resize", () => {
     if (activeNaviItem && stateOfEachNaviItem[activeNaviItem]) {
-        updateNaviPosition(activeNaviItem, true); // 窗口縮放後修正位置但不播音
+        updateNaviPosition(activeNaviItem, true, true); // 窗口縮放後修正位置但不播音 (Instant)
     }
 });
 
@@ -272,7 +281,7 @@ function handleSubNaviSwipe(startX, endX) {
         const $matched = $allItems.find($el => $el.dataset.naviItem === savedNaviItem);
         if ($matched) {
             setActiveNaviItem($matched, true);
-            updateNaviPosition(savedNaviItem, true);
+            updateNaviPosition(savedNaviItem, true, true);
             return;
         }
     }
@@ -280,6 +289,6 @@ function handleSubNaviSwipe(startX, endX) {
     // Default to first item
     if ($allItems.length > 0) {
         setActiveNaviItem($allItems[0], true);
-        updateNaviPosition($allItems[0].dataset.naviItem, true);
+        updateNaviPosition($allItems[0].dataset.naviItem, true, true);
     }
 })();

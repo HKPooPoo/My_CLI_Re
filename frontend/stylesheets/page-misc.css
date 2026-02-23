@@ -47,7 +47,7 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    border-bottom: 1px solid rgba(50, 255, 50, 0.2);
+    border-bottom: 1px solid var(--text-green);
 }
 
 .misc-list-item:last-child {

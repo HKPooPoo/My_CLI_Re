@@ -18,15 +18,13 @@
     "push": "PUSH",
     "pull": "PULL"
   },
-
   "nav": {
     "blackboard": "BLACKBOARD",
     "walkieTypie": "WALKIE-TYPIE",
     "broadcast": "BROADCAST",
-    "account": "ACCOUNT",
+    "account": "AUTH",
     "misc": "MISC"
   },
-
   "hud": {
     "online": "ONLINE",
     "offline": "OFFLINE",
@@ -39,11 +37,9 @@
     "uidLabel": "UID",
     "dbLabel": "DB"
   },
-
   "pressStart": {
     "label": "PRESS START"
   },
-
   "auth": {
     "pageTitle": "ACCOUNT AUTHENTICATION",
     "uidPlaceholder": "UID",
@@ -55,12 +51,10 @@
     "installBtn": "INSTALL APP",
     "resetPasscodeBtn": "RESET PASSCODE",
     "cmdPlaceholder": "Enter command... (/passwd, /bind)",
-
     "inputRequired": "ERROR: INPUT REQUIRED",
     "authenticating": "AUTHENTICATING...",
     "welcome": "WELCOME {uid}",
     "authFailed": "ERROR: AUTH FAILED",
-
     "registerStep1": "REGISTER",
     "registerStep2": "REGISTER x 3",
     "registerStep3": "REGISTER x 2",
@@ -68,7 +62,6 @@
     "registering": "REGISTERING...",
     "registerComplete": "REGISTRATION COMPLETE",
     "registerFailed": "ERROR: REGISTRATION FAILED",
-
     "logoutComplete": "LOGOUT COMPLETE",
     "executing": "EXECUTING...",
     "tooManyAttempts": "TOO MANY ATTEMPTS",
@@ -80,22 +73,19 @@
     "processing": "PROCESSING...",
     "offlineError": "OFFLINE"
   },
-
   "blackboard": {
     "pageTitle": "BRANCH CONTROLLER",
     "logTab": "LOG",
-    "vcsTab": "VCS",
+    "vcsTab": "BRANCH",
     "pushBtn": "PUSH",
     "pullBtn": "PULL",
     "commitBtn": "COMMIT",
     "forkBtn": "FORK",
     "dropBtn": "DROP",
     "checkoutBtn": "CHECKOUT",
-
     "namePlaceholder": "Name your branch...",
     "textPlaceholder": "Enter...",
     "dropZoneHint": "DROP FILES HERE",
-
     "branchNameFallback": "NAMELESS_BRANCH",
     "statusUnsaved": "UNSAVED",
     "statusSaved": "SAVED",
@@ -104,20 +94,16 @@
     "statusAsynced": "asynced",
     "statusSynced": "synced",
     "statusOnline": "online/{owner} [asynced]",
-
     "forking": "FORKING...",
     "forkComplete": "FORK COMPLETE",
     "forkFailed": "ERROR: FORK FAILED",
     "pullRequired": "ERROR: PULL REQUIRED",
-
     "syncing": "SYNCING...",
     "syncComplete": "SYNC COMPLETE",
     "syncFailed": "ERROR: SYNC FAILED",
-
     "loading": "LOADING...",
     "loadComplete": "LOAD COMPLETE",
     "loadFailed": "ERROR: LOAD FAILED",
-
     "cleanStep1": "CLEAN",
     "dropStep1": "DROP",
     "deleteStep1": "DELETE",
@@ -128,56 +114,46 @@
     "dropComplete": "DROP COMPLETE",
     "deleteComplete": "DELETE COMPLETE",
     "actionFailed": "ERROR: ACTION FAILED",
-
     "syncingFiles": "SYNCING FILES...",
     "noData": "ERROR: NO DATA",
     "fileSyncFailed": "ERROR: FILE SYNC FAILED",
     "loginRequired": "ERROR: LOGIN REQUIRED",
     "uploadFailed": "ERROR: UPLOAD FAILED"
   },
-
   "walkieTypie": {
     "pageTitle": "WALKIE-TYPIE CONTROLLER",
-    "listTab": "CONNECTIONS",
-    "boardTab": "BOARD",
+    "listTab": "LINK",
+    "boardTab": "TEXT",
     "addBtn": "ADD",
     "cutBtn": "CUT",
     "pushBtn": "PUSH",
     "pullBtn": "PULL",
     "commitBtn": "COMMIT",
-
     "uidPlaceholder": "UID",
     "tagPlaceholder": "Name this guy...",
     "dropZoneHint": "DROP FILES HERE",
-
     "weBoard": "OUR BLACKBOARD",
     "theyBoard": "THEIR BLACKBOARD",
-
     "uidRequired": "ERROR: UID REQUIRED",
     "loginRequiredOverlay": "LOGIN REQUIRED",
     "connecting": "CONNECTING...",
     "connected": "CONNECTED",
     "connectFailed": "ERROR: CONNECT FAILED",
-
     "cutStep1": "CUT",
     "noTarget": "ERROR: NO TARGET",
     "cutting": "CUTTING...",
     "cutComplete": "CUT COMPLETE",
     "cutFailed": "ERROR: CUT FAILED",
-
     "tagUpdateFailed": "ERROR: TAG UPDATE FAILED",
-
     "noConnectionSelected": "NO CONNECTION SELECTED",
     "contentUpdated": "Content updated",
     "newMessage": "New message from {sender}",
     "signal": "SIGNAL: {uid}",
-
     "loginRequired": "LOGIN REQUIRED FOR COMMIT.",
     "noLocalData": "LOCAL DATA NOT FOUND OR EMPTY.",
     "uploading": "UPLOADING: {name}",
     "uploadFailed": "UPLOAD FAILED: {hash}"
   },
-
   "broadcast": {
     "pageTitle": "CHANNEL MODULATION",
     "listTab": "CHANNELS",
@@ -189,23 +165,19 @@
     "pullBtn": "PULL",
     "pinBtn": "PIN",
     "unpinBtn": "UNPIN",
-
     "channelNamePlaceholder": "Channel name...",
     "dropZoneHint": "DROP FILES HERE",
-
     "statusLocal": "LOCAL",
     "statusCast": "CAST",
     "statusRead": "READ",
     "pinLabel": " [PIN]",
     "headNew": "NEW",
     "headFallback": "---",
-
     "noTarget": "ERROR: NO TARGET",
     "loginRequired": "ERROR: LOGIN REQUIRED TO PIN",
     "unpinned": "UNPINNED",
     "pinned": "PINNED",
     "pinFailed": "ERROR: PIN FAILED",
-
     "castStep1": "CAST",
     "castConfirm": "SURE?",
     "titleRequired": "ERROR: TITLE REQUIRED",
@@ -213,23 +185,19 @@
     "casting": "CASTING...",
     "castComplete": "CAST COMPLETE",
     "castFailed": "ERROR: CAST FAILED",
-
     "createStep1": "CREATE",
     "creating": "CREATING...",
     "createComplete": "CREATE COMPLETE",
     "createFailed": "ERROR: CREATE FAILED",
-
     "deleteStep1": "DELETE",
     "deleting": "DELETING...",
     "deleteComplete": "DELETE COMPLETE",
     "deleteFailed": "ERROR: DELETE FAILED",
-
     "nameEmpty": "ERROR: NAME CANNOT BE EMPTY",
     "renameFailed": "ERROR: RENAME FAILED",
     "syncFailed": "SYNC FAILED",
     "fetchFailed": "FETCH FAILED"
   },
-
   "files": {
     "dropZoneHint": "DROP FILES HERE",
     "tooLarge": "FILE TOO LARGE: MAX 1 GB",
@@ -242,7 +210,6 @@
     "statusWait": "[WAIT]",
     "removeBtn": "[X]"
   },
-
   "speech": {
     "listening": "LISTENING...",
     "processing": "PROCESSING...",
@@ -251,22 +218,18 @@
     "noSpeech": "ERROR: NO SPEECH",
     "offline": "ERROR: OFFLINE"
   },
-
   "translator": {
     "bufferEmpty": "PROTOCOL ERROR: BUFFER EMPTY. INPUT REQUIRED.",
     "decrypting": "DECRYPTING LINGUISTICS... STANDBY.",
     "nullResult": "RESULT: NULL. UNABLE TO DECODE.",
     "criticalBreach": "CRITICAL BREACH: {error}"
   },
-
   "pwa": {
     "updateAvailable": "UPDATE AVAILABLE"
   },
-
   "system": {
     "loginRequired": "LOGIN REQUIRED FOR THIS OPERATION."
   },
-
   "misc": {
     "pageTitle": "MISC & SETTINGS",
     "languageLabel": "LANGUAGE",
