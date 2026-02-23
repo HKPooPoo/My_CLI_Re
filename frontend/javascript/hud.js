@@ -28,8 +28,14 @@ const loginStatusDisplay = document.getElementById("login-status-display");
 export function updateLoginStatus() {
     const currentUser = localStorage.getItem("currentUser") || "";
     const currentTitle = localStorage.getItem("currentTitle") || "";
+    
+    let display = currentUser;
+    if (currentUser === "local" || !currentUser) {
+        display = t('common.local');
+    }
+
     if (loginStatusDisplay) {
-        loginStatusDisplay.textContent = currentTitle ? `${currentUser} [${currentTitle}]` : currentUser;
+        loginStatusDisplay.textContent = currentTitle ? `${display} [${currentTitle}]` : display;
     }
 }
 
@@ -98,7 +104,18 @@ document.getElementById("theme-change-btn").addEventListener("click", () => {
 });
 
 // --- 初始化啟動 ---
-updateLoginStatus();
+window.addEventListener('i18n:ready', () => {
+    updateLoginStatus();
+    updateDatabaseStatus();
+});
+
+// If i18n is already loaded (e.g. script execution order), run immediately
+// Otherwise, the listener above will handle it.
+// We check if strings are loaded by trying to translate a known key.
+if (t('common.local') !== 'common.local') {
+    updateLoginStatus();
+}
+
 replaceCrtTextColorBy("crt-text-orange"); // 最初顯示為 orange (CONNECTING...)
 
 // [Optimization]: 延遲首次檢測，避免頁面加載時的 NetworkError

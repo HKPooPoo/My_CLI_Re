@@ -45,12 +45,28 @@ audioFiles.forEach(file => {
  * @param {string} fileName 音效檔名 (需包含副檔名)
  */
 export function playAudio(fileName) {
-    // 步驟：1. 檢查參數是否存在 2. 檢測是否為行動裝置 3. 重設時間軸以支援連續觸發 (機槍模式) 4. 執行播放
+    // 步驟：1. 檢查參數是否存在 2. 檢測是否為行動裝置 3. 讀取設定 4. 執行播放
     if (!fileName || !audioCache[fileName] || isMobile()) return;
 
+    const getVol = (key) => {
+        const val = localStorage.getItem(key);
+        if (val === 'true') return 100;
+        if (val === 'false') return 0;
+        const parsed = parseInt(val);
+        return isNaN(parsed) ? 100 : parsed;
+    };
+
+    const globalVolume = getVol('setting-global-audio');
+    const sfxVolume = getVol('setting-sfx');
+
+    const finalVolume = (globalVolume / 100) * (sfxVolume / 100);
+
+    if (isNaN(finalVolume) || finalVolume <= 0) return;
+
     audioCache[fileName].currentTime = 0;
+    audioCache[fileName].volume = Math.min(1, Math.max(0, finalVolume));
     audioCache[fileName].play().catch(() => {
-        // Silently ignore autoplay policy blocks (Firefox/Chrome first-load restriction)
+        // Silently ignore autoplay policy blocks
     });
 }
 

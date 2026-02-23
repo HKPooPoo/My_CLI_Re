@@ -174,6 +174,7 @@ export const AuthManager = {
         // --- 重置密碼邏輯 (方案 B: CLI 指令解析) ---
         if (this.elements.resetPasscodeBtn) {
             this.elements.resetPasscodeBtn.addEventListener("click", async () => {
+                playAudio('UIGeneralFocus.mp3');
                 if (this.isResetting) return;
                 this.isResetting = true;
 
@@ -227,6 +228,7 @@ export const AuthManager = {
         // --- 郵件綁定邏輯 (方案 B: CLI 指令解析) ---
         if (this.elements.emailBindBtn) {
             this.elements.emailBindBtn.addEventListener("click", async () => {
+                playAudio('UIGeneralFocus.mp3');
                 if (this.isBinding) return;
                 this.isBinding = true;
 

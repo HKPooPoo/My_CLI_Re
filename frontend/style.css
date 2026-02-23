@@ -133,7 +133,8 @@ input {
 
 /* CLI block cursor */
 textarea,
-input[type="text"] {
+input[type="text"],
+input[type="password"] {
     caret-color: var(--text-green);
     caret-shape: block;
 }

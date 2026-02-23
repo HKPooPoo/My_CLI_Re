@@ -37,6 +37,7 @@ export async function initI18n() {
         }
     }
     renderDOM();
+    window.dispatchEvent(new CustomEvent('i18n:ready'));
 }
 
 /**

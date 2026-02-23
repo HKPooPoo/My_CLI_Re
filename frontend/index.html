@@ -29,6 +29,7 @@
     <link rel="stylesheet" href="stylesheets/toast.css">
     <link rel="stylesheet" href="stylesheets/page-walkie-typie.css">
     <link rel="stylesheet" href="stylesheets/page-broadcast.css">
+    <link rel="stylesheet" href="stylesheets/page-misc.css">
     <link rel="stylesheet" href="stylesheets/editor-attachments.css">
     <!--注意@media放在尾！！！-->
     <link rel="stylesheet" href="stylesheets/@media.css">
@@ -74,6 +75,9 @@
                         </div>
                         <div class="sub-navi-item" data-sub-navi-item="auth">
                             <div class="sub-navi-item-text" data-i18n="nav.account">AUTH</div>
+                        </div>
+                        <div class="sub-navi-item" data-sub-navi-item="blackboard-misc">
+                            <div class="sub-navi-item-text" data-i18n="nav.misc">MISC</div>
                         </div>
                     </div>
                 </div>
@@ -225,12 +229,38 @@
                         maxlength="64"> -->
                 </div>
             </div>
+            <div class="page" data-page="blackboard-misc">
+                <div class="misc-container">
+                    <div class="misc-title crt-text-orange" data-i18n="misc.pageTitle">MISC & SETTINGS</div>
+
+                    <div class="misc-list-container">
+                        <!-- Language Toggle -->
+                        <div class="misc-list-item">
+                            <div class="misc-label" data-i18n="misc.languageLabel">LANGUAGE</div>
+                            <button class="misc-toggle-btn crt-text-green" id="misc-toggle-lang">ENGLISH</button>
+                        </div>
+
+                        <!-- Global Audio Toggle -->
+                        <div class="misc-list-item">
+                            <div class="misc-label" data-i18n="misc.globalAudioLabel">GLOBAL AUDIO</div>
+                            <button class="misc-toggle-btn crt-text-green" id="misc-toggle-global-audio">ON</button>
+                        </div>
+
+                        <!-- SFX Toggle -->
+                        <div class="misc-list-item">
+                            <div class="misc-label" data-i18n="misc.sfxLabel">SFX</div>
+                            <button class="misc-toggle-btn crt-text-green" id="misc-toggle-sfx">ON</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
             <!--blackboard.js-->
             <script type="module" src="javascript/blackboard.js"></script>
             <script type="module" src="javascript/feature.js"></script>
             <script type="module" src="javascript/feature-shelf.js"></script>
             <script type="module" src="javascript/feature-translator.js"></script>
             <script type="module" src="javascript/auth.js"></script>
+            <script type="module" src="javascript/misc.js"></script>
             <!-- Walkie-Typie Dependencies -->
             <script src="./javascript/vendor/pusher.min.js"></script>
             <script src="./javascript/vendor/echo.iife.js"></script>

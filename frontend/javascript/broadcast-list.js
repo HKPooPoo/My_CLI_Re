@@ -139,22 +139,28 @@ export const BCList = {
         // --- PIN ---
         if (this.elements.pinBtn) {
             this.elements.pinBtn.addEventListener('click', async () => {
-                if (!this.selectedChannel) return BBMessage.error(t('broadcast.noTarget'));
+                if (!this.selectedChannel) {
+                    playAudio('UIGeneralCancel.mp3');
+                    return BBMessage.error(t('broadcast.noTarget'));
+                }
 
                 const ch = this.selectedChannel;
                 const isLoggedIn = !!localStorage.getItem('currentUser');
 
                 if (!isLoggedIn || !ch.serverChannelId) {
                     // Cannot pin local-only or when not logged in
+                    playAudio('UIGeneralCancel.mp3');
                     return BBMessage.error(t('broadcast.loginRequired'));
                 }
 
                 try {
                     if (ch.isPinned) {
+                        playAudio('UISelectOff.mp3');
                         await BroadcastService.unpin(ch.serverChannelId);
                         ch.isPinned = false;
                         BBMessage.info(t('broadcast.unpinned'));
                     } else {
+                        playAudio('UISelectOn.mp3');
                         await BroadcastService.pin(ch.serverChannelId);
                         ch.isPinned = true;
                         BBMessage.info(t('broadcast.pinned'));

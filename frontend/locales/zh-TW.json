@@ -5,7 +5,7 @@
     "unsaved": "未儲存",
     "saved": "已儲存",
     "local": "本機",
-    "online": "連線中",
+    "online": "線上",
     "offline": "離線",
     "connecting": "連接中...",
     "error": "錯誤",
@@ -22,19 +22,20 @@
     "blackboard": "黑板",
     "walkieTypie": "對打機",
     "broadcast": "廣播",
-    "account": "帳號"
+    "account": "帳號",
+    "misc": "設定"
   },
   "hud": {
-    "online": "連線中",
+    "online": "線上",
     "offline": "離線",
     "connecting": "連接中...",
     "error": "錯誤",
-    "dbOnline": "資料庫：連線",
-    "dbOffline": "資料庫：離線",
+    "dbOnline": "DB: 線上",
+    "dbOffline": "DB: 離線",
     "themeLight": "淺色",
     "themeDark": "深色",
-    "uidLabel": "使用者",
-    "dbLabel": "資料庫"
+    "uidLabel": "UID",
+    "dbLabel": "DB"
   },
   "pressStart": {
     "label": "按下開始"
@@ -228,5 +229,11 @@
   },
   "system": {
     "loginRequired": "此操作需要登入。"
+  },
+  "misc": {
+    "pageTitle": "系統設定",
+    "languageLabel": "介面語言",
+    "globalAudioLabel": "全局音效",
+    "sfxLabel": "操作音效"
   }
 }
