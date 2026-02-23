@@ -28,7 +28,7 @@ export const BBMessage = {
      */
     info(text) {
         const prefix = "SYSTEM > ";
-        return wrapHandler(toast.addMessage(`${prefix}${text}`), prefix);
+        return wrapHandler(toast.addMessage(`${prefix}${text}`, 5000, 'info'), prefix);
     },
 
     /**
@@ -36,7 +36,7 @@ export const BBMessage = {
      */
     error(text) {
         const prefix = "CRITICAL > ";
-        return wrapHandler(toast.addMessage(`${prefix}${text}`), prefix);
+        return wrapHandler(toast.addMessage(`${prefix}${text}`, 5000, 'error'), prefix);
     },
 
     /**
@@ -44,7 +44,7 @@ export const BBMessage = {
      */
     success(action) {
         const prefix = "SYSTEM > ";
-        return wrapHandler(toast.addMessage(`${prefix}${action} COMPLETE.`), prefix);
+        return wrapHandler(toast.addMessage(`${prefix}${action} COMPLETE.`, 5000, 'success'), prefix);
     },
 
     /**

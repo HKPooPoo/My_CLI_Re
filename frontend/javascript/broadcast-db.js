@@ -13,13 +13,7 @@
  */
 
 import db, { Dexie } from './indexedDB.js';
-
-export function getHKTTimestamp(dateInput) {
-    const now = dateInput ? new Date(dateInput) : new Date();
-    const hktOffset = 8 * 60 * 60 * 1000;
-    const hktTime = new Date(now.getTime() + hktOffset);
-    return hktTime.toISOString().replace('Z', '+08:00');
-}
+export { getHKTTimestamp } from './utils.js';
 
 // =============================================================
 //  Board Operations (broadcastBoards)

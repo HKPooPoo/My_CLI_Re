@@ -169,6 +169,8 @@ export const BBVCS = {
                     }
 
                     await FileService.upload(fileData.blob);
+                    // Mark as synced so the chip transitions LOCAL → SYNC
+                    await db.fileBlobs.update(hash, { status: 'synced' });
                 } catch (err) {
                     console.error(`Failed to sync file ${hash}:`, err);
                     throw new Error("ERROR: FILE SYNC FAILED");

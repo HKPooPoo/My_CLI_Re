@@ -50,6 +50,26 @@
     text-shadow: var(--text-shadow-red)
 }
 
+.crt-text-cyan * {
+    color: var(--text-cyan);
+    text-shadow: var(--text-shadow-cyan)
+}
+
+.crt-text-cyan {
+    color: var(--text-cyan);
+    text-shadow: var(--text-shadow-cyan)
+}
+
+.crt-text-yellow * {
+    color: var(--text-yellow);
+    text-shadow: var(--text-shadow-yellow)
+}
+
+.crt-text-yellow {
+    color: var(--text-yellow);
+    text-shadow: var(--text-shadow-yellow)
+}
+
 /*press start*/
 #press-start-overlay {
     position: absolute;

@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use App\Mail\ResetPasscodeMail;
 use App\Mail\BindEmailMail;
 
@@ -41,8 +42,8 @@ class AuthService
             throw new \Exception('UID NOT FOUND OR EMAIL NOT BOUND.');
         }
 
-        $token = rand(1000, 9999);
-        Cache::put("reset_{$token}", $user->uid, now()->addMinutes(10));
+        $token = Str::random(32);
+        Cache::put("reset_{$user->uid}_{$token}", $user->uid, now()->addMinutes(10));
 
         $command = "/passwd --token {$token} --new YOUR_NEW_PASSCODE";
         Mail::to($user->email)->send(new ResetPasscodeMail($user->uid, $command));
@@ -50,8 +51,8 @@ class AuthService
 
     public function requestEmailBinding(string $email, User $user)
     {
-        $token = rand(1000, 9999);
-        Cache::put("bind_token_{$token}", $user->uid, now()->addMinutes(10));
+        $token = Str::random(32);
+        Cache::put("bind_{$user->uid}_{$token}", $user->uid, now()->addMinutes(10));
 
         $command = "/bind --token {$token} --email {$email}";
         Mail::to($email)->send(new BindEmailMail($command));
@@ -59,16 +60,28 @@ class AuthService
 
     public function executeCommand(string $input, ?User $user)
     {
-        // 1. /passwd --token 1234 --new password
+        // 1. /passwd --token <token> --new password
         if (preg_match('/^\/passwd --token (\w+) --new (\S+)$/', $input, $matches)) {
             $token = $matches[1];
             $newPass = $matches[2];
 
             if (!preg_match('/^[a-zA-Z0-9!@#$%^&*]{8,32}$/', $newPass)) {
-                throw new \Exception('PASSWORD FORMAT INVALID. NO SPACES ALLOWED.');
+                throw new \Exception('PASSWORD FORMAT INVALID. MUST BE 8-32 CHARS, NO SPACES.');
             }
 
-            $uid = Cache::get("reset_{$token}");
+            // Try all users to find the matching scoped cache key
+            $uid = null;
+            $cacheKey = null;
+            $users = User::all();
+            foreach ($users as $u) {
+                $key = "reset_{$u->uid}_{$token}";
+                if (Cache::get($key) === $u->uid) {
+                    $uid = $u->uid;
+                    $cacheKey = $key;
+                    break;
+                }
+            }
+
             if (!$uid) {
                 throw new \Exception('INVALID OR EXPIRED TOKEN.');
             }
@@ -77,11 +90,11 @@ class AuthService
             $userToUpdate->passcode = Hash::make($newPass);
             $userToUpdate->save();
 
-            Cache::forget("reset_{$token}");
+            Cache::forget($cacheKey);
             return 'PASSCODE UPDATED SUCCESSFULLY.';
         }
 
-        // 2. /bind --token 1234 --email test@example.com
+        // 2. /bind --token <token> --email test@example.com
         if (preg_match('/^\/bind --token (\w+) --email (\S+)$/', $input, $matches)) {
             if (!$user) {
                 throw new \Exception('LOGIN REQUIRED.');
@@ -94,7 +107,8 @@ class AuthService
                 throw new \Exception('INVALID EMAIL FORMAT.');
             }
 
-            $tokenUid = Cache::get("bind_token_{$token}");
+            $cacheKey = "bind_{$user->uid}_{$token}";
+            $tokenUid = Cache::get($cacheKey);
             if (!$tokenUid || $tokenUid !== $user->uid) {
                 throw new \Exception('INVALID OR EXPIRED TOKEN.');
             }
@@ -102,7 +116,7 @@ class AuthService
             $user->email = $email;
             $user->save();
 
-            Cache::forget("bind_token_{$token}");
+            Cache::forget($cacheKey);
             return 'EMAIL BOUND SUCCESSFULLY.';
         }
 

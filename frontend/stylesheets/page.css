@@ -46,6 +46,38 @@
     display: flex;
 }
 
+/* MultiStepButton: armed (awaiting confirmation) */
+.btn-armed {
+    color: var(--text-orange) !important;
+    border-color: var(--text-orange) !important;
+    text-shadow: var(--text-shadow-orange);
+}
+
+/* Light theme: --text-orange becomes black, so armed buttons need a distinct color */
+:root[data-theme="light"] .btn-armed {
+    color: var(--text-orange-accent) !important;
+    border-color: var(--text-orange-accent) !important;
+}
+
+@media (hover: hover) {
+    .btn-armed:hover {
+        background: var(--text-orange) !important;
+        color: var(--bg-primary) !important;
+        box-shadow: 0 0 10px var(--text-orange) !important;
+    }
+
+    :root[data-theme="light"] .btn-armed:hover {
+        background: var(--text-orange-accent) !important;
+        color: var(--bg-primary) !important;
+        box-shadow: 0 0 10px var(--text-orange-accent) !important;
+    }
+}
+
+button[aria-busy="true"] {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
 .page-flex-direction-row {
     flex-direction: row;
     justify-content: center;

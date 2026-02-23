@@ -23,7 +23,7 @@ class BroadcastChannelService
     public function listChannels(?User $user): array
     {
         // Base channel list is user-agnostic — cache 15s
-        $channels = Cache::remember('bc:channels:base', 15, fn() =>
+        $channels = Cache::remember('bc:channels:base', 30, fn() =>
             DB::table('broadcast_channels')
                 ->leftJoin('users', 'broadcast_channels.owner_uid', '=', 'users.uid')
                 ->orderBy('broadcast_channels.last_signal', 'desc')

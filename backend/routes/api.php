@@ -11,14 +11,7 @@ use App\Http\Controllers\BroadcastChannelController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Broadcast;
 
-use App\Mail\ResetPasscodeMail;
-
 Broadcast::routes(['prefix' => 'api', 'middleware' => ['web', 'auth']]);
-
-Route::get('/mail-preview', function () {
-    // 模擬資料
-    return new ResetPasscodeMail('test_user_01', '/passwd --token 1234 --new secret');
-});
 
 // Translation & Speech — expensive AI routes, strict throttle
 Route::middleware('throttle:10,1')->group(function () {
@@ -55,15 +48,15 @@ Route::middleware('throttle:10,1')->group(function () {
     Route::post('/auth/request-bind', [AuthController::class, 'requestEmailBinding']);
 });
 
-// Blackboard Sync
-Route::prefix('blackboard')->group(function () {
+// Blackboard Sync — auth required
+Route::middleware('auth')->prefix('blackboard')->group(function () {
     Route::get('/branches', [BlackboardController::class, 'fetchBranches']);
     Route::get('/branches/{branchId}', [BlackboardController::class, 'fetchBranchDetails']);
     Route::delete('/branches/{branchId}', [BlackboardController::class, 'destroyBranch']);
 });
 
-// Walkie-Typie
-Route::prefix('walkie-typie')->group(function () {
+// Walkie-Typie — auth required
+Route::middleware('auth')->prefix('walkie-typie')->group(function () {
     Route::get('/connections', [WalkieTypieController::class, 'index']);
     Route::post('/connections', [WalkieTypieController::class, 'store']);
     Route::post('/signal', [WalkieTypieController::class, 'signal']);
@@ -76,14 +69,14 @@ Route::prefix('walkie-typie')->group(function () {
     Route::get('/boards/{branchId}', [WalkieTypieController::class, 'fetchBoardRecords']);
 });
 
-// Broadcast Channels (pin/unpin — not throttled above)
-Route::prefix('broadcast')->group(function () {
+// Broadcast Channels (pin/unpin — auth required)
+Route::middleware('auth')->prefix('broadcast')->group(function () {
     Route::post('/channels/{channelId}/pin', [BroadcastChannelController::class, 'pin']);
     Route::delete('/channels/{channelId}/pin', [BroadcastChannelController::class, 'unpin']);
 });
 
-// File Download & Meta
-Route::prefix('files')->group(function () {
+// File Download & Meta — throttled
+Route::middleware('throttle:60,1')->prefix('files')->group(function () {
     Route::get('/{hash}', [FileController::class, 'download']);
     Route::get('/{hash}/meta', [FileController::class, 'meta']);
     Route::get('/{hash}/exists', [FileController::class, 'exists']);

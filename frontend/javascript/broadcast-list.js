@@ -80,16 +80,22 @@ export const BCList = {
 
     bindEvents() {
         // Auth change → refresh list + re-evaluate button visibility
-        window.addEventListener('blackboard:authUpdated', () => {
+        window.addEventListener('auth:updated', () => {
             this.lockTitleButtons();
             this.fetchAndRender();
         });
 
-        // Window focus → re-fetch public channels
-        window.addEventListener('focus', () => this.fetchAndRender());
+        // Window focus → re-fetch public channels (only when BC page active)
+        window.addEventListener('focus', () => {
+            const activePage = document.querySelector('.page.active');
+            const isBCActive = activePage && activePage.dataset.page && activePage.dataset.page.startsWith('broadcast-');
+            if (isBCActive) {
+                this.fetchAndRender();
+            }
+        });
 
         // InfiniteList cursor → 500ms debounce → dispatch broadcast:selected
-        window.addEventListener('blackboard:selectionChanged', (e) => {
+        window.addEventListener('list:selectionChanged', (e) => {
             const { item } = e.detail;
             if (!item || !this.elements.container?.contains(item)) return;
 
@@ -98,6 +104,7 @@ export const BCList = {
             if (!ch) return;
 
             this.selectedChannel = ch;
+            this.updatePinBtnText();
 
             clearTimeout(this.selectionTimer);
             this.selectionTimer = setTimeout(() => {
@@ -151,6 +158,7 @@ export const BCList = {
                         BBMessage.info('PINNED');
                     }
                     // Re-sort and re-render to reflect new pin state
+                    this.updatePinBtnText();
                     this.sortChannels();
                     this.render();
                 } catch (e) {
@@ -453,10 +461,18 @@ export const BCList = {
             lastSignalEl.classList.add('broadcast-list-last-signal');
             lastSignalEl.textContent = ch.lastSignal ? getHKTTimestamp(ch.lastSignal) : '---';
 
-            // Row 3: owner's title (or LOCAL if not yet cast)
+            // Row 3: owner's title (or LOCAL if not yet cast) + pin tag
             const titleEl = document.createElement('div');
             titleEl.classList.add('broadcast-list-title');
-            titleEl.textContent = ch.isLocalOnly ? 'LOCAL' : (ch.ownerTitle || ch.ownerUid || '---');
+            const ownerLabel = ch.isLocalOnly ? 'LOCAL' : (ch.ownerTitle || ch.ownerUid || '---');
+            titleEl.textContent = ownerLabel;
+            if (ch.isPinned) {
+                titleEl.style.flexDirection = 'row';
+                const pinTag = document.createElement('span');
+                pinTag.classList.add('crt-text-yellow');
+                pinTag.textContent = ' [PIN]';
+                titleEl.appendChild(pinTag);
+            }
 
             item.appendChild(nameInput);
             item.appendChild(lastSignalEl);
@@ -478,6 +494,11 @@ export const BCList = {
     // =====================================================================
     //  Navi
     // =====================================================================
+
+    updatePinBtnText() {
+        if (!this.elements.pinBtn) return;
+        this.elements.pinBtn.textContent = this.selectedChannel?.isPinned ? 'UNPIN' : 'PIN';
+    },
 
     updateNaviText(name) {
         if ($bcNaviText) {

@@ -13,12 +13,14 @@ import { getEcho, releaseEcho } from './echo-service.js';
 
 export const WTCore = {
     uid: null,
+    echo: null,
 
     async init() {
         this.uid = localStorage.getItem("currentUser");
         if (!this.uid || this.uid === "local") return;
         try {
             const echo = await getEcho();
+            this.echo = echo;
             // Guard: check still logged in after async config fetch
             if (!localStorage.getItem("currentUser")) return;
 
@@ -41,9 +43,10 @@ export const WTCore = {
     }
 };
 
-if (localStorage.getItem("currentUser")) WTCore.init();
+const _storedUser = localStorage.getItem("currentUser");
+if (_storedUser && _storedUser !== "") WTCore.init();
 
-window.addEventListener("blackboard:authUpdated", () => {
+window.addEventListener("auth:updated", () => {
     releaseEcho();
     WTCore.init();
 });

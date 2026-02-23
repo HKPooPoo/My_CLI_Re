@@ -69,5 +69,14 @@ db.version(4).stores({
     fileBlobs:         'hash, lastAccessed',
 });
 
+// v5: add status index to fileBlobs for optimized _pruneFileBlobs queries
+db.version(5).stores({
+    blackboard:        '[owner+branchId+timestamp], owner, branchId, [branchId+timestamp]',
+    walkieTypie:       '[branchId+timestamp], branchId, branch',
+    broadcastBoards:   '[localChannelId+timestamp], localChannelId',
+    broadcastChannels: '++localId, name, serverChannelId',
+    fileBlobs:         'hash, lastAccessed, status',
+});
+
 export default db;
 export { Dexie };

@@ -11,16 +11,7 @@
  */
 
 import db, { Dexie } from "./indexedDB.js";
-
-/**
- * 將 Date.now() 格式化為 HKT ISO 字串 (自主，不依賴 blackboard-core)
- */
-export function getHKTTimestamp(dateInput) {
-    const now = dateInput ? new Date(dateInput) : new Date();
-    const hktOffset = 8 * 60 * 60 * 1000;
-    const hktTime = new Date(now.getTime() + hktOffset);
-    return hktTime.toISOString().replace('Z', '+08:00');
-}
+export { getHKTTimestamp } from "./utils.js";
 
 export const WTDb = {
     /**
@@ -69,7 +60,7 @@ export const WTDb = {
 
         await db.walkieTypie.delete([branchId, oldTimestamp]);
 
-        const newTimestamp = Date.now();
+        const newTimestamp = Math.max(Date.now(), oldTimestamp + 1);
         await db.walkieTypie.add({
             ...oldRecord,
             text: text,

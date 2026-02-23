@@ -14,7 +14,6 @@
 import { BBMessage } from "./blackboard-msg.js";
 import { MultiStepButton } from "./multiStepButton.js";
 import { BBCore } from "./blackboard-core.js";
-import toast from "./toast.js";
 import { AuthService } from "./services/auth-service.js";
 
 export const AuthManager = {
@@ -56,10 +55,10 @@ export const AuthManager = {
             this.elements.loginContainer.style.display = "flex";
             this.elements.logoutContainer.style.display = "none";
             this.elements.userInfoUid.textContent = "";
-            localStorage.setItem("currentUser", "");
+            localStorage.removeItem("currentUser");
         }
 
-        window.dispatchEvent(new CustomEvent("blackboard:authUpdated"));
+        window.dispatchEvent(new CustomEvent("auth:updated"));
     },
 
     /**
@@ -161,9 +160,6 @@ export const AuthManager = {
 
                         this.updateUI(null);
                         BBMessage.info("LOGOUT COMPLETE");
-
-                        // 通知 UI 刷新分支清單
-                        window.dispatchEvent(new CustomEvent("blackboard:branchUpdated"));
                     } catch (e) {
                         console.error("LOGOUT ERROR:", e);
                         this.updateUI(null);
@@ -185,26 +181,38 @@ export const AuthManager = {
                     const isCommand = input.startsWith("/passwd");
 
                     if (isCommand) {
-                        const msg = toast.addMessage("EXECUTING...");
+                        const msg = BBMessage.info("EXECUTING...");
                         try {
                             const data = await AuthService.executeCommand({ command: input });
                             msg.update(data.message);
                             this.elements.passcodeInput.value = "";
                         } catch (e) {
                             console.error("CMD ERROR:", e);
-                            msg.update(e.message || "ERROR: OFFLINE");
+                            msg.close();
+                            if (e.status === 429) {
+                                BBMessage.error("TOO MANY ATTEMPTS");
+                            } else {
+                                BBMessage.error(e.message || "OFFLINE");
+                            }
                         }
                     } else {
                         if (!uid) {
-                            return toast.addMessage("ERROR: UID REQUIRED");
+                            return BBMessage.error("UID REQUIRED");
                         }
-                        const msg = toast.addMessage("REQUESTING...");
+                        const msg = BBMessage.info("REQUESTING...");
                         try {
                             const data = await AuthService.requestPasswordReset({ uid });
                             msg.update(data.message);
                         } catch (e) {
                             console.error("RESET ERROR:", e);
-                            msg.update(e.message || "ERROR: OFFLINE");
+                            msg.close();
+                            if (e.status === 429) {
+                                BBMessage.error("TOO MANY ATTEMPTS");
+                            } else if (e.message === "UID NOT FOUND OR EMAIL NOT BOUND.") {
+                                BBMessage.error("NO EMAIL REGISTERED");
+                            } else {
+                                BBMessage.error(e.message || "OFFLINE");
+                            }
                         }
                     }
                 } finally {
@@ -222,12 +230,21 @@ export const AuthManager = {
                 const input = this.elements.emailInput.value.trim();
                 if (!input) {
                     this.isBinding = false;
-                    return toast.addMessage("ERROR: INPUT REQUIRED");
+                    return BBMessage.error("INPUT REQUIRED");
                 }
 
                 try {
                     const isCommand = input.startsWith("/bind");
-                    const msg = toast.addMessage("PROCESSING...");
+
+                    if (!isCommand) {
+                        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                        if (!emailRegex.test(input)) {
+                            this.isBinding = false;
+                            return BBMessage.error("INVALID EMAIL FORMAT");
+                        }
+                    }
+
+                    const msg = BBMessage.info("PROCESSING...");
 
                     try {
                         let data;
@@ -245,7 +262,14 @@ export const AuthManager = {
                         }
                     } catch (e) {
                         console.error("BIND ERROR:", e);
-                        msg.update(e.message || "ERROR: OFFLINE");
+                        msg.close();
+                        if (e.status === 429) {
+                            BBMessage.error("TOO MANY ATTEMPTS");
+                        } else if (e.status === 422) {
+                            BBMessage.error("INVALID EMAIL FORMAT");
+                        } else {
+                            BBMessage.error(e.message || "OFFLINE");
+                        }
                     }
                 } finally {
                     this.isBinding = false;

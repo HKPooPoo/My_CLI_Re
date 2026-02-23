@@ -66,7 +66,7 @@
 
 @media (hover: hover) {
     .attachment-chip:hover {
-        background: rgba(50, 255, 50, 0.1);
+        background: var(--text-green-10);
         box-shadow: 0 0 4px var(--text-green);
     }
 }
@@ -120,6 +120,24 @@
     display: none;
 }
 
+/* File status states */
+/* [LOCAL] — only on this device, not yet committed to server */
+.attachment-chip.is-local {
+    color: var(--text-orange);
+    border-color: var(--text-orange);
+    text-shadow: var(--text-shadow-orange);
+}
+@media (hover: hover) {
+    .attachment-chip.is-local:hover {
+        background: var(--text-orange-10);
+        box-shadow: 0 0 4px var(--text-orange);
+    }
+}
+/* [SYNC] — on server and cached locally (default green, same as [CLOUD]) */
+.attachment-chip.is-synced {
+    /* inherits default green from .attachment-chip */
+}
+
 /* --- Drop Overlay --- */
 
 .drop-overlay {
@@ -134,7 +152,7 @@
     justify-content: center;
     border: 2px dashed var(--text-green);
     border-radius: var(--border-radius);
-    background: rgba(0, 17, 0, 0.85);
+    background: var(--overlay-bg);
     color: var(--text-green);
     font-size: calc(var(--font-size) * 1.4);
     font-weight: bold;
@@ -154,11 +172,6 @@
 }
 
 /* Light theme adaptation */
-:root[data-theme="light"] .drop-overlay {
-    background: rgba(255, 255, 255, 0.9);
-    border-color: var(--text-green);
-}
-
 :root[data-theme="light"] .attachment-chips.has-items {
     border-bottom-color: var(--text-green);
 }

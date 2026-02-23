@@ -72,7 +72,7 @@ class BlackboardService
 
     public function fetchBranches(User $user)
     {
-        return Cache::remember("user:{$user->uid}:branches", 5, function () use ($user) {
+        return Cache::remember("user:{$user->uid}:branches", 15, function () use ($user) {
             return DB::table('blackboards')
                 ->where('owner', $user->uid)
                 ->select('branch_id', 'branch_name', 'owner', DB::raw('MAX(timestamp) as last_update'))

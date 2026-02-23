@@ -24,6 +24,8 @@ import { WTVCS } from "./walkie-typie-vcs.js";
 import { WalkieTypieService } from "./services/walkie-typie-service.js";
 import { WTCore } from "./walkie-typie-core.js";
 import { EditorAttachments } from "./editor-attachments.js";
+import db from "./indexedDB.js";
+import { playAudio } from "./audio.js";
 
 export const WTText = {
     elements: {
@@ -82,6 +84,28 @@ export const WTText = {
             readOnly: false,
             onAttach: async (hash, meta) => {
                 if (!this.currentConnection) throw new Error("NO CONNECTION SELECTED");
+                playAudio("Cassette.mp3");
+
+                // Cancel pending save/commit timers BEFORE the first await.
+                //
+                // If the user was typing just before dropping a file, two timers may
+                // be queued as macrotasks:
+                //
+                //   saveTimer (200ms):  calls WTVCS.save() → WTDb.updateText()
+                //     → deletes old record + creates new record with a new timestamp.
+                //     If this fires between our WTDb.getRecord() and WTDb.updateBin()
+                //     below, updateBin() targets the now-deleted old timestamp → silently
+                //     fails → bin never saved → chip clears on next refreshWE().
+                //
+                //   commitTimer (2s):  calls commitWE() → refreshWE()
+                //     → setFromRecord(null) → _clearChips(), erasing the chip.
+                //
+                // clearTimeout() is synchronous — it removes queued macrotasks before
+                // any await suspension point, so both timers are guaranteed cancelled.
+                // triggerCommit() at the end of onAttach reschedules the commit with
+                // the correct, fully-persisted state.
+                clearTimeout(this.saveTimer);
+                clearTimeout(this.commitTimer);
 
                 const binData = { hash, ...meta };
                 this.currentBin = binData;
@@ -101,20 +125,33 @@ export const WTText = {
                     const entry = await WTDb.getRecord(this.weState.branchId, this.weState.currentHead);
                     if (entry) {
                         await WTDb.updateBin(entry.branchId, entry.timestamp, binData);
+                    } else if (this.weState.currentHead === 0) {
+                        // Fresh board — no record exists yet (e.g. new connection, nothing typed).
+                        // Create a record now so the attachment is persisted.
+                        await WTDb.addRecord(
+                            this.weState.branchId,
+                            this.weState.branch,
+                            this.elements.weTextarea.value || "",
+                            binData
+                        );
+                        this.weState.isVirtual = false;
+                        this.weState.currentHead = 0;
                     }
                 }
 
                 // 2. Broadcast Signal
                 this.broadcastSignal(this.elements.weTextarea.value);
 
-                // 3. Force Refresh to verify persistence
-                await this.refreshWE();
+                // NOTE: refreshWE() removed — it called setFromRecord() which cleared
+                // the chip already rendered by handleFile() → _renderChip(). The chip
+                // is correctly shown by EditorAttachments; no redundant refresh needed.
 
-                // 4. Trigger Commit
+                // 3. Trigger Commit
                 this.triggerCommit(this.elements.weTextarea.value);
             },
             onDetach: async (hash) => {
                 if (!this.currentConnection) throw new Error("NO CONNECTION SELECTED");
+                playAudio("Erase.mp3");
 
                 this.currentBin = null;
 
@@ -178,18 +215,23 @@ export const WTText = {
 
         // --- Switch Button ---
 
-        this.elements.switchBtn?.addEventListener("click", () => this.toggleSwap());
+        this.elements.switchBtn?.addEventListener("click", () => {
+            playAudio("Click.mp3");
+            this.toggleSwap();
+        });
 
         // --- WE Push/Pull (IndexedDB, same as Blackboard) ---
 
         this.elements.wePushBtn?.addEventListener("click", async () => {
             if (!this.currentConnection) return;
+            playAudio("UIGeneralFocus.mp3");
             await WTVCS.push(this.weState, this.elements.weTextarea.value, false);
             this.refreshWE();
         });
 
         this.elements.wePullBtn?.addEventListener("click", async () => {
             if (!this.currentConnection) return;
+            playAudio("UIGeneralFocus.mp3");
             await WTVCS.pull(this.weState, this.elements.weTextarea.value, false);
             this.refreshWE();
         });
@@ -198,6 +240,7 @@ export const WTText = {
 
         this.elements.theyPushBtn?.addEventListener("click", () => {
             if (!this.currentConnection) return;
+            playAudio("UIGeneralFocus.mp3");
             if (this.theyState.currentHead > 0) {
                 this.theyState.currentHead--;
                 this.refreshTHEY();
@@ -206,6 +249,7 @@ export const WTText = {
 
         this.elements.theyPullBtn?.addEventListener("click", () => {
             if (!this.currentConnection) return;
+            playAudio("UIGeneralFocus.mp3");
             const maxHead = this.theyRecords.length - 1;
             if (this.theyState.currentHead < maxHead) {
                 this.theyState.currentHead++;
@@ -213,27 +257,27 @@ export const WTText = {
             }
         });
 
-        // --- Real-time Content from Partner (Backend Events - Fallback/Sync) ---
+        // --- Real-time Content from Partner (Backend Events - Committed Sync) ---
 
         window.addEventListener("walkie-typie:content-update", async (e) => {
             if (!this.currentConnection) return;
             const { branch_id, text } = e.detail;
 
             if (String(branch_id) === String(this.currentConnection.partner_branch_id)) {
-                // Keep backend events for "commit" synchronization or signals not via whisper
                 if (text === null || text === undefined) {
-                    console.log("WT: Received Signal (Backend), Syncing...");
+                    // Signal-only event: full re-sync needed
                     await this.syncTHEY();
                     this.refreshTHEY();
-                }
-                // Note: We prioritize Whisper for live typing, so we might ignore text here 
-                // if we trust whisper, BUT backend events are more reliable for persistence.
-                // Let's treat backend text updates as "authoritative" overwrites.
-                else {
+                } else {
+                    // Committed text: update live state without disrupting history browsing.
+                    // If user is at head 0, show the new text. If browsing history, leave them.
                     this.theyLiveText = text;
-                    this.theyState.currentHead = 0;
-                    this.elements.theyTextarea.value = text;
-                    if (document.hidden) this.notify(this.currentConnection.partner_uid, text);
+                    if (this.theyState.currentHead === 0) {
+                        this.elements.theyTextarea.value = text;
+                        if (document.hidden) this.notify(this.currentConnection.partner_uid, text);
+                    }
+                    // Silently refresh theyRecords[] in background for accurate history
+                    this.syncTHEY();
                 }
             }
         });
@@ -309,7 +353,14 @@ export const WTText = {
     // =====================================================================
 
     async loadConnection(connection) {
-        // Clear pending operations from previous connection
+        // Flush any pending WE save before switching (prevents uncommitted content loss)
+        if (this.currentConnection && this.elements.weTextarea) {
+            clearTimeout(this.saveTimer);
+            this.saveTimer = null;
+            await WTVCS.save(this.weState, this.elements.weTextarea.value);
+        }
+
+        // Clear pending signals and commits from previous connection
         clearTimeout(this.saveTimer);
         clearTimeout(this.signalTimer);
         clearTimeout(this.commitTimer);
@@ -338,13 +389,16 @@ export const WTText = {
             this.activeChannel = WTCore.echo.private(channelName);
 
             this.activeChannel.listenForWhisper('typing', (e) => {
-                // Client Event received! Fast path.
+                // Self-echo guard: Reverb should not send client events back to sender,
+                // but guard defensively in case of unexpected behaviour.
+                if (e.from === myUid) return;
+
                 const { text, bin } = e;
                 this.theyLiveText = text;
                 this.theyLiveBin = bin;
                 this.theyState.currentHead = 0;
                 this.elements.theyTextarea.value = text;
-                
+
                 // Live Attachment Update
                 this.wtTheyAttach?.setFromRecord(bin?.hash, bin);
 
@@ -364,6 +418,7 @@ export const WTText = {
         this.theyLiveBin = null;
 
         this.unlockBoards();
+        playAudio("UISelectOn.mp3");
 
         try {
             // Download BOTH sides from server
@@ -409,14 +464,16 @@ export const WTText = {
         try {
             const data = await WalkieTypieService.fetchBoardRecords(branchId);
             if (data?.records?.length > 0) {
-                // Server-authoritative: clear local + import server records
-                await WTDb.deleteBranchRecords(branchId);
-                for (const r of data.records) {
-                    const binObj = this.reconstructBin(r);
-                    await WTDb.addRecordWithTimestamp(
-                        branchId, "WE", r.text || "", parseInt(r.timestamp), binObj
-                    );
-                }
+                // Non-destructive: upsert server records by [branchId+timestamp] key.
+                // Local uncommitted records (different timestamps) are preserved.
+                const records = data.records.map(r => ({
+                    branchId,
+                    branch: "WE",
+                    text: r.text || "",
+                    timestamp: parseInt(r.timestamp),
+                    bin: this.reconstructBin(r)
+                }));
+                await db.walkieTypie.bulkPut(records);
             }
             // If no server records: keep whatever is in IndexedDB (first time use)
         } catch (e) {
@@ -567,13 +624,11 @@ export const WTText = {
     async broadcastSignal(text) {
         if (!this.currentConnection || !this.activeChannel) return;
 
-        // Use Client Event (Whisper)
-        // This sends directly via WebSocket server, bypassing Laravel API
         try {
             this.activeChannel.whisper('typing', {
+                from: localStorage.getItem("currentUser"), // for self-echo guard on receiver
                 text: text,
-                branch_id: this.currentConnection.partner_branch_id,
-                bin: this.currentBin // Sync attachment metadata immediately
+                bin: this.currentBin
             });
         } catch (e) {
             console.error("Whisper failed", e);
@@ -584,17 +639,22 @@ export const WTText = {
         // Allow commit if text exists OR bin exists
         const hasContent = (text && text.trim()) || this.currentBin;
         if (!this.currentConnection || !hasContent) return;
-        
+
         try {
-            // 先確保當前內容已存入 IndexedDB
+            // Ensure current content is saved to IndexedDB first
             await WTVCS.save(this.weState, text || "");
-            // 整批 commit（同 Blackboard 邏輯：從 IndexedDB 讀取全部 records 再上傳）
+            // Batch commit (read all IndexedDB records → upload to server)
             await WTVCS.commit({
                 branchId: this.currentConnection.my_branch_id,
                 branch: "WE"
             });
+            // Refresh WE display so attachment chip transitions LOCAL → SYNC
+            await this.refreshWE();
         } catch (err) {
-            console.error("WT: Commit Failed", err);
+            // Silently ignore "empty board" — nothing to commit is not an error
+            if (!err.message?.includes('EMPTY') && !err.message?.includes('NOT FOUND')) {
+                console.error("WT: Commit Failed", err);
+            }
         }
     }
 };

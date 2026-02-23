@@ -35,13 +35,13 @@ export const WTList = {
 
     init() {
         this.bindEvents();
-        // [Optimization]: 移除立即請求，改由 AuthManager 初始化完畢後觸發 "blackboard:authUpdated" 時執行
+        // [Optimization]: 移除立即請求，改由 AuthManager 初始化完畢後觸發 "auth:updated" 時執行
         // 這能確保 Session Cookie 已準備就緒，避免 401 Unauthorized 錯誤
     },
 
     bindEvents() {
         // [Auth Event]: Re-fetch when auth state changes (Login)
-        window.addEventListener("blackboard:authUpdated", () => {
+        window.addEventListener("auth:updated", () => {
             if (localStorage.getItem("currentUser")) {
                 this.fetchConnections();
             } else {
@@ -71,7 +71,7 @@ export const WTList = {
                             if (result.connection) {
                                 this.handleUpdate(result.connection);
                                 this.elements.uidInput.value = "";
-                                BBMessage.success("CONNECTION ESTABLISHED");
+                                BBMessage.info("CONNECTED");
                             }
                         } catch (e) {
                             console.error("CONNECT ERROR:", e);
@@ -119,7 +119,7 @@ export const WTList = {
 
                             this.selectedConnection = null;
                             this.render();
-                            BBMessage.success("CONNECTION TERMINATED");
+                            BBMessage.success("CUT");
                         } catch (e) {
                             console.error("CUT ERROR:", e);
                             BBMessage.error("ERROR: CUT FAILED");
@@ -141,7 +141,7 @@ export const WTList = {
 
         // Listen for InfiniteList cursor changes → 500ms debounce
         // Filter: ONLY process events from WT list container
-        window.addEventListener("blackboard:selectionChanged", (e) => {
+        window.addEventListener("list:selectionChanged", (e) => {
             const { item } = e.detail;
             if (!item || !this.elements.container || !this.elements.container.contains(item)) return;
 
@@ -163,7 +163,11 @@ export const WTList = {
 
         // Window Focus → re-fetch connections (partner may have added us)
         window.addEventListener("focus", () => {
-            this.fetchConnections();
+            const activePage = document.querySelector('.page.active');
+            const isWTActive = activePage && activePage.dataset.page && activePage.dataset.page.startsWith('walkie-typie-');
+            if (isWTActive) {
+                this.fetchConnections();
+            }
         });
     },
 

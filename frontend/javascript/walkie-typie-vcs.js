@@ -146,15 +146,17 @@ export const WTVCS = {
                 // Check local blob
                 const localFile = await db.fileBlobs.get(hash);
                 if (localFile && localFile.blob) {
-                    // Upload (FileService handles exists check)
-                    try {
-                        BBMessage.info(`UPLOADING: ${r.bin.name || hash.substring(0, 8)}`);
-                        await FileService.upload(localFile.blob, hash);
-                    } catch (e) {
-                        console.error(`WT Commit: Upload failed for ${hash}`, e);
-                        // Continue? Or fail? Usually better to fail or warn.
-                        // Let's warn but try to commit text.
-                        BBMessage.error(`UPLOAD FAILED: ${hash.substring(0, 8)}`);
+                    // Skip re-upload if already confirmed on server
+                    if (localFile.status !== 'synced') {
+                        try {
+                            BBMessage.info(`UPLOADING: ${r.bin.name || hash.substring(0, 8)}`);
+                            await FileService.upload(localFile.blob);
+                            // Mark as synced — chip transitions LOCAL → SYNC after refreshWE()
+                            await db.fileBlobs.update(hash, { status: 'synced' });
+                        } catch (e) {
+                            console.error(`WT Commit: Upload failed for ${hash}`, e);
+                            BBMessage.error(`UPLOAD FAILED: ${hash.substring(0, 8)}`);
+                        }
                     }
                 } else {
                     // File not in local blob store?

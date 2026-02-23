@@ -97,7 +97,7 @@ export class InfiniteList {
             }
 
             // [Event]: 通知外部選取變更
-            window.dispatchEvent(new CustomEvent("blackboard:selectionChanged", {
+            window.dispatchEvent(new CustomEvent("list:selectionChanged", {
                 detail: { index: this.activeIndex, item: newItem }
             }));
         }

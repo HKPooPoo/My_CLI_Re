@@ -80,6 +80,18 @@ export const EditorAttachments = {
             /** Prevent dragenter/dragleave flickering */
             _dragCounter: 0,
 
+            /** Version counter — incremented on each setFromRecord() call to abort stale renders */
+            _srVersion: 0,
+
+            /**
+             * Tracks any in-flight onDetach operation.
+             * The drop event can fire while the remove-button click handler is still
+             * awaiting onDetach's DB writes. Without serialisation, onAttach's
+             * "bin → newData" write races against onDetach's "bin → null" write and
+             * loses when onDetach finishes last, leaving the record with bin = null.
+             */
+            _detachPromise: null,
+
             /** Lazy lookup for DOM elements */
             _getEl(key) {
                 const selector = this.selectors[key];
@@ -142,11 +154,11 @@ export const EditorAttachments = {
 
                 // --- Chip Remove (event delegation) ---
                 if (!this.readOnly && chipsContainer) {
-                    chipsContainer.addEventListener('click', (e) => {
+                    chipsContainer.addEventListener('click', async (e) => {
                         const removeBtn = e.target.closest('.attachment-chip-remove');
                         if (!removeBtn) return;
                         const hash = removeBtn.dataset.hash;
-                        this.detach(hash);
+                        await this.detach(hash);
                     });
                 }
 
@@ -163,15 +175,26 @@ export const EditorAttachments = {
                     return;
                 }
 
+                // If the user removed a file via the chip button and immediately dragged
+                // a new one, onDetach may still be in-flight (DB: bin → null).
+                // We must wait for it to finish before starting onAttach (bin → newData),
+                // otherwise onDetach's write lands last and silently wipes the new bin.
+                if (this._detachPromise) {
+                    await this._detachPromise;
+                }
+
+                // Await detach so onDetach completes BEFORE onAttach runs.
+                // Without this, onDetach's async DB write (bin → null) would
+                // race against onAttach's write (bin → newData) and wipe the new bin.
                 if (this.currentHash) {
-                    this.detach(this.currentHash);
+                    await this.detach(this.currentHash);
                 }
 
                 this._renderLoadingChip();
 
                 try {
                     const hash = await FileService.computeHash(file);
-                    
+
                     try {
                         await db.fileBlobs.put({
                             hash: hash,
@@ -184,7 +207,7 @@ export const EditorAttachments = {
                         });
                     } catch (dbErr) {
                         if (dbErr.name === 'QuotaExceededError') {
-                            alert("STORAGE FULL.");
+                            BBMessage.error("STORAGE FULL");
                             this._clearChips();
                             return;
                         }
@@ -194,12 +217,10 @@ export const EditorAttachments = {
                     this.currentHash = hash;
                     _pruneFileBlobs(); // fire-and-forget
 
-                    this._renderChip({
-                        hash: hash,
-                        isLocal: true
-                    });
+                    this._renderChip({ hash, status: 'local' });
 
-                    this.onAttach(hash, {
+                    // Await so that errors surface to the caller
+                    await this.onAttach(hash, {
                         name: file.name,
                         size: file.size,
                         mime: file.type
@@ -207,7 +228,7 @@ export const EditorAttachments = {
 
                 } catch (err) {
                     console.error('File processing failed:', err);
-                    alert("ATTACH ERROR: " + (err.message || err));
+                    BBMessage.error("ATTACH FAILED");
                     this._clearChips();
                 }
             },
@@ -216,36 +237,47 @@ export const EditorAttachments = {
              * Detach a file.
              * @param {string} hash
              */
-            detach(hash) {
+            async detach(hash) {
                 if (this.currentHash === hash) {
                     this.currentHash = null;
                 }
                 this._clearChips();
-                this.onDetach(hash);
+                // Track the in-flight promise so handleFile() can wait for it
+                // if a new drop arrives before this onDetach finishes.
+                this._detachPromise = this.onDetach(hash);
+                try {
+                    await this._detachPromise;
+                } finally {
+                    this._detachPromise = null;
+                }
             },
 
             /**
              * Set attachment from existing record.
+             * Uses a version counter to abort stale async renders — prevents
+             * a superseded call from overwriting a chip rendered by a newer call.
              * @param {string|null} hash
              * @param {Object} [hint]
              */
             async setFromRecord(hash, hint) {
-                this._clearChips();
+                const version = ++this._srVersion;
                 this.currentHash = hash || null;
-                if (!hash) return;
+                if (!hash) {
+                    // Immediate clear is correct — no async work needed for null
+                    this._clearChips();
+                    return;
+                }
 
                 const localFile = await db.fileBlobs.get(hash);
 
+                // Bail if a newer setFromRecord() call has already taken over
+                if (version !== this._srVersion) return;
+
                 if (localFile) {
-                    this._renderChip({
-                        hash: hash,
-                        isLocal: true
-                    });
+                    // 'local' = not yet on server | 'synced' = on server + cached
+                    this._renderChip({ hash, status: localFile.status || 'local' });
                 } else {
-                    this._renderChip({
-                        hash: hash,
-                        isLocal: false
-                    });
+                    this._renderChip({ hash, status: 'cloud' });
                 }
             },
 
@@ -293,7 +325,7 @@ export const EditorAttachments = {
                         };
 
                         await db.fileBlobs.put(localFile);
-                        this._renderChip({ hash: hash, isLocal: true });
+                        this._renderChip({ hash: hash, status: 'synced' });
 
                     } catch (e) {
                         console.error("Download failed", e);
@@ -314,7 +346,8 @@ export const EditorAttachments = {
 
             _findChip(hash) {
                 const container = this._getEl('chipsContainer');
-                return container ? container.querySelector(`.attachment-chip-remove[data-hash="${hash}"]`)?.closest('.attachment-chip') : null;
+                // Query data-hash on the chip itself — works for both editable and read-only chips
+                return container ? container.querySelector(`.attachment-chip[data-hash="${hash}"]`) : null;
             },
 
             _clearChips() {
@@ -325,16 +358,29 @@ export const EditorAttachments = {
                 }
             },
 
-            _renderChip({ hash, isLocal }) {
+            _renderChip({ hash, status }) {
+                // status: 'local' = only on this device (orange)
+                //         'synced' = on server + cached locally (green)
+                //         'cloud'  = on server, not cached locally (green)
                 const container = this._getEl('chipsContainer');
                 if (!container) return;
                 this._clearChips();
 
                 const chip = document.createElement('div');
                 chip.className = 'attachment-chip';
-                if (isLocal) chip.classList.add('is-local');
+                chip.dataset.hash = hash; // used by _findChip() — works for read-only too
 
-                const iconText = isLocal ? '[LOC]' : '[CLD]';
+                let iconText;
+                if (status === 'local') {
+                    iconText = '[LOCAL]';
+                    chip.classList.add('is-local');
+                } else if (status === 'synced') {
+                    iconText = '[SYNC]';
+                    chip.classList.add('is-synced');
+                } else {
+                    iconText = '[CLOUD]';
+                }
+
                 const removeHtml = this.readOnly ? '' :
                     `<button class="attachment-chip-remove" data-hash="${hash}" title="Remove">[X]</button>`;
 

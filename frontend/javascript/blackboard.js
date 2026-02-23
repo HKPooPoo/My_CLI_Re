@@ -62,6 +62,12 @@ const bbAttach = EditorAttachments.create({
             const entry = await BBCore.getRecord(state.owner, state.branchId, state.currentHead);
             if (entry) {
                 await db.blackboard.update([entry.owner, entry.branchId, entry.timestamp], { bin: binData });
+            } else if (state.currentHead === 0) {
+                // No local record yet (e.g. after checkout with no local edits yet).
+                // Create a new local record to persist the attachment.
+                await BBCore.addRecord("local", state.branchId, state.branch, BBUI.getTextareaValue() || "", binData);
+                state.owner = "local";
+                state.currentHead = 0;
             }
         }
     },
@@ -455,12 +461,12 @@ if (dropBtnEl) {
                     state.currentHead = 0;
                     await syncView();
                 }
-                BBMessage.success("CLEAN COMPLETE");
+                BBMessage.success("CLEAN");
             }
             else if (currentDropAction === "drop") {
                 BBMessage.info("DROPPING...");
                 await BlackboardService.deleteBranch(selected.id);
-                BBMessage.success("DROP COMPLETE");
+                BBMessage.success("DROP");
             }
             else if (currentDropAction === "delete") {
                 BBMessage.info("DELETING...");
@@ -469,7 +475,7 @@ if (dropBtnEl) {
                 if (selected.id === state.branchId) {
                     await initBoard();
                 }
-                BBMessage.success("DELETE COMPLETE");
+                BBMessage.success("DELETE");
             }
 
             // 操作完成後刷新列表與按鈕狀態
@@ -483,13 +489,13 @@ if (dropBtnEl) {
 }
 
 // 監聽選取變更與列表刷新
-window.addEventListener("blackboard:selectionChanged", () => {
+window.addEventListener("list:selectionChanged", () => {
     // 防抖：避免快速滾動時頻繁查詢 DB
     if (dropButtonTimer) clearTimeout(dropButtonTimer);
     dropButtonTimer = setTimeout(updateDropButtonState, 100);
 });
 
-window.addEventListener("blackboard:listUpdated", () => {
+window.addEventListener("list:updated", () => {
     setTimeout(updateDropButtonState, 50);
 });
 
@@ -507,8 +513,6 @@ BBUI.elements.textarea?.addEventListener("input", () => {
         // [Fix]: 狀態更新後，依據是否仍為虛擬狀態顯示指標
         const headIndicator = state.isVirtual ? "NEW" : state.currentHead;
         BBUI.updateIndicators(state.branch || "NAMELESS_BRANCH", headIndicator, true);
-
-        await updateBranchList(); // 立即更新清單同步狀態
     }, 200);
 });
 
@@ -524,7 +528,7 @@ window.addEventListener("blackboard:branchRename", async (e) => {
 });
 
 // 監聽授權變動 (登入/登出)
-window.addEventListener("blackboard:authUpdated", async () => {
+window.addEventListener("auth:updated", async () => {
     // [Fix]: Ensure we don't lose local state visibility on auth change
     // Force a re-init to ensure UI reflects current data
     await initBoard();
@@ -538,7 +542,7 @@ window.addEventListener('navi:pageChanged', (e) => {
 });
 
 // 監聽列表刷新 (Infinite List 初始化)
-window.addEventListener("blackboard:listUpdated", () => {
+window.addEventListener("list:updated", () => {
     setTimeout(() => initAllInfiniteLists(), 10);
 });
 
@@ -551,8 +555,8 @@ initBoard();
  * 焦點恢復同步：當使用者切換回此分頁時自動刷新清單
  */
 window.addEventListener("focus", () => {
-    // 只有在非初始化狀態下才執行，避免重疊
-    if (!isInitializing) {
+    // 只有在非初始化狀態下且黑板頁面活躍時才執行
+    if (!isInitializing && isBlackboardPageActive()) {
         updateBranchList();
     }
 });
@@ -571,66 +575,5 @@ setInterval(() => {
     }
 }, 10_000);
 
-/**
- * PWA Service Worker 註冊與更新邏輯
- */
-let deferredPrompt;
-
-if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js').then(registration => {
-            console.log('PWA: SW registered: ', registration);
-
-            // 檢測是否有等待中的更新
-            if (registration.waiting) {
-                showUpdateToast(registration);
-            }
-
-            // 監聽新的更新發現
-            registration.addEventListener('updatefound', () => {
-                const newWorker = registration.installing;
-                newWorker.addEventListener('statechange', () => {
-                    if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                        showUpdateToast(registration);
-                    }
-                });
-            });
-        }).catch(err => {
-            console.warn('PWA: Service Worker registration failed:', err);
-        });
-
-        // 監聽控制器變更 (刷新頁面)
-        navigator.serviceWorker.addEventListener('controllerchange', () => {
-            window.location.reload();
-        });
-    });
-}
-
-// 顯示更新提示 Toast
-function showUpdateToast(registration) {
-    const msg = BBMessage.info("UPDATE AVAILABLE");
-    // 這裡我們簡單地自動更新，或者您可以添加一個按鈕讓用戶點擊
-    // 為了符合 "I want it to auto re-cache" 的開發者需求，我們自動 skipWaiting
-    if (registration.waiting) {
-        registration.waiting.postMessage({ type: 'SKIP_WAITING' });
-    }
-}
-
-// 安裝提示 (A2HS)
-window.addEventListener('beforeinstallprompt', (e) => {
-    e.preventDefault();
-    deferredPrompt = e;
-    // 顯示安裝按鈕 (例如在 Auth 頁面或 HUD)
-    // 這裡我們先廣播一個事件，讓 UI 組件決定如何顯示
-    window.dispatchEvent(new CustomEvent("pwa:installable"));
-});
-
-// 全域安裝函式
-window.installPWA = async () => {
-    if (deferredPrompt) {
-        deferredPrompt.prompt();
-        const { outcome } = await deferredPrompt.userChoice;
-        console.log(`PWA: User response to install prompt: ${outcome}`);
-        deferredPrompt = null;
-    }
-};
+// PWA logic extracted to pwa.js
+import "./pwa.js";

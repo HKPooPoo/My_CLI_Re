@@ -1,13 +1,28 @@
 /**
  * MultiStepButton Component
  * =================================================================
- * 介紹：一個具備靈活「狀態演進」機制的按鈕組件，支援單階或多階交互。
- * 職責：
- * 1. 狀態機管理：根據傳入的 `steps` 陣列長度自動判定按鈕階數。
- * 2. 交互回饋：每一步可獨立配置 `label` (文字/HTML)、`sound` (音效) 與 `action` (回調)。
- * 3. 自動重置：在多階模式下，若超過超時時間未繼續點擊，自動跳回初始狀態。
- * 4. CSS 樣式同步：動態切換 `btn-state-x` 類別供樣式表鉤選。
- * 依賴：audio.js
+ * Two modes:
+ *
+ * 1. INSTANT — single click, fires immediately, no cooldown.
+ *    new MultiStepButton(el, { sound, action })
+ *
+ * 2. CONFIRM — click to arm, click again to fire. Auto-resets on timeout.
+ *    new MultiStepButton(el, { sound, action, confirm: true })
+ *    new MultiStepButton(el, { sound, action, confirm: true, confirmLabel: "SURE?" })
+ *    new MultiStepButton(el, { sound, action, confirm: true, confirmLabel: "SURE?", confirmSound: "warn.mp3" })
+ *
+ * Options:
+ *   sound         — audio file to play on primary click
+ *   action        — async callback executed on fire
+ *   confirm       — if true, requires a second click to execute
+ *   confirmLabel  — text shown while armed (default: "SURE?")
+ *   confirmSound  — audio played on confirmation click (default: same as sound)
+ *   timeout       — ms before armed state auto-resets (default: 3000)
+ *
+ * During async action execution, the button is disabled to prevent
+ * double-fire but remains visually unchanged (no artificial cooldown).
+ *
+ * Dependencies: audio.js
  * =================================================================
  */
 
@@ -15,119 +30,184 @@ import { playAudio } from "./audio.js";
 
 export class MultiStepButton {
     /**
-     * 建構函數
-     * @param {HTMLElement} element 目標按鈕元素
-     * @param {Object[]|Object} steps 步驟配置 (支援單個物件或物件陣列)
-     * @param {number} timeout 多階點擊的有效等待時間 (毫秒)
-     * @param {number} cooldown 點擊完成後的冷卻時間 (毫秒)
+     * @param {HTMLElement} element
+     * @param {Object|Object[]} opts — config object, OR legacy steps array (backward compat)
+     * @param {number} [legacyTimeout] — only used for legacy array form
      */
-    constructor(element, steps, timeout = 3000, cooldown = 500) {
+    constructor(element, opts, legacyTimeout) {
         if (!element) return;
-        this.element = element;
-        // 靈活性擴充：若只傳入單一物件，自動包裹為單階陣列，簡化單音效按鈕的調用
-        this.steps = Array.isArray(steps) ? steps : [steps];
-        this.timeout = timeout;
-        this.cooldown = cooldown;
-        this.state = 0;
-        this.timer = null;
-        this.isCooldown = false;
+        this.el = element;
 
-        this.init();
+        // --- Normalize legacy array API into new format ---
+        if (Array.isArray(opts)) {
+            this._initFromLegacy(opts, legacyTimeout);
+            return;
+        }
+
+        // --- New unified API ---
+        this.sound = opts.sound || null;
+        this.action = opts.action || (() => {});
+        this.isConfirm = !!opts.confirm;
+        this.confirmLabel = opts.confirmLabel || "SURE?";
+        this.confirmSound = opts.confirmSound || this.sound;
+        this.timeout = opts.timeout || 3000;
+
+        this.originalLabel = this.el.textContent;
+        this.armed = false;
+        this.busy = false;
+        this.timer = null;
+
+        this.el.addEventListener("click", (e) => {
+            e.preventDefault();
+            this._onClick();
+        });
     }
 
-    /**
-     * 初始化監聽器
-     */
-    init() {
-        this.updateUI();
-        this.element.addEventListener("click", (e) => {
+    // =================================================================
+    //  Core
+    // =================================================================
+
+    _onClick() {
+        if (this.busy) return;
+
+        if (!this.isConfirm) {
+            // INSTANT mode — fire immediately, no cooldown
+            if (this.sound) playAudio(this.sound);
+            this._fire();
+            return;
+        }
+
+        // CONFIRM mode
+        if (!this.armed) {
+            // First click: arm
+            if (this.sound) playAudio(this.sound);
+            this._arm();
+        } else {
+            // Second click: execute
+            if (this.confirmSound) playAudio(this.confirmSound);
+            this._disarm();
+            this._fire();
+        }
+    }
+
+    _arm() {
+        this.armed = true;
+        this.el.textContent = this.confirmLabel;
+        this.el.classList.add("btn-armed");
+        this._startTimer();
+    }
+
+    _disarm() {
+        this.armed = false;
+        this.el.textContent = this.originalLabel;
+        this.el.classList.remove("btn-armed");
+        this._clearTimer();
+    }
+
+    async _fire() {
+        this.busy = true;
+        this.el.setAttribute("aria-busy", "true");
+        try {
+            await this.action();
+        } catch (err) {
+            // Swallow — callers handle their own errors via BBMessage
+        } finally {
+            this.busy = false;
+            this.el.removeAttribute("aria-busy");
+        }
+    }
+
+    _clearTimer() {
+        if (this.timer) {
+            clearTimeout(this.timer);
+            this.timer = null;
+        }
+    }
+
+    // =================================================================
+    //  Legacy array API — full backward compatibility
+    //  Converts old [...steps] into the confirm pattern automatically.
+    // =================================================================
+
+    _initFromLegacy(steps, timeout) {
+        // Last step is the one with the real action
+        const lastStep = steps[steps.length - 1];
+        // First step provides the initial label and sound
+        const firstStep = steps[0];
+
+        this.originalLabel = firstStep.label || this.el.textContent;
+        this.sound = firstStep.sound || null;
+        this.action = lastStep.action || (() => {});
+        this.confirmLabel = steps.length > 1 ? steps[steps.length - 1].label || "SURE?" : null;
+        this.confirmSound = lastStep.sound || this.sound;
+        this.timeout = timeout || 3000;
+
+        // Multi-step → confirm mode, single step → instant
+        this.isConfirm = steps.length > 1;
+
+        // For >2 steps (like register's 4-step), we simulate the countdown
+        this.allSteps = steps.length > 2 ? steps : null;
+        this.stepIndex = 0;
+
+        this.armed = false;
+        this.busy = false;
+        this.timer = null;
+
+        // Set initial label
+        this.el.textContent = this.originalLabel;
+
+        this.el.addEventListener("click", (e) => {
             e.preventDefault();
-            this.handleClick();
+            if (this.allSteps) {
+                this._onClickMulti();
+            } else {
+                this._onClick();
+            }
         });
     }
 
     /**
-     * 核心點擊處理邏輯
-     * 步驟：1. 提取當前狀態配置 2. 播音效 3. 執行 Action 4. 判定狀態轉移或重置
+     * Multi-step countdown (3+ steps, like REGISTER x 3 → x 2 → CONFIRM!)
      */
-    handleClick() {
-        if (this.isCooldown) return;
+    _onClickMulti() {
+        if (this.busy) return;
 
-        const currentStep = this.steps[this.state];
+        const step = this.allSteps[this.stepIndex];
+        if (step.sound) playAudio(step.sound);
 
-        // --- 執行反饋 ---
-        if (currentStep.sound) {
-            playAudio(currentStep.sound);
-        }
-
-        if (currentStep.action) {
-            // Prevent unhandled Promise rejection if action is async
-            Promise.resolve(currentStep.action()).catch(() => {});
-        }
-
-        // --- 狀態演進判定 ---
-        if (this.steps.length > 1) {
-            // 多階模式路徑
-            if (this.state < this.steps.length - 1) {
-                this.state++;
-                this.updateUI();
-                this.resetTimer(); // 重新計時，逾時則重置
-            } else {
-                // 已到達最後一階，迴圈回起點
-                this.enterCooldown();
-                this.reset();
+        if (this.stepIndex < this.allSteps.length - 1) {
+            // Advance to next step
+            this.stepIndex++;
+            const nextStep = this.allSteps[this.stepIndex];
+            this.el.textContent = nextStep.label || this.el.textContent;
+            if (this.stepIndex > 0) {
+                this.el.classList.add("btn-armed");
             }
+            this._startTimer();
         } else {
-            // 單階模式路徑：僅用於音效反饋，不演進狀態
-            this.enterCooldown();
-            this.updateUI();
+            // Final step: fire
+            this.el.classList.remove("btn-armed");
+            this._resetMulti();
+            this._fire();
         }
     }
 
-    /**
-     * 進入冷卻狀態，避免連續點擊
-     */
-    enterCooldown() {
-        this.isCooldown = true;
-        this.element.style.pointerEvents = "none";
-        setTimeout(() => {
-            this.isCooldown = false;
-            this.element.style.pointerEvents = "";
-        }, this.cooldown);
+    _resetMulti() {
+        this._clearTimer();
+        this.stepIndex = 0;
+        this.el.textContent = this.originalLabel;
+        this.el.classList.remove("btn-armed");
     }
 
-    /**
-     * UI 同步渲染
-     * 步驟：1. 更新內部 HTML (支援 Ruby/繁中標籤) 2. 更新 CSS 狀態類別
-     */
-    updateUI() {
-        const step = this.steps[this.state];
-        if (!step) return;
-
-        // 優化：單階按鈕且無 label 配置時，保留原 HTML 不閃爍
-        if (this.steps.length > 1 || this.element.innerHTML === "") {
-            this.element.innerHTML = step.label || this.element.innerHTML;
-        }
-
-        // 移除所有舊狀態類別並添加新類別
-        this.steps.forEach((_, i) => this.element.classList.remove(`btn-state-${i}`));
-        this.element.classList.add(`btn-state-${this.state}`);
-    }
-
-    /**
-     * 重置計時器：用戶若停頓太久，則放棄當前演進進度
-     */
-    resetTimer() {
-        if (this.timer) clearTimeout(this.timer);
-        this.timer = setTimeout(() => this.reset(), this.timeout);
-    }
-
-    /**
-     * 硬重置回狀態 0
-     */
-    reset() {
-        if (this.timer) clearTimeout(this.timer);
-        this.state = 0;
-        this.updateUI();
+    // Override _disarm for multi-step to reset properly
+    _startTimer() {
+        this._clearTimer();
+        this.timer = setTimeout(() => {
+            if (this.allSteps) {
+                this._resetMulti();
+            } else {
+                this._disarm();
+            }
+        }, this.timeout);
     }
 }

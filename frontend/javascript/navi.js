@@ -262,3 +262,24 @@ function handleSubNaviSwipe(startX, endX) {
     moveSubNaviItemHead(activeNaviItem, stateOfEachNaviItem[activeNaviItem].subNaviHeadIndex + direction);
     updateNaviPosition(activeNaviItem);
 }
+
+// --- 頁面加載時恢復導航狀態 ---
+(function restoreNaviState() {
+    const savedNaviItem = localStorage.getItem("navi-item-head");
+    const $allItems = Array.from($allNaviItems);
+
+    if (savedNaviItem) {
+        const $matched = $allItems.find($el => $el.dataset.naviItem === savedNaviItem);
+        if ($matched) {
+            setActiveNaviItem($matched, true);
+            updateNaviPosition(savedNaviItem, true);
+            return;
+        }
+    }
+
+    // Default to first item
+    if ($allItems.length > 0) {
+        setActiveNaviItem($allItems[0], true);
+        updateNaviPosition($allItems[0].dataset.naviItem, true);
+    }
+})();

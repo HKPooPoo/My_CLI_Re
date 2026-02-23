@@ -106,6 +106,11 @@ export const BCChannel = {
                     const entry = await BCDb.getRecord(this.state.localChannelId, this.state.currentHead);
                     if (entry) {
                         await BCDb.updateBinInPlace(this.state.localChannelId, entry.timestamp, binData);
+                    } else if (this.state.currentHead === 0) {
+                        // Fresh channel — no record exists yet (nothing typed before attaching).
+                        // Create a record now so the attachment is persisted.
+                        await BCDb.addRecord(this.state.localChannelId, this.elements.textarea?.value || '', binData);
+                        this.state.currentHead = 0;
                     }
                 }
                 this.updateIndicators();
@@ -309,6 +314,7 @@ export const BCChannel = {
 
     async handlePush() {
         if (!this.currentChannel) return;
+        playAudio('UIGeneralFocus.mp3');
 
         if (this.isOwnerMode) {
             await this.ownerPush();
@@ -319,6 +325,7 @@ export const BCChannel = {
 
     async handlePull() {
         if (!this.currentChannel) return;
+        playAudio('UIGeneralFocus.mp3');
 
         if (this.isOwnerMode) {
             await this.ownerPull();
@@ -464,7 +471,19 @@ export const BCChannel = {
     updateIndicators(headOverride) {
         if (!this.currentChannel) return;
 
-        if ($branchName) $branchName.textContent = this.currentChannel.name || '---';
+        const name = this.currentChannel.name || '---';
+        if ($branchName) {
+            $branchName.textContent = name;
+            if (this.currentChannel.isPinned) {
+                $branchName.style.flexDirection = 'row';
+                const pinSpan = document.createElement('span');
+                pinSpan.className = 'crt-text-yellow';
+                pinSpan.textContent = ' [PIN]';
+                $branchName.appendChild(pinSpan);
+            } else {
+                $branchName.style.flexDirection = '';
+            }
+        }
 
         const head = headOverride !== undefined
             ? headOverride
@@ -481,9 +500,9 @@ export const BCChannel = {
     },
 
     clearIndicators() {
-        if ($branchName)  $branchName.textContent  = '${branch_name}';
-        if ($branchHead)  $branchHead.textContent  = '${branch_head}';
-        if ($savedStatus) $savedStatus.textContent = '${is_saved}';
+        if ($branchName)  $branchName.textContent  = '---';
+        if ($branchHead)  $branchHead.textContent  = '---';
+        if ($savedStatus) $savedStatus.textContent = '---';
     },
 
     lockTextarea() {

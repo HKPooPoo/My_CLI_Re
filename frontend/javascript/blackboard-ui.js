@@ -125,6 +125,6 @@ export const BBUI = {
         container.replaceChildren(fragment);
 
         // 打開信號讓 blackboard-ui-list.js 重新計算無限滾動高度
-        window.dispatchEvent(new CustomEvent("blackboard:listUpdated"));
+        window.dispatchEvent(new CustomEvent("list:updated"));
     }
 };

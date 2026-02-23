@@ -46,12 +46,7 @@
 @media (hover: hover) {
     #theme-change-btn:hover {
         opacity: 1;
-        background-color: white;
-        box-shadow: 0 0 10px white;
-    }
-
-    :root[data-theme="light"] #theme-change-btn:hover {
-        background-color: #32FF32;
-        box-shadow: 0 0 10px #32FF32;
+        background-color: var(--feature-shelf-btn-color);
+        box-shadow: 0 0 10px var(--feature-shelf-btn-color);
     }
 }

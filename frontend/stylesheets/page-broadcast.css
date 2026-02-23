@@ -94,6 +94,11 @@
     color: var(--bg-primary);
 }
 
+.broadcast-list-list-item.active .crt-text-yellow {
+    color: var(--bg-primary);
+    text-shadow: none;
+}
+
 #broadcast-pin-btn,
 #broadcast-cast-btn,
 #broadcast-create-btn,

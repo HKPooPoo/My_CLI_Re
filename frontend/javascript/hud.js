@@ -33,7 +33,7 @@ export function updateLoginStatus() {
 }
 
 // 監聽來自 auth.js 的全域事件，確保跨組件狀態同步
-window.addEventListener("blackboard:authUpdated", updateLoginStatus);
+window.addEventListener("auth:updated", updateLoginStatus);
 
 /**
  * 心跳檢測：更新資料庫與伺服器連線狀態
@@ -103,5 +103,5 @@ replaceCrtTextColorBy("crt-text-orange"); // 最初顯示為 orange (CONNECTING.
 // [Optimization]: 延遲首次檢測，避免頁面加載時的 NetworkError
 setTimeout(() => {
     updateDatabaseStatus();
-    setInterval(updateDatabaseStatus, 2000); // 放寬輪詢間隔至 2 秒
-}, 2000);
+    setInterval(updateDatabaseStatus, 15000); // 放寬輪詢間隔至 15 秒
+}, 3000);

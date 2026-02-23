@@ -13,6 +13,8 @@
     --text-green: #32FF32;
     --text-orange: #FFB000;
     --text-red: #FF3232;
+    --text-cyan: #00FFCC;
+    --text-yellow: #FFFF66;
     --bg-primary: #000000;
     --bg-secondary: #001100;
     --header-height: clamp(96px, min(10vw, 20vh), 128px);
@@ -27,6 +29,8 @@
     --text-shadow-green: 0 0 4px var(--text-green), 0 0 8px var(--text-green);
     --text-shadow-orange: 0 0 4px var(--text-orange), 0 0 8px var(--text-orange);
     --text-shadow-red: 0 0 4px var(--text-red), 0 0 8px var(--text-red);
+    --text-shadow-cyan: 0 0 4px var(--text-cyan), 0 0 8px var(--text-cyan);
+    --text-shadow-yellow: 0 0 4px var(--text-yellow), 0 0 8px var(--text-yellow);
     --navi-height: 64px;
     --sub-navi-height: 48px;
     --border-radius: 8px;
@@ -36,6 +40,15 @@
     --textbox-font-size: calc(var(--font-size) + 0.4rem);
     /*scaffold*/
     --scaffold-left-gap: 16vw;
+    /* Toast */
+    --toast-bg: rgba(0, 17, 0, 0.85);
+
+    /* Transparency variants */
+    --text-green-10: rgba(50, 255, 50, 0.1);
+    --text-orange-10: rgba(255, 176, 0, 0.1);
+    --overlay-bg: rgba(0, 17, 0, 0.85);
+    --text-orange-accent: #B87300;
+
     /* Feature Shelf */
     --frosted-glass-bg: rgba(255, 255, 255, 0.2);
     --frosted-glass-border: 1px solid rgba(255, 255, 255, 0.3);
@@ -59,6 +72,8 @@
     --text-green: black;
     --text-orange: black;
     --text-red: black;
+    --text-cyan: black;
+    --text-yellow: black;
     --bg-primary: white;
     --bg-secondary: white;
     --border-line: 2px solid black;
@@ -68,6 +83,8 @@
     --text-shadow-green: none;
     --text-shadow-orange: none;
     --text-shadow-red: none;
+    --text-shadow-cyan: none;
+    --text-shadow-yellow: none;
 
     /* Feature Shelf Light Mode */
     --frosted-glass-bg: rgba(0, 0, 0, 0.1);
@@ -75,6 +92,15 @@
     --frosted-glass-shadow: 0 4px 30px rgba(0, 0, 0, 0.05);
     --feature-shelf-btn-bg: var(--frosted-glass-bg);
     --feature-shelf-btn-color: black;
+
+    /* Toast */
+    --toast-bg: rgba(255, 255, 255, 0.85);
+
+    /* Transparency variants */
+    --text-green-10: rgba(0, 0, 0, 0.05);
+    --text-orange-10: rgba(0, 0, 0, 0.05);
+    --overlay-bg: rgba(255, 255, 255, 0.9);
+    --text-orange-accent: black;
 }
 
 :root[data-theme="light"] .header,
@@ -103,6 +129,13 @@ input {
     font-weight: bold;
     font-size: var(--font-size);
     background: transparent;
+}
+
+/* CLI block cursor */
+textarea,
+input[type="text"] {
+    caret-color: var(--text-green);
+    caret-shape: block;
 }
 
 @media (hover: hover) {

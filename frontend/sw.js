@@ -1,4 +1,4 @@
-const CACHE_NAME = 'blackboard-v9-2026-02-21-fixes'; // Bump: SW cross-origin fix, audio precache
+const CACHE_NAME = 'blackboard-v13-2026-02-23'; // Bump: CLI color palette, block cursor, variable unification
 const ASSETS = [
   '/',
   '/index.html',

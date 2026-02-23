@@ -58,6 +58,23 @@ window.addEventListener('resize', () => {
     snapToNearestPosition();
 });
 
+// 按頁面配置顯隱功能按鈕
+window.addEventListener('navi:pageChanged', ({ detail }) => {
+    const $activePage = document.querySelector(`.page[data-page="${detail.page}"]`);
+    const featureBtns = $activePage?.dataset.featureBtns;
+
+    if (featureBtns === undefined) {
+        // 無配置：顯示全部
+        $featureBtns.forEach($btn => ($btn.style.display = ''));
+        return;
+    }
+
+    const allowed = featureBtns ? featureBtns.split(',') : [];
+    $featureBtns.forEach($btn => {
+        $btn.style.display = allowed.includes($btn.dataset.featureBtn) ? '' : 'none';
+    });
+});
+
 /**
  * 功能按鈕點擊分發邏輯
  */

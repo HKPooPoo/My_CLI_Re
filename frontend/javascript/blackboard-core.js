@@ -1,11 +1,6 @@
 import db, { Dexie } from "./indexedDB.js";
-
-export function getHKTTimestamp(dateInput) {
-    const now = dateInput ? new Date(dateInput) : new Date();
-    const hktOffset = 8 * 60 * 60 * 1000;
-    const hktTime = new Date(now.getTime() + hktOffset);
-    return hktTime.toISOString().replace('Z', '+08:00');
-}
+export { getHKTTimestamp } from "./utils.js";
+import { getHKTTimestamp } from "./utils.js";
 
 export const BBCore = {
     /**
@@ -65,7 +60,7 @@ export const BBCore = {
         // 刪除舊紀錄
         await db.blackboard.delete([oldRecord.owner, branchId, oldTimestamp]);
 
-        const newTimestamp = Date.now();
+        const newTimestamp = Math.max(Date.now(), oldTimestamp + 1);
 
         // 保持原始 owner 標籤，但如果原本是 [synced]，則改為 [asynced]
         // 這確保了它依然不等於 "local"，登出時會被抹除
