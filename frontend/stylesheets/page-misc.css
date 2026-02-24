@@ -67,8 +67,10 @@
     transition: all var(--transition-normal);
 }
 
-.misc-toggle-btn:hover {
-    background: var(--text-green);
-    color: var(--bg-primary);
-    box-shadow: 0 0 10px var(--text-green);
+@media (hover: hover) {
+    .misc-toggle-btn:hover {
+        background: var(--text-green);
+        color: var(--bg-primary);
+        box-shadow: 0 0 10px var(--text-green);
+    }
 }

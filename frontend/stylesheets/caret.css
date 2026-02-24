@@ -1,0 +1,50 @@
+/* style.css — ::selection */
+
+::selection {
+    background: var(--caret-color);
+    color: var(--bg-primary);
+}
+
+/* style.css — block cursor (dark: white, light: black) */
+
+textarea,
+input[type="text"],
+input[type="password"] {
+    caret-color: white;
+    caret-shape: block;
+    user-select: text; /* override * { user-select: none } so Firefox shows caret */
+}
+
+:root[data-theme="light"] textarea,
+:root[data-theme="light"] input[type="text"],
+:root[data-theme="light"] input[type="password"] {
+    caret-color: black;
+}
+
+/* page-blackboard-vcs.css, page-walkie-typie.css, page-broadcast.css — active list items */
+
+.active input[type="text"],
+.active input[type="password"],
+.active textarea {
+    caret-color: black;
+}
+
+:root[data-theme="light"] .active input[type="text"],
+:root[data-theme="light"] .active input[type="password"],
+:root[data-theme="light"] .active textarea {
+    caret-color: white;
+}
+
+.vcs-list-item.active ::selection,
+.walkie-typie-list-list-item.active ::selection,
+.broadcast-list-list-item.active ::selection {
+    background: black;
+    color: white;
+}
+
+:root[data-theme="light"] .vcs-list-item.active ::selection,
+:root[data-theme="light"] .walkie-typie-list-list-item.active ::selection,
+:root[data-theme="light"] .broadcast-list-list-item.active ::selection {
+    background: white;
+    color: black;
+}

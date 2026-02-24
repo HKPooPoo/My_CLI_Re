@@ -62,8 +62,10 @@
     transition: transform var(--transition-normal);
 }
 
-#walkie-typie-blackboard-feature-switch:hover::after {
-    transform: rotate(180deg);
+@media (hover: hover) {
+    #walkie-typie-blackboard-feature-switch:hover::after {
+        transform: rotate(180deg);
+    }
 }
 
 
@@ -132,13 +134,8 @@
 
 .walkie-typie-list-list-item.active .walkie-typie-list-tag {
     color: var(--bg-primary);
-    caret-color: var(--bg-primary);
 }
 
-.walkie-typie-list-list-item.active ::selection {
-    background: var(--bg-primary);
-    color: var(--text-green);
-}
 
 .walkie-typie-list-list-item.active .walkie-typie-list-uid {
     color: var(--bg-primary);

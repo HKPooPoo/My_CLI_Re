@@ -79,13 +79,8 @@
 
 .broadcast-list-list-item.active .broadcast-list-tag {
     color: var(--bg-primary);
-    caret-color: var(--bg-primary);
 }
 
-.broadcast-list-list-item.active ::selection {
-    background: var(--bg-primary);
-    color: var(--text-green);
-}
 
 .broadcast-list-list-item.active .broadcast-list-last-signal {
     color: var(--bg-primary);

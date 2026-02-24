@@ -197,9 +197,11 @@
     filter: drop-shadow(0 0 5px var(--text-orange));
 }
 
-.feature-btn:hover {
-    background: transparent;
-    box-shadow: 0 0 10px var(--text-green);
+@media (hover: hover) {
+    .feature-btn:hover {
+        background: transparent;
+        box-shadow: 0 0 10px var(--text-green);
+    }
 }
 
 .feature-shelf-container {

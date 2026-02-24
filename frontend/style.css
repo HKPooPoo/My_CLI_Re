@@ -48,6 +48,7 @@
     --text-orange-10: rgba(255, 176, 0, 0.1);
     --overlay-bg: rgba(0, 17, 0, 0.85);
     --text-orange-accent: #B87300;
+    --caret-color: white;
 
     /* Feature Shelf */
     --frosted-glass-bg: rgba(255, 255, 255, 0.2);
@@ -101,21 +102,12 @@
     --text-orange-10: rgba(0, 0, 0, 0.05);
     --overlay-bg: rgba(255, 255, 255, 0.9);
     --text-orange-accent: black;
+    --caret-color: black;
 }
 
 :root[data-theme="light"] .header,
 .footer {
     font-weight: bold;
-}
-
-:root[data-theme="light"] ::selection {
-    background: var(--text-green);
-    color: var(--bg-primary);
-}
-
-::selection {
-    background: var(--bg-secondary);
-    color: var(--text-orange);
 }
 
 button,
@@ -129,22 +121,6 @@ input {
     font-weight: bold;
     font-size: var(--font-size);
     background: transparent;
-}
-
-/* CLI block cursor — caret-shape: block is Chromium-only (no Firefox support) */
-textarea,
-input[type="text"],
-input[type="password"] {
-    caret-color: var(--text-green);
-    caret-shape: block;
-}
-
-/* Invert block cursor inside active (green-background) list items */
-.active input[type="text"],
-.active input[type="password"],
-.active textarea {
-    caret-color: var(--bg-primary);
-    caret-shape: block;
 }
 
 @media (hover: hover) {
