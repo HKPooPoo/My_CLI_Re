@@ -178,7 +178,7 @@ function renderConfigStatus(modId) {
         elements.configStatus.innerHTML = '';
 
         const label = document.createElement('span');
-        label.textContent = 'STATUS';
+        label.textContent = t('mods.statusLabel');
 
         const value = document.createElement('span');
         value.className = `mods-server-status ${status}`;

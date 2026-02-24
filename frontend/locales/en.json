@@ -252,6 +252,7 @@
     "refreshing": "SCANNING...",
     "refreshComplete": "SCAN COMPLETE",
     "serverOfflineWarning": "WARNING: SERVICE OFFLINE",
+    "statusLabel": "STATUS",
     "group": {
       "linguistics": "LINGUISTICS",
       "utilities": "UTILITIES"
