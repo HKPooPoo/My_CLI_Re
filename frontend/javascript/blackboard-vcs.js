@@ -99,7 +99,7 @@ export const BBVCS = {
         const loggedInUser = localStorage.getItem("currentUser");
         if (!loggedInUser) throw new Error(t('blackboard.loginRequired'));
 
-        const maxSlot = parseInt(localStorage.getItem("blackboard_max_slot")) || 10;
+        const maxSlot = parseInt(localStorage.getItem("setting-max-slot")) || 10;
         await BBCore.scrubBranch("local", branchId, maxSlot);
 
         let records = await BBCore.getAllRecordsForBranch("local", branchId);
@@ -109,27 +109,32 @@ export const BBVCS = {
             throw new Error(t('blackboard.noData'));
         }
 
-        // [File Sync]: Upload pending files first
+        // [File Sync]: Upload pending files first (multi-file aware)
         const fileUploadPromises = records
             .filter(r => r.file_hash)
-            .map(async (r) => {
-                const hash = (r.file_hash && typeof r.file_hash === 'object') ? r.file_hash.hash : r.file_hash;
-                try {
-                    const exists = await FileService.exists(hash);
-                    if (exists) return;
+            .flatMap((r) => {
+                // Normalize to array of hashes
+                const items = Array.isArray(r.file_hash) ? r.file_hash : [r.file_hash];
+                return items.map(async (item) => {
+                    const hash = (item && typeof item === 'object') ? item.hash : item;
+                    if (!hash) return;
+                    try {
+                        const exists = await FileService.exists(hash);
+                        if (exists) return;
 
-                    const fileData = await db.file_blobs.get(hash);
-                    if (!fileData || !fileData.blob) {
-                        console.warn(`Local file missing for hash ${hash}, skipping upload.`);
-                        return;
+                        const fileData = await db.file_blobs.get(hash);
+                        if (!fileData || !fileData.blob) {
+                            console.warn(`Local file missing for hash ${hash}, skipping upload.`);
+                            return;
+                        }
+
+                        await FileService.upload(fileData.blob);
+                        await db.file_blobs.update(hash, { status: 'synced' });
+                    } catch (err) {
+                        console.error(`Failed to sync file ${hash}:`, err);
+                        throw new Error(t('blackboard.fileSyncFailed'));
                     }
-
-                    await FileService.upload(fileData.blob);
-                    await db.file_blobs.update(hash, { status: 'synced' });
-                } catch (err) {
-                    console.error(`Failed to sync file ${hash}:`, err);
-                    throw new Error(t('blackboard.fileSyncFailed'));
-                }
+                });
             });
 
         if (fileUploadPromises.length > 0) {
@@ -138,10 +143,16 @@ export const BBVCS = {
         }
 
         try {
-            const payloadRecords = records.map(r => ({
-                ...r,
-                file_hash: (r.file_hash && typeof r.file_hash === 'object') ? r.file_hash.hash : r.file_hash
-            }));
+            const payloadRecords = records.map(r => {
+                let fh = r.file_hash;
+                if (Array.isArray(fh)) {
+                    fh = fh.map(item => (item && typeof item === 'object') ? item.hash : item).filter(Boolean);
+                    fh = fh.length > 0 ? JSON.stringify(fh) : null;
+                } else if (fh && typeof fh === 'object') {
+                    fh = fh.hash;
+                }
+                return { ...r, file_hash: fh };
+            });
 
             await BlackboardService.commit({
                 branch_id: branchId,
@@ -174,7 +185,16 @@ export const BBVCS = {
 
                 const downloadRecords = data.records.map(r => {
                     let binData = r.file_hash;
-                    if (r.file_hash && r.file_name) {
+
+                    // Try parsing as JSON array (multi-file)
+                    if (typeof binData === 'string' && binData.startsWith('[')) {
+                        try {
+                            const parsed = JSON.parse(binData);
+                            if (Array.isArray(parsed)) {
+                                binData = parsed.map(h => ({ hash: h }));
+                            }
+                        } catch (e) { /* not JSON, keep as-is */ }
+                    } else if (binData && r.file_name) {
                         binData = {
                             hash: r.file_hash,
                             name: r.file_name,

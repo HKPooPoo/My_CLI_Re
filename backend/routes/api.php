@@ -8,6 +8,7 @@ use App\Http\Controllers\BlackboardController;
 use App\Http\Controllers\WalkieTypieController;
 use App\Http\Controllers\FileController;
 use App\Http\Controllers\BroadcastChannelController;
+use App\Http\Controllers\ModController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Broadcast;
 
@@ -75,6 +76,11 @@ Route::middleware('auth')->prefix('walkie-typie')->group(function () {
 Route::middleware('auth')->prefix('broadcast')->group(function () {
     Route::post('/channels/{channelId}/pin', [BroadcastChannelController::class, 'pin']);
     Route::delete('/channels/{channelId}/pin', [BroadcastChannelController::class, 'unpin']);
+});
+
+// MOD endpoints — public, moderate throttle
+Route::middleware('throttle:30,1')->prefix('mods')->group(function () {
+    Route::get('/offline-translate/health', [ModController::class, 'offlineTranslateHealth']);
 });
 
 // File Download & Meta — throttled

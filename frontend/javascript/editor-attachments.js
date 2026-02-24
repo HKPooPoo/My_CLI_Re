@@ -2,6 +2,7 @@
  * Editor Attachments - Drop Zone & Chip Management (Local-First)
  * =================================================================
  * Shared module for file attachment UI.
+ * Supports multiple file attachments per record.
  * Refactored to use Lazy Loading of DOM elements to prevent null reference issues.
  * =================================================================
  */
@@ -75,8 +76,21 @@ export const EditorAttachments = {
             onAttach: config.onAttach || (() => { }),
             onDetach: config.onDetach || (() => { }),
 
-            /** Current attached file hash */
-            currentHash: null,
+            /** Current attached file hashes (multi-file support) */
+            currentHashes: [],
+
+            /** Backward-compatible getter: returns first hash or null */
+            get currentHash() {
+                return this.currentHashes.length > 0 ? this.currentHashes[0] : null;
+            },
+            set currentHash(val) {
+                // Backward compat: setting to a single value or null
+                if (val === null || val === undefined) {
+                    this.currentHashes = [];
+                } else {
+                    this.currentHashes = [val];
+                }
+            },
 
             /** Prevent dragenter/dragleave flickering */
             _dragCounter: 0,
@@ -130,23 +144,27 @@ export const EditorAttachments = {
                         }
                     });
 
-                    dropZone.addEventListener('drop', (e) => {
+                    dropZone.addEventListener('drop', async (e) => {
                         e.preventDefault();
                         this._dragCounter = 0;
                         this._getEl('dropOverlay')?.classList.remove('active');
 
                         const files = e.dataTransfer?.files;
                         if (files && files.length > 0) {
-                            this.handleFile(files[0]);
+                            for (const file of files) {
+                                await this.handleFile(file);
+                            }
                         }
                     });
 
                     // --- File Input (button trigger) ---
                     if (fileInput) {
-                        fileInput.addEventListener('change', (e) => {
+                        fileInput.addEventListener('change', async (e) => {
                             const files = e.target.files;
                             if (files && files.length > 0) {
-                                this.handleFile(files[0]);
+                                for (const file of files) {
+                                    await this.handleFile(file);
+                                }
                             }
                             e.target.value = '';
                         });
@@ -167,7 +185,7 @@ export const EditorAttachments = {
             },
 
             /**
-             * Handle a single file.
+             * Handle a single file (additive — does not remove existing attachments).
              * @param {File} file
              */
             async handleFile(file) {
@@ -178,23 +196,18 @@ export const EditorAttachments = {
 
                 // If the user removed a file via the chip button and immediately dragged
                 // a new one, onDetach may still be in-flight (DB: bin → null).
-                // We must wait for it to finish before starting onAttach (bin → newData),
-                // otherwise onDetach's write lands last and silently wipes the new bin.
                 if (this._detachPromise) {
                     await this._detachPromise;
                 }
 
-                // Await detach so onDetach completes BEFORE onAttach runs.
-                // Without this, onDetach's async DB write (bin → null) would
-                // race against onAttach's write (bin → newData) and wipe the new bin.
-                if (this.currentHash) {
-                    await this.detach(this.currentHash);
-                }
+                // Skip duplicate: if this hash is already attached, ignore
+                const preHash = await FileService.computeHash(file);
+                if (this.currentHashes.includes(preHash)) return;
 
-                this._renderLoadingChip();
+                this._appendLoadingChip();
 
                 try {
-                    const hash = await FileService.computeHash(file);
+                    const hash = preHash;
 
                     try {
                         await db.file_blobs.put({
@@ -209,16 +222,18 @@ export const EditorAttachments = {
                     } catch (dbErr) {
                         if (dbErr.name === 'QuotaExceededError') {
                             BBMessage.error(t('files.storageFull'));
-                            this._clearChips();
+                            this._removeLoadingChip();
                             return;
                         }
                         throw dbErr;
                     }
 
-                    this.currentHash = hash;
+                    this.currentHashes.push(hash);
                     _pruneFileBlobs(); // fire-and-forget
 
-                    this._renderChip({ hash, status: 'local' });
+                    // Replace loading chip with real chip
+                    this._removeLoadingChip();
+                    this._appendChip({ hash, status: 'local' });
 
                     // Await so that errors surface to the caller
                     await this.onAttach(hash, {
@@ -230,21 +245,23 @@ export const EditorAttachments = {
                 } catch (err) {
                     console.error('File processing failed:', err);
                     BBMessage.error(t('files.attachFailed'));
-                    this._clearChips();
+                    this._removeLoadingChip();
                 }
             },
 
             /**
-             * Detach a file.
+             * Detach a specific file by hash.
              * @param {string} hash
              */
             async detach(hash) {
-                if (this.currentHash === hash) {
-                    this.currentHash = null;
-                }
-                this._clearChips();
+                const idx = this.currentHashes.indexOf(hash);
+                if (idx !== -1) this.currentHashes.splice(idx, 1);
+
+                // Remove just this chip from DOM
+                this._removeChip(hash);
+                this._updateChipsVisibility();
+
                 // Track the in-flight promise so handleFile() can wait for it
-                // if a new drop arrives before this onDetach finishes.
                 this._detachPromise = this.onDetach(hash);
                 try {
                     await this._detachPromise;
@@ -254,31 +271,43 @@ export const EditorAttachments = {
             },
 
             /**
-             * Set attachment from existing record.
-             * Uses a version counter to abort stale async renders — prevents
-             * a superseded call from overwriting a chip rendered by a newer call.
-             * @param {string|null} hash
+             * Set attachment(s) from existing record.
+             * Accepts a single hash (string), an array of hashes, or null.
+             * Uses a version counter to abort stale async renders.
+             * @param {string|string[]|null} hashOrHashes
              * @param {Object} [hint]
              */
-            async setFromRecord(hash, hint) {
+            async setFromRecord(hashOrHashes, hint) {
                 const version = ++this._srVersion;
-                this.currentHash = hash || null;
-                if (!hash) {
-                    // Immediate clear is correct — no async work needed for null
+
+                // Normalize input
+                let hashes = [];
+                if (Array.isArray(hashOrHashes)) {
+                    hashes = hashOrHashes.filter(Boolean);
+                } else if (typeof hashOrHashes === 'string' && hashOrHashes) {
+                    hashes = [hashOrHashes];
+                }
+
+                this.currentHashes = [...hashes];
+
+                if (hashes.length === 0) {
                     this._clearChips();
                     return;
                 }
 
-                const localFile = await db.file_blobs.get(hash);
+                this._clearChips();
 
-                // Bail if a newer setFromRecord() call has already taken over
-                if (version !== this._srVersion) return;
+                for (const hash of hashes) {
+                    const localFile = await db.file_blobs.get(hash);
 
-                if (localFile) {
-                    // 'local' = not yet on server | 'synced' = on server + cached
-                    this._renderChip({ hash, status: localFile.status || 'local' });
-                } else {
-                    this._renderChip({ hash, status: 'cloud' });
+                    // Bail if a newer setFromRecord() call has already taken over
+                    if (version !== this._srVersion) return;
+
+                    if (localFile) {
+                        this._appendChip({ hash, status: localFile.status || 'local' });
+                    } else {
+                        this._appendChip({ hash, status: 'cloud' });
+                    }
                 }
             },
 
@@ -286,7 +315,7 @@ export const EditorAttachments = {
              * Clear all chips and reset state.
              */
             clear() {
-                this.currentHash = null;
+                this.currentHashes = [];
                 this._clearChips();
             },
 
@@ -326,7 +355,15 @@ export const EditorAttachments = {
                         };
 
                         await db.file_blobs.put(localFile);
-                        this._renderChip({ hash: hash, status: 'synced' });
+
+                        // Update just this chip's status
+                        const chip = this._findChip(hash);
+                        if (chip) {
+                            chip.classList.remove('is-local');
+                            chip.classList.add('is-synced');
+                            const icon = chip.querySelector('.attachment-chip-icon');
+                            if (icon) icon.textContent = t('files.statusSync');
+                        }
 
                     } catch (e) {
                         console.error("Download failed", e);
@@ -347,7 +384,6 @@ export const EditorAttachments = {
 
             _findChip(hash) {
                 const container = this._getEl('chipsContainer');
-                // Query data-hash on the chip itself — works for both editable and read-only chips
                 return container ? container.querySelector(`.attachment-chip[data-hash="${hash}"]`) : null;
             },
 
@@ -359,17 +395,31 @@ export const EditorAttachments = {
                 }
             },
 
-            _renderChip({ hash, status }) {
+            _removeChip(hash) {
+                const chip = this._findChip(hash);
+                if (chip) chip.remove();
+            },
+
+            _updateChipsVisibility() {
+                const container = this._getEl('chipsContainer');
+                if (!container) return;
+                if (container.children.length > 0) {
+                    container.classList.add('has-items');
+                } else {
+                    container.classList.remove('has-items');
+                }
+            },
+
+            _appendChip({ hash, status }) {
                 // status: 'local' = only on this device (orange)
                 //         'synced' = on server + cached locally (green)
                 //         'cloud'  = on server, not cached locally (green)
                 const container = this._getEl('chipsContainer');
                 if (!container) return;
-                this._clearChips();
 
                 const chip = document.createElement('div');
                 chip.className = 'attachment-chip';
-                chip.dataset.hash = hash; // used by _findChip() — works for read-only too
+                chip.dataset.hash = hash;
 
                 let iconText;
                 if (status === 'local') {
@@ -399,17 +449,35 @@ export const EditorAttachments = {
                 container.classList.add('has-items');
             },
 
-            _renderLoadingChip() {
+            _appendLoadingChip() {
                 const container = this._getEl('chipsContainer');
                 if (!container) return;
-                this._clearChips();
 
                 const chip = document.createElement('div');
-                chip.className = 'attachment-chip';
+                chip.className = 'attachment-chip attachment-chip-loading';
                 chip.innerHTML = `<span class="attachment-chip-icon">${t('files.statusWait')}</span>`;
 
                 container.appendChild(chip);
                 container.classList.add('has-items');
+            },
+
+            _removeLoadingChip() {
+                const container = this._getEl('chipsContainer');
+                if (!container) return;
+                const loading = container.querySelector('.attachment-chip-loading');
+                if (loading) loading.remove();
+                this._updateChipsVisibility();
+            },
+
+            // Backward compat: old _renderChip still works for single chip replacement
+            _renderChip({ hash, status }) {
+                this._clearChips();
+                this._appendChip({ hash, status });
+            },
+
+            _renderLoadingChip() {
+                this._clearChips();
+                this._appendLoadingChip();
             }
         };
 

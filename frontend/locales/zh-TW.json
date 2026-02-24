@@ -23,7 +23,8 @@
     "walkieTypie": "對打機",
     "broadcast": "廣播",
     "account": "帳號",
-    "misc": "設定"
+    "misc": "設定",
+    "mods": "模組"
   },
   "hud": {
     "online": "線上",
@@ -118,7 +119,8 @@
     "noData": "錯誤：無資料",
     "fileSyncFailed": "錯誤：檔案同步失敗",
     "loginRequired": "錯誤：需要登入",
-    "uploadFailed": "錯誤：上傳失敗"
+    "uploadFailed": "錯誤：上傳失敗",
+    "searchPlaceholder": "搜尋分支..."
   },
   "walkieTypie": {
     "pageTitle": "對打機控制器",
@@ -196,7 +198,8 @@
     "nameEmpty": "錯誤：頻道名稱不能為空",
     "renameFailed": "錯誤：重新命名失敗",
     "syncFailed": "同步失敗",
-    "fetchFailed": "取得資料失敗"
+    "fetchFailed": "取得資料失敗",
+    "searchPlaceholder": "搜尋頻道..."
   },
   "files": {
     "dropZoneHint": "拖放檔案至此",
@@ -235,6 +238,33 @@
     "languageLabel": "介面語言",
     "globalAudioLabel": "全局音效",
     "sfxLabel": "操作音效",
+    "maxSlotLabel": "最大紀錄數",
     "localeName": "繁體中文"
+  },
+  "mods": {
+    "pageTitle": "模組管理器",
+    "listTab": "列表",
+    "aboutTab": "關於",
+    "aboutTitle": "系統診斷",
+    "aboutDescription": "模組系統 v1.0 — 透過可選模組擴展功能。",
+    "enabled": "開啟",
+    "disabled": "關閉",
+    "refreshBtn": "重新掃描",
+    "refreshing": "掃描模組中...",
+    "refreshComplete": "掃描完成",
+    "serverOfflineWarning": "警告：服務離線",
+    "markdownPreview": {
+      "name": "MARKDOWN 預覽",
+      "desc": "在功能面板和廣播閱讀器中渲染 Markdown。"
+    },
+    "offlineTranslate": {
+      "name": "離線翻譯",
+      "desc": "透過 LibreTranslate 進行本機翻譯，無需雲端 API。"
+    },
+    "status": {
+      "unknown": "掃描中...",
+      "online": "線上",
+      "offline": "離線"
+    }
   }
 }

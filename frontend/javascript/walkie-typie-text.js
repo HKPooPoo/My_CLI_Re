@@ -56,7 +56,7 @@ export const WTText = {
     currentBin: null,
 
     // WE: IndexedDB-backed VCS state (same as Blackboard)
-    weState: { branchId: 0, branch: "WE", currentHead: 0, maxSlot: 10, isVirtual: false },
+    weState: { branchId: 0, branch: "WE", currentHead: 0, maxSlot: parseInt(localStorage.getItem('setting-max-slot')) || 10, isVirtual: false },
 
     // THEY: Memory-based, server-authoritative
     theyState: { currentHead: 0 },
@@ -197,6 +197,11 @@ export const WTText = {
 
             this.lockBoards();
             this.clearBoards();
+        });
+
+        // MAX_SLOT setting change
+        window.addEventListener('settings:maxSlotChanged', () => {
+            this.weState.maxSlot = parseInt(localStorage.getItem('setting-max-slot')) || 10;
         });
 
         // --- Connection Lifecycle ---

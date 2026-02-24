@@ -60,7 +60,7 @@ export const BCChannel = {
         localChannelId: null,
         currentHead: 0,
         isVirtual: false,
-        maxSlot: 10,
+        maxSlot: parseInt(localStorage.getItem('setting-max-slot')) || 10,
     },
 
     // Reader mode — server records in memory (oldest→newest from API, reversed for head 0 = newest)
@@ -223,6 +223,11 @@ export const BCChannel = {
             } else {
                 this.clearIndicators();
             }
+        });
+
+        // MAX_SLOT setting change
+        window.addEventListener('settings:maxSlotChanged', () => {
+            this.state.maxSlot = parseInt(localStorage.getItem('setting-max-slot')) || 10;
         });
 
         // Textarea input — auto-save (owner mode only)

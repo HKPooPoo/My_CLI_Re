@@ -1,0 +1,152 @@
+.mods-container {
+    justify-content: space-around;
+    gap: var(--panel-gap);
+    width: var(--container-width);
+    max-width: var(--container-max-width);
+    margin: var(--container-margin);
+    padding: var(--panel-padding);
+    border: var(--border-line);
+    position: relative;
+}
+
+.mods-title {
+    position: absolute;
+    top: 0px;
+    transform: translateY(-50%);
+    left: 16px;
+    background-color: var(--bg-secondary);
+    padding: var(--title-padding);
+    width: max-content;
+    transition: left var(--transition-normal) ease-in, transform var(--transition-normal) ease-in;
+}
+
+.mods-list-container {
+    border-bottom: var(--border-line);
+    height: clamp(192px, calc(var(--container-width) / 2), 40vh);
+    overflow-y: auto;
+    overflow-x: hidden;
+    scrollbar-width: thin;
+    scrollbar-color: var(--text-green) var(--bg-primary);
+}
+
+.mods-list-container::-webkit-scrollbar {
+    width: 4px;
+}
+
+.mods-list-container::-webkit-scrollbar-track {
+    background: var(--bg-primary);
+}
+
+.mods-list-container::-webkit-scrollbar-thumb {
+    background-color: var(--text-green);
+    border-radius: 2px;
+}
+
+.mods-list-item {
+    padding: calc(var(--panel-gap) / 2);
+    border-bottom: 1px solid var(--text-green);
+}
+
+.mods-list-item:last-child {
+    border-bottom: none;
+}
+
+.mods-list-item-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: calc(var(--panel-gap) / 4);
+}
+
+.mods-list-item-name {
+    font-size: 1em;
+}
+
+.mods-server-indicator {
+    font-size: 0.8em;
+}
+
+.mods-server-indicator.online {
+    color: var(--text-green);
+    text-shadow: 0 0 6px var(--text-green);
+}
+
+.mods-server-indicator.offline {
+    color: var(--text-red);
+    text-shadow: 0 0 6px var(--text-red);
+}
+
+.mods-server-indicator.unknown {
+    color: var(--text-orange);
+}
+
+.mods-list-item-description {
+    font-size: 0.8em;
+    opacity: 0.7;
+    margin-bottom: calc(var(--panel-gap) / 4);
+}
+
+.mods-list-item-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.mods-list-item-type {
+    font-size: 0.75em;
+    opacity: 0.5;
+    text-transform: uppercase;
+}
+
+.mods-toggle-btn {
+    border: var(--border-line);
+    padding: 4px 16px;
+    min-width: 80px;
+    text-align: center;
+    cursor: pointer;
+    transition: all var(--transition-normal);
+}
+
+.mods-toggle-btn.enabled {
+    color: var(--text-green);
+    border-color: var(--text-green);
+}
+
+.mods-toggle-btn.disabled {
+    color: var(--text-red);
+    border-color: var(--text-red);
+}
+
+@media (hover: hover) {
+    .mods-toggle-btn:hover {
+        background: var(--text-green);
+        color: var(--bg-primary);
+        box-shadow: 0 0 10px var(--text-green);
+    }
+}
+
+#mods-refresh-btn {
+    border: var(--border-line);
+    border-radius: var(--border-radius);
+    padding: 8px 0;
+}
+
+.mods-about-content {
+    padding: calc(var(--panel-gap) / 2);
+}
+
+.mods-about-text {
+    margin-bottom: var(--panel-gap);
+    opacity: 0.7;
+}
+
+.mods-diagnostics-item {
+    display: flex;
+    justify-content: space-between;
+    padding: calc(var(--panel-gap) / 4) 0;
+    border-bottom: 1px solid rgba(50, 255, 50, 0.2);
+}
+
+.mods-diagnostics-item:last-child {
+    border-bottom: none;
+}

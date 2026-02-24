@@ -29,7 +29,7 @@ const state = {
     branch: "",         // 當前分支名稱 (用於 UI 顯示)
     branchId: 0,        // 當前分支物理 ID
     currentHead: 0,     // 歷史深度指標 (0 表示最新)
-    maxSlot: 10,        // 本地歷史保存上限
+    maxSlot: parseInt(localStorage.getItem('setting-max-slot')) || 10,
     isVirtual: false    // 是否處於「新頁面」的虛擬狀態 (尚未存入 DB)
 };
 
@@ -60,9 +60,19 @@ const bbAttach = EditorAttachments.create({
         } else {
             const entry = await BBCore.getRecord(state.owner, state.branchId, state.currentHead);
             if (entry) {
-                await db.blackboard.update([entry.owner, entry.branch_id, entry.timestamp], { file_hash: binData });
+                // Multi-file: append to existing file_hash array
+                const existing = entry.file_hash;
+                let fileHashes;
+                if (Array.isArray(existing)) {
+                    fileHashes = [...existing, binData];
+                } else if (existing) {
+                    fileHashes = [existing, binData];
+                } else {
+                    fileHashes = [binData];
+                }
+                await db.blackboard.update([entry.owner, entry.branch_id, entry.timestamp], { file_hash: fileHashes });
             } else if (state.currentHead === 0) {
-                await BBCore.addRecord("local", state.branchId, state.branch, BBUI.getTextareaValue() || "", binData);
+                await BBCore.addRecord("local", state.branchId, state.branch, BBUI.getTextareaValue() || "", [binData]);
                 state.owner = "local";
                 state.currentHead = 0;
             }
@@ -70,10 +80,22 @@ const bbAttach = EditorAttachments.create({
     },
     onDetach: async (hash) => {
         const entry = await BBCore.getRecord(state.owner, state.branchId, state.currentHead);
-        const currentHash = (entry && typeof entry.file_hash === 'object') ? entry.file_hash.hash : entry?.file_hash;
+        if (!entry) return;
 
-        if (entry && currentHash === hash) {
-            await db.blackboard.update([entry.owner, entry.branch_id, entry.timestamp], { file_hash: null });
+        const existing = entry.file_hash;
+        if (Array.isArray(existing)) {
+            const filtered = existing.filter(f => {
+                const h = (typeof f === 'object') ? f.hash : f;
+                return h !== hash;
+            });
+            await db.blackboard.update([entry.owner, entry.branch_id, entry.timestamp], {
+                file_hash: filtered.length > 0 ? filtered : null
+            });
+        } else {
+            const currentHash = (typeof existing === 'object') ? existing?.hash : existing;
+            if (currentHash === hash) {
+                await db.blackboard.update([entry.owner, entry.branch_id, entry.timestamp], { file_hash: null });
+            }
         }
     },
 });
@@ -138,12 +160,15 @@ async function syncView() {
     BBUI.setTextarea(entry?.text ?? "");
     BBUI.updateIndicators(state.branch || t('blackboard.branchNameFallback'), state.currentHead, true);
 
-    // Sync attachment chip display
+    // Sync attachment chip display (multi-file aware)
     const binData = entry?.file_hash;
-    const hash = (typeof binData === 'object') ? binData?.hash : binData;
-    const hint = (typeof binData === 'object') ? binData : null;
-
-    bbAttach?.setFromRecord(hash || null, hint);
+    if (Array.isArray(binData)) {
+        const hashes = binData.map(f => (typeof f === 'object') ? f.hash : f).filter(Boolean);
+        bbAttach?.setFromRecord(hashes);
+    } else {
+        const hash = (typeof binData === 'object') ? binData?.hash : binData;
+        bbAttach?.setFromRecord(hash || null);
+    }
 }
 
 /**
@@ -538,6 +563,22 @@ window.addEventListener('navi:pageChanged', (e) => {
 // 監聽列表刷新 (Infinite List 初始化)
 window.addEventListener("list:updated", () => {
     setTimeout(() => initAllInfiniteLists(), 10);
+});
+
+// 監聽 MAX_SLOT 設定變更
+window.addEventListener('settings:maxSlotChanged', () => {
+    state.maxSlot = parseInt(localStorage.getItem('setting-max-slot')) || 10;
+});
+
+// --- Branch Search ---
+const $vcsSearch = document.getElementById('vcs-search');
+$vcsSearch?.addEventListener('input', () => {
+    const query = $vcsSearch.value.toLowerCase().trim();
+    const items = document.querySelectorAll('.vcs-list-item');
+    items.forEach(item => {
+        const name = item.querySelector('.vcs-list-branch')?.value?.toLowerCase() || '';
+        item.style.display = name.includes(query) ? '' : 'none';
+    });
 });
 
 // --- 系統啟動 ---

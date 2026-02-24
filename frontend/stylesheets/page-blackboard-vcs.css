@@ -28,6 +28,17 @@
     transition: left var(--transition-normal) ease-in, transform var(--transition-normal) ease-in;
 }
 
+.vcs-search-input {
+    border-bottom: var(--border-line);
+    padding: calc(var(--panel-gap) / 2);
+    font-size: var(--font-size);
+    width: 100%;
+}
+
+.vcs-search-input:focus {
+    border-bottom-color: var(--text-orange);
+}
+
 .vcs-list-container {
     border-bottom: var(--border-line);
     /* height: calc(var(--container-width) / 4); */

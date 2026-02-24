@@ -31,6 +31,8 @@
     <link rel="stylesheet" href="stylesheets/page-broadcast.css">
     <link rel="stylesheet" href="stylesheets/page-misc.css">
     <link rel="stylesheet" href="stylesheets/editor-attachments.css">
+    <link rel="stylesheet" href="stylesheets/page-mods.css">
+    <link rel="stylesheet" href="stylesheets/feature-markdown.css">
     <!--注意@media放在尾！！！-->
     <link rel="stylesheet" href="stylesheets/@media.css">
     <link rel="stylesheet" href="stylesheets/layer.css">
@@ -113,6 +115,21 @@
                     </div>
                 </div>
             </div>
+            <div class="navi-item" data-navi-item="mods" data-sound-main="UIGeneralOK.mp3"
+                data-sound-sub="UIGeneralFocus.mp3">
+                <div class="navi-item-text" data-i18n="nav.mods">MODS</div>
+                <div class="sub-navi-indicator"></div>
+                <div class="sub-navi-container">
+                    <div class="sub-navi-track">
+                        <div class="sub-navi-item" data-sub-navi-item="mods-list">
+                            <div class="sub-navi-item-text" data-i18n="mods.listTab">LIST</div>
+                        </div>
+                        <div class="sub-navi-item" data-sub-navi-item="mods-about">
+                            <div class="sub-navi-item-text" data-i18n="mods.aboutTab">ABOUT</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </nav>
         <div class="sub-navi-indicator-mask"></div>
         <!--navi.js-->
@@ -127,12 +144,16 @@
                 <button class="feature-btn" data-feature-btn="translate-en"></button>
                 <button class="feature-btn" data-feature-btn="translate-ja"></button>
                 <button class="feature-btn" data-feature-btn="voice-to-textbox"></button>
+                <button class="feature-btn" data-feature-btn="markdown-preview"></button>
                 <div class="feature-shelf-container frosted-glass">
                     <button class="feature-shelf-back-btn">>></button>
                     <!-- <div class="feature-shelf" data-feature-shelf="ai-picture-analyse"></div> -->
                     <div class="feature-shelf" data-feature-shelf="ai-text-analyze"></div>
                     <div class="feature-shelf" data-feature-shelf="translator" style="display: flex;">
                         <textarea name="" id="feature-translator-output"></textarea>
+                    </div>
+                    <div class="feature-shelf" data-feature-shelf="markdown-preview" style="display: flex;">
+                        <div id="feature-markdown-output" class="markdown-rendered"></div>
                     </div>
                 </div>
             </div>
@@ -143,7 +164,7 @@
                 <div class="branch-name">&#36;{branch_name}</div>:
                 <div class="branch-head">&#36;{branch_head}</div>
             </div>
-            <div class="page can-push-pull have-feature show-branch" data-page="blackboard-log" data-feature-btns="translate-zh-TW,translate-zh-CN,translate-en,translate-ja,voice-to-textbox">
+            <div class="page can-push-pull have-feature show-branch" data-page="blackboard-log" data-feature-btns="translate-zh-TW,translate-zh-CN,translate-en,translate-ja,voice-to-textbox,markdown-preview">
                 <div class="editor-wrapper" id="bb-drop-zone">
                     <div class="attachment-chips" id="bb-attachment-chips"></div>
                     <textarea name="" id="log-textarea" data-i18n-placeholder="blackboard.textPlaceholder" placeholder="Enter..."></textarea>
@@ -154,6 +175,8 @@
             <div class="page show-branch" data-page="blackboard-branch">
                 <div class="vcs-container">
                     <div class="vcs-title crt-text-orange" data-i18n="blackboard.pageTitle">BRANCH CONTROLLER</div>
+                    <input type="text" class="vcs-search-input" id="vcs-search"
+                        data-i18n-placeholder="blackboard.searchPlaceholder" placeholder="SEARCH BRANCHES...">
                     <div class="vcs-list-container" data-sound-item="UIGeneralFocus.mp3">
                         <!--Just for mock up use-->
                         <!--Let id be its' vcs-list-timestamp-->
@@ -252,6 +275,12 @@
                             <div class="misc-label" data-i18n="misc.sfxLabel">SFX</div>
                             <button class="misc-toggle-btn crt-text-green" id="misc-toggle-sfx">ON</button>
                         </div>
+
+                        <!-- MAX SLOT Toggle -->
+                        <div class="misc-list-item">
+                            <div class="misc-label" data-i18n="misc.maxSlotLabel">MAX SLOT</div>
+                            <button class="misc-toggle-btn crt-text-green" id="misc-toggle-max-slot">10</button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -260,8 +289,11 @@
             <script type="module" src="javascript/feature.js"></script>
             <script type="module" src="javascript/feature-shelf.js"></script>
             <script type="module" src="javascript/feature-translator.js"></script>
+            <script type="module" src="javascript/feature-markdown.js"></script>
             <script type="module" src="javascript/auth.js"></script>
             <script type="module" src="javascript/misc.js"></script>
+            <!-- Vendor: Markdown -->
+            <script src="./javascript/vendor/marked.min.js"></script>
             <!-- Walkie-Typie Dependencies -->
             <script src="./javascript/vendor/pusher.min.js"></script>
             <script src="./javascript/vendor/echo.iife.js"></script>
@@ -341,7 +373,7 @@
                 </div>
             </div> -->
             <!---->
-            <div class="page can-push-pull have-feature show-branch" data-page="broadcast-channel" data-feature-btns="translate-zh-TW,translate-zh-CN,translate-en,translate-ja">
+            <div class="page can-push-pull have-feature show-branch" data-page="broadcast-channel" data-feature-btns="translate-zh-TW,translate-zh-CN,translate-en,translate-ja,markdown-preview">
                 <div class="editor-wrapper" id="bc-drop-zone">
                     <div class="attachment-chips" id="bc-attachment-chips"></div>
                     <textarea name="" id="channel-textarea" placeholder="Enter..." data-i18n-placeholder="blackboard.textPlaceholder"></textarea>
@@ -352,6 +384,8 @@
             <div class="page have-feature show-branch" data-page="broadcast-list">
                 <div class="broadcast-list-container">
                     <div class="broadcast-list-title crt-text-orange" data-i18n="broadcast.pageTitle">CHANNEL MODULATION</div>
+                    <input type="text" class="broadcast-search-input" id="broadcast-search"
+                        data-i18n-placeholder="broadcast.searchPlaceholder" placeholder="SEARCH CHANNELS...">
                     <div class="broadcast-list-list-container" data-sound-item="UIGeneralFocus.mp3">
                         <!-- <div class="broadcast-list-list-item">
                         <input type="text" class="broadcast-list-tag" placeholder="Name this guy..." id=""
@@ -366,6 +400,24 @@
                     <button id="broadcast-delete-btn" class="crt-text-green" data-i18n="broadcast.deleteStep1">DELETE</button>
                 </div>
             </div>
+            <div class="page" data-page="mods-list">
+                <div class="mods-container">
+                    <div class="mods-title crt-text-orange" data-i18n="mods.pageTitle">MOD MANAGER</div>
+                    <div class="mods-list-container"></div>
+                    <button id="mods-refresh-btn" class="crt-text-green" data-i18n="mods.refreshBtn">REFRESH</button>
+                </div>
+            </div>
+            <div class="page" data-page="mods-about">
+                <div class="mods-container">
+                    <div class="mods-title crt-text-orange" data-i18n="mods.aboutTitle">SYSTEM DIAGNOSTICS</div>
+                    <div class="mods-about-content">
+                        <div class="mods-about-text" data-i18n="mods.aboutDescription">MOD SYSTEM v1.0</div>
+                        <div class="mods-diagnostics-container" id="mods-diagnostics"></div>
+                    </div>
+                </div>
+            </div>
+            <!-- MOD Manager -->
+            <script type="module" src="./javascript/mods-manager.js"></script>
             <div id="toast-container"></div>
         </div>
     </div>

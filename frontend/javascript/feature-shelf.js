@@ -12,6 +12,8 @@
  */
 
 import { playAudio } from "./audio.js";
+import { ModState } from "./mod-state.js";
+import { MOD_REGISTRY } from "./mod-registry.js";
 
 // --- DOM 引用 ---
 const $featureShelfContainer = document.querySelector('.feature-shelf-container');
@@ -58,21 +60,48 @@ window.addEventListener('resize', () => {
     snapToNearestPosition();
 });
 
-// 按頁面配置顯隱功能按鈕
-window.addEventListener('navi:pageChanged', ({ detail }) => {
-    const $activePage = document.querySelector(`.page[data-page="${detail.page}"]`);
+/**
+ * Check if a feature button is controlled by a MOD, and if so, whether that MOD is enabled.
+ */
+function isFeatureBtnAllowedByMods(btnId) {
+    for (const [modId, def] of Object.entries(MOD_REGISTRY)) {
+        if (def.featureButtons && def.featureButtons.includes(btnId)) {
+            return ModState.isEnabled(modId);
+        }
+    }
+    // Not controlled by any MOD — always allowed
+    return true;
+}
+
+// 按頁面配置顯隱功能按鈕 (MOD-aware)
+function updateFeatureButtons(page) {
+    const $activePage = document.querySelector(`.page[data-page="${page}"]`);
     const featureBtns = $activePage?.dataset.featureBtns;
 
     if (featureBtns === undefined) {
-        // 無配置：顯示全部
-        $featureBtns.forEach($btn => ($btn.style.display = ''));
+        $featureBtns.forEach($btn => {
+            $btn.style.display = isFeatureBtnAllowedByMods($btn.dataset.featureBtn) ? '' : 'none';
+        });
         return;
     }
 
     const allowed = featureBtns ? featureBtns.split(',') : [];
     $featureBtns.forEach($btn => {
-        $btn.style.display = allowed.includes($btn.dataset.featureBtn) ? '' : 'none';
+        const btnId = $btn.dataset.featureBtn;
+        const pageAllows = allowed.includes(btnId);
+        const modAllows = isFeatureBtnAllowedByMods(btnId);
+        $btn.style.display = (pageAllows && modAllows) ? '' : 'none';
     });
+}
+
+window.addEventListener('navi:pageChanged', ({ detail }) => {
+    updateFeatureButtons(detail.page);
+});
+
+// Re-evaluate button visibility when MOD state changes
+window.addEventListener('mods:changed', () => {
+    const activePage = document.querySelector('.page.active');
+    if (activePage) updateFeatureButtons(activePage.dataset.page);
 });
 
 /**

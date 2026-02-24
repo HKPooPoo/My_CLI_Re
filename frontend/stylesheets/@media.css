@@ -28,7 +28,8 @@
 
     .auth-container,
     .vcs-container,
-    .walkie-typie-list-container {
+    .walkie-typie-list-container,
+    .mods-container {
         width: 64vw;
     }
 

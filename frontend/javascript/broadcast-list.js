@@ -523,6 +523,17 @@ export const BCList = {
     }
 };
 
+// --- Channel Search ---
+const $bcSearch = document.getElementById('broadcast-search');
+$bcSearch?.addEventListener('input', () => {
+    const query = $bcSearch.value.toLowerCase().trim();
+    const items = document.querySelectorAll('.broadcast-list-list-item');
+    items.forEach(item => {
+        const name = item.querySelector('.broadcast-list-tag')?.value?.toLowerCase() || '';
+        item.style.display = name.includes(query) ? '' : 'none';
+    });
+});
+
 // Init
 BCList.init();
 BCList.fetchAndRender();

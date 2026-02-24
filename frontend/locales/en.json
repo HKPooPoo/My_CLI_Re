@@ -23,7 +23,8 @@
     "walkieTypie": "WALKIE-TYPIE",
     "broadcast": "BROADCAST",
     "account": "AUTH",
-    "misc": "MISC"
+    "misc": "MISC",
+    "mods": "MODS"
   },
   "hud": {
     "online": "ONLINE",
@@ -118,7 +119,8 @@
     "noData": "ERROR: NO DATA",
     "fileSyncFailed": "ERROR: FILE SYNC FAILED",
     "loginRequired": "ERROR: LOGIN REQUIRED",
-    "uploadFailed": "ERROR: UPLOAD FAILED"
+    "uploadFailed": "ERROR: UPLOAD FAILED",
+    "searchPlaceholder": "SEARCH BRANCHES..."
   },
   "walkieTypie": {
     "pageTitle": "WALKIE-TYPIE CONTROLLER",
@@ -196,7 +198,8 @@
     "nameEmpty": "ERROR: NAME CANNOT BE EMPTY",
     "renameFailed": "ERROR: RENAME FAILED",
     "syncFailed": "SYNC FAILED",
-    "fetchFailed": "FETCH FAILED"
+    "fetchFailed": "FETCH FAILED",
+    "searchPlaceholder": "SEARCH CHANNELS..."
   },
   "files": {
     "dropZoneHint": "DROP FILES HERE",
@@ -235,6 +238,33 @@
     "languageLabel": "LANGUAGE",
     "globalAudioLabel": "GLOBAL AUDIO",
     "sfxLabel": "SFX",
+    "maxSlotLabel": "MAX SLOT",
     "localeName": "ENGLISH"
+  },
+  "mods": {
+    "pageTitle": "MOD MANAGER",
+    "listTab": "LIST",
+    "aboutTab": "ABOUT",
+    "aboutTitle": "SYSTEM DIAGNOSTICS",
+    "aboutDescription": "MOD SYSTEM v1.0 — EXTEND FUNCTIONALITY WITH OPTIONAL MODULES.",
+    "enabled": "ON",
+    "disabled": "OFF",
+    "refreshBtn": "REFRESH",
+    "refreshing": "SCANNING MODS...",
+    "refreshComplete": "SCAN COMPLETE",
+    "serverOfflineWarning": "WARNING: SERVICE OFFLINE",
+    "markdownPreview": {
+      "name": "MARKDOWN PREVIEW",
+      "desc": "RENDER MARKDOWN IN FEATURE SHELF AND BROADCAST READER."
+    },
+    "offlineTranslate": {
+      "name": "OFFLINE TRANSLATE",
+      "desc": "LOCAL TRANSLATION VIA LIBRETRANSLATE. NO CLOUD API."
+    },
+    "status": {
+      "unknown": "SCANNING...",
+      "online": "ONLINE",
+      "offline": "OFFLINE"
+    }
   }
 }
