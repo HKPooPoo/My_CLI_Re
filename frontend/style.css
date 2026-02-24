@@ -131,12 +131,19 @@ input {
     background: transparent;
 }
 
-/* CLI block cursor */
+/* CLI block cursor — caret-shape: block is Chromium-only (no Firefox support) */
 textarea,
 input[type="text"],
 input[type="password"] {
     caret-color: var(--text-green);
     caret-shape: block;
+}
+
+/* Invert caret colour inside active (green-background) list items */
+.active input[type="text"],
+.active input[type="password"],
+.active textarea {
+    caret-color: var(--bg-primary);
 }
 
 @media (hover: hover) {

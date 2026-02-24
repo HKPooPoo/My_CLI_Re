@@ -104,11 +104,15 @@ export const AuthManager = {
                     const msg = BBMessage.info(t('auth.authenticating'));
                     try {
                         const data = await AuthService.login({ uid, passcode });
-                        msg.update(t('auth.welcome', { uid: data.user.uid.toUpperCase() }));
-                        // 登入成功後重新初始化以獲取完整資訊
-                        this.init();
+                        msg.update(t('auth.welcome', { uid: data.user.uid.toUpperCase() }), 2000);
+                        // 用登入回傳的資料直接更新 UI（避免二次 API 呼叫）
+                        this.updateUI(data.user);
                         this.elements.uidInput.value = "";
                         this.elements.passcodeInput.value = "";
+                        // 非阻塞：背景取得完整資料（email 等）
+                        AuthService.getStatus().then(s => {
+                            if (s.is_logged_in) this.updateUI(s);
+                        }).catch(() => {});
                     } catch (e) {
                         console.error("LOGIN ERROR:", e);
                         msg.close();
@@ -139,7 +143,7 @@ export const AuthManager = {
                         const msg = BBMessage.info(t('auth.registering'));
                         try {
                             const data = await AuthService.register({ uid, passcode });
-                            msg.update(t('auth.registerComplete'));
+                            msg.update(t('auth.registerComplete'), 2000);
                         } catch (e) {
                             console.error("REGISTER ERROR:", e);
                             msg.close();
@@ -156,13 +160,11 @@ export const AuthManager = {
                 sound: "UISelectOff.mp3",
                 action: async () => {
                     try {
-                        await AuthService.logout();
-
-                        // 抹除本地同步資料
-                        await BBCore.wipeSyncedData();
-
                         this.updateUI(null);
                         BBMessage.info(t('auth.logoutComplete'));
+                        // 非阻塞：後端登出 + 清除本地同步資料
+                        AuthService.logout().catch(() => {});
+                        BBCore.wipeSyncedData().catch(() => {});
                     } catch (e) {
                         console.error("LOGOUT ERROR:", e);
                         this.updateUI(null);
@@ -188,7 +190,7 @@ export const AuthManager = {
                         const msg = BBMessage.info(t('auth.executing'));
                         try {
                             const data = await AuthService.executeCommand({ command: input });
-                            msg.update(data.message);
+                            msg.update(data.message, 3000);
                             this.elements.passcodeInput.value = "";
                         } catch (e) {
                             console.error("CMD ERROR:", e);
@@ -206,7 +208,7 @@ export const AuthManager = {
                         const msg = BBMessage.info(t('auth.requesting'));
                         try {
                             const data = await AuthService.requestPasswordReset({ uid });
-                            msg.update(data.message);
+                            msg.update(data.message, 3000);
                         } catch (e) {
                             console.error("RESET ERROR:", e);
                             msg.close();
@@ -259,11 +261,13 @@ export const AuthManager = {
                             data = await AuthService.requestEmailBinding({ email: input });
                         }
 
-                        msg.update(data.message);
+                        msg.update(data.message, 2000);
                         if (isCommand) {
                             this.elements.emailInput.value = "";
-                            // 綁定成功後刷新 UI 以更新 placeholder
-                            this.init();
+                            // 非阻塞：取得最新 email 以更新 placeholder
+                            AuthService.getStatus().then(s => {
+                                if (s.is_logged_in) this.updateUI(s);
+                            }).catch(() => {});
                         }
                     } catch (e) {
                         console.error("BIND ERROR:", e);
