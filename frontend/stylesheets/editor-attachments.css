@@ -39,6 +39,10 @@
     min-height: 0;
     /* Hidden when empty — no space consumed */
     display: none;
+    /*Not overlap push button*/
+    margin-top: 4vh;
+    max-width: 86%;
+    align-self: center;
 }
 
 .attachment-chips.has-items {
@@ -50,6 +54,9 @@
     overflow-y: hidden;
     scrollbar-width: thin;
     scrollbar-color: var(--text-green) var(--bg-primary);
+    /* Edge fadeout on both sides */
+    -webkit-mask-image: linear-gradient(to right, transparent, black 24px, black calc(100% - 24px), transparent);
+    mask-image: linear-gradient(to right, transparent, black 24px, black calc(100% - 24px), transparent);
 }
 
 .attachment-chips.has-items::-webkit-scrollbar {
@@ -145,12 +152,14 @@
     border-color: var(--text-orange);
     text-shadow: var(--text-shadow-orange);
 }
+
 @media (hover: hover) {
     .attachment-chip.is-local:hover {
         background: var(--text-orange-10);
         box-shadow: 0 0 4px var(--text-orange);
     }
 }
+
 /* [SYNC] — on server and cached locally (default green, same as [CLOUD]) */
 .attachment-chip.is-synced {
     /* inherits default green from .attachment-chip */

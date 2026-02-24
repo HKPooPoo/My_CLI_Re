@@ -181,6 +181,16 @@ export const EditorAttachments = {
                     });
                 }
 
+                // --- Wheel → horizontal scroll ---
+                if (chipsContainer) {
+                    chipsContainer.addEventListener('wheel', (e) => {
+                        if (chipsContainer.scrollWidth > chipsContainer.clientWidth) {
+                            e.preventDefault();
+                            chipsContainer.scrollLeft += e.deltaY;
+                        }
+                    }, { passive: false });
+                }
+
                 return this;
             },
 
