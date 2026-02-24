@@ -22,7 +22,7 @@
 
 .misc-list-container {
     border-bottom: var(--border-line);
-    height: clamp(192px, calc(var(--container-width) / 2), 56vh);
+    height: clamp(192px, calc(var(--container-width) / 1.56), 56vh);
     overflow-y: auto;
     overflow-x: hidden;
     scrollbar-width: thin;

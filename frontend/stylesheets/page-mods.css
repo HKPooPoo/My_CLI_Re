@@ -24,7 +24,7 @@
 /* === mods-list page — scrollable list with InfiniteList cursor === */
 .mods-list-container {
     border-bottom: var(--border-line);
-    height: clamp(192px, calc(var(--container-width) / 2), 56vh);
+    height: clamp(192px, calc(var(--container-width) / 1.56), 56vh);
     overflow-y: auto;
     overflow-x: hidden;
     scrollbar-width: thin;
@@ -186,6 +186,7 @@
 }
 
 @media (hover: hover) {
+
     #mods-refresh-btn:hover,
     #mods-config-refresh-btn:hover {
         background: var(--text-green);
