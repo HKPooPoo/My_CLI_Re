@@ -189,12 +189,6 @@ export const EditorAttachments = {
              * @param {File} file
              */
             async handleFile(file) {
-                const maxFiles = parseInt(localStorage.getItem('setting-max-files') || '10', 10);
-                if (this.currentHashes.length >= maxFiles) {
-                    BBMessage.error(t('files.limitReached'));
-                    return;
-                }
-
                 if (file.size > MAX_FILE_SIZE) {
                     BBMessage.error(t('files.tooLarge'));
                     return;

@@ -17,9 +17,7 @@ export const MISC = {
         globalAudioBtn: document.getElementById('misc-toggle-global-audio'),
         sfxBtn: document.getElementById('misc-toggle-sfx'),
         maxSlotRange: document.getElementById('misc-range-max-slot'),
-        maxSlotValue: document.getElementById('misc-range-max-slot-value'),
-        maxFilesRange: document.getElementById('misc-range-max-files'),
-        maxFilesValue: document.getElementById('misc-range-max-files-value')
+        maxSlotValue: document.getElementById('misc-range-max-slot-value')
     },
 
     configs: {
@@ -51,11 +49,6 @@ export const MISC = {
         const currentMaxSlot = localStorage.getItem('setting-max-slot') || '10';
         if (this.elements.maxSlotRange) this.elements.maxSlotRange.value = currentMaxSlot;
         if (this.elements.maxSlotValue) this.elements.maxSlotValue.textContent = currentMaxSlot;
-
-        // MAX FILES
-        const currentMaxFiles = localStorage.getItem('setting-max-files') || '10';
-        if (this.elements.maxFilesRange) this.elements.maxFilesRange.value = currentMaxFiles;
-        if (this.elements.maxFilesValue) this.elements.maxFilesValue.textContent = currentMaxFiles;
     },
 
     bindEvents() {
@@ -97,15 +90,6 @@ export const MISC = {
             window.dispatchEvent(new CustomEvent('settings:maxSlotChanged'));
         });
         this.elements.maxSlotRange?.addEventListener('change', () => {
-            playAudio('UIGeneralFocus.mp3');
-        });
-
-        this.elements.maxFilesRange?.addEventListener('input', () => {
-            const val = this.elements.maxFilesRange.value;
-            if (this.elements.maxFilesValue) this.elements.maxFilesValue.textContent = val;
-            localStorage.setItem('setting-max-files', val);
-        });
-        this.elements.maxFilesRange?.addEventListener('change', () => {
             playAudio('UIGeneralFocus.mp3');
         });
     }
