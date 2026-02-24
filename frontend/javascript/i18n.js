@@ -12,7 +12,7 @@ let _strings = {};
 
 function getLocale() {
     try {
-        return localStorage.getItem('locale') || 'en';
+        return localStorage.getItem('locale') || 'default';
     } catch {
         return 'en';
     }

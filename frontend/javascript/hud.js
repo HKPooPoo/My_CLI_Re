@@ -80,9 +80,9 @@ function isStatusHasNoChange(nextStatus) {
 
 // --- 主題切換邏輯 (Theme Manager) ---
 let localStorageSavedTheme = localStorage.getItem("data-theme");
-let crtMode = localStorageSavedTheme === "light" ? false : true;
+let crtMode = localStorageSavedTheme === "dark" ? true : false;
 
-// 頁面加載時恢復上次的主題
+// 頁面加載時恢復上次的主題（默認 light）
 if (!crtMode) document.documentElement.setAttribute("data-theme", "light");
 
 document.getElementById("theme-change-btn").addEventListener("click", () => {
@@ -94,7 +94,7 @@ document.getElementById("theme-change-btn").addEventListener("click", () => {
     } else {
         document.documentElement.removeAttribute("data-theme");
         crtMode = true;
-        localStorage.setItem("data-theme", "");
+        localStorage.setItem("data-theme", "dark");
     }
 });
 

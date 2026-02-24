@@ -21,7 +21,7 @@ export const MISC = {
     },
 
     configs: {
-        locale: ['en', 'zh-TW'],
+        locale: ['default', 'zh-TW', 'en'],
         globalAudio: ['100', '0', '50'],
         sfx: ['100', '0', '50']
     },
@@ -54,7 +54,11 @@ export const MISC = {
     bindEvents() {
         this.elements.langBtn.addEventListener('click', async () => {
             playAudio('UIGeneralFocus.mp3');
-            const nextLocale = getActiveLocale() === 'en' ? 'zh-TW' : 'en';
+            const current = getActiveLocale();
+            const locales = this.configs.locale;
+            let index = locales.indexOf(current);
+            if (index === -1) index = 0;
+            const nextLocale = locales[(index + 1) % locales.length];
             await setLocale(nextLocale);
             this.updateUI();
         });
