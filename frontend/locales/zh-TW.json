@@ -204,6 +204,7 @@
   "files": {
     "dropZoneHint": "拖放檔案至此",
     "tooLarge": "檔案過大：最大 1 GB",
+    "limitReached": "已達檔案上限",
     "storageFull": "儲存空間已滿",
     "attachFailed": "附加失敗",
     "downloadFailed": "下載失敗",
@@ -239,6 +240,7 @@
     "globalAudioLabel": "全局音效",
     "sfxLabel": "操作音效",
     "maxSlotLabel": "最大紀錄數",
+    "maxFilesLabel": "最大附件數",
     "localeName": "繁體中文"
   },
   "mods": {
