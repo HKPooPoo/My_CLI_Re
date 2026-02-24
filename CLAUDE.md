@@ -110,10 +110,16 @@ The frontend is a **multi-section SPA** with no framework — pure HTML, CSS, an
 
 ```
 javascript/
-  services/           # API/data layer (api.js, auth-service.js, broadcast-service.js, etc.)
+  services/           # API/data layer (api.js, auth-service.js, broadcast-service.js, mod-service.js, etc.)
   blackboard*.js      # Blackboard feature modules
   walkie-typie*.js    # Walkie-Typie feature modules
   broadcast*.js       # Broadcast Channels feature modules
+  mod-registry.js     # MOD definitions (10 atomic MODs)
+  mod-state.js        # MOD state + config persistence
+  mods-manager.js     # MOD Manager UI (list + config pages)
+  feature-shelf.js    # Feature shelf lateral panel + MOD-aware button visibility
+  feature-translator.js  # Translation MOD (per-language provider selection)
+  feature-markdown.js    # Markdown preview MOD
   echo-service.js     # Singleton Laravel Echo instance (shared by all modules)
   indexedDB.js        # IndexedDB wrapper for client-side persistence
   audio.js            # Sound effects for UI
@@ -130,8 +136,8 @@ javascript/
 
 Hierarchical two-level navigation that drives the entire SPA page switching:
 
-- **Main navi items** (`data-navi-item`): `blackboard`, `walkie-typie`, `broadcast`
-- **Sub-navi items** (`data-sub-navi-item`): e.g. blackboard has `blackboard-log`, `blackboard-branch`, `auth`, `blackboard-misc`
+- **Main navi items** (`data-navi-item`): `blackboard`, `walkie-typie`, `broadcast`, `mods`
+- **Sub-navi items** (`data-sub-navi-item`): e.g. blackboard has `blackboard-log`, `blackboard-branch`, `auth`, `blackboard-misc`; mods has `mods-list`, `mods-config`
 - Each main item stores state in `stateOfEachNaviItem[name]` (current sub-index, DOM refs, visited flag)
 - Sub-navi position rendered via CSS `translateX()` on `.sub-navi-track`; supports click, wheel, and touch swipe
 - **`updateNaviPosition()`** is the core function: repositions sub-navi track, highlights active item, calls `updatePage()`, triggers CRT glitch effect, saves to localStorage
@@ -153,6 +159,10 @@ Hierarchical two-level navigation that drives the entire SPA page switching:
 | `blackboard:branchRename` | blackboard-branch.js | — | Branch name edited |
 | `pwa:installable` | pwa.js | — | PWA install prompt available |
 | `i18n:ready` | i18n.js | — | Locale loaded and DOM rendered |
+| `mods:changed` | mod-state.js | `{ modId, enabled }` | MOD toggled on/off; feature-shelf re-evaluates button visibility |
+| `mods:configChanged` | mod-state.js | `{ modId, key, value }` | MOD config value changed |
+| `mods:selected` | mods-manager.js | `{ modId }` | MOD selected in list (500ms debounce); config page renders |
+| `settings:maxSlotChanged` | misc.js | — | MAX_SLOT range slider changed; lists adjust limits |
 
 ### i18n System (`i18n.js`)
 
@@ -221,6 +231,69 @@ Prevents double-fire via `aria-busy="true"` during async actions. No artificial 
 - `/app` — proxied to Reverb WebSocket
 - Everything else under `/api` — PHP-FPM FastCGI
 - All other paths — `index.html` (SPA fallback)
+
+### MOD System (`mod-registry.js`, `mod-state.js`, `mods-manager.js`)
+
+Pluggable feature system. Each MOD = one atomic feature. The 4th main navigation section (`mods`) has two pages: list + config.
+
+**Registry** (`mod-registry.js`): Static definitions for all MODs.
+- `MOD_TYPES`: `SERVER` (needs health check) or `CLIENT` (always available)
+- Each MOD has: `id`, `nameKey`, `descriptionKey`, `group`, `type`, `featureButtons[]`, `config[]`, `defaultEnabled`
+- Groups: `linguistics` (translation + speech-to-text), `utilities` (markdown-preview)
+- Multiple MODs can reference the same feature button (e.g. `translate-zh-TW` online + offline); button shows if ANY referencing MOD is enabled
+
+**State** (`mod-state.js`): Persists to `localStorage['mod-states']` and `localStorage['mod-configs']`.
+- `ModState.isEnabled(id)` / `setEnabled(id, bool)` — dispatches `mods:changed`
+- `ModState.getConfig(id, key)` / `setConfig(id, key, value)` — dispatches `mods:configChanged`
+- `refreshAllServerStatuses()` — deduplicates by `healthEndpoint` (one HTTP call per unique endpoint)
+- CLIENT MODs always have `serverStatus = 'online'`
+
+**Manager UI** (`mods-manager.js`): List page with InfiniteList + inline toggle buttons + group dividers. Config page with description, server status, and dynamic config form (for future API keys/LLM config).
+- Init order matters: `bindEvents()` BEFORE `renderModList()` (InfiniteList fires `list:selectionChanged` on creation)
+- Toggle buttons use `e.stopPropagation()` to avoid triggering InfiniteList click
+- `list:selectionChanged` listener MUST check `container.contains(detail.item)` to filter events from other lists
+
+**Feature button visibility** (`feature-shelf.js`):
+```js
+function isFeatureBtnAllowedByMods(btnId) {
+    const relatedMods = Object.entries(MOD_REGISTRY)
+        .filter(([, def]) => def.featureButtons?.includes(btnId));
+    if (relatedMods.length === 0) return true;
+    return relatedMods.some(([id]) => ModState.isEnabled(id));
+}
+```
+
+**Current MODs (10):**
+| ID | Group | Type | Feature Button |
+|----|-------|------|---------------|
+| `translate-{lang}-online` (x4) | linguistics | CLIENT | `translate-{lang}` |
+| `translate-{lang}-offline` (x4) | linguistics | SERVER | `translate-{lang}` |
+| `speech-to-text` | linguistics | CLIENT | `voice-to-textbox` |
+| `markdown-preview` | utilities | CLIENT | `markdown-preview` |
+
+## MCP Servers
+
+Setup commands (run from project directory, NOT inside Claude Code):
+```bash
+cd /c/xampp/htdocs/My/\!My_CLI_Re
+
+# Context7 — real-time library documentation
+claude mcp add context7 -- npx -y @upstash/context7-mcp@latest
+
+# dbhub — direct PostgreSQL access
+claude mcp add my-db -- npx -y @bytebase/dbhub --dsn "postgresql://yu:prejudice720917q@localhost:5431/my-cli-db"
+```
+Restart Claude Code session after adding. MCP tools appear automatically.
+
+## Custom Audit Agents (`.claude/agents/`)
+
+| Agent | File | Purpose | When to Use |
+|-------|------|---------|-------------|
+| **css-auditor** | `css-auditor.md` | CRT theme consistency, flex layout, dark/light mode, CSS var usage | After CSS changes |
+| **i18n-checker** | `i18n-checker.md` | Locale key parity, hardcoded strings, interpolation consistency | After adding UI text |
+| **event-flow-tracer** | `event-flow-tracer.md` | Race conditions, orphaned events, listener isolation, payload consistency | After changing event dispatch/listener code |
+
+Invoke via `general-purpose` subagent with the agent's instructions embedded in the prompt (`.claude/agents/` is gitignored — agents are local tooling, not checked in).
 
 ## Platform-Specific Workarounds
 
