@@ -178,16 +178,26 @@ javascript/
   blackboard*.js      # Blackboard feature modules
   walkie-typie*.js    # Walkie-Typie feature modules
   broadcast*.js       # Broadcast Channels feature modules
-  mod-registry.js     # MOD definitions (10 atomic MODs)
-  mod-state.js        # MOD state + config persistence
-  mods-manager.js     # MOD Manager UI (list + config pages)
-  feature-shelf.js    # Feature shelf lateral panel + MOD-aware button visibility
-  feature-translator.js  # Translation MOD (per-language provider selection)
-  feature-markdown.js    # Markdown preview MOD
+  mod-state.js        # MOD state + config persistence (decoupled from registry)
+  mods-manager.js     # MOD Manager UI (list + config pages, consumes mod-loader)
+  feature-shelf.js    # Feature shelf lateral panel + MOD-aware button visibility (dynamic DOM)
   echo-service.js     # Singleton Laravel Echo instance (shared by all modules)
   indexedDB.js        # IndexedDB wrapper for client-side persistence
   audio.js            # Sound effects for UI
   multiStepButton.js  # Reusable multi-step confirmation button component
+
+mods/
+  mod-manifest.js     # Static import list (single source of truth for all MODs)
+  mod-loader.js       # Loads MODs from manifest, merges i18n, creates DOM, calls init()
+  translate/
+    mod.js            # Translate MOD (4 languages, 2 providers: google + libretranslate)
+    locales/{en,zh-TW,default}.json
+  speech-to-text/
+    mod.js            # Speech-to-Text MOD (Google Cloud Speech)
+    locales/{en,zh-TW,default}.json
+  markdown-preview/
+    mod.js            # Markdown Preview MOD (client-side marked.js)
+    locales/{en,zh-TW,default}.json
 ```
 
 **Frontend architectural patterns:**
@@ -223,17 +233,20 @@ Hierarchical two-level navigation that drives the entire SPA page switching:
 | `blackboard:branchRename` | blackboard-branch.js | — | Branch name edited |
 | `pwa:installable` | pwa.js | — | PWA install prompt available |
 | `i18n:ready` | i18n.js | — | Locale loaded and DOM rendered |
+| `mods:loaded` | mod-loader.js | — | All MODs loaded and init() called; mods-manager initialises |
 | `mods:changed` | mod-state.js | `{ modId, enabled }` | MOD toggled on/off; feature-shelf re-evaluates button visibility |
-| `mods:configChanged` | mod-state.js | `{ modId, key, value }` | MOD config value changed |
+| `mods:configChanged` | mod-state.js | `{ modId, key, value }` | MOD config value changed; mods-manager re-renders fields (showWhen) |
 | `mods:selected` | mods-manager.js | `{ modId }` | MOD selected in list (500ms debounce); config page renders |
 | `settings:maxSlotChanged` | misc.js | — | MAX_SLOT range slider changed; lists adjust limits |
 
 ### i18n System (`i18n.js`)
 
 - Locale JSON files at `/locales/{locale}.json` (en, zh-TW, zh-CN)
+- **MOD-local locales** at `/mods/{mod-id}/locales/{locale}.json` — fetched and deep-merged at runtime via `mergeStrings(partial)`
 - Locale stored in `localStorage['locale']`, defaults to `'en'`
 - **DOM binding:** `data-i18n="key"` sets `textContent`; `data-i18n-placeholder="key"` sets `placeholder`
 - **JS usage:** `t('auth.loginError', { uid })` — dot-notation key lookup with `{var}` interpolation
+- **`mergeStrings(partial)`** — deep-merges a partial object into global `_strings`; used by mod-loader to inject MOD-local i18n at boot
 - `renderDOM()` scans all `data-i18n*` elements — be careful with buttons managed by MultiStepButton (their text is JS-controlled; `data-i18n` on them causes conflicts when `renderDOM()` resets armed-state text)
 - `setLocale(locale)` persists, reloads, rerenders, fires `i18n:ready`
 
@@ -315,44 +328,142 @@ Prevents double-fire via `aria-busy="true"` during async actions. No artificial 
 - Everything else under `/api` — PHP-FPM FastCGI
 - All other paths — `index.html` (SPA fallback)
 
-### MOD System (`mod-registry.js`, `mod-state.js`, `mods-manager.js`)
+### MOD System (Plug-and-Play Framework)
 
-Pluggable feature system. Each MOD = one atomic feature. The 4th main navigation section (`mods`) has two pages: list + config.
+Self-contained, plug-and-play feature system. **1 MOD = 1 feature** with internal provider selection. The 4th main navigation section (`mods`) has two pages: list + config.
 
-**Registry** (`mod-registry.js`): Static definitions for all MODs.
-- `MOD_TYPES`: `SERVER` (needs health check) or `CLIENT` (always available)
-- Each MOD has: `id`, `nameKey`, `descriptionKey`, `group`, `type`, `featureButtons[]`, `config[]`, `defaultEnabled`
-- Groups: `linguistics` (translation + speech-to-text), `utilities` (markdown-preview)
-- Multiple MODs can reference the same feature button (e.g. `translate-zh-TW` online + offline); button shows if ANY referencing MOD is enabled
+#### Architecture: `mod-manifest.js` → `mod-loader.js` → MODs
 
-**State** (`mod-state.js`): Persists to `localStorage['mod-states']` and `localStorage['mod-configs']`.
-- `ModState.isEnabled(id)` / `setEnabled(id, bool)` — dispatches `mods:changed`
-- `ModState.getConfig(id, key)` / `setConfig(id, key, value)` — dispatches `mods:configChanged`
-- `refreshAllServerStatuses()` — deduplicates by `healthEndpoint` (one HTTP call per unique endpoint)
-- CLIENT MODs always have `serverStatus = 'online'`
+**Boot sequence:** `i18n:ready` → `loadAllMods()` → register all MODs in ModState → fetch MOD-local locales → create DOM (buttons + shelves) → call each MOD's `init()` → dispatch `mods:loaded` → `mods-manager.init()`
 
-**Manager UI** (`mods-manager.js`): List page with InfiniteList + inline toggle buttons + group dividers. Config page with description, server status, and dynamic config form (for future API keys/LLM config).
-- Init order matters: `bindEvents()` BEFORE `renderModList()` (InfiniteList fires `list:selectionChanged` on creation)
-- Toggle buttons use `e.stopPropagation()` to avoid triggering InfiniteList click
-- `list:selectionChanged` listener MUST check `container.contains(detail.item)` to filter events from other lists
+A `setTimeout(bootMods, 0)` fallback in `index.html` ensures boot even if `i18n:ready` fires before the listener is registered.
 
-**Feature button visibility** (`feature-shelf.js`):
+**Manifest** (`mods/mod-manifest.js`): Single source of truth — static `export { default as X }` for each MOD.
+
+**Loader** (`mods/mod-loader.js`):
+- Imports all MODs from manifest, calls `ModState.registerMod(id, def)` for each
+- Fetches `mods/{id}/locales/{locale}.json` and deep-merges via `mergeStrings()` (fallback: locale → en → default)
+- Creates feature buttons (`<button class="feature-btn" data-feature-btn="{id}">`) — **NO textContent** (icons are CSS `::after` mask-image)
+- Creates empty shelf panels (`<div class="feature-shelf" data-feature-shelf="{id}">`) — MOD fills content in `init()`
+- Calls `mod.init({ getMod, getAllMods })` on each MOD
+- Exports: `getMod(id)`, `getAllMods()`, `getModsByGroup()`
+- Always dispatches `mods:loaded` even on partial failure (try/catch per MOD)
+
+#### Unified MOD Interface
+
+Every MOD in `mods/{id}/mod.js` exports a default object:
+
 ```js
-function isFeatureBtnAllowedByMods(btnId) {
-    const relatedMods = Object.entries(MOD_REGISTRY)
-        .filter(([, def]) => def.featureButtons?.includes(btnId));
-    if (relatedMods.length === 0) return true;
-    return relatedMods.some(([id]) => ModState.isEnabled(id));
+export default {
+    id: 'translate',                    // unique, matches folder name
+    group: 'linguistics',               // UI grouping: 'linguistics' | 'utilities' | 'llm'
+    nameKey: 'mods.translate.name',     // i18n key
+    descriptionKey: 'mods.translate.desc',
+    defaultEnabled: true,
+
+    featureButtons: [                   // loader creates <button> for each (no textContent — icon via CSS)
+        { id: 'translate-zh-TW', labelKey: 'mods.translate.btn.zhTW' },
+    ],
+    shelfPanelId: 'translator',         // loader creates empty div; MOD fills in init(). null = no shelf.
+
+    pages: {                            // page-aware textarea binding
+        'blackboard-log': { textareaSelector: '#log-textarea' },
+        'broadcast-channel': { textareaSelector: '#channel-textarea' },
+    },
+
+    providers: [                        // provider types: 'cloud' | 'server' | 'client'
+        { id: 'google', type: 'cloud', nameKey: '...' },
+        { id: 'libretranslate', type: 'server', nameKey: '...',
+          healthEndpoint: '/api/mods/offline-translate/health' },
+    ],
+
+    configSchema: [                     // drives config page UI (see field types below)
+        { key: 'provider', type: 'select', labelKey: '...', options: [...], default: 'google' },
+        { key: 'libreStatus', type: 'info', showWhen: { key: 'provider', value: 'libretranslate' } },
+    ],
+
+    sharedConfigGroup: null,            // 'llm' for LLM MODs (shared provider config)
+
+    async init(ctx) {},                 // Once at boot — cache DOM, inject shelf UI, bind events
+    async activate(ctx) {},             // Feature button clicked / shelf opened
+    async deactivate() {},              // Shelf closed / page changed away
+    async checkHealth() {},             // Returns 'online'|'offline'|'unknown'
+    destroy() {},                       // Teardown (cleanup listeners)
 }
 ```
 
-**Current MODs (10):**
-| ID | Group | Type | Feature Button |
-|----|-------|------|---------------|
-| `translate-{lang}-online` (x4) | linguistics | CLIENT | `translate-{lang}` |
-| `translate-{lang}-offline` (x4) | linguistics | SERVER | `translate-{lang}` |
-| `speech-to-text` | linguistics | CLIENT | `voice-to-textbox` |
-| `markdown-preview` | utilities | CLIENT | `markdown-preview` |
+#### Config Schema Field Types
+
+| type | Renders | Use case |
+|------|---------|----------|
+| `select` | `<select>` dropdown (CRT-themed) | Provider, model, language |
+| `text` | `<input type="text">` | API key, custom URL |
+| `range` | `<input type="range">` with value display | Temperature, max tokens |
+| `toggle` | On/Off pill button | Sub-feature switch |
+| `info` | Read-only `<span>` | Server status, download progress |
+| `action` | `<button>` | Download model, test connection |
+
+Each field supports `showWhen: { key, value }` — only rendered when another config key matches. Re-evaluated on `mods:configChanged`.
+
+#### MOD Occupies 4 UI Positions
+
+| Position | What | Who builds it |
+|----------|------|---------------|
+| 1. **List page** | Item in MOD manager list | Framework (from metadata) |
+| 2. **Config page** | Config panel fields | Framework (from `configSchema`) |
+| 3. **Feature button** | Button icon in HUD bar | Framework creates `<button>`, icon via CSS `::after` |
+| 4. **Shelf panel** | Panel content when button clicked | **MOD itself** fills HTML in `init()` |
+
+#### State (`mod-state.js`)
+
+Decoupled from any registry — MODs are registered at runtime via `registerMod(id, def)`.
+
+- `ModState.isEnabled(id)` / `setEnabled(id, bool)` — dispatches `mods:changed`
+- `ModState.getConfig(id, key)` / `setConfig(id, key, value)` — dispatches `mods:configChanged`
+- `ModState.getSharedConfig(group, key)` / `setSharedConfig(group, key, value)` — for LLM shared config
+- `refreshServerStatus(id)` / `refreshAllServerStatuses()` — checks active provider's `healthEndpoint`
+- Server status only checked/shown when active provider type is `'server'`; cloud/client providers are always `'online'`
+- **v1 migration:** auto-detects old `translate-zh-TW-online` keys in localStorage, collapses to new `translate` MOD
+
+#### Manager UI (`mods-manager.js`)
+
+- Imports from `mod-loader.js` (NOT `mod-registry.js`)
+- `renderModList()`: groups from `getModsByGroup()`, shows server status only for server-type providers
+- `renderConfigFields(modId)`: dispatches to type-specific creators (`createSelectField`, `createTextField`, `createRangeField`, `createToggleField`, `createInfoField`, `createActionField`)
+- `evaluateShowWhen(modId, field)`: checks `ModState.getConfig()` against `showWhen` condition
+- `mods:configChanged` listener re-renders list when provider changes, re-renders config fields for showWhen re-evaluation
+- Init via `window.addEventListener('mods:loaded', () => init())`
+- Toggle buttons use `e.stopPropagation()` to avoid triggering InfiniteList click
+- `list:selectionChanged` listener MUST check `container.contains(detail.item)` to filter events from other lists
+
+#### Feature Shelf (`feature-shelf.js`)
+
+- **Dynamic DOM queries** — `getFeatureBtns()` / `getFeatureShelves()` re-query each call (buttons created at runtime)
+- **Event delegation** on `.feature-container` for click handling (supports dynamically created buttons)
+- `isFeatureBtnAllowedByMods(btnId)`: queries `getAllMods()` with `m.featureButtons?.some(b => b.id === btnId)`
+- `resolveShelfId(btnId)`: looks up MOD's `shelfPanelId` from button ID
+- `handleFeatureBtnClick()`: calls `mod.activate()` BEFORE shelf panel check — MODs without shelves (e.g. speech-to-text) still get activated
+
+#### Current MODs (3 self-contained)
+
+| ID | Group | Feature Buttons | Providers | Shelf |
+|----|-------|----------------|-----------|-------|
+| `translate` | linguistics | `translate-zh-TW`, `translate-zh-CN`, `translate-en`, `translate-ja` | google (cloud), libretranslate (server) | `translator` |
+| `speech-to-text` | linguistics | `voice-to-textbox` | google-speech (cloud) | none |
+| `markdown-preview` | utilities | `markdown-preview` | marked (client) | `markdown-preview` |
+
+#### Adding a New MOD
+
+1. Create `mods/{id}/mod.js` exporting the unified interface
+2. Create `mods/{id}/locales/{en,zh-TW,default}.json` with MOD-local i18n keys
+3. Add `export { default as myMod } from './{id}/mod.js'` to `mod-manifest.js`
+4. Add CSS icon for feature button: `.feature-btn[data-feature-btn="{btn-id}"]::after { mask-image: url(...) }`
+5. Add `{btn-id}` to `data-feature-btns` on relevant pages in `index.html`
+6. **Bump SW cache version** in `sw.js` (required when `index.html` structure changes)
+
+#### SW Cache Bump Reminder
+
+When modifying `index.html` or adding new MOD files, **always bump the `CACHE_NAME` in `sw.js`**. Stale SW cache serving old `index.html` is a common cause of "all extensions gone" after refactoring.
 
 ## MCP Servers
 
@@ -412,7 +523,7 @@ Development & deployment on the same local machine:
 - **Docker Desktop** runs all containers locally
 - **Cloudflare Tunnel** exposes the stack publicly
 
-This hardware enables running LOCAL AI models (translation, STT, LLM) in Docker with acceptable performance. The MOD system's online/offline provider architecture is designed to leverage this.
+This hardware enables running LOCAL AI models (translation, STT, LLM) in Docker with acceptable performance. The MOD system's provider architecture (`cloud`/`server`/`client` types) is designed to leverage this — each MOD can offer multiple providers and the user selects via config.
 
 ## Environment Variables
 
