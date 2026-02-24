@@ -32,9 +32,8 @@
 /* --- Attachment Chips Area --- */
 
 .attachment-chips {
-    flex-direction: row;
-    flex-wrap: wrap;
-    gap: 6px;
+    flex-direction: column;
+    gap: 4px;
     padding: 0;
     min-height: 0;
     /* Hidden when empty — no space consumed */
@@ -44,8 +43,25 @@
 .attachment-chips.has-items {
     /* JS toggles this class when chips exist */
     display: flex;
-    padding: 8px;
+    padding: 6px 8px 6px calc(var(--font-size) * 1.6);
     border-bottom: 1px dashed var(--text-green);
+    overflow-y: auto;
+    max-height: 200px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--text-green) var(--bg-primary);
+}
+
+.attachment-chips.has-items::-webkit-scrollbar {
+    width: 4px;
+}
+
+.attachment-chips.has-items::-webkit-scrollbar-track {
+    background: var(--bg-primary);
+}
+
+.attachment-chips.has-items::-webkit-scrollbar-thumb {
+    background-color: var(--text-green);
+    border-radius: 2px;
 }
 
 /* Individual chip — JS will inject these */
@@ -57,8 +73,10 @@
     border: 1px solid var(--text-green);
     border-radius: calc(var(--border-radius) / 2);
     font-size: calc(var(--font-size) * 0.85);
-    max-width: 200px;
+    width: fit-content;
+    max-width: 100%;
     overflow: hidden;
+    flex-shrink: 0;
     cursor: default;
     transition: background var(--transition-normal),
         box-shadow var(--transition-normal);

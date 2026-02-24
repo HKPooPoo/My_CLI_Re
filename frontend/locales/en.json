@@ -204,6 +204,7 @@
   "files": {
     "dropZoneHint": "DROP FILES HERE",
     "tooLarge": "FILE TOO LARGE: MAX 1 GB",
+    "limitReached": "FILE LIMIT REACHED",
     "storageFull": "STORAGE FULL",
     "attachFailed": "ATTACH FAILED",
     "downloadFailed": "DOWNLOAD FAILED",
@@ -239,6 +240,7 @@
     "globalAudioLabel": "GLOBAL AUDIO",
     "sfxLabel": "SFX",
     "maxSlotLabel": "MAX SLOT",
+    "maxFilesLabel": "MAX FILES",
     "localeName": "GIT MODE"
   },
   "mods": {

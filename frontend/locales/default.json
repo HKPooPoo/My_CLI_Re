@@ -204,6 +204,7 @@
   "files": {
     "dropZoneHint": "Drop files here",
     "tooLarge": "File too large (max 1 GB).",
+    "limitReached": "File limit reached.",
     "storageFull": "Storage full.",
     "attachFailed": "Attach failed.",
     "downloadFailed": "Download failed.",
@@ -239,6 +240,7 @@
     "globalAudioLabel": "Music",
     "sfxLabel": "Sound Effects",
     "maxSlotLabel": "Max Entries",
+    "maxFilesLabel": "Max Files",
     "localeName": "English"
   },
   "mods": {
