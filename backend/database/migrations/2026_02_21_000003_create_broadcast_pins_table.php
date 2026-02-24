@@ -9,13 +9,12 @@ return new class extends Migration {
     {
         Schema::create('broadcast_pins', function (Blueprint $table) {
             $table->id();
-            $table->string('user_uid');
-            $table->unsignedBigInteger('channel_id');   // References broadcast_channels.id
+            $table->foreignId('user_id')->constrained('users')->cascadeOnDelete();
+            $table->foreignId('channel_id')->constrained('broadcast_channels')->cascadeOnDelete();
             $table->timestamps();
 
-            // Each uid can pin each channel at most once
-            $table->unique(['user_uid', 'channel_id']);
-            $table->index('user_uid');
+            $table->unique(['user_id', 'channel_id']);
+            $table->index('user_id');
         });
     }
 

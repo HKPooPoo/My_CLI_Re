@@ -9,8 +9,8 @@ export const BBCore = {
     async getRecord(owner, branchId, index) {
         // 如果 owner 是 local，我們也應該搜尋帶有同步標籤的紀錄
         if (owner === "local") {
-            // [XP-Fix]: 使用 [branchId+timestamp] 複合索引確保時間排序正確，不受 owner 字串影響
-            return await db.blackboard.where('[branchId+timestamp]')
+            // [XP-Fix]: 使用 [branch_id+timestamp] 複合索引確保時間排序正確，不受 owner 字串影響
+            return await db.blackboard.where('[branch_id+timestamp]')
                 .between([branchId, Dexie.minKey], [branchId, Dexie.maxKey])
                 .and(item => item.owner.startsWith('local'))
                 .reverse()
@@ -18,7 +18,7 @@ export const BBCore = {
                 .first();
         }
 
-        return await db.blackboard.where('[owner+branchId+timestamp]')
+        return await db.blackboard.where('[owner+branch_id+timestamp]')
             .between([owner, branchId, Dexie.minKey], [owner, branchId, Dexie.maxKey])
             .reverse()
             .offset(index)
@@ -28,14 +28,14 @@ export const BBCore = {
     /**
      * 新增一筆紀錄
      */
-    async addRecord(owner, branchId, branchName, text = "", bin = null) {
+    async addRecord(owner, branchId, branchName, text = "", fileHash = null) {
         return await db.blackboard.add({
             owner,
-            branchId,
+            branch_id: branchId,
             branch: branchName,
             timestamp: Date.now(),
             text,
-            bin
+            file_hash: fileHash
         });
     },
 
@@ -46,13 +46,13 @@ export const BBCore = {
         // 尋找舊紀錄 (考慮所有 local 開頭的 owner)
         let oldRecord;
         if (owner === "local") {
-            // [XP-Fix]: 使用 [branchId+timestamp] 準確定位
-            oldRecord = await db.blackboard.where('[branchId+timestamp]')
+            // [XP-Fix]: 使用 [branch_id+timestamp] 準確定位
+            oldRecord = await db.blackboard.where('[branch_id+timestamp]')
                 .equals([branchId, oldTimestamp])
                 .and(item => item.owner.startsWith('local'))
                 .first();
         } else {
-            oldRecord = await db.blackboard.get({ owner, branchId, timestamp: oldTimestamp });
+            oldRecord = await db.blackboard.get({ owner, branch_id: branchId, timestamp: oldTimestamp });
         }
 
         if (!oldRecord) return oldTimestamp;
@@ -63,7 +63,6 @@ export const BBCore = {
         const newTimestamp = Math.max(Date.now(), oldTimestamp + 1);
 
         // 保持原始 owner 標籤，但如果原本是 [synced]，則改為 [asynced]
-        // 這確保了它依然不等於 "local"，登出時會被抹除
         let finalOwner = oldRecord.owner;
         if (finalOwner.includes("[synced]")) {
             finalOwner = finalOwner.replace("[synced]", "[asynced]");
@@ -80,18 +79,18 @@ export const BBCore = {
     },
 
     /**
-     * 分支改名 (對該 branchId 下的所有紀錄進行改名)
+     * 分支改名 (對該 branch_id 下的所有紀錄進行改名)
      */
     async renameBranch(owner, branchId, newName) {
         if (owner === "local") {
-            return await db.blackboard.where('[branchId+timestamp]')
+            return await db.blackboard.where('[branch_id+timestamp]')
                 .between([branchId, Dexie.minKey], [branchId, Dexie.maxKey])
                 .and(item => item.owner.startsWith('local'))
                 .modify({ branch: newName });
         }
 
         return await db.blackboard
-            .where('[owner+branchId+timestamp]')
+            .where('[owner+branch_id+timestamp]')
             .between([owner, branchId, Dexie.minKey], [owner, branchId, Dexie.maxKey])
             .modify({ branch: newName });
     },
@@ -101,13 +100,13 @@ export const BBCore = {
      */
     async countRecords(owner, branchId) {
         if (owner === "local") {
-            return await db.blackboard.where('[branchId+timestamp]')
+            return await db.blackboard.where('[branch_id+timestamp]')
                 .between([branchId, Dexie.minKey], [branchId, Dexie.maxKey])
                 .and(item => item.owner.startsWith('local'))
                 .count();
         }
 
-        return await db.blackboard.where('[owner+branchId+timestamp]')
+        return await db.blackboard.where('[owner+branch_id+timestamp]')
             .between([owner, branchId, Dexie.minKey], [owner, branchId, Dexie.maxKey])
             .count();
     },
@@ -118,21 +117,19 @@ export const BBCore = {
     async cleanupOldRecords(owner, branchId, maxSlot) {
         let collection;
         if (owner === "local") {
-            collection = db.blackboard.where('[branchId+timestamp]')
+            collection = db.blackboard.where('[branch_id+timestamp]')
                 .between([branchId, Dexie.minKey], [branchId, Dexie.maxKey])
                 .and(item => item.owner.startsWith('local'));
         } else {
-            collection = db.blackboard.where('[owner+branchId+timestamp]')
+            collection = db.blackboard.where('[owner+branch_id+timestamp]')
                 .between([owner, branchId, Dexie.minKey], [owner, branchId, Dexie.maxKey]);
         }
 
         const count = await collection.count();
         if (count > maxSlot) {
-            // 注意：Dexie 的 and() 過濾器不能直接 limit/primaryKeys
-            // 我們改用 toArray 取得鍵值後再刪除
             const records = await collection.sortBy('timestamp');
             const toDelete = records.slice(0, count - maxSlot);
-            const keysToDelete = toDelete.map(r => [r.owner, r.branchId, r.timestamp]);
+            const keysToDelete = toDelete.map(r => [r.owner, r.branch_id, r.timestamp]);
             await db.blackboard.bulkDelete(keysToDelete);
         }
     },
@@ -151,14 +148,14 @@ export const BBCore = {
         }
 
         await collection.each(record => {
-            const branchId = record.branchId;
+            const branchId = record.branch_id;
             const timestamp = record.timestamp;
             const existing = branches.get(branchId);
             if (!existing || timestamp > existing.lastUpdate) {
                 branches.set(branchId, {
                     id: branchId,
                     name: record.branch,
-                    owner: record.owner, // 保留原始 owner 標籤
+                    owner: record.owner,
                     lastUpdate: timestamp
                 });
             }
@@ -180,14 +177,14 @@ export const BBCore = {
      */
     async getAllRecordsForBranch(owner, branchId) {
         if (owner === "local") {
-            return await db.blackboard.where('[branchId+timestamp]')
+            return await db.blackboard.where('[branch_id+timestamp]')
                 .between([branchId, Dexie.minKey], [branchId, Dexie.maxKey])
                 .and(item => item.owner.startsWith('local'))
-                .reverse() // 確保時間最新的在前面 (或依需求排序) - 原版 toArray 沒排序，這裡加 reverse 比較保險，但要注意 commit 上傳的順序
+                .reverse()
                 .toArray();
         }
 
-        return await db.blackboard.where('[owner+branchId+timestamp]')
+        return await db.blackboard.where('[owner+branch_id+timestamp]')
             .between([owner, branchId, Dexie.minKey], [owner, branchId, Dexie.maxKey])
             .toArray();
     },
@@ -200,8 +197,8 @@ export const BBCore = {
         const newRecords = records.map(r => ({
             ...r,
             owner: "local",
-            branchId: newId,
-            branch: "" // Fork 出來的新分支預設無名稱
+            branch_id: newId,
+            branch: ""
         }));
         return await db.blackboard.bulkAdd(newRecords);
     },
@@ -210,25 +207,22 @@ export const BBCore = {
      * Stage 1: 清空歷史本身 (刪除所有節點並重置為一筆空白節點)
      */
     async clearBranchRecords(owner, branchId) {
-        // 1. 獲取分支名稱
         const latest = await this.getRecord(owner, branchId, 0);
         const branchName = latest?.branch ?? "NAMELESS_BRANCH";
 
-        // 2. 刪除該分支所有紀錄
         if (owner === "local") {
-            const keys = await db.blackboard.where('[branchId+timestamp]')
+            const keys = await db.blackboard.where('[branch_id+timestamp]')
                 .between([branchId, Dexie.minKey], [branchId, Dexie.maxKey])
                 .and(item => item.owner.startsWith('local'))
                 .primaryKeys();
             await db.blackboard.bulkDelete(keys);
         } else {
-            const keys = await db.blackboard.where('[owner+branchId+timestamp]')
+            const keys = await db.blackboard.where('[owner+branch_id+timestamp]')
                 .between([owner, branchId, Dexie.minKey], [owner, branchId, Dexie.maxKey])
                 .primaryKeys();
             await db.blackboard.bulkDelete(keys);
         }
 
-        // 3. 建立一筆全新的空白起始點 (回歸純 local)
         return await this.addRecord("local", branchId, branchName, "");
     },
 
@@ -237,14 +231,14 @@ export const BBCore = {
      */
     async deleteLocalBranch(owner, branchId) {
         if (owner === "local") {
-            const keys = await db.blackboard.where('[branchId+timestamp]')
+            const keys = await db.blackboard.where('[branch_id+timestamp]')
                 .between([branchId, Dexie.minKey], [branchId, Dexie.maxKey])
                 .and(item => item.owner.startsWith('local'))
                 .primaryKeys();
             return await db.blackboard.bulkDelete(keys);
         }
 
-        const keys = await db.blackboard.where('[owner+branchId+timestamp]')
+        const keys = await db.blackboard.where('[owner+branch_id+timestamp]')
             .between([owner, branchId, Dexie.minKey], [owner, branchId, Dexie.maxKey])
             .primaryKeys();
         return await db.blackboard.bulkDelete(keys);
@@ -254,7 +248,6 @@ export const BBCore = {
      * 抹除所有非 local 的同步資料 (用於登出時保護隱私)
      */
     async wipeSyncedData() {
-        // 刪除所有 owner 不等於 "local" 的紀錄
         const collection = db.blackboard.where('owner').notEqual('local');
         const keys = await collection.primaryKeys();
         return await db.blackboard.bulkDelete(keys);
@@ -266,17 +259,17 @@ export const BBCore = {
     async scrubBranch(owner, branchId, maxSlot) {
         let collection;
         if (owner === "local") {
-            collection = db.blackboard.where('[branchId+timestamp]')
+            collection = db.blackboard.where('[branch_id+timestamp]')
                 .between([branchId, Dexie.minKey], [branchId, Dexie.maxKey])
                 .and(item => item.owner.startsWith('local'));
         } else {
-            collection = db.blackboard.where('[owner+branchId+timestamp]')
+            collection = db.blackboard.where('[owner+branch_id+timestamp]')
                 .between([owner, branchId, Dexie.minKey], [owner, branchId, Dexie.maxKey]);
         }
 
         // 1. 刪除空值紀錄 (text 為空或全空白)
         const emptyKeys = await collection
-            .filter(item => (!item.text || item.text.trim() === "") && !item.bin)
+            .filter(item => (!item.text || item.text.trim() === "") && !item.file_hash)
             .primaryKeys();
 
         if (emptyKeys.length > 0) {

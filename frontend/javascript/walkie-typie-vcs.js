@@ -2,10 +2,6 @@
  * Walkie-Typie VCS - Version Control Logic
  * =================================================================
  * 介紹：Walkie-Typie 專用的版本控制邏輯層。
- * 特性：
- * 1. Push/Pull 支援 readOnly 參數 — THEY 側只讀瀏覽。
- * 2. readOnly=true 時：不存檔、不建虛擬新頁面。
- * 3. State 無 owner 欄位。
  * 依賴：walkie-typie-db.js, walkie-typie-service.js
  * =================================================================
  */
@@ -14,17 +10,10 @@ import { WTDb } from "./walkie-typie-db.js";
 import { WalkieTypieService } from "./services/walkie-typie-service.js";
 import { FileService } from "./services/file-service.js";
 import { BBMessage } from "./blackboard-msg.js";
-// Import db for direct operations in save() and commit()
 import db from "./indexedDB.js";
 import { t } from './i18n.js';
 
 export const WTVCS = {
-    /**
-     * Push — 向上翻頁或建立新頁面
-     * @param {Object} state   VCS 狀態物件
-     * @param {string} currentText   當前 textarea 的文字
-     * @param {boolean} readOnly  THEY 側: true (不建虛擬新頁, 不存檔)
-     */
     async push(state, currentText, readOnly = false) {
         if (state.isVirtual) return false;
 
@@ -39,7 +28,6 @@ export const WTVCS = {
             return true;
         }
 
-        // Head 0 且非唯讀 → 進入虛擬新頁面
         if (!readOnly) {
             state.isVirtual = true;
             return true;
@@ -48,17 +36,13 @@ export const WTVCS = {
         return false;
     },
 
-    /**
-     * Pull — 向下翻閱歷史
-     * @param {boolean} readOnly  THEY 側: true (不存檔)
-     */
     async pull(state, currentText, readOnly = false) {
         if (state.isVirtual) {
             state.isVirtual = false;
             if (!readOnly && currentText && currentText.trim()) {
                 await this.save(state, currentText);
             } else {
-                return true; // 取消虛擬頁
+                return true;
             }
         }
 
@@ -78,9 +62,6 @@ export const WTVCS = {
         return false;
     },
 
-    /**
-     * Save — 自動儲存
-     */
     async save(state, text) {
         if (state.isVirtual) {
             if (text && text.trim()) {
@@ -96,16 +77,15 @@ export const WTVCS = {
 
         if (entry) {
             if (entry.text !== text) {
-                // 如果在歷史頁面編輯，檢查並清除空白的 Head 0
                 if (state.currentHead > 0) {
                     const head0 = await WTDb.getRecord(state.branchId, 0);
-                    if (head0 && (!head0.text || head0.text.trim() === "") && !head0.bin) {
-                        await db.walkieTypie.delete([head0.branchId, head0.timestamp]);
+                    if (head0 && (!head0.text || head0.text.trim() === "") && !head0.file_hash) {
+                        await db.walkie_typie.delete([head0.branch_id, head0.timestamp]);
                     }
                 }
 
                 await WTDb.updateText(state.branchId, entry.timestamp, text);
-                state.currentHead = 0; // 編輯後置頂
+                state.currentHead = 0;
             }
         } else if (state.currentHead === 0) {
             if (text && text.trim()) {
@@ -114,9 +94,6 @@ export const WTVCS = {
         }
     },
 
-    /**
-     * Commit — 上傳分支紀錄到 WT 後端端點
-     */
     async commit(branchMeta) {
         const { branchId, branch } = branchMeta;
 
@@ -126,59 +103,47 @@ export const WTVCS = {
         await WTDb.scrubBranch(branchId, 10);
 
         let records = await WTDb.getAllRecordsForBranch(branchId);
-        records = records.filter(r => (r.text && r.text.trim() !== "") || r.bin);
+        records = records.filter(r => (r.text && r.text.trim() !== "") || r.file_hash);
 
         if (records.length === 0) {
             throw new Error(t('walkieTypie.noLocalData'));
         }
 
-        // --- 1. Prepare Uploads ---
-        // Iterate records, find attached files, and upload if needed.
         const apiRecords = [];
 
         for (const r of records) {
-            let binHash = null;
+            let hashStr = null;
 
-            if (r.bin) {
-                // r.bin is object { hash, name, size, mime }
-                const hash = r.bin.hash;
-                binHash = hash;
+            if (r.file_hash) {
+                const hash = r.file_hash.hash;
+                hashStr = hash;
 
-                // Check local blob
-                const localFile = await db.fileBlobs.get(hash);
+                const localFile = await db.file_blobs.get(hash);
                 if (localFile && localFile.blob) {
-                    // Skip re-upload if already confirmed on server
                     if (localFile.status !== 'synced') {
                         try {
-                            BBMessage.info(t('walkieTypie.uploading', { name: r.bin.name || hash.substring(0, 8) }));
+                            BBMessage.info(t('walkieTypie.uploading', { name: r.file_hash.name || hash.substring(0, 8) }));
                             await FileService.upload(localFile.blob);
-                            // Mark as synced — chip transitions LOCAL → SYNC after refreshWE()
-                            await db.fileBlobs.update(hash, { status: 'synced' });
+                            await db.file_blobs.update(hash, { status: 'synced' });
                         } catch (e) {
                             console.error(`WT Commit: Upload failed for ${hash}`, e);
                             BBMessage.error(t('walkieTypie.uploadFailed', { hash: hash.substring(0, 8) }));
                         }
                     }
                 } else {
-                    // File not in local blob store?
-                    // Maybe it was downloaded from server before?
-                    // Or maybe it's missing.
                     console.warn(`WT Commit: Local file missing for hash ${hash}`);
                 }
             }
 
-            // --- 2. Sanitize for API ---
-            // Replace 'bin' object with hash string
             apiRecords.push({
                 ...r,
-                bin: binHash // String or null
+                file_hash: hashStr
             });
         }
 
-        // --- 3. Send to Server ---
         await WalkieTypieService.commitBoard({
-            branchId: branchId,
-            branchName: branch,
+            branch_id: branchId,
+            branch_name: branch,
             records: apiRecords
         });
 

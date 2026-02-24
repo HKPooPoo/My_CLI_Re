@@ -27,11 +27,11 @@ class FileController extends Controller
         ]);
 
         $user = Auth::user();
-        $ownerUid = $user ? $user->uid : 'guest';
+        $userId = $user ? $user->id : null;
 
         $uploadedFile = $request->file('file');
 
-        $file = $this->fileService->upload($uploadedFile, $ownerUid);
+        $file = $this->fileService->upload($uploadedFile, $userId);
 
         return response()->json([
             'hash' => $file->hash,

@@ -12,16 +12,15 @@ return new class extends Migration {
     {
         Schema::create('blackboards', function (Blueprint $table) {
             $table->id();
-            $table->string('owner');          // User UID
-            $table->string('branch_id'); // Immutable Branch ID (Frontend Timestamp or String ID)
+            $table->foreignId('user_id')->constrained('users')->cascadeOnDelete();
+            $table->string('branch_id');
             $table->string('branch_name')->nullable();
-            $table->bigInteger('timestamp'); // History Node Timestamp
+            $table->bigInteger('timestamp');
             $table->longText('text')->nullable();
-            $table->string('bin', 512)->nullable(); // Reserved for binary files, now stores file hash
-            $table->timestamps(); // DB Internal: created_at, updated_at
+            $table->string('file_hash', 512)->nullable();
+            $table->timestamps();
 
-            // 複合唯一索引，確保同步邏輯的原子性
-            $table->unique(['owner', 'branch_id', 'timestamp']);
+            $table->unique(['user_id', 'branch_id', 'timestamp']);
         });
     }
 

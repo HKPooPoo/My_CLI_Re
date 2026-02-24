@@ -17,18 +17,16 @@ class BroadcastChannelController extends Controller
 
     /**
      * GET /api/broadcast/channels
-     * Public — returns all channels, with is_pinned flag if logged in.
      */
     public function index()
     {
-        $user = Auth::user(); // null if not logged in (no auth middleware)
+        $user = Auth::user();
         $channels = $this->service->listChannels($user);
         return response()->json(['channels' => $channels]);
     }
 
     /**
      * POST /api/broadcast/channels/cast
-     * Cast (create/update) a channel. Requires title.
      */
     public function cast(Request $request)
     {
@@ -38,13 +36,13 @@ class BroadcastChannelController extends Controller
         }
 
         $request->validate([
-            'channelName' => 'required|string|max:255',
-            'records'     => 'required|array',
+            'channel_name' => 'required|string|max:255',
+            'records'      => 'required|array',
         ]);
 
         $channel = $this->service->cast(
             $user,
-            $request->input('channelName'),
+            $request->input('channel_name'),
             $request->input('records')
         );
 
@@ -53,7 +51,6 @@ class BroadcastChannelController extends Controller
 
     /**
      * PATCH /api/broadcast/channels/{channelId}
-     * Rename a channel. Requires title + ownership.
      */
     public function rename(Request $request, $channelId)
     {
@@ -73,7 +70,6 @@ class BroadcastChannelController extends Controller
 
     /**
      * DELETE /api/broadcast/channels/{channelId}
-     * Delete a channel and all associated data. Requires title + ownership.
      */
     public function destroy($channelId)
     {
@@ -89,7 +85,6 @@ class BroadcastChannelController extends Controller
 
     /**
      * GET /api/broadcast/channels/{channelId}/boards
-     * Public — no auth required. Returns board records in creation order (ASC).
      */
     public function fetchBoards($channelId)
     {
@@ -99,7 +94,6 @@ class BroadcastChannelController extends Controller
 
     /**
      * POST /api/broadcast/channels/{channelId}/pin
-     * Pin a channel. Requires any logged-in user.
      */
     public function pin($channelId)
     {
@@ -115,7 +109,6 @@ class BroadcastChannelController extends Controller
 
     /**
      * DELETE /api/broadcast/channels/{channelId}/pin
-     * Unpin a channel.
      */
     public function unpin($channelId)
     {

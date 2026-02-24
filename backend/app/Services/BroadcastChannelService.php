@@ -18,24 +18,25 @@ class BroadcastChannelService
 
     /**
      * List all public channels, ordered by: pinned first, then last_signal DESC.
-     * If a user is provided, includes is_pinned flag per channel.
      */
     public function listChannels(?User $user): array
     {
-        // Base channel list is user-agnostic — cache 15s
         $channels = Cache::remember('bc:channels:base', 30, fn() =>
             DB::table('broadcast_channels')
-                ->leftJoin('users', 'broadcast_channels.owner_uid', '=', 'users.uid')
+                ->leftJoin('users', 'broadcast_channels.user_id', '=', 'users.id')
                 ->orderBy('broadcast_channels.last_signal', 'desc')
-                ->select('broadcast_channels.*', 'users.title as owner_title')
+                ->select(
+                    'broadcast_channels.*',
+                    'users.uid as owner_uid',
+                    'users.title as owner_title'
+                )
                 ->get()
         );
 
-        // Per-user pin list — cache 120s
         $pinnedIds = $user
-            ? Cache::remember("bc:pins:{$user->uid}", 120, fn() =>
+            ? Cache::remember("bc:pins:{$user->id}", 120, fn() =>
                 DB::table('broadcast_pins')
-                    ->where('user_uid', $user->uid)
+                    ->where('user_id', $user->id)
                     ->pluck('channel_id')->flip()->toArray()
               )
             : [];
@@ -46,7 +47,6 @@ class BroadcastChannelService
             return $ch;
         })->toArray();
 
-        // Stable sort: pinned first, then by last_signal DESC (already ordered above)
         usort($result, function ($a, $b) {
             if ($a['is_pinned'] !== $b['is_pinned']) {
                 return $a['is_pinned'] ? -1 : 1;
@@ -59,9 +59,6 @@ class BroadcastChannelService
 
     /**
      * Cast (publish) a channel to the server.
-     * Creates the channel if it does not exist, updates it if the user is the owner.
-     * BC Last Write Wins: replaces all boards with the incoming records.
-     * Returns the channel record.
      */
     public function cast(User $user, string $channelName, array $records): object
     {
@@ -72,23 +69,20 @@ class BroadcastChannelService
         $channel = DB::transaction(function () use ($user, $channelName, $records) {
             $nowMs = (int) (microtime(true) * 1000);
 
-            // Find or create the channel by name
             $channel = DB::table('broadcast_channels')
                 ->where('name', $channelName)
                 ->first();
 
             if (!$channel) {
-                // Create new channel
                 $channelId = DB::table('broadcast_channels')->insertGetId([
                     'name'        => $channelName,
-                    'owner_uid'   => $user->uid,
+                    'user_id'     => $user->id,
                     'last_signal' => $nowMs,
                     'created_at'  => now(),
                     'updated_at'  => now(),
                 ]);
             } else {
-                // Verify ownership
-                if ($channel->owner_uid !== $user->uid) {
+                if ($channel->user_id !== $user->id) {
                     abort(403, 'NOT CHANNEL OWNER');
                 }
                 $channelId = $channel->id;
@@ -97,7 +91,6 @@ class BroadcastChannelService
                     ->update(['last_signal' => $nowMs, 'updated_at' => now()]);
             }
 
-            // Last Write Wins: delete all existing boards, then insert incoming
             DB::table('broadcast_boards')
                 ->where('channel_id', $channelId)
                 ->delete();
@@ -107,20 +100,20 @@ class BroadcastChannelService
 
             foreach ($records as $record) {
                 $text = $record['text'] ?? '';
-                if (trim($text) === '' && empty($record['bin'])) {
+                if (trim($text) === '' && empty($record['file_hash'])) {
                     continue;
                 }
 
-                $bin = $record['bin'] ?? null;
-                if ($bin) {
-                    $fileHashes[] = $bin;
+                $fileHash = $record['file_hash'] ?? null;
+                if ($fileHash) {
+                    $fileHashes[] = $fileHash;
                 }
 
                 $insertData[] = [
                     'channel_id'  => $channelId,
                     'timestamp'   => $record['timestamp'],
                     'text'        => $text,
-                    'bin'         => $bin,
+                    'file_hash'   => $fileHash,
                     'created_at'  => now(),
                     'updated_at'  => now(),
                 ];
@@ -130,7 +123,6 @@ class BroadcastChannelService
                 DB::table('broadcast_boards')->insert($insertData);
             }
 
-            // Mark referenced files as committed
             foreach ($fileHashes as $hash) {
                 $this->fileService->markCommitted($hash);
             }
@@ -140,8 +132,12 @@ class BroadcastChannelService
 
         Cache::forget('bc:channels:base');
         Cache::forget("bc:boards:{$channel->id}");
+
+        // Look up owner uid for broadcast event
+        $ownerUid = DB::table('users')->where('id', $channel->user_id)->value('uid');
+
         broadcast(new BroadcastChannelUpdated(
-            (int) $channel->id, $channel->name, $channel->owner_uid,
+            (int) $channel->id, $channel->name, $ownerUid,
             (int) $channel->last_signal, 'cast'
         ));
 
@@ -149,7 +145,7 @@ class BroadcastChannelService
     }
 
     /**
-     * Rename a channel. Owner + title required.
+     * Rename a channel.
      */
     public function rename(User $user, int $channelId, string $newName): void
     {
@@ -163,11 +159,10 @@ class BroadcastChannelService
             abort(404, 'CHANNEL NOT FOUND');
         }
 
-        if ($channel->owner_uid !== $user->uid) {
+        if ($channel->user_id !== $user->id) {
             abort(403, 'NOT CHANNEL OWNER');
         }
 
-        // Check name uniqueness (excluding self)
         $exists = DB::table('broadcast_channels')
             ->where('name', $newName)
             ->where('id', '!=', $channelId)
@@ -183,14 +178,16 @@ class BroadcastChannelService
 
         Cache::forget('bc:channels:base');
         $updated = DB::table('broadcast_channels')->where('id', $channelId)->first();
+        $ownerUid = DB::table('users')->where('id', $updated->user_id)->value('uid');
+
         broadcast(new BroadcastChannelUpdated(
-            $channelId, $newName, $updated->owner_uid,
+            $channelId, $newName, $ownerUid,
             (int) $updated->last_signal, 'rename'
         ));
     }
 
     /**
-     * Delete a channel and all associated boards and pins. Owner + title required.
+     * Delete a channel.
      */
     public function destroy(User $user, int $channelId): void
     {
@@ -204,9 +201,11 @@ class BroadcastChannelService
             abort(404, 'CHANNEL NOT FOUND');
         }
 
-        if ($channel->owner_uid !== $user->uid) {
+        if ($channel->user_id !== $user->id) {
             abort(403, 'NOT CHANNEL OWNER');
         }
+
+        $ownerUid = DB::table('users')->where('id', $channel->user_id)->value('uid');
 
         DB::transaction(function () use ($channelId) {
             DB::table('broadcast_boards')->where('channel_id', $channelId)->delete();
@@ -217,20 +216,18 @@ class BroadcastChannelService
         Cache::forget('bc:channels:base');
         Cache::forget("bc:boards:{$channelId}");
         broadcast(new BroadcastChannelUpdated(
-            $channelId, $channel->name, $channel->owner_uid, 0, 'destroy'
+            $channelId, $channel->name, $ownerUid, 0, 'destroy'
         ));
     }
 
     /**
-     * Fetch board records for a channel. Public — no auth required.
-     * Records ordered by timestamp ASC (creation order, oldest first).
-     * The frontend reverses this for Head 0 = newest.
+     * Fetch board records for a channel.
      */
     public function fetchBoards(int $channelId): array
     {
         return Cache::remember("bc:boards:{$channelId}", 30, fn() =>
             DB::table('broadcast_boards')
-                ->leftJoin('files', 'broadcast_boards.bin', '=', 'files.hash')
+                ->leftJoin('files', 'broadcast_boards.file_hash', '=', 'files.hash')
                 ->where('broadcast_boards.channel_id', $channelId)
                 ->orderBy('broadcast_boards.timestamp', 'asc')
                 ->select(
@@ -245,7 +242,7 @@ class BroadcastChannelService
     }
 
     /**
-     * Pin a channel for a user. Any logged-in user can pin.
+     * Pin a channel for a user.
      */
     public function pin(User $user, int $channelId): void
     {
@@ -255,11 +252,11 @@ class BroadcastChannelService
         }
 
         DB::table('broadcast_pins')->upsert(
-            [['user_uid' => $user->uid, 'channel_id' => $channelId, 'created_at' => now(), 'updated_at' => now()]],
-            ['user_uid', 'channel_id'],
+            [['user_id' => $user->id, 'channel_id' => $channelId, 'created_at' => now(), 'updated_at' => now()]],
+            ['user_id', 'channel_id'],
             ['updated_at']
         );
-        Cache::forget("bc:pins:{$user->uid}");
+        Cache::forget("bc:pins:{$user->id}");
     }
 
     /**
@@ -268,9 +265,9 @@ class BroadcastChannelService
     public function unpin(User $user, int $channelId): void
     {
         DB::table('broadcast_pins')
-            ->where('user_uid', $user->uid)
+            ->where('user_id', $user->id)
             ->where('channel_id', $channelId)
             ->delete();
-        Cache::forget("bc:pins:{$user->uid}");
+        Cache::forget("bc:pins:{$user->id}");
     }
 }

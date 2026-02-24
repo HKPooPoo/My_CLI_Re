@@ -16,31 +16,21 @@ class WalkieTypieSignal implements ShouldBroadcastNow
     public $senderUid;
     public $partnerUid;
     public $branchId;
-    public $contentData; // Use unified structure if possible
+    public $contentData;
 
-    /**
-     * Create a new event instance.
-     */
     public function __construct($senderUid, $partnerUid, $branchId)
     {
         $this->senderUid = $senderUid;
         $this->partnerUid = $partnerUid;
         $this->branchId = $branchId;
-        // Construct payload similar to WalkieTypieContentUpdated
         $this->contentData = [
             'branch_id' => $branchId,
             'sender_uid' => $senderUid,
             'timestamp' => (int) (microtime(true) * 1000),
-            'text' => null // Signal implies update, but maybe we should include text?
-            // BlackboardService calls this AFTER DB update.
-            // But BlackboardService doesn't pass text to the event constructor!
-            // This is a problem. The receiver needs to know WHAT changed or Fetch it.
+            'text' => null
         ];
     }
 
-    /**
-     * Get the channels the event should broadcast on.
-     */
     public function broadcastOn(): array
     {
         return [
@@ -51,5 +41,12 @@ class WalkieTypieSignal implements ShouldBroadcastNow
     public function broadcastAs(): string
     {
         return 'walkie-typie.content';
+    }
+
+    public function broadcastWith(): array
+    {
+        return [
+            'content_data' => $this->contentData,
+        ];
     }
 }

@@ -29,8 +29,13 @@ class WalkieTypieController extends Controller
             return response()->json(['message' => 'Unauthorized'], 401);
 
         $connections = DB::table('walkie_typie_connections')
-            ->where('user_uid', $user->uid)
-            ->orderBy('last_signal', 'desc')
+            ->join('users as partner', 'walkie_typie_connections.partner_id', '=', 'partner.id')
+            ->where('walkie_typie_connections.user_id', $user->id)
+            ->orderBy('walkie_typie_connections.last_signal', 'desc')
+            ->select(
+                'walkie_typie_connections.*',
+                'partner.uid as partner_uid'
+            )
             ->get();
 
         return response()->json(['connections' => $connections]);
@@ -38,8 +43,6 @@ class WalkieTypieController extends Controller
 
     /**
      * Send a signal (content update) to a partner
-     * LIGHTWEIGHT: No DB writes. Only validate connection + broadcast.
-     * last_signal is updated via commit endpoint instead.
      */
     public function signal(Request $request)
     {
@@ -57,17 +60,22 @@ class WalkieTypieController extends Controller
         $text = $request->input('text') ?? '';
         $branchId = $request->input('branch_id');
 
-        // Security: verify connection exists (1 SELECT only, no writes)
+        // Look up partner's numeric ID from UID
+        $partnerId = DB::table('users')->where('uid', $partnerUid)->value('id');
+        if (!$partnerId) {
+            return response()->json(['message' => 'PARTNER NOT FOUND'], 404);
+        }
+
+        // Security: verify connection exists
         $exists = DB::table('walkie_typie_connections')
-            ->where('user_uid', $user->uid)
-            ->where('partner_uid', $partnerUid)
+            ->where('user_id', $user->id)
+            ->where('partner_id', $partnerId)
             ->exists();
 
         if (!$exists) {
             return response()->json(['message' => 'NOT CONNECTED'], 403);
         }
 
-        // Broadcast content immediately (no queue, no DB)
         broadcast(new WalkieTypieContentUpdated($partnerUid, [
             'text' => $text,
             'branch_id' => $branchId,
@@ -91,62 +99,59 @@ class WalkieTypieController extends Controller
             return response()->json(['message' => 'INVALID UID'], 400);
         }
 
-        // Check if partner exists
         $partner = User::where('uid', $partnerUid)->first();
         if (!$partner) {
             return response()->json(['message' => 'USER NOT FOUND'], 404);
         }
 
-        return DB::transaction(function () use ($user, $partner, $partnerUid) {
+        return DB::transaction(function () use ($user, $partner) {
             $now = (int) (microtime(true) * 1000);
 
-            // Deterministic Branch IDs (String based)
-            // Format: wt_{Sender}_{Receiver}
-            // User writes to: wt_{User}_{Partner}
-            // User reads from: wt_{Partner}_{User}
-            $myBranchId = "wt_{$user->uid}_{$partnerUid}";
-            $partnerBranchId = "wt_{$partnerUid}_{$user->uid}";
+            // Deterministic Branch IDs using numeric IDs
+            $myBranchId = "wt_{$user->id}_{$partner->id}";
+            $partnerBranchId = "wt_{$partner->id}_{$user->id}";
 
             // Update or Create connection for User -> Partner
             DB::table('walkie_typie_connections')->upsert([
                 [
-                    'user_uid' => $user->uid,
-                    'partner_uid' => $partnerUid,
+                    'user_id' => $user->id,
+                    'partner_id' => $partner->id,
                     'my_branch_id' => $myBranchId,
                     'partner_branch_id' => $partnerBranchId,
                     'last_signal' => $now,
                     'created_at' => now(),
                     'updated_at' => now(),
                 ]
-            ], ['user_uid', 'partner_uid'], ['last_signal', 'updated_at']);
+            ], ['user_id', 'partner_id'], ['last_signal', 'updated_at']);
 
             // Update or Create connection for Partner -> User
-            // Note: For the partner, "My Branch" is what THEY write to (Partner->User)
-            // "Partner Branch" is what THEY read from (User->Partner)
             DB::table('walkie_typie_connections')->upsert([
                 [
-                    'user_uid' => $partnerUid,
-                    'partner_uid' => $user->uid,
+                    'user_id' => $partner->id,
+                    'partner_id' => $user->id,
                     'my_branch_id' => $partnerBranchId,
                     'partner_branch_id' => $myBranchId,
                     'last_signal' => $now,
                     'created_at' => now(),
                     'updated_at' => now(),
                 ]
-            ], ['user_uid', 'partner_uid'], ['last_signal', 'updated_at']);
+            ], ['user_id', 'partner_id'], ['last_signal', 'updated_at']);
 
-            // Fetch fresh records to broadcast
+            // Fetch fresh records with partner_uid joined
             $c1 = DB::table('walkie_typie_connections')
-                ->where('user_uid', $user->uid)
-                ->where('partner_uid', $partnerUid)
+                ->join('users as partner', 'walkie_typie_connections.partner_id', '=', 'partner.id')
+                ->where('walkie_typie_connections.user_id', $user->id)
+                ->where('walkie_typie_connections.partner_id', $partner->id)
+                ->select('walkie_typie_connections.*', 'partner.uid as partner_uid')
                 ->first();
 
             $c2 = DB::table('walkie_typie_connections')
-                ->where('user_uid', $partnerUid)
-                ->where('partner_uid', $user->uid)
+                ->join('users as partner', 'walkie_typie_connections.partner_id', '=', 'partner.id')
+                ->where('walkie_typie_connections.user_id', $partner->id)
+                ->where('walkie_typie_connections.partner_id', $user->id)
+                ->select('walkie_typie_connections.*', 'partner.uid as partner_uid')
                 ->first();
 
-            // Convert object to array for event
             $c1Array = (array) $c1;
             $c2Array = (array) $c2;
 
@@ -169,9 +174,14 @@ class WalkieTypieController extends Controller
         if (!$user)
             return response()->json(['message' => 'Unauthorized'], 401);
 
+        $partnerId = DB::table('users')->where('uid', $partnerUid)->value('id');
+        if (!$partnerId) {
+            return response()->json(['message' => 'PARTNER NOT FOUND'], 404);
+        }
+
         DB::table('walkie_typie_connections')
-            ->where('user_uid', $user->uid)
-            ->where('partner_uid', $partnerUid)
+            ->where('user_id', $user->id)
+            ->where('partner_id', $partnerId)
             ->update([
                 'partner_tag' => $request->input('tag'),
                 'updated_at' => now()
@@ -203,10 +213,14 @@ class WalkieTypieController extends Controller
         if (!$user)
             return response()->json(['message' => 'Unauthorized'], 401);
 
-        // Find connection to get branch IDs
+        $partnerId = DB::table('users')->where('uid', $partnerUid)->value('id');
+        if (!$partnerId) {
+            return response()->json(['message' => 'PARTNER NOT FOUND'], 404);
+        }
+
         $conn = DB::table('walkie_typie_connections')
-            ->where('user_uid', $user->uid)
-            ->where('partner_uid', $partnerUid)
+            ->where('user_id', $user->id)
+            ->where('partner_id', $partnerId)
             ->first();
 
         if (!$conn) {
@@ -216,24 +230,21 @@ class WalkieTypieController extends Controller
         $myBranchId = $conn->my_branch_id;
         $partnerBranchId = $conn->partner_branch_id;
 
-        DB::transaction(function () use ($user, $partnerUid, $myBranchId, $partnerBranchId) {
-            // Delete both connection records
+        DB::transaction(function () use ($user, $partnerId, $myBranchId, $partnerBranchId) {
             DB::table('walkie_typie_connections')
-                ->where('user_uid', $user->uid)
-                ->where('partner_uid', $partnerUid)
+                ->where('user_id', $user->id)
+                ->where('partner_id', $partnerId)
                 ->delete();
 
             DB::table('walkie_typie_connections')
-                ->where('user_uid', $partnerUid)
-                ->where('partner_uid', $user->uid)
+                ->where('user_id', $partnerId)
+                ->where('partner_id', $user->id)
                 ->delete();
 
-            // Delete board records for both branches
-            $this->boardService->deleteBoards($user->uid, $myBranchId);
-            $this->boardService->deleteBoards($partnerUid, $partnerBranchId);
+            $this->boardService->deleteBoards($user->id, $myBranchId);
+            $this->boardService->deleteBoards($partnerId, $partnerBranchId);
         });
 
-        // Notify partner for real-time UI update
         broadcast(new WalkieTypieConnectionUpdated($partnerUid, [
             'deleted' => true,
             'partner_uid' => $user->uid
@@ -242,7 +253,7 @@ class WalkieTypieController extends Controller
         return response()->json(['message' => 'CONNECTION DELETED']);
     }
 
-    // --- Board Operations (獨立於 Blackboard) ---
+    // --- Board Operations ---
 
     /**
      * Commit board records
@@ -254,15 +265,15 @@ class WalkieTypieController extends Controller
             return response()->json(['message' => 'Unauthorized'], 401);
 
         $request->validate([
-            'branchId' => 'required',
-            'branchName' => 'required',
+            'branch_id' => 'required',
+            'branch_name' => 'required',
             'records' => 'required|array'
         ]);
 
         $this->boardService->commit(
             $user,
-            $request->input('branchId'),
-            $request->input('branchName'),
+            $request->input('branch_id'),
+            $request->input('branch_name'),
             $request->input('records')
         );
 

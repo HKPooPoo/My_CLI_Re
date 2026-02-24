@@ -14,8 +14,8 @@ class CommitRequest extends FormRequest
     public function rules()
     {
         return [
-            'branchId' => 'required',
-            'branchName' => 'required',
+            'branch_id' => 'required',
+            'branch_name' => 'required',
             'records' => 'required|array'
         ];
     }

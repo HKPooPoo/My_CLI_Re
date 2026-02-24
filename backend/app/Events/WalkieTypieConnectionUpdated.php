@@ -17,23 +17,12 @@ class WalkieTypieConnectionUpdated implements ShouldBroadcastNow
     public $userUid;
     public $connectionData;
 
-    /**
-     * Create a new event instance.
-     *
-     * @param string $userUid The recipient user's UID
-     * @param array $connectionData The connection data for that user
-     */
     public function __construct(string $userUid, array $connectionData)
     {
         $this->userUid = $userUid;
         $this->connectionData = $connectionData;
     }
 
-    /**
-     * Get the channels the event should broadcast on.
-     *
-     * @return array<int, \Illuminate\Broadcasting\Channel>
-     */
     public function broadcastOn(): array
     {
         return [
@@ -44,5 +33,12 @@ class WalkieTypieConnectionUpdated implements ShouldBroadcastNow
     public function broadcastAs(): string
     {
         return 'walkie-typie.updated';
+    }
+
+    public function broadcastWith(): array
+    {
+        return [
+            'connection_data' => $this->connectionData,
+        ];
     }
 }

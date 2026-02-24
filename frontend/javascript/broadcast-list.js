@@ -43,7 +43,7 @@ export const BCList = {
         deleteBtn: document.getElementById('broadcast-delete-btn'),
     },
 
-    channels: [],          // Merged list: { localId, serverChannelId, name, lastSignal, ownerTitle, ownerUid, isPinned, isLocal }
+    channels: [],          // Merged list: { localId, serverChannelId, name, lastSignal, ownerTitle, ownerUid, isPinned, isLocal } (JS vars stay camelCase)
     infiniteList: null,
     selectionTimer: null,
     selectedChannel: null,
@@ -196,15 +196,15 @@ export const BCList = {
                             // Gather local board records
                             const localRecords = await BCDb.getAllRecords(ch.localId);
                             const apiRecords = localRecords
-                                .filter(r => (r.text && r.text.trim()) || r.bin)
+                                .filter(r => (r.text && r.text.trim()) || r.file_hash)
                                 .map(r => ({
                                     timestamp: r.timestamp,
                                     text: r.text || '',
-                                    bin: (r.bin && typeof r.bin === 'object') ? r.bin.hash : r.bin
+                                    file_hash: (r.file_hash && typeof r.file_hash === 'object') ? r.file_hash.hash : r.file_hash
                                 }));
 
                             const result = await BroadcastService.cast({
-                                channelName: ch.name,
+                                channel_name: ch.name,
                                 records: apiRecords
                             });
 
@@ -341,16 +341,16 @@ export const BCList = {
 
             // Add local channels first
             for (const meta of localMetas) {
-                merged.set(meta.localId, {
-                    localId: meta.localId,
-                    serverChannelId: meta.serverChannelId ?? null,
+                merged.set(meta.local_id, {
+                    localId: meta.local_id,
+                    serverChannelId: meta.server_channel_id ?? null,
                     name: meta.name,
-                    lastSignal: meta.lastSignal ?? 0,
-                    ownerUid: meta.ownerUid ?? '',
-                    ownerTitle: '',  // will fill from server if cast
+                    lastSignal: meta.last_signal ?? 0,
+                    ownerUid: meta.owner_uid ?? '',
+                    ownerTitle: '',
                     isPinned: false,
                     isLocal: true,
-                    isLocalOnly: !meta.serverChannelId
+                    isLocalOnly: !meta.server_channel_id
                 });
             }
 

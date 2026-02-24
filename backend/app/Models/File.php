@@ -8,11 +8,16 @@ class File extends Model
 {
     protected $fillable = [
         'hash',
-        'owner_uid',
+        'user_id',
         'original_name',
         'mime_type',
         'size',
         'disk_path',
         'status',
     ];
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
 }

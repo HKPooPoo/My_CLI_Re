@@ -12,16 +12,16 @@ return new class extends Migration {
     {
         Schema::create('files', function (Blueprint $table) {
             $table->id();
-            $table->string('hash', 64)->unique();   // SHA-256 hex digest
-            $table->string('owner_uid');             // Uploader UID
-            $table->string('original_name');         // e.g. "video.mp4"
-            $table->string('mime_type');              // e.g. "video/mp4"
-            $table->unsignedBigInteger('size');       // bytes
-            $table->string('disk_path');              // relative path on storage disk
-            $table->string('status')->default('staged'); // staged | committed | orphaned
+            $table->string('hash', 64)->unique();
+            $table->foreignId('user_id')->nullable()->constrained('users')->nullOnDelete();
+            $table->string('original_name');
+            $table->string('mime_type');
+            $table->unsignedBigInteger('size');
+            $table->string('disk_path');
+            $table->string('status')->default('staged');
             $table->timestamps();
 
-            $table->index('owner_uid');
+            $table->index('user_id');
             $table->index('status');
         });
     }

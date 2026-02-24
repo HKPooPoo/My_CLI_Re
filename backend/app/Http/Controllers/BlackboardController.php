@@ -23,8 +23,8 @@ class BlackboardController extends Controller
 
         $this->blackboardService->commit(
             $user,
-            $request->branchId,
-            $request->branchName,
+            $request->branch_id,
+            $request->branch_name,
             $request->records
         );
 

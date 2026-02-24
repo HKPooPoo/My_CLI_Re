@@ -74,7 +74,7 @@ export const AuthManager = {
         // 恢復上次登入狀態 (從後端獲取完整資料)
         try {
             const data = await AuthService.getStatus();
-            this.updateUI(data.isLoggedIn ? data : null);
+            this.updateUI(data.is_logged_in ? data : null);
         } catch (e) {
             const currentUser = localStorage.getItem("currentUser");
             this.updateUI(currentUser && currentUser !== "local" ? { uid: currentUser } : null);

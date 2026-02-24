@@ -9,13 +9,12 @@ return new class extends Migration {
     {
         Schema::create('broadcast_boards', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('channel_id');   // References broadcast_channels.id
-            $table->bigInteger('timestamp');             // Creation timestamp — NEVER changes (BC ordering mechanism)
+            $table->foreignId('channel_id')->constrained('broadcast_channels')->cascadeOnDelete();
+            $table->bigInteger('timestamp');
             $table->longText('text')->nullable();
-            $table->string('bin', 512)->nullable();      // File hash
+            $table->string('file_hash', 512)->nullable();
             $table->timestamps();
 
-            // Composite unique: one history node per channel per timestamp
             $table->unique(['channel_id', 'timestamp']);
             $table->index('channel_id');
         });

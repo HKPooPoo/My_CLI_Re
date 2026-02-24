@@ -47,7 +47,6 @@ const bbAttach = EditorAttachments.create({
 
         // [Fix]: Handle Virtual State (New Page)
         if (state.isVirtual) {
-            // Create new record immediately
             await BBCore.addRecord(
                 state.owner,
                 state.branchId,
@@ -59,13 +58,10 @@ const bbAttach = EditorAttachments.create({
             state.currentHead = 0;
             BBUI.updateIndicators(state.branch || t('blackboard.branchNameFallback'), state.currentHead, true);
         } else {
-            // Immediately persist the attachment to the current record
             const entry = await BBCore.getRecord(state.owner, state.branchId, state.currentHead);
             if (entry) {
-                await db.blackboard.update([entry.owner, entry.branchId, entry.timestamp], { bin: binData });
+                await db.blackboard.update([entry.owner, entry.branch_id, entry.timestamp], { file_hash: binData });
             } else if (state.currentHead === 0) {
-                // No local record yet (e.g. after checkout with no local edits yet).
-                // Create a new local record to persist the attachment.
                 await BBCore.addRecord("local", state.branchId, state.branch, BBUI.getTextareaValue() || "", binData);
                 state.owner = "local";
                 state.currentHead = 0;
@@ -73,13 +69,11 @@ const bbAttach = EditorAttachments.create({
         }
     },
     onDetach: async (hash) => {
-        // Clear the bin reference from the current record
         const entry = await BBCore.getRecord(state.owner, state.branchId, state.currentHead);
-        // Handle bin as object or string
-        const currentHash = (entry && typeof entry.bin === 'object') ? entry.bin.hash : entry?.bin;
+        const currentHash = (entry && typeof entry.file_hash === 'object') ? entry.file_hash.hash : entry?.file_hash;
 
         if (entry && currentHash === hash) {
-            await db.blackboard.update([entry.owner, entry.branchId, entry.timestamp], { bin: null });
+            await db.blackboard.update([entry.owner, entry.branch_id, entry.timestamp], { file_hash: null });
         }
     },
 });
@@ -145,8 +139,7 @@ async function syncView() {
     BBUI.updateIndicators(state.branch || t('blackboard.branchNameFallback'), state.currentHead, true);
 
     // Sync attachment chip display
-    // Handle both string hash (legacy) and object meta (new)
-    const binData = entry?.bin;
+    const binData = entry?.file_hash;
     const hash = (typeof binData === 'object') ? binData?.hash : binData;
     const hint = (typeof binData === 'object') ? binData : null;
 
@@ -197,20 +190,20 @@ async function updateBranchList() {
 
                         if (existing) {
                             existing.isServer = true;
-                            existing.serverOwner = sb.owner;
+                            existing.serverOwner = sb.uid;
                             // 無腦比對：只要時間戳不一致，就是 asynced
                             existing.isDirty = (serverLastUpdate !== existing.lastUpdate);
                         } else {
                             branchMap.set(sid, {
                                 id: sid,
                                 name: sb.branch_name,
-                                owner: "local", // 即使僅在雲端，為了 UI 統一也設為 local
+                                owner: "local",
                                 lastUpdate: serverLastUpdate,
                                 displayTime: getHKTTimestamp(sid),
                                 isLocal: false,
                                 isServer: true,
                                 isDirty: true,
-                                serverOwner: sb.owner
+                                serverOwner: sb.uid
                             });
                         }
                     });

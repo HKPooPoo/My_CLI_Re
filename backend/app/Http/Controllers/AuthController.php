@@ -64,13 +64,13 @@ class AuthController extends Controller
         if (Auth::check()) {
             $user = Auth::user();
             return response()->json([
-                'isLoggedIn' => true,
+                'is_logged_in' => true,
                 'uid' => $user->uid,
                 'title' => $user->title,
                 'email' => $user->email
             ]);
         }
-        return response()->json(['isLoggedIn' => false]);
+        return response()->json(['is_logged_in' => false]);
     }
 
     public function requestPasswordReset(ResetPasswordRequest $request)

@@ -9,12 +9,12 @@ return new class extends Migration {
     {
         Schema::create('broadcast_channels', function (Blueprint $table) {
             $table->id();
-            $table->string('name')->unique();   // Channel name, globally unique, user-editable
-            $table->string('owner_uid');        // Must be a uid with title
-            $table->bigInteger('last_signal');  // Last cast time in ms (Unix timestamp)
+            $table->string('name')->unique();
+            $table->foreignId('user_id')->constrained('users')->cascadeOnDelete();
+            $table->bigInteger('last_signal');
             $table->timestamps();
 
-            $table->index('owner_uid');
+            $table->index('user_id');
             $table->index('last_signal');
         });
     }

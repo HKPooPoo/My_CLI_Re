@@ -37,13 +37,13 @@ export const WTCore = {
             echo.private(`App.Models.User.${this.uid}`)
                 .listen('.walkie-typie.updated', (e) => {
                     window.dispatchEvent(new CustomEvent("walkie-typie:connection-update", {
-                        detail: e.connectionData
+                        detail: e.connection_data
                     }));
-                    BBMessage.info(t('walkieTypie.signal', { uid: e.connectionData.partner_uid }));
+                    BBMessage.info(t('walkieTypie.signal', { uid: e.connection_data.partner_uid }));
                 })
                 .listen('.walkie-typie.content', (e) => {
                     window.dispatchEvent(new CustomEvent("walkie-typie:content-update", {
-                        detail: e.contentData
+                        detail: e.content_data
                     }));
                 });
             console.log(`WT: Listening on App.Models.User.${this.uid}`);

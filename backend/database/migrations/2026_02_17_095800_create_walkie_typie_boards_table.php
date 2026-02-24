@@ -12,18 +12,16 @@ return new class extends Migration {
     {
         Schema::create('walkie_typie_boards', function (Blueprint $table) {
             $table->id();
-            $table->string('owner');              // User UID
-            $table->string('branch_id');          // Deterministic: wt_{A}_{B}
+            $table->foreignId('user_id')->constrained('users')->cascadeOnDelete();
+            $table->string('branch_id');
             $table->string('branch_name')->nullable();
-            $table->bigInteger('timestamp');      // History Node Timestamp
+            $table->bigInteger('timestamp');
             $table->longText('text')->nullable();
-            $table->string('bin', 512)->nullable();    // Reserved for binary files, now stores file hash
+            $table->string('file_hash', 512)->nullable();
             $table->timestamps();
 
-            // 複合唯一索引
-            $table->unique(['owner', 'branch_id', 'timestamp']);
-            // WT 特性索引：deleteBoards 及 broadcastUpdate 查詢用
-            $table->index('owner');
+            $table->unique(['user_id', 'branch_id', 'timestamp']);
+            $table->index('user_id');
             $table->index('branch_id');
         });
     }

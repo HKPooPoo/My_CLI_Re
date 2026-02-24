@@ -40,14 +40,14 @@ const BLOB_MAX = 50;
 const MAX_FILE_SIZE = 1 * 1024 * 1024 * 1024; // 1 GB
 
 async function _pruneFileBlobs() {
-    const count = await db.fileBlobs.count();
+    const count = await db.file_blobs.count();
     if (count <= BLOB_MAX) return;
     // Only evict synced blobs (local-only blobs cannot be re-downloaded)
-    const synced = await db.fileBlobs.where('status').equals('synced').toArray();
-    synced.sort((a, b) => (a.lastAccessed ?? 0) - (b.lastAccessed ?? 0));
+    const synced = await db.file_blobs.where('status').equals('synced').toArray();
+    synced.sort((a, b) => (a.last_accessed ?? 0) - (b.last_accessed ?? 0));
     const excess = count - BLOB_MAX;
     const toDelete = synced.slice(0, excess).map(b => b.hash);
-    if (toDelete.length) await db.fileBlobs.bulkDelete(toDelete);
+    if (toDelete.length) await db.file_blobs.bulkDelete(toDelete);
 }
 
 export const EditorAttachments = {
@@ -197,14 +197,14 @@ export const EditorAttachments = {
                     const hash = await FileService.computeHash(file);
 
                     try {
-                        await db.fileBlobs.put({
+                        await db.file_blobs.put({
                             hash: hash,
                             blob: file,
                             name: file.name,
                             type: file.type,
                             size: file.size,
                             status: 'local',
-                            lastAccessed: Date.now()
+                            last_accessed: Date.now()
                         });
                     } catch (dbErr) {
                         if (dbErr.name === 'QuotaExceededError') {
@@ -269,7 +269,7 @@ export const EditorAttachments = {
                     return;
                 }
 
-                const localFile = await db.fileBlobs.get(hash);
+                const localFile = await db.file_blobs.get(hash);
 
                 // Bail if a newer setFromRecord() call has already taken over
                 if (version !== this._srVersion) return;
@@ -294,10 +294,10 @@ export const EditorAttachments = {
              * Helper to open a file.
              */
             async openFile(hash) {
-                let localFile = await db.fileBlobs.get(hash);
+                let localFile = await db.file_blobs.get(hash);
 
                 if (localFile?.blob) {
-                    await db.fileBlobs.update(hash, { lastAccessed: Date.now() });
+                    await db.file_blobs.update(hash, { last_accessed: Date.now() });
                 }
 
                 if (!localFile || !localFile.blob) {
@@ -322,10 +322,10 @@ export const EditorAttachments = {
                             type: meta.type,
                             size: meta.size,
                             status: 'synced',
-                            lastAccessed: Date.now()
+                            last_accessed: Date.now()
                         };
 
-                        await db.fileBlobs.put(localFile);
+                        await db.file_blobs.put(localFile);
                         this._renderChip({ hash: hash, status: 'synced' });
 
                     } catch (e) {

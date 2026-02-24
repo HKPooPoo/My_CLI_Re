@@ -16,12 +16,22 @@ class BroadcastChannelUpdated implements ShouldBroadcastNow
 
     public function broadcastOn(): Channel
     {
-        // Public channel — no auth required on the client side
         return new Channel("broadcast-channel.{$this->channelId}");
     }
 
     public function broadcastAs(): string
     {
         return 'broadcast.channel.updated';
+    }
+
+    public function broadcastWith(): array
+    {
+        return [
+            'channel_id'  => $this->channelId,
+            'name'        => $this->name,
+            'owner_uid'   => $this->ownerUid,
+            'last_signal' => $this->lastSignal,
+            'action'      => $this->action,
+        ];
     }
 }

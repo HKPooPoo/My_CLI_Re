@@ -139,7 +139,7 @@ export const BCChannel = {
             const echo = await getEcho();
             this._echoChannel = echo.channel(`broadcast-channel.${serverChannelId}`)
                 .listen('.broadcast.channel.updated', (e) => {
-                    if (this.currentChannel?.serverChannelId !== e.channelId) return;
+                    if (this.currentChannel?.serverChannelId !== e.channel_id) return;
 
                     if (e.action === 'destroy') {
                         window.dispatchEvent(new CustomEvent('broadcast:cleared'));
@@ -150,16 +150,14 @@ export const BCChannel = {
                         this.updateIndicators();
                         window.dispatchEvent(new CustomEvent('broadcast:channelRenamed', {
                             detail: { localId: this.currentChannel.localId, newName: e.name,
-                                      serverChannelId: e.channelId }
+                                      serverChannelId: e.channel_id }
                         }));
                         return;
                     }
-                    // action === 'cast': invalidate cache + reload for readers
-                    _readerCache.delete(e.channelId);
+                    _readerCache.delete(e.channel_id);
                     if (!this.isOwnerMode) this.loadReaderMode(this.currentChannel);
-                    // Notify BCList to update sort order without a full re-fetch
                     window.dispatchEvent(new CustomEvent('broadcast:signalUpdated', {
-                        detail: { serverChannelId: e.channelId, lastSignal: e.lastSignal }
+                        detail: { serverChannelId: e.channel_id, lastSignal: e.last_signal }
                     }));
                 });
         } catch (err) {
@@ -441,7 +439,7 @@ export const BCChannel = {
             }
 
             // Sync attachment chip
-            const bin = entry?.bin ?? null;
+            const bin = entry?.file_hash ?? null;
             const hash = (typeof bin === 'object') ? bin?.hash : bin;
             this.bcAttach?.setFromRecord(hash || null, typeof bin === 'object' ? bin : null);
 
@@ -458,7 +456,7 @@ export const BCChannel = {
         }
 
         // Attachment (read-only)
-        const bin = record?.bin ?? null;
+        const bin = record?.file_hash ?? null;
         const hash = typeof bin === 'object' ? bin?.hash : bin;
         this.bcAttach?.setFromRecord(hash || null, typeof bin === 'object' ? bin : null);
 

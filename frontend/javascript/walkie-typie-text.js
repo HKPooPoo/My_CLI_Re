@@ -125,7 +125,7 @@ export const WTText = {
                     // Update Existing Record
                     const entry = await WTDb.getRecord(this.weState.branchId, this.weState.currentHead);
                     if (entry) {
-                        await WTDb.updateBin(entry.branchId, entry.timestamp, binData);
+                        await WTDb.updateBin(entry.branch_id, entry.timestamp, binData);
                     } else if (this.weState.currentHead === 0) {
                         // Fresh board — no record exists yet (e.g. new connection, nothing typed).
                         // Create a record now so the attachment is persisted.
@@ -160,7 +160,7 @@ export const WTText = {
                 if (!this.weState.isVirtual) {
                     const entry = await WTDb.getRecord(this.weState.branchId, this.weState.currentHead);
                     if (entry) {
-                        await WTDb.updateBin(entry.branchId, entry.timestamp, null);
+                        await WTDb.updateBin(entry.branch_id, entry.timestamp, null);
                     }
                 }
 
@@ -460,13 +460,11 @@ export const WTText = {
      * Helper: Reconstruct bin object from backend flat structure
      */
     reconstructBin(r) {
-        if (!r.bin) return null;
-        // If r.bin is already an object (local check), return it
-        if (typeof r.bin === 'object') return r.bin;
+        if (!r.file_hash) return null;
+        if (typeof r.file_hash === 'object') return r.file_hash;
 
-        // Otherwise, it's a hash string, and metadata is in r (from join)
         return {
-            hash: r.bin,
+            hash: r.file_hash,
             name: r.file_name || 'unknown',
             size: r.file_size || 0,
             mime: r.file_mime || 'application/octet-stream'
@@ -487,13 +485,13 @@ export const WTText = {
                 // Non-destructive: upsert server records by [branchId+timestamp] key.
                 // Local uncommitted records (different timestamps) are preserved.
                 const records = data.records.map(r => ({
-                    branchId,
+                    branch_id: branchId,
                     branch: "WE",
                     text: r.text || "",
                     timestamp: parseInt(r.timestamp),
-                    bin: this.reconstructBin(r)
+                    file_hash: this.reconstructBin(r)
                 }));
-                await db.walkieTypie.bulkPut(records);
+                await db.walkie_typie.bulkPut(records);
             }
             // If no server records: keep whatever is in IndexedDB (first time use)
         } catch (e) {
@@ -516,7 +514,7 @@ export const WTText = {
             // Transform bin data
             this.theyRecords = (data?.records || []).map(r => ({
                 ...r,
-                bin: this.reconstructBin(r)
+                file_hash: this.reconstructBin(r)
             }));
         } catch (e) {
             console.warn("WTText: THEY Sync Failed", e);
@@ -546,9 +544,9 @@ export const WTText = {
                     this.weState.currentHead
                 );
                 this.elements.weTextarea.value = record?.text || "";
-                
+
                 // Load Attachment
-                const bin = record?.bin || null;
+                const bin = record?.file_hash || null;
                 this.currentBin = bin;
                 this.wtWeAttach?.setFromRecord(bin?.hash, bin);
             }
@@ -570,22 +568,20 @@ export const WTText = {
         let theyBin = null;
 
         if (this.theyState.currentHead === 0) {
-            // Head 0: show live text if available, else newest committed
             if (this.theyLiveText !== null) {
                 this.elements.theyTextarea.value = this.theyLiveText;
                 theyBin = this.theyLiveBin;
             } else {
                 theyRecord = this.theyRecords[this.theyRecords.length - 1];
                 this.elements.theyTextarea.value = theyRecord?.text || "";
-                theyBin = theyRecord?.bin || null;
+                theyBin = theyRecord?.file_hash || null;
             }
         } else {
-            // Head N: committed history from theyRecords[]
             const idx = this.theyRecords.length - 1 - this.theyState.currentHead;
             theyRecord = (idx >= 0 && idx < this.theyRecords.length)
                 ? this.theyRecords[idx] : null;
             this.elements.theyTextarea.value = theyRecord?.text || "";
-            theyBin = theyRecord?.bin || null;
+            theyBin = theyRecord?.file_hash || null;
         }
 
         // Render Attachment

@@ -13,7 +13,7 @@ class FileService
      *
      * @return File The file record (existing or newly created)
      */
-    public function upload(UploadedFile $file, string $ownerUid): File
+    public function upload(UploadedFile $file, ?int $userId): File
     {
         // 1. Compute SHA-256 hash from file content
         $hash = hash_file('sha256', $file->getRealPath());
@@ -44,7 +44,7 @@ class FileService
         // 5. Create DB record
         return File::create([
             'hash' => $hash,
-            'owner_uid' => $ownerUid,
+            'user_id' => $userId,
             'original_name' => $file->getClientOriginalName(),
             'mime_type' => $file->getClientMimeType() ?: 'application/octet-stream',
             'size' => $file->getSize(),
@@ -85,7 +85,6 @@ class FileService
 
     /**
      * Cleanup orphaned files older than the given hours.
-     * Call this from a scheduled command.
      */
     public function cleanupOrphaned(int $hoursOld = 24): int
     {
