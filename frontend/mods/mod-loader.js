@@ -20,35 +20,39 @@ const _mods = {};
  * Called once on i18n:ready.
  */
 export async function loadAllMods() {
-    const modDefs = Object.values(manifest);
+    try {
+        const modDefs = Object.values(manifest);
 
-    // 1. Register all MODs in ModState first (so isEnabled works during init)
-    for (const mod of modDefs) {
-        ModState.registerMod(mod.id, mod);
-        _mods[mod.id] = mod;
-    }
-
-    // 2. Load locale files and merge into i18n
-    const locale = getActiveLocale();
-    await Promise.allSettled(modDefs.map(mod => loadModLocale(mod, locale)));
-
-    // 3. Create DOM elements (buttons + shelves) for each MOD
-    for (const mod of modDefs) {
-        createModDOM(mod);
-    }
-
-    // 4. Call init() on each MOD
-    for (const mod of modDefs) {
-        try {
-            if (typeof mod.init === 'function') {
-                await mod.init({ getMod, getAllMods });
-            }
-        } catch (e) {
-            console.error(`[mod-loader] init failed for ${mod.id}:`, e);
+        // 1. Register all MODs in ModState first (so isEnabled works during init)
+        for (const mod of modDefs) {
+            ModState.registerMod(mod.id, mod);
+            _mods[mod.id] = mod;
         }
+
+        // 2. Load locale files and merge into i18n
+        const locale = getActiveLocale();
+        await Promise.allSettled(modDefs.map(mod => loadModLocale(mod, locale)));
+
+        // 3. Create DOM elements (buttons + shelves) for each MOD
+        for (const mod of modDefs) {
+            createModDOM(mod);
+        }
+
+        // 4. Call init() on each MOD
+        for (const mod of modDefs) {
+            try {
+                if (typeof mod.init === 'function') {
+                    await mod.init({ getMod, getAllMods });
+                }
+            } catch (e) {
+                console.error(`[mod-loader] init failed for ${mod.id}:`, e);
+            }
+        }
+    } catch (e) {
+        console.error('[mod-loader] loadAllMods failed:', e);
     }
 
-    // 5. Notify feature-shelf to pick up new buttons
+    // Always notify — even on partial failure — so mods-manager can render what loaded
     window.dispatchEvent(new CustomEvent('mods:loaded'));
 }
 

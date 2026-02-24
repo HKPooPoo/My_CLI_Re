@@ -419,7 +419,16 @@
                 import { ModState } from './javascript/mod-state.js';
                 import { loadAllMods } from './mods/mod-loader.js';
                 ModState.init();
-                window.addEventListener('i18n:ready', () => loadAllMods());
+
+                let _modsLoaded = false;
+                function bootMods() {
+                    if (_modsLoaded) return;
+                    _modsLoaded = true;
+                    loadAllMods();
+                }
+                window.addEventListener('i18n:ready', bootMods);
+                // Fallback: if i18n:ready already fired, boot after a tick
+                setTimeout(bootMods, 0);
             </script>
             <script type="module" src="./javascript/mods-manager.js"></script>
             <div id="toast-container"></div>

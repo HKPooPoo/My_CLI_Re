@@ -1,4 +1,4 @@
-const CACHE_NAME = 'blackboard-v13-2026-02-23'; // Bump: CLI color palette, block cursor, variable unification
+const CACHE_NAME = 'blackboard-v14-2026-02-25'; // Bump: MOD system refactoring — plug-and-play framework
 const ASSETS = [
   '/',
   '/index.html',
