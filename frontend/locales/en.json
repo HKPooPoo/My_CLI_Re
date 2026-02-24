@@ -253,8 +253,8 @@
     "refreshComplete": "SCAN COMPLETE",
     "serverOfflineWarning": "WARNING: SERVICE OFFLINE",
     "group": {
-      "translation": "TRANSLATION",
-      "tools": "TOOLS"
+      "linguistics": "LINGUISTICS",
+      "utilities": "UTILITIES"
     },
     "status": {
       "unknown": "SCANNING...",

@@ -253,8 +253,8 @@
     "refreshComplete": "掃描完成",
     "serverOfflineWarning": "警告：服務離線",
     "group": {
-      "translation": "翻譯",
-      "tools": "工具"
+      "linguistics": "語言",
+      "utilities": "工具"
     },
     "status": {
       "unknown": "掃描中...",

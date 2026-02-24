@@ -24,7 +24,7 @@
 /* === mods-list page — scrollable list with InfiniteList cursor === */
 .mods-list-container {
     border-bottom: var(--border-line);
-    height: clamp(192px, calc(var(--container-width) / 2), 40vh);
+    height: clamp(192px, calc(var(--container-width) / 2), 56vh);
     overflow-y: auto;
     overflow-x: hidden;
     scrollbar-width: thin;
@@ -53,37 +53,46 @@
     user-select: none;
 }
 
-/* List item — 3-row structure (mirrors broadcast-list/WT-list items) */
+/* List item — flex row: [info column] [toggle button] */
 .mods-list-item {
-    padding: calc(var(--panel-gap) / 4) calc(var(--panel-gap) / 2);
+    padding: calc(var(--panel-gap) / 3) calc(var(--panel-gap) / 2);
     display: flex;
-    justify-content: space-between;
+    flex-direction: row;
     align-items: center;
+    gap: calc(var(--panel-gap) / 2);
     cursor: pointer;
+    border-bottom: 1px solid rgba(50, 255, 50, 0.1);
     transition: background var(--transition-normal), color var(--transition-normal);
+}
+
+.mods-list-item:last-child {
+    border-bottom: none;
 }
 
 .mods-list-item-info {
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: 3px;
     min-width: 0;
-    flex: 1;
+    flex: 1 1 auto;
 }
 
 .mods-list-item-name {
-    font-size: 1em;
+    font-size: 0.95em;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    line-height: 1.3;
 }
 
 .mods-list-item-meta {
-    font-size: 0.75em;
-    opacity: 0.6;
+    font-size: 0.7em;
+    opacity: 0.5;
     display: flex;
-    gap: 8px;
+    flex-direction: row;
+    gap: 6px;
     align-items: center;
+    line-height: 1;
 }
 
 /* Active item — green glow (mirrors broadcast-list-list-item.active) */
@@ -112,16 +121,17 @@
     border-color: var(--bg-primary);
 }
 
-/* Toggle button — inline, mirrors .misc-toggle-btn */
+/* Toggle button — compact inline pill */
 .mods-toggle-btn {
     border: var(--border-line);
-    padding: 4px 12px;
-    min-width: 60px;
+    padding: 3px 10px;
+    min-width: 48px;
     text-align: center;
     cursor: pointer;
+    font-size: 0.75em;
+    letter-spacing: 0.05em;
     transition: all var(--transition-normal);
-    flex-shrink: 0;
-    margin-left: 8px;
+    flex: 0 0 auto;
 }
 
 .mods-toggle-btn.enabled {
@@ -190,7 +200,7 @@
     display: flex;
     flex-direction: column;
     gap: var(--panel-gap);
-    min-height: clamp(192px, calc(var(--container-width) / 2), 40vh);
+    min-height: clamp(192px, calc(var(--container-width) / 2), 56vh);
 }
 
 .mods-config-description {

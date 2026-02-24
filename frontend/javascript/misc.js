@@ -16,14 +16,14 @@ export const MISC = {
         langBtn: document.getElementById('misc-toggle-lang'),
         globalAudioBtn: document.getElementById('misc-toggle-global-audio'),
         sfxBtn: document.getElementById('misc-toggle-sfx'),
-        maxSlotBtn: document.getElementById('misc-toggle-max-slot')
+        maxSlotRange: document.getElementById('misc-range-max-slot'),
+        maxSlotValue: document.getElementById('misc-range-max-slot-value')
     },
 
     configs: {
         locale: ['en', 'zh-TW'],
         globalAudio: ['100', '0', '50'],
-        sfx: ['100', '0', '50'],
-        maxSlot: ['10', '20', '50', '100']
+        sfx: ['100', '0', '50']
     },
 
     init() {
@@ -47,7 +47,8 @@ export const MISC = {
 
         // MAX SLOT
         const currentMaxSlot = localStorage.getItem('setting-max-slot') || '10';
-        if (this.elements.maxSlotBtn) this.elements.maxSlotBtn.textContent = currentMaxSlot;
+        if (this.elements.maxSlotRange) this.elements.maxSlotRange.value = currentMaxSlot;
+        if (this.elements.maxSlotValue) this.elements.maxSlotValue.textContent = currentMaxSlot;
     },
 
     bindEvents() {
@@ -78,15 +79,14 @@ export const MISC = {
             this.updateUI();
         });
 
-        this.elements.maxSlotBtn?.addEventListener('click', () => {
-            playAudio('UIGeneralFocus.mp3');
-            const current = localStorage.getItem('setting-max-slot') || '10';
-            let index = this.configs.maxSlot.indexOf(current);
-            if (index === -1) index = 0;
-            const next = this.configs.maxSlot[(index + 1) % this.configs.maxSlot.length];
-            localStorage.setItem('setting-max-slot', next);
-            this.updateUI();
+        this.elements.maxSlotRange?.addEventListener('input', () => {
+            const val = this.elements.maxSlotRange.value;
+            if (this.elements.maxSlotValue) this.elements.maxSlotValue.textContent = val;
+            localStorage.setItem('setting-max-slot', val);
             window.dispatchEvent(new CustomEvent('settings:maxSlotChanged'));
+        });
+        this.elements.maxSlotRange?.addEventListener('change', () => {
+            playAudio('UIGeneralFocus.mp3');
         });
     }
 };

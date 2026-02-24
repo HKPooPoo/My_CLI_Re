@@ -102,7 +102,7 @@
 .walkie-typie-list-list-container {
     border-bottom: var(--border-line);
     /* height: calc(var(--container-width) / 4); */
-    height: clamp(192px, calc(var(--container-width) / 2), 40vh);
+    height: clamp(192px, calc(var(--container-width) / 2), 56vh);
     overflow-y: auto;
     overflow-x: hidden;
     scrollbar-width: thin;

@@ -276,10 +276,14 @@
                             <button class="misc-toggle-btn crt-text-green" id="misc-toggle-sfx">ON</button>
                         </div>
 
-                        <!-- MAX SLOT Toggle -->
+                        <!-- MAX SLOT Range -->
                         <div class="misc-list-item">
                             <div class="misc-label" data-i18n="misc.maxSlotLabel">MAX SLOT</div>
-                            <button class="misc-toggle-btn crt-text-green" id="misc-toggle-max-slot">10</button>
+                            <div class="misc-range-group">
+                                <input type="range" class="misc-range-input" id="misc-range-max-slot"
+                                    min="10" max="100" step="10" value="10">
+                                <span class="misc-range-value crt-text-green" id="misc-range-max-slot-value">10</span>
+                            </div>
                         </div>
                     </div>
                 </div>

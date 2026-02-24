@@ -32,8 +32,14 @@ const elements = {
 // --- Initialise ---
 function init() {
     ModState.init();
+    bindEvents();       // Register listeners BEFORE InfiniteList fires initial selection
     renderModList();
-    bindEvents();
+
+    // Auto-select first MOD for config page
+    const firstItem = elements.listContainer?.querySelector('.mods-list-item');
+    if (firstItem?.dataset?.modId) {
+        renderConfig(firstItem.dataset.modId);
+    }
 
     // Background refresh server statuses
     ModState.refreshAllServerStatuses().then(() => {
@@ -280,6 +286,13 @@ function bindEvents() {
         updateServerIndicators();
 
         msg.update(t('mods.refreshComplete'));
+    });
+
+    // When navigating to config page, ensure selected MOD is rendered
+    window.addEventListener('navi:pageChanged', ({ detail }) => {
+        if (detail.page === 'mods-config' && selectedModId) {
+            renderConfig(selectedModId);
+        }
     });
 
     // Refresh button on config page
