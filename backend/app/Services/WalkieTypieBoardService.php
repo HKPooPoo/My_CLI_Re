@@ -41,7 +41,17 @@ class WalkieTypieBoardService
 
                 $fileHash = $record['file_hash'] ?? null;
                 if ($fileHash) {
-                    $fileHashes[] = $fileHash;
+                    if (is_array($fileHash)) {
+                        $fileHashes = array_merge($fileHashes, $fileHash);
+                        $fileHash = json_encode($fileHash);
+                    } elseif (is_string($fileHash) && str_starts_with($fileHash, '[')) {
+                        $decoded = json_decode($fileHash, true);
+                        if (is_array($decoded)) {
+                            $fileHashes = array_merge($fileHashes, $decoded);
+                        }
+                    } else {
+                        $fileHashes[] = $fileHash;
+                    }
                 }
 
                 $insertData[] = [
@@ -130,15 +140,9 @@ class WalkieTypieBoardService
 
         return Cache::remember("wt:boards:{$branchId}", 30, fn() =>
             DB::table('walkie_typie_boards')
-                ->leftJoin('files', 'walkie_typie_boards.file_hash', '=', 'files.hash')
                 ->where('branch_id', $branchId)
                 ->orderBy('timestamp', 'asc')
-                ->select(
-                    'walkie_typie_boards.*',
-                    'files.original_name as file_name',
-                    'files.size as file_size',
-                    'files.mime_type as file_mime'
-                )
+                ->select('walkie_typie_boards.*')
                 ->get()
         );
     }

@@ -106,7 +106,17 @@ class BroadcastChannelService
 
                 $fileHash = $record['file_hash'] ?? null;
                 if ($fileHash) {
-                    $fileHashes[] = $fileHash;
+                    if (is_array($fileHash)) {
+                        $fileHashes = array_merge($fileHashes, $fileHash);
+                        $fileHash = json_encode($fileHash);
+                    } elseif (is_string($fileHash) && str_starts_with($fileHash, '[')) {
+                        $decoded = json_decode($fileHash, true);
+                        if (is_array($decoded)) {
+                            $fileHashes = array_merge($fileHashes, $decoded);
+                        }
+                    } else {
+                        $fileHashes[] = $fileHash;
+                    }
                 }
 
                 $insertData[] = [
@@ -227,15 +237,9 @@ class BroadcastChannelService
     {
         return Cache::remember("bc:boards:{$channelId}", 30, fn() =>
             DB::table('broadcast_boards')
-                ->leftJoin('files', 'broadcast_boards.file_hash', '=', 'files.hash')
                 ->where('broadcast_boards.channel_id', $channelId)
                 ->orderBy('broadcast_boards.timestamp', 'asc')
-                ->select(
-                    'broadcast_boards.*',
-                    'files.original_name as file_name',
-                    'files.size as file_size',
-                    'files.mime_type as file_mime'
-                )
+                ->select('broadcast_boards.*')
                 ->get()
                 ->toArray()
         );

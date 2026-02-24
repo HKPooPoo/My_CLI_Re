@@ -36,7 +36,18 @@ class BlackboardService
 
                 $fileHash = $record['file_hash'] ?? null;
                 if ($fileHash) {
-                    $fileHashes[] = $fileHash;
+                    // Multi-file: file_hash may be a JSON array or a single hash string
+                    if (is_array($fileHash)) {
+                        $fileHashes = array_merge($fileHashes, $fileHash);
+                        $fileHash = json_encode($fileHash);
+                    } elseif (is_string($fileHash) && str_starts_with($fileHash, '[')) {
+                        $decoded = json_decode($fileHash, true);
+                        if (is_array($decoded)) {
+                            $fileHashes = array_merge($fileHashes, $decoded);
+                        }
+                    } else {
+                        $fileHashes[] = $fileHash;
+                    }
                 }
 
                 $insertData[] = [
@@ -96,17 +107,10 @@ class BlackboardService
         return Cache::remember("bb:branch:{$user->id}:{$branchId}:details", 30, fn() =>
             DB::table('blackboards')
                 ->join('users', 'blackboards.user_id', '=', 'users.id')
-                ->leftJoin('files', 'blackboards.file_hash', '=', 'files.hash')
                 ->where('blackboards.branch_id', $branchId)
                 ->where('blackboards.user_id', $user->id)
                 ->orderBy('blackboards.timestamp', 'asc')
-                ->select(
-                    'blackboards.*',
-                    'users.uid',
-                    'files.original_name as file_name',
-                    'files.size as file_size',
-                    'files.mime_type as file_mime'
-                )
+                ->select('blackboards.*', 'users.uid')
                 ->get()
         );
     }
