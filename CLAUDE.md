@@ -13,7 +13,71 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**My CLI Re** is a collaborative, peer-to-peer communication platform with a retro CRT terminal aesthetic. It is a Docker-based full-stack application with a Laravel 12 (PHP-FPM) backend and a vanilla JavaScript frontend served by Nginx.
+**My CLI Re** (My Clean Logging Interface) is a versioned communication platform that applies a unified Board model across three visibility scopes — personal (Blackboard), paired (Walkie-Typie), and public (Broadcast). It is a Docker-based full-stack application with a Laravel 12 (PHP-FPM) backend and a vanilla JavaScript frontend served by Nginx, featuring a retro CRT terminal aesthetic.
+
+## CRITICAL: Board Model & Operation Semantics
+
+**This project uses VCS-inspired terminology but the operations do NOT match git semantics. Never assume git behavior.**
+
+### Unified Board Model
+
+Every feature in this application is built on the same data primitive:
+
+```
+Board = timestamped text record (text + optional file attachments)
+
+Blackboard  = Board(scope: SELF)    → personal, multi-branch timelines
+Walkie-Typie = Board(scope: PAIR)   → P2P paired boards, real-time whisper
+Broadcast    = Board(scope: PUBLIC) → public channels, one-to-many
+```
+
+A **record** is a single snapshot: `{ branch_id, timestamp, text, file_hash }`. A **branch** (BB/WT) or **channel** (BC) is a collection of records sharing the same `branch_id`/`channel_id`. Records are ordered by `timestamp` descending (newest first).
+
+### Operation Dictionary (What Each Term ACTUALLY Means)
+
+| Term | Git Meaning | MyCLI Meaning |
+|------|------------|---------------|
+| **Push** | Upload commits to remote | Navigate toward NEWER records (decrement head index) |
+| **Pull** | Download commits from remote | Navigate toward OLDER records (increment head index) |
+| **Commit** | Create a snapshot in history | Upload ALL local records to server (full-branch replacement, Last-Write-Wins) |
+| **Checkout** | Switch to a branch/commit | Switch to a different branch, or download a server branch to local |
+| **Fork** | (not a git command) | Duplicate all records from one branch into a new independent branch (NO parent pointer, NO ancestry) |
+| **Branch** | Pointer to a commit in a DAG | Independent flat timeline of text snapshots (NO parent-child relationships, NO tree structure) |
+| **HEAD** | Pointer to current commit | In-memory integer offset into the record list (0 = newest) |
+| **Drop** | (not a git command) | Delete server-side records for a branch |
+| **Clean** | (not a git command) | Wipe all records in a branch, leaving one empty placeholder |
+
+### What Does NOT Exist
+
+- **No tree/DAG structure** — branches are completely flat and independent
+- **No parent pointers** — fork copies data but stores no link to the source
+- **No merge** — there is no concept of merging two branches
+- **No diff infrastructure** — no common ancestor, no built-in comparison
+- **No commit graph** — each branch is just a sorted list of timestamped records
+- **No conflict resolution** — commit is full server replacement (Last-Write-Wins)
+
+### Storage Architecture
+
+```
+Local-first, manual-sync:
+  IndexedDB (primary) ──commit──▶ PostgreSQL (backup)
+                       ◀──checkout──
+
+Owner tag (encodes sync state as string):
+  "local"                          → never synced
+  "local, online/{uid} [synced]"   → matches server
+  "local, online/{uid} [asynced]"  → locally modified since last sync
+```
+
+BB and WT store records locally in IndexedDB; the server is a secondary store the user explicitly syncs to. BC owner stores locally then CASTs to server; BC readers fetch from server only (30s cache, in-memory).
+
+### branch_id Generation
+
+`branch_id = Date.now()` — a millisecond Unix timestamp at creation time. It is NOT sequential, NOT auto-incremented, and carries NO semantic meaning beyond being a unique identifier. The branch name is a separate display label stored redundantly on every record.
+
+### Virtual State (BB only)
+
+When the user PUSHes past head 0 (newest record), the system enters "virtual" state — a blank textarea with no backing record. Typing creates a new record and exits virtual mode. This enables creating new entries without an explicit "new" button.
 
 ## Development Commands
 
@@ -86,21 +150,21 @@ database/migrations/  # Schema definitions
 
 | Feature | Controller | Service | Description |
 |---------|-----------|---------|-------------|
-| **Blackboard** | `BlackboardController` | `BlackboardService` | Shared notes with VCS-like branching |
-| **Walkie-Typie** | `WalkieTypieController` | `WalkieTypieBoardService` | P2P connections with message boards |
-| **Broadcast Channels** | `BroadcastChannelController` | `BroadcastChannelService` | Public channels with Last-Write-Wins |
+| **Blackboard** | `BlackboardController` | `BlackboardService` | Board(SELF) — personal multi-branch timelines with local-first storage |
+| **Walkie-Typie** | `WalkieTypieController` | `WalkieTypieBoardService` | Board(PAIR) — symmetric P2P paired boards with real-time whisper |
+| **Broadcast Channels** | `BroadcastChannelController` | `BroadcastChannelService` | Board(PUBLIC) — public channels, owner writes + readers fetch, Last-Write-Wins |
 | **Files** | `FileController` | `FileService` | SHA-256 deduplicated file storage (up to 10GB) |
 | **Auth** | `AuthController` | `AuthService` | UID+passcode auth, email binding, `/passwd` & `/bind` commands |
 
 ### Database Schema (key tables)
 - `users` — uid (unique), passcode, title, email
-- `blackboards` — owner, branch_id, branch_name, timestamp, text, bin (file hash)
-- `walkie_typie_connections` — user_uid, partner_uid, my_branch_id, partner_branch_id
-- `walkie_typie_boards` — owner, branch_id, timestamp, text, bin
-- `broadcast_channels` — id, name, owner_uid
-- `broadcast_boards` — channel_id, timestamp, text, bin
-- `broadcast_pins` — user_uid, channel_id
-- `files` — hash, owner_uid, original_name, mime_type, disk_path, status
+- `blackboards` — user_id (FK), branch_id (varchar), branch_name, timestamp (bigint ms), text, file_hash; UNIQUE(user_id, branch_id, timestamp)
+- `walkie_typie_connections` — user_id (FK), partner_id (FK), partner_tag, my_branch_id, partner_branch_id, last_signal; UNIQUE(user_id, partner_id)
+- `walkie_typie_boards` — user_id (FK), branch_id, timestamp (bigint ms), text, file_hash; UNIQUE(user_id, branch_id, timestamp)
+- `broadcast_channels` — name (unique), user_id (FK), last_signal (bigint ms)
+- `broadcast_boards` — channel_id (FK cascade), timestamp (bigint ms), text, file_hash; UNIQUE(channel_id, timestamp)
+- `broadcast_pins` — user_id (FK cascade), channel_id (FK cascade); UNIQUE(user_id, channel_id)
+- `files` — hash (unique), user_id (FK), original_name, mime_type, size (bigint), disk_path, status (default 'staged')
 
 **File status lifecycle:** `staged` → `committed` → `orphaned` (orphaned files cleaned up after 24h)
 
@@ -213,12 +277,31 @@ Prevents double-fire via `aria-busy="true"` during async actions. No artificial 
 - `BBMessage` is the semantic facade: `BBMessage.info(text)` prefixes "SYSTEM > ", `BBMessage.error(text)` prefixes "CRITICAL > "
 - Returns `{ update(text, duration), close() }` for imperative control of running toasts
 
-### Real-Time (WebSocket) Flow
-1. `echo-service.js` creates a single Laravel Echo instance connecting to Reverb
-2. `walkie-typie-core.js` subscribes to private channels (`private-walkie-typie.{uid}`)
-3. Broadcast channels use public channels (`broadcast-channel.{channelId}`)
-4. Backend fires events (e.g., `BroadcastChannelUpdated`) which Reverb pushes to subscribers
-5. Frontend listeners dispatch custom DOM events to update the UI
+### Real-Time (WebSocket) Architecture
+
+`echo-service.js` creates a **single** Laravel Echo instance connecting to Reverb (shared by all features).
+
+**Server-side events:**
+
+| Event Class | `broadcastAs()` | Channel | Type | Payload |
+|-------------|-----------------|---------|------|---------|
+| `BroadcastChannelUpdated` | `broadcast.channel.updated` | `broadcast-channel.{channelId}` | Public | `{ channel_id, name, owner_uid, last_signal, action: 'cast'\|'rename'\|'destroy' }` |
+| `WalkieTypieConnectionUpdated` | `walkie-typie.updated` | `App.Models.User.{uid}` | Private | `{ connection_data }` |
+| `WalkieTypieContentUpdated` | `walkie-typie.content` | `App.Models.User.{uid}` | Private | `{ content_data: { text, branch_id, sender_uid } }` |
+| `WalkieTypieSignal` | `walkie-typie.content` | `App.Models.User.{uid}` | Private | `{ content_data: { branch_id, sender_uid, timestamp, text: null } }` |
+
+**Client-side whisper events (no server involvement):**
+
+| Whisper | Channel | Payload | Debounce |
+|---------|---------|---------|----------|
+| `'typing'` | `walkie-typie.{uid1}.{uid2}` (private, sorted alphabetically) | `{ from, text, bin }` | 50ms |
+
+**WT real-time layers:**
+1. **Whisper** (50ms) — full textarea content sent client-to-client via Reverb relay
+2. **IndexedDB save** (200ms) — local persistence
+3. **Server commit** (2s) — PostgreSQL persistence + `WalkieTypieSignal` event triggers partner re-sync
+
+**BC real-time flow:** Owner CASTs → server replaces all boards → fires `BroadcastChannelUpdated` → readers' cache invalidated → re-fetch from API
 
 ### PWA & Service Worker
 
@@ -318,6 +401,18 @@ const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
 
 ### Mobile audio
 `audio.js` skips playback on mobile devices (autoplay restrictions) via UA sniffing.
+
+## Host Machine
+
+Development & deployment on the same local machine:
+- **CPU:** Intel Core i7-13th Gen
+- **GPU:** NVIDIA RTX 4080 (capable of running Whisper large-v3, Llama 3 8B+, Stable Diffusion)
+- **RAM:** 64 GB
+- **OS:** Windows 11
+- **Docker Desktop** runs all containers locally
+- **Cloudflare Tunnel** exposes the stack publicly
+
+This hardware enables running LOCAL AI models (translation, STT, LLM) in Docker with acceptable performance. The MOD system's online/offline provider architecture is designed to leverage this.
 
 ## Environment Variables
 
