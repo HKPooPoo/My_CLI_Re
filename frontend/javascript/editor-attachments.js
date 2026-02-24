@@ -249,7 +249,7 @@ export const EditorAttachments = {
 
                     // Replace loading chip with real chip
                     this._removeLoadingChip();
-                    this._appendChip({ hash, status: 'local' });
+                    this._appendChip({ hash, status: 'local', name: file.name });
 
                     // Await so that errors surface to the caller
                     await this.onAttach(hash, {
@@ -320,7 +320,7 @@ export const EditorAttachments = {
                     if (version !== this._srVersion) return;
 
                     if (localFile) {
-                        this._appendChip({ hash, status: localFile.status || 'local' });
+                        this._appendChip({ hash, status: localFile.status || 'local', name: localFile.name });
                     } else {
                         this._appendChip({ hash, status: 'cloud' });
                     }
@@ -372,13 +372,18 @@ export const EditorAttachments = {
 
                         await db.file_blobs.put(localFile);
 
-                        // Update just this chip's status
+                        // Update chip status and name after download
                         const chip = this._findChip(hash);
                         if (chip) {
                             chip.classList.remove('is-local');
                             chip.classList.add('is-synced');
                             const icon = chip.querySelector('.attachment-chip-icon');
                             if (icon) icon.textContent = t('files.statusSync');
+                            const nameEl = chip.querySelector('.attachment-chip-name');
+                            if (nameEl && meta.name) {
+                                nameEl.textContent = meta.name;
+                                nameEl.title = meta.name;
+                            }
                         }
 
                     } catch (e) {
@@ -426,7 +431,7 @@ export const EditorAttachments = {
                 }
             },
 
-            _appendChip({ hash, status }) {
+            _appendChip({ hash, status, name }) {
                 // status: 'local' = only on this device (orange)
                 //         'synced' = on server + cached locally (green)
                 //         'cloud'  = on server, not cached locally (green)
@@ -451,10 +456,20 @@ export const EditorAttachments = {
                 const removeHtml = this.readOnly ? '' :
                     `<button class="attachment-chip-remove" data-hash="${hash}" title="Remove">${t('files.removeBtn')}</button>`;
 
+                const displayName = name || hash.substring(0, 8) + '…';
+
                 chip.innerHTML = `
-                    <span class="attachment-chip-icon" style="cursor: pointer;" title="Open File">${iconText}</span>
-                    ${removeHtml}
+                    <span class="attachment-chip-name"></span>
+                    <div class="attachment-chip-bottom">
+                        <span class="attachment-chip-icon" style="cursor: pointer;" title="Open File">${iconText}</span>
+                        ${removeHtml}
+                    </div>
                 `;
+
+                // Set name via textContent to prevent XSS from file names
+                const nameEl = chip.querySelector('.attachment-chip-name');
+                nameEl.textContent = displayName;
+                nameEl.title = name || hash;
 
                 const iconEl = chip.querySelector('.attachment-chip-icon');
                 iconEl.addEventListener('click', () => {

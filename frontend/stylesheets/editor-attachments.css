@@ -36,7 +36,7 @@
     flex-wrap: nowrap;
     gap: 6px;
     padding: 0;
-    min-height: 0;
+    flex-shrink: 0;
     /* Hidden when empty — no space consumed */
     display: none;
     /*Not overlap push button*/
@@ -74,14 +74,14 @@
 
 /* Individual chip — JS will inject these */
 .attachment-chip {
-    flex-direction: row;
-    align-items: center;
-    gap: 6px;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 2px;
     padding: 4px 8px;
     border: 1px solid var(--text-green);
     border-radius: calc(var(--border-radius) / 2);
     font-size: calc(var(--font-size) * 0.85);
-    max-width: 200px;
+    max-width: 16rem;
     flex-shrink: 0;
     overflow: hidden;
     cursor: default;
@@ -102,11 +102,19 @@
 }
 
 .attachment-chip-name {
+    display: block;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    flex: 1;
     min-width: 0;
+    font-size: calc(var(--font-size) * 0.75);
+    opacity: 0.8;
+}
+
+.attachment-chip-bottom {
+    flex-direction: row;
+    align-items: center;
+    gap: 6px;
 }
 
 .attachment-chip-size {
