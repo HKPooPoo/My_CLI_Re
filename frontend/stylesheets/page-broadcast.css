@@ -79,6 +79,7 @@
 
 .broadcast-list-list-item.active .broadcast-list-tag {
     color: var(--bg-primary);
+    caret-color: var(--bg-primary);
 }
 
 .broadcast-list-list-item.active ::selection {

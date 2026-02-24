@@ -132,6 +132,7 @@
 
 .walkie-typie-list-list-item.active .walkie-typie-list-tag {
     color: var(--bg-primary);
+    caret-color: var(--bg-primary);
 }
 
 .walkie-typie-list-list-item.active ::selection {
