@@ -2,6 +2,15 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Git Workflow (MANDATORY)
+
+**Every task must be wrapped in two commits — one BEFORE changes and one AFTER.**
+
+1. **Before starting work:** Stage and commit all current uncommitted changes with message `WIP: before <short task description>`
+2. **After completing work:** Stage and commit all changes with a descriptive message summarising what was done
+3. Do NOT push to remote — this repo is local-only
+4. Keep commits atomic: one task = one before/after commit pair
+
 ## Project Overview
 
 **My CLI Re** is a collaborative, peer-to-peer communication platform with a retro CRT terminal aesthetic. It is a Docker-based full-stack application with a Laravel 12 (PHP-FPM) backend and a vanilla JavaScript frontend served by Nginx.
