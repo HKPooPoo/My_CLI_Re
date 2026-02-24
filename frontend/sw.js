@@ -1,4 +1,4 @@
-const CACHE_NAME = 'blackboard-v15-2026-02-25'; // Bump: MOD instance-based architecture redesign
+const CACHE_NAME = 'blackboard-v16-2026-02-25'; // Bump: UIUX fixes — list actions + select color
 const ASSETS = [
   '/',
   '/index.html',

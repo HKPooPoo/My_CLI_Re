@@ -286,6 +286,11 @@
     color: var(--text-green);
 }
 
+.mods-config-field-select option:checked {
+    background-color: var(--text-green);
+    color: var(--bg-primary);
+}
+
 :root[data-theme="light"] .mods-config-field-select {
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23000000'/%3E%3C/svg%3E");
 }
@@ -434,27 +439,28 @@
     flex: 0 0 auto;
 }
 
-/* === Instance Actions (config page) === */
+/* === Instance Actions (list page, below active instances) === */
 .mods-instance-actions {
     display: flex;
     flex-direction: row;
-    justify-content: center;
     align-items: center;
     gap: calc(var(--panel-gap) / 2);
-    padding: var(--panel-gap) calc(var(--panel-gap) / 2);
-    border-top: 1px solid var(--text-green);
-    margin-top: calc(var(--panel-gap) / 2);
+    padding: calc(var(--panel-gap) / 2);
+}
+
+.mods-instance-actions:empty {
+    display: none;
 }
 
 .mods-action-btn {
     border: var(--border-line);
-    padding: 6px 12px;
+    padding: 6px 0;
     cursor: pointer;
     font-size: 0.8em;
     letter-spacing: 0.05em;
     transition: all var(--transition-normal);
     text-align: center;
-    min-width: 64px;
+    flex: 1 1 0;
 }
 
 .mods-action-btn:disabled {

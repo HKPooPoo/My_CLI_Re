@@ -1,8 +1,9 @@
 /**
  * MOD Manager - Instance-Based UI Controller
  * =================================================================
- * List page: Two-container layout — template catalog + active instances.
- * Config page: Instance config with reorder/delete actions.
+ * List page: Two-container layout — template catalog + active instances
+ *            + instance actions (UP/DOWN/DELETE) below the list.
+ * Config page: Instance config fields only.
  * =================================================================
  */
 
@@ -18,9 +19,11 @@ import { t } from './i18n.js';
 let infiniteList = null;
 let selectionTimer = null;
 let selectedInstanceId = null;
+let deleteMultiStep = null;
 
 const elements = {
     listContainer: document.querySelector('.mods-list-container'),
+    actionsContainer: document.getElementById('mods-instance-actions'),
     refreshBtn: document.getElementById('mods-refresh-btn'),
     configTitle: document.getElementById('mods-config-title'),
     configDescription: document.getElementById('mods-config-description'),
@@ -38,7 +41,9 @@ function init() {
     // Select first instance
     const firstItem = elements.listContainer?.querySelector('.mods-list-item[data-instance-id]');
     if (firstItem?.dataset?.instanceId) {
-        renderConfig(firstItem.dataset.instanceId);
+        selectedInstanceId = firstItem.dataset.instanceId;
+        renderConfig(selectedInstanceId);
+        renderInstanceActions(selectedInstanceId);
     }
 
     ModState.refreshAllServerStatuses().then(() => {
@@ -174,12 +179,97 @@ function handleAddInstance(templateId) {
         BBMessage.error(t('mods.singletonAdded'));
         return;
     }
-    // Rebuild buttons and re-render list
     rebuildInstanceButtons();
     renderListPage();
 
-    // Auto-select new instance
-    renderConfig(instance.instanceId);
+    selectedInstanceId = instance.instanceId;
+    renderConfig(selectedInstanceId);
+    renderInstanceActions(selectedInstanceId);
+}
+
+// ===================== Instance Actions (List Page) =====================
+
+/**
+ * Render UP/DOWN/DELETE actions below the list, for the selected instance.
+ */
+function renderInstanceActions(instanceId) {
+    const container = elements.actionsContainer;
+    if (!container) return;
+    container.innerHTML = '';
+
+    if (!instanceId) return;
+
+    const inst = ModState.getInstance(instanceId);
+    if (!inst) return;
+
+    const template = getTemplate(inst.templateId);
+    const instances = ModState.getInstances();
+    const idx = instances.findIndex(i => i.instanceId === instanceId);
+
+    // MOVE UP
+    const upBtn = document.createElement('button');
+    upBtn.className = 'mods-action-btn crt-text-green';
+    upBtn.textContent = '\u25B2 ' + t('mods.moveUp');
+    upBtn.disabled = idx <= 0;
+    upBtn.addEventListener('click', () => {
+        playAudio('UIGeneralFocus.mp3');
+        ModState.reorderInstance(instanceId, -1);
+        rebuildInstanceButtons();
+        renderListPage();
+        renderInstanceActions(instanceId);
+    });
+
+    // MOVE DOWN
+    const downBtn = document.createElement('button');
+    downBtn.className = 'mods-action-btn crt-text-green';
+    downBtn.textContent = '\u25BC ' + t('mods.moveDown');
+    downBtn.disabled = idx >= instances.length - 1;
+    downBtn.addEventListener('click', () => {
+        playAudio('UIGeneralFocus.mp3');
+        ModState.reorderInstance(instanceId, 1);
+        rebuildInstanceButtons();
+        renderListPage();
+        renderInstanceActions(instanceId);
+    });
+
+    container.appendChild(upBtn);
+    container.appendChild(downBtn);
+
+    // DELETE (hidden for singletons)
+    if (!template?.singleton) {
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'mods-action-btn mods-action-delete crt-text-red';
+        deleteBtn.textContent = t('mods.deleteInstance');
+
+        deleteMultiStep = new MultiStepButton(deleteBtn, {
+            confirm: true,
+            confirmLabel: t('mods.deleteConfirm'),
+            action: () => {
+                playAudio('UIGeneralCancel.mp3');
+                removeInstanceButton(instanceId);
+                ModState.removeInstance(instanceId);
+                renderListPage();
+
+                // Select another instance or clear
+                const remaining = ModState.getInstances();
+                if (remaining.length > 0) {
+                    selectedInstanceId = remaining[0].instanceId;
+                    renderConfig(selectedInstanceId);
+                    renderInstanceActions(selectedInstanceId);
+                } else {
+                    selectedInstanceId = null;
+                    renderInstanceActions(null);
+                    if (elements.configDefault) elements.configDefault.style.display = '';
+                    if (elements.configTitle) elements.configTitle.textContent = '\u2014';
+                    if (elements.configDescription) elements.configDescription.textContent = '';
+                    if (elements.configFields) elements.configFields.innerHTML = '';
+                    if (elements.configStatus) elements.configStatus.style.display = 'none';
+                }
+            }
+        });
+
+        container.appendChild(deleteBtn);
+    }
 }
 
 // --- Update server status indicators ---
@@ -221,7 +311,6 @@ function renderConfig(instanceId) {
 
     renderConfigStatus(instanceId);
     renderConfigFields(instanceId);
-    renderConfigActions(instanceId);
 
     // Show refresh button only when active provider is server-type
     const activeProviderId = inst.config?.provider;
@@ -263,9 +352,6 @@ function renderConfigFields(instanceId) {
     if (!elements.configFields || !inst) return;
 
     const template = getTemplate(inst.templateId);
-
-    // Remove only non-action fields (preserve actions section if re-rendering)
-    const existingActions = elements.configFields.querySelector('.mods-instance-actions');
     elements.configFields.innerHTML = '';
 
     if (template?.configSchema && template.configSchema.length > 0) {
@@ -274,89 +360,6 @@ function renderConfigFields(instanceId) {
             if (fieldEl) elements.configFields.appendChild(fieldEl);
         }
     }
-
-    // Re-append actions if they existed, otherwise they'll be added by renderConfigActions
-    if (existingActions) elements.configFields.appendChild(existingActions);
-}
-
-function renderConfigActions(instanceId) {
-    const inst = ModState.getInstance(instanceId);
-    if (!elements.configFields || !inst) return;
-
-    const template = getTemplate(inst.templateId);
-
-    // Remove existing actions
-    elements.configFields.querySelector('.mods-instance-actions')?.remove();
-
-    const actionsContainer = document.createElement('div');
-    actionsContainer.className = 'mods-instance-actions';
-
-    const instances = ModState.getInstances();
-    const idx = instances.findIndex(i => i.instanceId === instanceId);
-
-    // MOVE UP
-    const upBtn = document.createElement('button');
-    upBtn.className = 'mods-action-btn crt-text-green';
-    upBtn.textContent = '\u25B2 ' + t('mods.moveUp');
-    upBtn.disabled = idx <= 0;
-    upBtn.addEventListener('click', () => {
-        playAudio('UIGeneralFocus.mp3');
-        ModState.reorderInstance(instanceId, -1);
-        rebuildInstanceButtons();
-        renderListPage();
-        renderConfigActions(instanceId);
-    });
-
-    // MOVE DOWN
-    const downBtn = document.createElement('button');
-    downBtn.className = 'mods-action-btn crt-text-green';
-    downBtn.textContent = '\u25BC ' + t('mods.moveDown');
-    downBtn.disabled = idx >= instances.length - 1;
-    downBtn.addEventListener('click', () => {
-        playAudio('UIGeneralFocus.mp3');
-        ModState.reorderInstance(instanceId, 1);
-        rebuildInstanceButtons();
-        renderListPage();
-        renderConfigActions(instanceId);
-    });
-
-    actionsContainer.appendChild(upBtn);
-    actionsContainer.appendChild(downBtn);
-
-    // DELETE (hidden for singletons)
-    if (!template?.singleton) {
-        const deleteBtn = document.createElement('button');
-        deleteBtn.className = 'mods-action-btn mods-action-delete crt-text-red';
-        deleteBtn.textContent = t('mods.deleteInstance');
-
-        new MultiStepButton(deleteBtn, {
-            confirm: true,
-            confirmLabel: t('mods.deleteConfirm'),
-            action: () => {
-                playAudio('UIGeneralCancel.mp3');
-                removeInstanceButton(instanceId);
-                ModState.removeInstance(instanceId);
-                renderListPage();
-
-                // Select another instance or show default
-                const remaining = ModState.getInstances();
-                if (remaining.length > 0) {
-                    renderConfig(remaining[0].instanceId);
-                } else {
-                    selectedInstanceId = null;
-                    if (elements.configDefault) elements.configDefault.style.display = '';
-                    if (elements.configTitle) elements.configTitle.textContent = '\u2014';
-                    if (elements.configDescription) elements.configDescription.textContent = '';
-                    if (elements.configFields) elements.configFields.innerHTML = '';
-                    if (elements.configStatus) elements.configStatus.style.display = 'none';
-                }
-            }
-        });
-
-        actionsContainer.appendChild(deleteBtn);
-    }
-
-    elements.configFields.appendChild(actionsContainer);
 }
 
 // ===================== Config Field Creators =====================
@@ -539,7 +542,7 @@ function bindEvents() {
         toggleBtn.textContent = newState ? t('mods.enabled') : t('mods.disabled');
     });
 
-    // InfiniteList selection → debounce → show config
+    // InfiniteList selection → debounce → show config + update actions
     window.addEventListener('list:selectionChanged', ({ detail }) => {
         if (!elements.listContainer?.contains(detail.item)) return;
 
@@ -547,6 +550,8 @@ function bindEvents() {
         selectionTimer = setTimeout(() => {
             const instanceId = detail.item?.dataset?.instanceId;
             if (instanceId) {
+                selectedInstanceId = instanceId;
+                renderInstanceActions(instanceId);
                 window.dispatchEvent(new CustomEvent('mods:selected', { detail: { instanceId } }));
             }
         }, 500);
@@ -577,7 +582,6 @@ function bindEvents() {
 
     // Re-render config fields when config changes (for showWhen + button icon update)
     window.addEventListener('mods:configChanged', ({ detail }) => {
-        // Update button icon if config changed
         if (detail.instanceId) {
             updateInstanceButton(detail.instanceId);
         }
@@ -598,6 +602,10 @@ function bindEvents() {
                     ? template.getInstanceName(inst.config, t)
                     : t(template.nameKey);
             }
+
+            // Also update list page name display
+            renderListPage();
+            renderInstanceActions(selectedInstanceId);
         }
     });
 
