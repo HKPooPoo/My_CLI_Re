@@ -64,13 +64,10 @@ window.addEventListener('resize', () => {
  * Check if a feature button is controlled by a MOD, and if so, whether that MOD is enabled.
  */
 function isFeatureBtnAllowedByMods(btnId) {
-    for (const [modId, def] of Object.entries(MOD_REGISTRY)) {
-        if (def.featureButtons && def.featureButtons.includes(btnId)) {
-            return ModState.isEnabled(modId);
-        }
-    }
-    // Not controlled by any MOD — always allowed
-    return true;
+    const relatedMods = Object.entries(MOD_REGISTRY)
+        .filter(([, def]) => def.featureButtons?.includes(btnId));
+    if (relatedMods.length === 0) return true; // Not controlled by any MOD
+    return relatedMods.some(([id]) => ModState.isEnabled(id));
 }
 
 // 按頁面配置顯隱功能按鈕 (MOD-aware)

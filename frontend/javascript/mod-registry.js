@@ -1,29 +1,130 @@
 /**
  * MOD Registry - Definitions for all available MODs
  * =================================================================
- * Each MOD entry defines its metadata, type, and integration points.
+ * Each MOD = one atomic feature. Same feature button can be
+ * referenced by multiple MODs (e.g. translate-zh-TW online + offline).
+ * Button is visible if ANY referencing MOD is enabled.
  * =================================================================
  */
 
 export const MOD_TYPES = { SERVER: 'server', CLIENT: 'client' };
 
 export const MOD_REGISTRY = {
+    // --- TRANSLATION: Online (Google Cloud API) ---
+    'translate-zh-TW-online': {
+        id: 'translate-zh-TW-online',
+        nameKey: 'mods.translateZhTwOnline.name',
+        descriptionKey: 'mods.translateZhTwOnline.desc',
+        group: 'translation',
+        type: MOD_TYPES.CLIENT,
+        featureButtons: ['translate-zh-TW'],
+        provider: 'google',
+        config: [],
+        defaultEnabled: true
+    },
+    'translate-zh-CN-online': {
+        id: 'translate-zh-CN-online',
+        nameKey: 'mods.translateZhCnOnline.name',
+        descriptionKey: 'mods.translateZhCnOnline.desc',
+        group: 'translation',
+        type: MOD_TYPES.CLIENT,
+        featureButtons: ['translate-zh-CN'],
+        provider: 'google',
+        config: [],
+        defaultEnabled: true
+    },
+    'translate-en-online': {
+        id: 'translate-en-online',
+        nameKey: 'mods.translateEnOnline.name',
+        descriptionKey: 'mods.translateEnOnline.desc',
+        group: 'translation',
+        type: MOD_TYPES.CLIENT,
+        featureButtons: ['translate-en'],
+        provider: 'google',
+        config: [],
+        defaultEnabled: true
+    },
+    'translate-ja-online': {
+        id: 'translate-ja-online',
+        nameKey: 'mods.translateJaOnline.name',
+        descriptionKey: 'mods.translateJaOnline.desc',
+        group: 'translation',
+        type: MOD_TYPES.CLIENT,
+        featureButtons: ['translate-ja'],
+        provider: 'google',
+        config: [],
+        defaultEnabled: true
+    },
+
+    // --- TRANSLATION: Offline (LibreTranslate Docker) ---
+    'translate-zh-TW-offline': {
+        id: 'translate-zh-TW-offline',
+        nameKey: 'mods.translateZhTwOffline.name',
+        descriptionKey: 'mods.translateZhTwOffline.desc',
+        group: 'translation',
+        type: MOD_TYPES.SERVER,
+        featureButtons: ['translate-zh-TW'],
+        provider: 'libretranslate',
+        healthEndpoint: '/api/mods/offline-translate/health',
+        config: [],
+        defaultEnabled: false
+    },
+    'translate-zh-CN-offline': {
+        id: 'translate-zh-CN-offline',
+        nameKey: 'mods.translateZhCnOffline.name',
+        descriptionKey: 'mods.translateZhCnOffline.desc',
+        group: 'translation',
+        type: MOD_TYPES.SERVER,
+        featureButtons: ['translate-zh-CN'],
+        provider: 'libretranslate',
+        healthEndpoint: '/api/mods/offline-translate/health',
+        config: [],
+        defaultEnabled: false
+    },
+    'translate-en-offline': {
+        id: 'translate-en-offline',
+        nameKey: 'mods.translateEnOffline.name',
+        descriptionKey: 'mods.translateEnOffline.desc',
+        group: 'translation',
+        type: MOD_TYPES.SERVER,
+        featureButtons: ['translate-en'],
+        provider: 'libretranslate',
+        healthEndpoint: '/api/mods/offline-translate/health',
+        config: [],
+        defaultEnabled: false
+    },
+    'translate-ja-offline': {
+        id: 'translate-ja-offline',
+        nameKey: 'mods.translateJaOffline.name',
+        descriptionKey: 'mods.translateJaOffline.desc',
+        group: 'translation',
+        type: MOD_TYPES.SERVER,
+        featureButtons: ['translate-ja'],
+        provider: 'libretranslate',
+        healthEndpoint: '/api/mods/offline-translate/health',
+        config: [],
+        defaultEnabled: false
+    },
+
+    // --- TOOLS ---
+    'speech-to-text': {
+        id: 'speech-to-text',
+        nameKey: 'mods.speechToText.name',
+        descriptionKey: 'mods.speechToText.desc',
+        group: 'tools',
+        type: MOD_TYPES.CLIENT,
+        featureButtons: ['voice-to-textbox'],
+        config: [],
+        defaultEnabled: true
+    },
     'markdown-preview': {
         id: 'markdown-preview',
         nameKey: 'mods.markdownPreview.name',
         descriptionKey: 'mods.markdownPreview.desc',
+        group: 'tools',
         type: MOD_TYPES.CLIENT,
         featureButtons: ['markdown-preview'],
-        defaultEnabled: false
-    },
-    'offline-translate': {
-        id: 'offline-translate',
-        nameKey: 'mods.offlineTranslate.name',
-        descriptionKey: 'mods.offlineTranslate.desc',
-        type: MOD_TYPES.SERVER,
-        healthEndpoint: '/api/mods/offline-translate/health',
-        replaces: 'google-translate',
-        featureButtons: ['translate-zh-TW', 'translate-zh-CN', 'translate-en', 'translate-ja'],
-        defaultEnabled: false
+        config: [],
+        defaultEnabled: true
     }
 };

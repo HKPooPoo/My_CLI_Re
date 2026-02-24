@@ -2,8 +2,9 @@
  * Feature - Translator (Language Translation)
  * =================================================================
  * Handles text translation via PHP Proxy.
- * MOD-aware: checks if offline-translate MOD is enabled and online,
- * then sends provider='libretranslate' to the backend.
+ * MOD-aware: per-language MOD lookup determines provider.
+ *   - If offline MOD enabled + server online → libretranslate
+ *   - Otherwise → google (default)
  * =================================================================
  */
 
@@ -43,13 +44,14 @@ $translateBtns.forEach($btn => {
 });
 
 /**
- * Remote translation request (MOD-aware provider selection)
+ * Remote translation request (per-language MOD-aware provider selection)
  */
 async function translateText(text, targetLang) {
     const payload = { text, target: targetLang };
 
-    // Check if offline-translate MOD is enabled and its server is online
-    if (ModState.isEnabled('offline-translate') && ModState.getServerStatus('offline-translate') === 'online') {
+    // Check if offline MOD for this language is enabled and its server is online
+    const offlineModId = `translate-${targetLang}-offline`;
+    if (ModState.isEnabled(offlineModId) && ModState.getServerStatus(offlineModId) === 'online') {
         payload.provider = 'libretranslate';
     }
 

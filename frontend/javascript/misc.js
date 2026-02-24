@@ -92,3 +92,4 @@ export const MISC = {
 };
 
 MISC.init();
+window.addEventListener('i18n:ready', () => MISC.updateUI());

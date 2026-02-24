@@ -244,27 +244,32 @@
   "mods": {
     "pageTitle": "模組管理器",
     "listTab": "列表",
-    "aboutTab": "關於",
-    "aboutTitle": "系統診斷",
-    "aboutDescription": "模組系統 v1.0 — 透過可選模組擴展功能。",
+    "configTab": "配置",
+    "configDefault": "請從列表中選擇模組。",
     "enabled": "開啟",
     "disabled": "關閉",
     "refreshBtn": "重新掃描",
-    "refreshing": "掃描模組中...",
+    "refreshing": "掃描中...",
     "refreshComplete": "掃描完成",
     "serverOfflineWarning": "警告：服務離線",
-    "markdownPreview": {
-      "name": "MARKDOWN 預覽",
-      "desc": "在功能面板和廣播閱讀器中渲染 Markdown。"
-    },
-    "offlineTranslate": {
-      "name": "離線翻譯",
-      "desc": "透過 LibreTranslate 進行本機翻譯，無需雲端 API。"
+    "group": {
+      "translation": "翻譯",
+      "tools": "工具"
     },
     "status": {
       "unknown": "掃描中...",
       "online": "線上",
       "offline": "離線"
-    }
+    },
+    "translateZhTwOnline":  { "name": "繁體中文（線上）",  "desc": "透過 Google Cloud API 翻譯為繁體中文。" },
+    "translateZhCnOnline":  { "name": "简体中文（線上）",  "desc": "透過 Google Cloud API 翻譯為簡體中文。" },
+    "translateEnOnline":    { "name": "ENGLISH（線上）",    "desc": "透過 Google Cloud API 翻譯為英文。" },
+    "translateJaOnline":    { "name": "日本語（線上）",     "desc": "透過 Google Cloud API 翻譯為日文。" },
+    "translateZhTwOffline": { "name": "繁體中文（線下）",  "desc": "透過本機 LibreTranslate 翻譯為繁體中文。" },
+    "translateZhCnOffline": { "name": "简体中文（線下）",  "desc": "透過本機 LibreTranslate 翻譯為簡體中文。" },
+    "translateEnOffline":   { "name": "ENGLISH（線下）",   "desc": "透過本機 LibreTranslate 翻譯為英文。" },
+    "translateJaOffline":   { "name": "日本語（線下）",    "desc": "透過本機 LibreTranslate 翻譯為日文。" },
+    "speechToText":         { "name": "語音轉文字",         "desc": "透過 Google Speech API 將語音輸入轉換為文字。" },
+    "markdownPreview":      { "name": "MARKDOWN 預覽",      "desc": "在功能面板中渲染 Markdown。" }
   }
 }

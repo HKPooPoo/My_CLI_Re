@@ -6,7 +6,10 @@
 import { apiRequest } from './api.js';
 
 export const ModService = {
-    checkHealth(modId) {
-        return apiRequest(`/mods/${modId}/health`);
+    /**
+     * @param {string} endpoint — full path like '/api/mods/offline-translate/health'
+     */
+    checkHealth(endpoint) {
+        return apiRequest(endpoint);
     }
 };

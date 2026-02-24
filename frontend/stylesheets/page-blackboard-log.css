@@ -182,6 +182,11 @@
     mask-image: url('../images/voice_to_textbox.svg');
 }
 
+.feature-btn[data-feature-btn="markdown-preview"]::after {
+    -webkit-mask-image: url('../images/markdown_preview.svg');
+    mask-image: url('../images/markdown_preview.svg');
+}
+
 /* Status states (toggled by JS) */
 .feature-btn.active::after {
     filter: drop-shadow(0 0 5px var(--text-orange));

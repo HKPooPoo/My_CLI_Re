@@ -124,8 +124,8 @@
                         <div class="sub-navi-item" data-sub-navi-item="mods-list">
                             <div class="sub-navi-item-text" data-i18n="mods.listTab">LIST</div>
                         </div>
-                        <div class="sub-navi-item" data-sub-navi-item="mods-about">
-                            <div class="sub-navi-item-text" data-i18n="mods.aboutTab">ABOUT</div>
+                        <div class="sub-navi-item" data-sub-navi-item="mods-config">
+                            <div class="sub-navi-item-text" data-i18n="mods.configTab">CONFIG</div>
                         </div>
                     </div>
                 </div>
@@ -403,17 +403,20 @@
             <div class="page" data-page="mods-list">
                 <div class="mods-container">
                     <div class="mods-title crt-text-orange" data-i18n="mods.pageTitle">MOD MANAGER</div>
-                    <div class="mods-list-container"></div>
+                    <div class="mods-list-container" data-sound-item="UIGeneralFocus.mp3"></div>
                     <button id="mods-refresh-btn" class="crt-text-green" data-i18n="mods.refreshBtn">REFRESH</button>
                 </div>
             </div>
-            <div class="page" data-page="mods-about">
+            <div class="page" data-page="mods-config">
                 <div class="mods-container">
-                    <div class="mods-title crt-text-orange" data-i18n="mods.aboutTitle">SYSTEM DIAGNOSTICS</div>
-                    <div class="mods-about-content">
-                        <div class="mods-about-text" data-i18n="mods.aboutDescription">MOD SYSTEM v1.0</div>
-                        <div class="mods-diagnostics-container" id="mods-diagnostics"></div>
+                    <div class="mods-title crt-text-orange" id="mods-config-title">—</div>
+                    <div class="mods-config-content">
+                        <div class="mods-config-description" id="mods-config-description"></div>
+                        <div class="mods-config-status" id="mods-config-status"></div>
+                        <div class="mods-config-fields" id="mods-config-fields"></div>
+                        <div class="mods-config-default" id="mods-config-default" data-i18n="mods.configDefault">SELECT A MOD FROM THE LIST.</div>
                     </div>
+                    <button id="mods-config-refresh-btn" class="crt-text-green" data-i18n="mods.refreshBtn" style="display:none;">REFRESH</button>
                 </div>
             </div>
             <!-- MOD Manager -->

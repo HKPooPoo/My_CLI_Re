@@ -1,3 +1,4 @@
+/* === mods-container — mirrors .misc-container === */
 .mods-container {
     justify-content: space-around;
     gap: var(--panel-gap);
@@ -20,6 +21,7 @@
     transition: left var(--transition-normal) ease-in, transform var(--transition-normal) ease-in;
 }
 
+/* === mods-list page — scrollable list with InfiniteList cursor === */
 .mods-list-container {
     border-bottom: var(--border-line);
     height: clamp(192px, calc(var(--container-width) / 2), 40vh);
@@ -42,69 +44,84 @@
     border-radius: 2px;
 }
 
-.mods-list-item {
-    padding: calc(var(--panel-gap) / 2);
+/* Group divider — orange section header */
+.mods-group-divider {
+    padding: calc(var(--panel-gap) / 4) calc(var(--panel-gap) / 2);
+    font-size: 0.8em;
+    opacity: 0.8;
     border-bottom: 1px solid var(--text-green);
+    user-select: none;
 }
 
-.mods-list-item:last-child {
-    border-bottom: none;
-}
-
-.mods-list-item-header {
+/* List item — 3-row structure (mirrors broadcast-list/WT-list items) */
+.mods-list-item {
+    padding: calc(var(--panel-gap) / 4) calc(var(--panel-gap) / 2);
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: calc(var(--panel-gap) / 4);
+    cursor: pointer;
+    transition: background var(--transition-normal), color var(--transition-normal);
+}
+
+.mods-list-item-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+    flex: 1;
 }
 
 .mods-list-item-name {
     font-size: 1em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
-.mods-server-indicator {
-    font-size: 0.8em;
-}
-
-.mods-server-indicator.online {
-    color: var(--text-green);
-    text-shadow: 0 0 6px var(--text-green);
-}
-
-.mods-server-indicator.offline {
-    color: var(--text-red);
-    text-shadow: 0 0 6px var(--text-red);
-}
-
-.mods-server-indicator.unknown {
-    color: var(--text-orange);
-}
-
-.mods-list-item-description {
-    font-size: 0.8em;
-    opacity: 0.7;
-    margin-bottom: calc(var(--panel-gap) / 4);
-}
-
-.mods-list-item-controls {
+.mods-list-item-meta {
+    font-size: 0.75em;
+    opacity: 0.6;
     display: flex;
-    justify-content: space-between;
+    gap: 8px;
     align-items: center;
 }
 
-.mods-list-item-type {
-    font-size: 0.75em;
-    opacity: 0.5;
-    text-transform: uppercase;
+/* Active item — green glow (mirrors broadcast-list-list-item.active) */
+.mods-list-item.active {
+    background: var(--text-green);
+    color: var(--bg-primary);
+    box-shadow: 0 0 10px var(--text-green);
 }
 
+.mods-list-item.active .mods-list-item-name {
+    color: var(--bg-primary);
+}
+
+.mods-list-item.active .mods-list-item-meta {
+    color: var(--bg-primary);
+    opacity: 0.8;
+}
+
+.mods-list-item.active .mods-server-status {
+    color: var(--bg-primary);
+    text-shadow: none;
+}
+
+.mods-list-item.active .mods-toggle-btn {
+    color: var(--bg-primary);
+    border-color: var(--bg-primary);
+}
+
+/* Toggle button — inline, mirrors .misc-toggle-btn */
 .mods-toggle-btn {
     border: var(--border-line);
-    padding: 4px 16px;
-    min-width: 80px;
+    padding: 4px 12px;
+    min-width: 60px;
     text-align: center;
     cursor: pointer;
     transition: all var(--transition-normal);
+    flex-shrink: 0;
+    margin-left: 8px;
 }
 
 .mods-toggle-btn.enabled {
@@ -118,6 +135,10 @@
 }
 
 @media (hover: hover) {
+    .mods-list-item:not(.active):hover {
+        background: rgba(50, 255, 50, 0.05);
+    }
+
     .mods-toggle-btn:hover {
         background: var(--text-green);
         color: var(--bg-primary);
@@ -125,28 +146,96 @@
     }
 }
 
-#mods-refresh-btn {
+/* Server status indicator */
+.mods-server-status {
+    font-size: 0.75em;
+}
+
+.mods-server-status.online {
+    color: var(--text-green);
+    text-shadow: 0 0 6px var(--text-green);
+}
+
+.mods-server-status.offline {
+    color: var(--text-red);
+    text-shadow: 0 0 6px var(--text-red);
+}
+
+.mods-server-status.unknown {
+    color: var(--text-orange);
+}
+
+/* Refresh button */
+#mods-refresh-btn,
+#mods-config-refresh-btn {
     border: var(--border-line);
     border-radius: var(--border-radius);
     padding: 8px 0;
+    cursor: pointer;
+    transition: all var(--transition-normal);
 }
 
-.mods-about-content {
-    padding: calc(var(--panel-gap) / 2);
+@media (hover: hover) {
+    #mods-refresh-btn:hover,
+    #mods-config-refresh-btn:hover {
+        background: var(--text-green);
+        color: var(--bg-primary);
+        box-shadow: 0 0 10px var(--text-green);
+    }
 }
 
-.mods-about-text {
-    margin-bottom: var(--panel-gap);
+/* === mods-config page === */
+.mods-config-content {
+    padding: calc(var(--panel-gap) / 2) 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--panel-gap);
+    min-height: clamp(192px, calc(var(--container-width) / 2), 40vh);
+}
+
+.mods-config-description {
+    font-size: 0.9em;
     opacity: 0.7;
+    line-height: 1.4;
 }
 
-.mods-diagnostics-item {
+.mods-config-status {
     display: flex;
     justify-content: space-between;
-    padding: calc(var(--panel-gap) / 4) 0;
-    border-bottom: 1px solid rgba(50, 255, 50, 0.2);
+    align-items: center;
 }
 
-.mods-diagnostics-item:last-child {
-    border-bottom: none;
+.mods-config-fields {
+    display: flex;
+    flex-direction: column;
+    gap: calc(var(--panel-gap) / 2);
+}
+
+.mods-config-field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.mods-config-field-label {
+    font-size: 0.8em;
+    opacity: 0.6;
+    text-transform: uppercase;
+}
+
+.mods-config-field-input {
+    border-bottom: var(--border-line);
+    padding: calc(var(--panel-gap) / 4);
+    font-size: var(--font-size);
+    width: 100%;
+}
+
+.mods-config-field-input:focus {
+    border-bottom-color: var(--text-orange);
+}
+
+.mods-config-default {
+    opacity: 0.5;
+    text-align: center;
+    padding: var(--panel-gap);
 }
