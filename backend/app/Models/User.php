@@ -19,6 +19,7 @@ class User extends Authenticatable
         'passcode',
         'title',
         'email',
+        'settings',
     ];
 
     /**
@@ -30,6 +31,13 @@ class User extends Authenticatable
         'passcode',
         'remember_token',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'settings' => 'array',
+        ];
+    }
 
     /**
      * Laravel 預設搜尋 'password'，我們指定其使用 'passcode'

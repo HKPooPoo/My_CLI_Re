@@ -24,7 +24,9 @@
     "broadcast": "廣播",
     "account": "帳號",
     "misc": "設定",
-    "mods": "模組"
+    "mods": "模組",
+    "wtConfig": "配置",
+    "bcConfig": "配置"
   },
   "hud": {
     "online": "線上",
@@ -220,13 +222,20 @@
   "system": {
     "loginRequired": "此操作需要登入。"
   },
+  "config": {
+    "maxSlotLabel": "最大紀錄數",
+    "maxFilesLabel": "最大附件數",
+    "autoCleanBlanks": "自動清除空白",
+    "updateTimestamp": "更新時間戳",
+    "boardSwap": "預設交換面板",
+    "resetAll": "重設所有設定",
+    "resetComplete": "已重設為預設值"
+  },
   "misc": {
     "pageTitle": "系統設定",
     "languageLabel": "介面語言",
     "globalAudioLabel": "全局音效",
     "sfxLabel": "操作音效",
-    "maxSlotLabel": "最大紀錄數",
-    "maxFilesLabel": "最大附件數",
     "localeName": "繁體中文"
   },
   "mods": {

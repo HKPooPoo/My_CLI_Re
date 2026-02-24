@@ -24,7 +24,9 @@
     "broadcast": "CHANNELS",
     "account": "ACCOUNT",
     "misc": "SETTINGS",
-    "mods": "EXTENSIONS"
+    "mods": "EXTENSIONS",
+    "wtConfig": "CONFIG",
+    "bcConfig": "CONFIG"
   },
   "hud": {
     "online": "Online",
@@ -225,9 +227,16 @@
     "languageLabel": "Language",
     "globalAudioLabel": "Music",
     "sfxLabel": "Sound Effects",
+    "localeName": "English"
+  },
+  "config": {
     "maxSlotLabel": "Max Entries",
     "maxFilesLabel": "Max Files",
-    "localeName": "English"
+    "autoCleanBlanks": "Auto-Clean Blanks",
+    "updateTimestamp": "Update Timestamp",
+    "boardSwap": "Board Swap Default",
+    "resetAll": "Reset All Settings",
+    "resetComplete": "Settings reset to defaults."
   },
   "mods": {
     "pageTitle": "Extensions",

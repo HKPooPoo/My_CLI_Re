@@ -52,6 +52,13 @@ export const WTDb = {
     },
 
     /**
+     * 更新紀錄的文字內容 (不更新 timestamp，位置不變)
+     */
+    async updateTextInPlace(branchId, timestamp, text) {
+        await db.walkie_typie.update([branchId, timestamp], { text });
+    },
+
+    /**
      * 更新紀錄的文字內容 — 刪除舊紀錄 + 以新 timestamp 添加
      */
     async updateText(branchId, oldTimestamp, text) {

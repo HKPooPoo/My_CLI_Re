@@ -56,7 +56,7 @@ export function playAudio(fileName) {
         return isNaN(parsed) ? 100 : parsed;
     };
 
-    const globalVolume = getVol('setting-global-audio');
+    const globalVolume = getVol('setting-globalAudio') ?? getVol('setting-global-audio');
     const sfxVolume = getVol('setting-sfx');
 
     const finalVolume = (globalVolume / 100) * (sfxVolume / 100);

@@ -4,6 +4,7 @@ import db from "./indexedDB.js";
 import { BlackboardService } from "./services/blackboard-service.js";
 import { FileService } from "./services/file-service.js";
 import { t } from './i18n.js';
+import * as Settings from './settings.js';
 
 /**
  * Blackboard 版本控制邏輯層 (大腦)
@@ -18,7 +19,11 @@ export const BBVCS = {
         }
 
         await this.save(state, currentText);
-        await BBCore.scrubBranch(state.owner, state.branchId, state.maxSlot);
+        if (Settings.get('bb', 'autoCleanBlanks')) {
+            await BBCore.scrubBranch(state.owner, state.branchId, state.maxSlot);
+        } else {
+            await BBCore.cleanupOldRecords(state.owner, state.branchId, state.maxSlot);
+        }
 
         if (state.currentHead > 0) {
             state.currentHead--;
@@ -43,7 +48,11 @@ export const BBVCS = {
         }
 
         await this.save(state, currentText);
-        await BBCore.scrubBranch(state.owner, state.branchId, state.maxSlot);
+        if (Settings.get('bb', 'autoCleanBlanks')) {
+            await BBCore.scrubBranch(state.owner, state.branchId, state.maxSlot);
+        } else {
+            await BBCore.cleanupOldRecords(state.owner, state.branchId, state.maxSlot);
+        }
 
         const count = await BBCore.countRecords(state.owner, state.branchId);
 
@@ -73,15 +82,18 @@ export const BBVCS = {
 
         if (entry) {
             if (entry.text !== text) {
-                if (state.currentHead > 0) {
-                    const head0 = await BBCore.getRecord(state.owner, state.branchId, 0);
-                    if (head0 && (!head0.text || head0.text.trim() === "") && !head0.file_hash) {
-                        await db.blackboard.delete([head0.owner, head0.branch_id, head0.timestamp]);
+                if (Settings.get('bb', 'updateTimestamp')) {
+                    if (state.currentHead > 0) {
+                        const head0 = await BBCore.getRecord(state.owner, state.branchId, 0);
+                        if (head0 && (!head0.text || head0.text.trim() === "") && !head0.file_hash) {
+                            await db.blackboard.delete([head0.owner, head0.branch_id, head0.timestamp]);
+                        }
                     }
+                    await BBCore.updateText(state.owner, state.branchId, entry.timestamp, text);
+                    state.currentHead = 0;
+                } else {
+                    await BBCore.updateTextInPlace(state.owner, state.branchId, entry.timestamp, text);
                 }
-
-                await BBCore.updateText(state.owner, state.branchId, entry.timestamp, text);
-                state.currentHead = 0;
             }
         } else if (state.currentHead === 0) {
             if (text && text.trim()) {
@@ -99,8 +111,12 @@ export const BBVCS = {
         const loggedInUser = localStorage.getItem("currentUser");
         if (!loggedInUser) throw new Error(t('blackboard.loginRequired'));
 
-        const maxSlot = parseInt(localStorage.getItem("setting-max-slot")) || 10;
-        await BBCore.scrubBranch("local", branchId, maxSlot);
+        const maxSlot = Settings.get('bb', 'maxSlot');
+        if (Settings.get('bb', 'autoCleanBlanks')) {
+            await BBCore.scrubBranch("local", branchId, maxSlot);
+        } else {
+            await BBCore.cleanupOldRecords("local", branchId, maxSlot);
+        }
 
         let records = await BBCore.getAllRecordsForBranch("local", branchId);
         records = records.filter(r => (r.text && r.text.trim() !== "") || r.file_hash);
@@ -214,7 +230,11 @@ export const BBVCS = {
                 });
 
                 await db.blackboard.bulkPut(downloadRecords);
-                await BBCore.scrubBranch("local", targetBranchId, state.maxSlot || 10);
+                if (Settings.get('bb', 'autoCleanBlanks')) {
+                    await BBCore.scrubBranch("local", targetBranchId, state.maxSlot || 10);
+                } else {
+                    await BBCore.cleanupOldRecords("local", targetBranchId, state.maxSlot || 10);
+                }
             } catch (e) {
                 console.warn("CLOUD SYNC FAILED. USING LOCAL CACHE.", e);
             }

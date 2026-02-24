@@ -27,6 +27,7 @@ import { EditorAttachments } from "./editor-attachments.js";
 import db from "./indexedDB.js";
 import { playAudio } from "./audio.js";
 import { t } from './i18n.js';
+import * as Settings from './settings.js';
 
 export const WTText = {
     elements: {
@@ -56,7 +57,7 @@ export const WTText = {
     currentBin: null,
 
     // WE: IndexedDB-backed VCS state (same as Blackboard)
-    weState: { branchId: 0, branch: "WE", currentHead: 0, maxSlot: parseInt(localStorage.getItem('setting-max-slot')) || 10, isVirtual: false },
+    weState: { branchId: 0, branch: "WE", currentHead: 0, maxSlot: Settings.get('wt', 'maxSlot'), isVirtual: false },
 
     // THEY: Memory-based, server-authoritative
     theyState: { currentHead: 0 },
@@ -69,8 +70,7 @@ export const WTText = {
         this.bindEvents();
         this.lockBoards();
 
-        const savedSwap = localStorage.getItem("wt_swap_pref");
-        if (savedSwap === "true") {
+        if (Settings.get('wt', 'boardSwap')) {
             this.toggleSwap(true);
         }
     },
@@ -199,9 +199,12 @@ export const WTText = {
             this.clearBoards();
         });
 
-        // MAX_SLOT setting change
-        window.addEventListener('settings:maxSlotChanged', () => {
-            this.weState.maxSlot = parseInt(localStorage.getItem('setting-max-slot')) || 10;
+        // Settings change
+        window.addEventListener('settings:changed', (e) => {
+            const d = e.detail;
+            if (d.scope === 'wt' && d.key === 'maxSlot' || d.scope === 'all') {
+                this.weState.maxSlot = Settings.get('wt', 'maxSlot');
+            }
         });
 
         // --- Connection Lifecycle ---
@@ -367,7 +370,7 @@ export const WTText = {
 
     toggleSwap(forceState = null) {
         this.isSwapped = forceState !== null ? forceState : !this.isSwapped;
-        localStorage.setItem("wt_swap_pref", this.isSwapped);
+        Settings.set('wt', 'boardSwap', this.isSwapped);
         if (this.elements.container) {
             this.elements.container.classList.toggle("swapped", this.isSwapped);
         }

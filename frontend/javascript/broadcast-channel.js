@@ -34,6 +34,7 @@ import { playAudio } from './audio.js';
 import { BBMessage } from './blackboard-msg.js';
 import { getEcho } from './echo-service.js';
 import { t } from './i18n.js';
+import * as Settings from './settings.js';
 
 const _readerCache = new Map();  // serverChannelId → { records, fetchedAt }
 const READER_CACHE_TTL = 30_000; // 30 seconds
@@ -60,7 +61,7 @@ export const BCChannel = {
         localChannelId: null,
         currentHead: 0,
         isVirtual: false,
-        maxSlot: parseInt(localStorage.getItem('setting-max-slot')) || 10,
+        maxSlot: Settings.get('bc', 'maxSlot'),
     },
 
     // Reader mode — server records in memory (oldest→newest from API, reversed for head 0 = newest)
@@ -225,9 +226,12 @@ export const BCChannel = {
             }
         });
 
-        // MAX_SLOT setting change
-        window.addEventListener('settings:maxSlotChanged', () => {
-            this.state.maxSlot = parseInt(localStorage.getItem('setting-max-slot')) || 10;
+        // Settings change
+        window.addEventListener('settings:changed', (e) => {
+            const d = e.detail;
+            if (d.scope === 'bc' && d.key === 'maxSlot' || d.scope === 'all') {
+                this.state.maxSlot = Settings.get('bc', 'maxSlot');
+            }
         });
 
         // Textarea input — auto-save (owner mode only)
@@ -343,6 +347,13 @@ export const BCChannel = {
     async ownerPush() {
         if (this.state.isVirtual) return;
 
+        // Scrub + cleanup on push (conditional)
+        if (Settings.get('bc', 'autoCleanBlanks')) {
+            await BCDb.scrubBranch(this.state.localChannelId, this.state.maxSlot);
+        } else {
+            await BCDb.cleanupOldRecords(this.state.localChannelId, this.state.maxSlot);
+        }
+
         if (this.state.currentHead > 0) {
             this.state.currentHead--;
             await this.syncOwnerView();
@@ -358,12 +369,18 @@ export const BCChannel = {
         if (this.state.isVirtual) {
             const text = this.elements.textarea?.value ?? '';
             if (text.trim()) {
-                // Save virtual content before pulling back
                 await this.save(text);
             }
             this.state.isVirtual = false;
             await this.syncOwnerView();
             return;
+        }
+
+        // Scrub + cleanup on pull (conditional)
+        if (Settings.get('bc', 'autoCleanBlanks')) {
+            await BCDb.scrubBranch(this.state.localChannelId, this.state.maxSlot);
+        } else {
+            await BCDb.cleanupOldRecords(this.state.localChannelId, this.state.maxSlot);
         }
 
         const count = await BCDb.countRecords(this.state.localChannelId);
@@ -410,9 +427,12 @@ export const BCChannel = {
 
             if (entry) {
                 if (entry.text !== text) {
-                    // BC core mechanic: update in-place, timestamp stays the same
-                    await BCDb.updateTextInPlace(this.state.localChannelId, entry.timestamp, text);
-                    // currentHead does NOT change — position is fixed by creation order
+                    if (Settings.get('bc', 'updateTimestamp')) {
+                        await BCDb.updateText(this.state.localChannelId, entry.timestamp, text);
+                        this.state.currentHead = 0;
+                    } else {
+                        await BCDb.updateTextInPlace(this.state.localChannelId, entry.timestamp, text);
+                    }
                 }
             } else if (this.state.currentHead === 0) {
                 // Initial state (no records yet)

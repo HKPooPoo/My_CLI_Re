@@ -8,6 +8,7 @@
 
 import db, { Dexie } from './indexedDB.js';
 export { getHKTTimestamp } from './utils.js';
+import * as Settings from './settings.js';
 
 // =============================================================
 //  Board Operations (broadcast_boards)
@@ -36,6 +37,20 @@ export const BCDb = {
         await db.broadcast_boards.update([localChannelId, timestamp], { text });
     },
 
+    async updateText(localChannelId, oldTimestamp, text) {
+        const oldRecord = await db.broadcast_boards.get([localChannelId, oldTimestamp]);
+        if (!oldRecord) return oldTimestamp;
+
+        await db.broadcast_boards.delete([localChannelId, oldTimestamp]);
+        const newTimestamp = Math.max(Date.now(), oldTimestamp + 1);
+        await db.broadcast_boards.add({
+            ...oldRecord,
+            text,
+            timestamp: newTimestamp
+        });
+        return newTimestamp;
+    },
+
     async updateBinInPlace(localChannelId, timestamp, binData) {
         await db.broadcast_boards.update([localChannelId, timestamp], { file_hash: binData });
     },
@@ -61,6 +76,35 @@ export const BCDb = {
             .between([localChannelId, Dexie.minKey], [localChannelId, Dexie.maxKey])
             .primaryKeys();
         return await db.broadcast_boards.bulkDelete(keys);
+    },
+
+    async cleanupOldRecords(localChannelId, maxSlot) {
+        const records = await db.broadcast_boards
+            .where('[local_channel_id+timestamp]')
+            .between([localChannelId, Dexie.minKey], [localChannelId, Dexie.maxKey])
+            .sortBy('timestamp');
+
+        if (records.length > maxSlot) {
+            const toDelete = records.slice(0, records.length - maxSlot);
+            const keysToDelete = toDelete.map(r => [r.local_channel_id, r.timestamp]);
+            await db.broadcast_boards.bulkDelete(keysToDelete);
+        }
+    },
+
+    async scrubBranch(localChannelId, maxSlot) {
+        const emptyKeys = await db.broadcast_boards
+            .where('[local_channel_id+timestamp]')
+            .between([localChannelId, Dexie.minKey], [localChannelId, Dexie.maxKey])
+            .filter(item => (!item.text || item.text.trim() === '') && !item.file_hash)
+            .primaryKeys();
+
+        if (emptyKeys.length > 0) {
+            await db.broadcast_boards.bulkDelete(emptyKeys);
+        }
+
+        if (maxSlot) {
+            await this.cleanupOldRecords(localChannelId, maxSlot);
+        }
     },
 
     async importRecords(localChannelId, serverRecords) {

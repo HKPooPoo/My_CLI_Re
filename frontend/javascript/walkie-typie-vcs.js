@@ -12,6 +12,7 @@ import { FileService } from "./services/file-service.js";
 import { BBMessage } from "./blackboard-msg.js";
 import db from "./indexedDB.js";
 import { t } from './i18n.js';
+import * as Settings from './settings.js';
 
 export const WTVCS = {
     async push(state, currentText, readOnly = false) {
@@ -21,7 +22,11 @@ export const WTVCS = {
             await this.save(state, currentText);
         }
 
-        await WTDb.scrubBranch(state.branchId, state.maxSlot);
+        if (Settings.get('wt', 'autoCleanBlanks')) {
+            await WTDb.scrubBranch(state.branchId, state.maxSlot);
+        } else {
+            await WTDb.cleanupOldRecords(state.branchId, state.maxSlot);
+        }
 
         if (state.currentHead > 0) {
             state.currentHead--;
@@ -50,7 +55,11 @@ export const WTVCS = {
             await this.save(state, currentText);
         }
 
-        await WTDb.scrubBranch(state.branchId, state.maxSlot);
+        if (Settings.get('wt', 'autoCleanBlanks')) {
+            await WTDb.scrubBranch(state.branchId, state.maxSlot);
+        } else {
+            await WTDb.cleanupOldRecords(state.branchId, state.maxSlot);
+        }
 
         const count = await WTDb.countRecords(state.branchId);
 
@@ -77,15 +86,18 @@ export const WTVCS = {
 
         if (entry) {
             if (entry.text !== text) {
-                if (state.currentHead > 0) {
-                    const head0 = await WTDb.getRecord(state.branchId, 0);
-                    if (head0 && (!head0.text || head0.text.trim() === "") && !head0.file_hash) {
-                        await db.walkie_typie.delete([head0.branch_id, head0.timestamp]);
+                if (Settings.get('wt', 'updateTimestamp')) {
+                    if (state.currentHead > 0) {
+                        const head0 = await WTDb.getRecord(state.branchId, 0);
+                        if (head0 && (!head0.text || head0.text.trim() === "") && !head0.file_hash) {
+                            await db.walkie_typie.delete([head0.branch_id, head0.timestamp]);
+                        }
                     }
+                    await WTDb.updateText(state.branchId, entry.timestamp, text);
+                    state.currentHead = 0;
+                } else {
+                    await WTDb.updateTextInPlace(state.branchId, entry.timestamp, text);
                 }
-
-                await WTDb.updateText(state.branchId, entry.timestamp, text);
-                state.currentHead = 0;
             }
         } else if (state.currentHead === 0) {
             if (text && text.trim()) {
@@ -100,7 +112,12 @@ export const WTVCS = {
         const loggedInUser = localStorage.getItem("currentUser");
         if (!loggedInUser) throw new Error(t('walkieTypie.loginRequired'));
 
-        await WTDb.scrubBranch(branchId, 10);
+        const wtMaxSlot = Settings.get('wt', 'maxSlot');
+        if (Settings.get('wt', 'autoCleanBlanks')) {
+            await WTDb.scrubBranch(branchId, wtMaxSlot);
+        } else {
+            await WTDb.cleanupOldRecords(branchId, wtMaxSlot);
+        }
 
         let records = await WTDb.getAllRecordsForBranch(branchId);
         records = records.filter(r => (r.text && r.text.trim() !== "") || r.file_hash);

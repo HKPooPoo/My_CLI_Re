@@ -40,6 +40,26 @@ export const BBCore = {
     },
 
     /**
+     * 更新紀錄的文字內容 (不更新 timestamp，位置不變)
+     */
+    async updateTextInPlace(owner, branchId, timestamp, text) {
+        if (owner === "local") {
+            const record = await db.blackboard.where('[branch_id+timestamp]')
+                .equals([branchId, timestamp])
+                .and(item => item.owner.startsWith('local'))
+                .first();
+            if (!record) return;
+            let finalOwner = record.owner;
+            if (finalOwner.includes("[synced]")) {
+                finalOwner = finalOwner.replace("[synced]", "[asynced]");
+            }
+            await db.blackboard.update([record.owner, branchId, timestamp], { text, owner: finalOwner });
+        } else {
+            await db.blackboard.update([owner, branchId, timestamp], { text });
+        }
+    },
+
+    /**
      * 更新紀錄的文字內容 (會同時更新 timestamp 以觸發同步偵測)
      */
     async updateText(owner, branchId, oldTimestamp, text) {

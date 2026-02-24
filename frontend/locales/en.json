@@ -24,7 +24,9 @@
     "broadcast": "BROADCAST",
     "account": "AUTH",
     "misc": "MISC",
-    "mods": "MODS"
+    "mods": "MODS",
+    "wtConfig": "CONFIG",
+    "bcConfig": "CONFIG"
   },
   "hud": {
     "online": "ONLINE",
@@ -220,13 +222,20 @@
   "system": {
     "loginRequired": "LOGIN REQUIRED FOR THIS OPERATION."
   },
+  "config": {
+    "maxSlotLabel": "MAX ENTRIES",
+    "maxFilesLabel": "MAX FILES",
+    "autoCleanBlanks": "AUTO-CLEAN BLANKS",
+    "updateTimestamp": "UPDATE TIMESTAMP",
+    "boardSwap": "BOARD SWAP DEFAULT",
+    "resetAll": "RESET ALL SETTINGS",
+    "resetComplete": "SETTINGS RESET TO DEFAULTS"
+  },
   "misc": {
     "pageTitle": "MISC & SETTINGS",
     "languageLabel": "LANGUAGE",
     "globalAudioLabel": "GLOBAL AUDIO",
     "sfxLabel": "SFX",
-    "maxSlotLabel": "MAX SLOT",
-    "maxFilesLabel": "MAX FILES",
     "localeName": "GIT MODE"
   },
   "mods": {

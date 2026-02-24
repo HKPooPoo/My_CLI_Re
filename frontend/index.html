@@ -97,6 +97,9 @@
                         <div class="sub-navi-item" data-sub-navi-item="walkie-typie-text">
                             <div class="sub-navi-item-text" data-i18n="walkieTypie.boardTab">TEXT</div>
                         </div>
+                        <div class="sub-navi-item" data-sub-navi-item="walkie-typie-config">
+                            <div class="sub-navi-item-text" data-i18n="nav.wtConfig">CONFIG</div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -111,6 +114,9 @@
                         </div>
                         <div class="sub-navi-item" data-sub-navi-item="broadcast-list">
                             <div class="sub-navi-item-text" data-i18n="broadcast.listTab">LIST</div>
+                        </div>
+                        <div class="sub-navi-item" data-sub-navi-item="broadcast-config">
+                            <div class="sub-navi-item-text" data-i18n="nav.bcConfig">CONFIG</div>
                         </div>
                     </div>
                 </div>
@@ -260,26 +266,10 @@
                             <button class="misc-toggle-btn crt-text-green" id="misc-toggle-sfx">ON</button>
                         </div>
 
-                        <!-- MAX SLOT Range -->
-                        <div class="misc-list-item">
-                            <div class="misc-label" data-i18n="misc.maxSlotLabel">MAX SLOT</div>
-                            <div class="misc-range-group">
-                                <input type="range" class="misc-range-input" id="misc-range-max-slot"
-                                    min="10" max="100" step="10" value="10">
-                                <span class="misc-range-value crt-text-green" id="misc-range-max-slot-value">10</span>
-                            </div>
-                        </div>
-
-                        <!-- MAX FILES Range -->
-                        <div class="misc-list-item">
-                            <div class="misc-label" data-i18n="misc.maxFilesLabel">MAX FILES</div>
-                            <div class="misc-range-group">
-                                <input type="range" class="misc-range-input" id="misc-range-max-files"
-                                    min="1" max="20" step="1" value="10">
-                                <span class="misc-range-value crt-text-green" id="misc-range-max-files-value">10</span>
-                            </div>
-                        </div>
+                        <!-- BB-specific settings (rendered by misc.js) -->
+                        <div id="bb-config-container"></div>
                     </div>
+                    <button class="misc-toggle-btn crt-text-orange" id="misc-reset-btn" style="margin-top: 8px; width: 100%;" data-i18n="config.resetAll">RESET ALL SETTINGS</button>
                 </div>
             </div>
             <!--blackboard.js-->
@@ -296,9 +286,13 @@
             <script type="module" src="./javascript/walkie-typie-core.js"></script>
             <script type="module" src="./javascript/walkie-typie-list.js"></script>
             <script type="module" src="./javascript/walkie-typie-text.js"></script>
+            <!-- Walkie-Typie Config -->
+            <script type="module" src="./javascript/walkie-typie-config.js"></script>
             <!-- Broadcast Modules -->
             <script type="module" src="./javascript/broadcast-list.js"></script>
             <script type="module" src="./javascript/broadcast-channel.js"></script>
+            <!-- Broadcast Config -->
+            <script type="module" src="./javascript/broadcast-config.js"></script>
             <!---->
             <!-- <div class="page page-flex-direction-row can-push-pull" data-page="ai-translate">
                 <textarea name="" id="ai-translate-input" placeholder="Enter..."></textarea>
@@ -358,15 +352,12 @@
                     <button class="we-pull-btn" data-i18n="common.pull">PULL</button>
                 </div>
             </div>
-            <!-- <div class="page" data-page="walkie-typie-add">
-                <div class="walkie-typie-add-container">
-                    <div class="walkie-typie-add-title crt-text-orange">WALKIE-TYPIE CONTROLLER</div>
-
-                    <input type="text" id="walkie-typie-add-uid" placeholder="UID" maxlength="64">
-
-                    <button id="btn-add" class="crt-text-green">ADD</button>
+            <div class="page" data-page="walkie-typie-config">
+                <div class="misc-container">
+                    <div class="misc-title crt-text-orange" data-i18n="nav.wtConfig">CONFIG</div>
+                    <div class="misc-list-container" id="wt-config-container"></div>
                 </div>
-            </div> -->
+            </div>
             <!---->
             <div class="page can-push-pull have-feature show-branch" data-page="broadcast-channel" data-feature-mods="translate,markdown-preview">
                 <div class="editor-wrapper" id="bc-drop-zone">
@@ -393,6 +384,12 @@
                     <button id="broadcast-cast-btn" class="crt-text-green" data-i18n="broadcast.castStep1">CAST</button>
                     <button id="broadcast-create-btn" class="crt-text-green" data-i18n="broadcast.createStep1">CREATE</button>
                     <button id="broadcast-delete-btn" class="crt-text-green" data-i18n="broadcast.deleteStep1">DELETE</button>
+                </div>
+            </div>
+            <div class="page" data-page="broadcast-config">
+                <div class="misc-container">
+                    <div class="misc-title crt-text-orange" data-i18n="nav.bcConfig">CONFIG</div>
+                    <div class="misc-list-container" id="bc-config-container"></div>
                 </div>
             </div>
             <div class="page" data-page="mods-list">

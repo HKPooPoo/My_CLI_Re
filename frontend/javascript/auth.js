@@ -15,6 +15,7 @@ import { BBMessage } from "./blackboard-msg.js";
 import { MultiStepButton } from "./multiStepButton.js";
 import { BBCore } from "./blackboard-core.js";
 import { AuthService } from "./services/auth-service.js";
+import { SettingsSyncService } from "./services/settings-sync-service.js";
 import { t } from './i18n.js';
 
 export const AuthManager = {
@@ -109,6 +110,8 @@ export const AuthManager = {
                         this.updateUI(data.user);
                         this.elements.uidInput.value = "";
                         this.elements.passcodeInput.value = "";
+                        // Auto-pull server settings (non-blocking)
+                        SettingsSyncService.pull().catch(() => {});
                         // 非阻塞：背景取得完整資料（email 等）
                         AuthService.getStatus().then(s => {
                             if (s.is_logged_in) this.updateUI(s);

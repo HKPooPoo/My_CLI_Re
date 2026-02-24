@@ -11,6 +11,7 @@ import { FileService } from './services/file-service.js';
 import db from './indexedDB.js';
 import { BBMessage } from './blackboard-msg.js';
 import { t } from './i18n.js';
+import * as Settings from './settings.js';
 
 /**
  * Format file size in human-readable format.
@@ -199,7 +200,8 @@ export const EditorAttachments = {
              * @param {File} file
              */
             async handleFile(file) {
-                const maxFiles = parseInt(localStorage.getItem('setting-max-files') || '10', 10);
+                const scope = Settings.detectScope();
+                const maxFiles = Settings.get(scope, 'maxFiles');
                 if (this.currentHashes.length >= maxFiles) {
                     BBMessage.error(t('files.limitReached'));
                     return;

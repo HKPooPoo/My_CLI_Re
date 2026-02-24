@@ -22,6 +22,7 @@ import { BlackboardService } from "./services/blackboard-service.js";
 import { playAudio } from "./audio.js";
 import { EditorAttachments } from "./editor-attachments.js";
 import { t } from './i18n.js';
+import * as Settings from './settings.js';
 
 // --- 全域狀態聲明 ---
 const state = {
@@ -29,7 +30,7 @@ const state = {
     branch: "",         // 當前分支名稱 (用於 UI 顯示)
     branchId: 0,        // 當前分支物理 ID
     currentHead: 0,     // 歷史深度指標 (0 表示最新)
-    maxSlot: parseInt(localStorage.getItem('setting-max-slot')) || 10,
+    maxSlot: Settings.get('bb', 'maxSlot'),
     isVirtual: false    // 是否處於「新頁面」的虛擬狀態 (尚未存入 DB)
 };
 
@@ -565,9 +566,12 @@ window.addEventListener("list:updated", () => {
     setTimeout(() => initAllInfiniteLists(), 10);
 });
 
-// 監聽 MAX_SLOT 設定變更
-window.addEventListener('settings:maxSlotChanged', () => {
-    state.maxSlot = parseInt(localStorage.getItem('setting-max-slot')) || 10;
+// 監聽設定變更
+window.addEventListener('settings:changed', (e) => {
+    const d = e.detail;
+    if (d.scope === 'bb' && d.key === 'maxSlot' || d.scope === 'all') {
+        state.maxSlot = Settings.get('bb', 'maxSlot');
+    }
 });
 
 // --- Branch Search ---

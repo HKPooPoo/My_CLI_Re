@@ -92,6 +92,30 @@ services:
       - redis
     restart: unless-stopped
 
+  scheduler:
+    build: ./backend
+    container_name: my-cli-scheduler
+    volumes:
+      - ./backend:/var/www/html
+      - file-storage:/var/www/html/storage/app/private/files
+    environment:
+      APP_ENV: local
+      APP_DEBUG: "true"
+      APP_KEY: ${APP_KEY:-}
+      DB_CONNECTION: pgsql
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_DATABASE: ${POSTGRES_DB}
+      DB_USERNAME: ${POSTGRES_USER}
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+    command: php artisan schedule:work
+    depends_on:
+      - db
+      - redis
+    restart: unless-stopped
+
   db:
     image: postgres:16
     container_name: my-cli-postgres

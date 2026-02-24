@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\File;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
 class FileService
@@ -81,6 +82,52 @@ class FileService
         File::where('hash', $hash)
             ->where('status', '!=', 'committed')
             ->update(['status' => 'committed']);
+    }
+
+    /**
+     * Mark committed files as orphaned if they are no longer referenced
+     * by any board table (blackboards, walkie_typie_boards, broadcast_boards).
+     */
+    public function markOrphaned(): int
+    {
+        // Find committed files whose hash is not referenced by any board.
+        // file_hash columns store either a plain hash string, or a JSON array of hashes.
+        // We check for exact match (plain) or LIKE '%hash%' (JSON array).
+        $committedFiles = File::where('status', 'committed')->get();
+        $marked = 0;
+
+        foreach ($committedFiles as $file) {
+            $hash = $file->hash;
+
+            $referencedInBB = DB::table('blackboards')
+                ->where(function ($q) use ($hash) {
+                    $q->where('file_hash', $hash)
+                      ->orWhere('file_hash', 'LIKE', "%{$hash}%");
+                })->exists();
+
+            if ($referencedInBB) continue;
+
+            $referencedInWT = DB::table('walkie_typie_boards')
+                ->where(function ($q) use ($hash) {
+                    $q->where('file_hash', $hash)
+                      ->orWhere('file_hash', 'LIKE', "%{$hash}%");
+                })->exists();
+
+            if ($referencedInWT) continue;
+
+            $referencedInBC = DB::table('broadcast_boards')
+                ->where(function ($q) use ($hash) {
+                    $q->where('file_hash', $hash)
+                      ->orWhere('file_hash', 'LIKE', "%{$hash}%");
+                })->exists();
+
+            if ($referencedInBC) continue;
+
+            $file->update(['status' => 'orphaned']);
+            $marked++;
+        }
+
+        return $marked;
     }
 
     /**

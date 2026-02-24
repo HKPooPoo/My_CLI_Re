@@ -3,23 +3,101 @@
  * =================================================================
  * Responsibilities:
  * 1. Manage UI togglers for system settings (Language, Audio, SFX).
- * 2. Persist settings to localStorage.
- * 3. Support multi-state cycling for togglers.
+ * 2. BB-specific settings (Max Entries, Max Files, Auto-Clean, Timestamp).
+ * 3. Export shared helpers for WT/BC config pages.
  * =================================================================
  */
 
 import { setLocale, getActiveLocale, t } from './i18n.js';
 import { playAudio } from './audio.js';
+import * as Settings from './settings.js';
+import { MultiStepButton } from './multiStepButton.js';
+import { BBMessage } from './blackboard-msg.js';
+
+// --- Shared Config Helpers (exported for WT/BC config pages) ---
+
+export function createRangeControl(container, scope, key, labelKey, min, max, step = 1) {
+    const item = document.createElement('div');
+    item.className = 'misc-list-item';
+
+    const label = document.createElement('div');
+    label.className = 'misc-label';
+    label.setAttribute('data-i18n', labelKey);
+    label.textContent = t(labelKey);
+
+    const group = document.createElement('div');
+    group.className = 'misc-range-group';
+
+    const range = document.createElement('input');
+    range.type = 'range';
+    range.className = 'misc-range-input';
+    range.min = min;
+    range.max = max;
+    range.step = step;
+    range.value = Settings.get(scope, key);
+
+    const valueSpan = document.createElement('span');
+    valueSpan.className = 'misc-range-value crt-text-green';
+    valueSpan.textContent = range.value;
+
+    range.addEventListener('input', () => {
+        valueSpan.textContent = range.value;
+        Settings.set(scope, key, parseInt(range.value));
+    });
+    range.addEventListener('change', () => {
+        playAudio('UIGeneralFocus.mp3');
+    });
+
+    group.appendChild(range);
+    group.appendChild(valueSpan);
+    item.appendChild(label);
+    item.appendChild(group);
+    container.appendChild(item);
+
+    return { range, valueSpan };
+}
+
+export function createToggleControl(container, scope, key, labelKey) {
+    const item = document.createElement('div');
+    item.className = 'misc-list-item';
+
+    const label = document.createElement('div');
+    label.className = 'misc-label';
+    label.setAttribute('data-i18n', labelKey);
+    label.textContent = t(labelKey);
+
+    const btn = document.createElement('button');
+    btn.className = 'misc-toggle-btn crt-text-green';
+
+    function updateLabel() {
+        const val = Settings.get(scope, key);
+        btn.textContent = val ? t('mods.enabled') : t('mods.disabled');
+    }
+    updateLabel();
+
+    btn.addEventListener('click', () => {
+        playAudio('UISelectOn.mp3');
+        const current = Settings.get(scope, key);
+        Settings.set(scope, key, !current);
+        updateLabel();
+    });
+
+    item.appendChild(label);
+    item.appendChild(btn);
+    container.appendChild(item);
+
+    return { btn, updateLabel };
+}
+
+// --- MISC Controller ---
 
 export const MISC = {
     elements: {
         langBtn: document.getElementById('misc-toggle-lang'),
         globalAudioBtn: document.getElementById('misc-toggle-global-audio'),
         sfxBtn: document.getElementById('misc-toggle-sfx'),
-        maxSlotRange: document.getElementById('misc-range-max-slot'),
-        maxSlotValue: document.getElementById('misc-range-max-slot-value'),
-        maxFilesRange: document.getElementById('misc-range-max-files'),
-        maxFilesValue: document.getElementById('misc-range-max-files-value')
+        bbConfigContainer: document.getElementById('bb-config-container'),
+        resetBtn: document.getElementById('misc-reset-btn'),
     },
 
     configs: {
@@ -28,34 +106,49 @@ export const MISC = {
         sfx: ['100', '0', '50']
     },
 
+    bbControls: null,
+
     init() {
         if (!this.elements.langBtn) return;
+        this.renderBBConfig();
         this.updateUI();
         this.bindEvents();
     },
 
+    renderBBConfig() {
+        const container = this.elements.bbConfigContainer;
+        if (!container) return;
+        container.innerHTML = '';
+
+        this.bbControls = {
+            maxSlot: createRangeControl(container, 'bb', 'maxSlot', 'config.maxSlotLabel', 10, 100, 10),
+            maxFiles: createRangeControl(container, 'bb', 'maxFiles', 'config.maxFilesLabel', 1, 20, 1),
+            autoClean: createToggleControl(container, 'bb', 'autoCleanBlanks', 'config.autoCleanBlanks'),
+            updateTs: createToggleControl(container, 'bb', 'updateTimestamp', 'config.updateTimestamp'),
+        };
+    },
+
     updateUI() {
         // Lang
-        const currentLocale = getActiveLocale();
         this.elements.langBtn.textContent = t('misc.localeName');
 
         // Global Audio
-        const currentAudio = localStorage.getItem('setting-global-audio') || '100';
+        const currentAudio = String(Settings.getGlobal('globalAudio'));
         this.elements.globalAudioBtn.textContent = currentAudio + '%';
 
         // SFX
-        const currentSfx = localStorage.getItem('setting-sfx') || '100';
+        const currentSfx = String(Settings.getGlobal('sfx'));
         this.elements.sfxBtn.textContent = currentSfx + '%';
 
-        // MAX SLOT
-        const currentMaxSlot = localStorage.getItem('setting-max-slot') || '10';
-        if (this.elements.maxSlotRange) this.elements.maxSlotRange.value = currentMaxSlot;
-        if (this.elements.maxSlotValue) this.elements.maxSlotValue.textContent = currentMaxSlot;
-
-        // MAX FILES
-        const currentMaxFiles = localStorage.getItem('setting-max-files') || '10';
-        if (this.elements.maxFilesRange) this.elements.maxFilesRange.value = currentMaxFiles;
-        if (this.elements.maxFilesValue) this.elements.maxFilesValue.textContent = currentMaxFiles;
+        // BB config controls
+        if (this.bbControls) {
+            this.bbControls.maxSlot.range.value = Settings.get('bb', 'maxSlot');
+            this.bbControls.maxSlot.valueSpan.textContent = Settings.get('bb', 'maxSlot');
+            this.bbControls.maxFiles.range.value = Settings.get('bb', 'maxFiles');
+            this.bbControls.maxFiles.valueSpan.textContent = Settings.get('bb', 'maxFiles');
+            this.bbControls.autoClean.updateLabel();
+            this.bbControls.updateTs.updateLabel();
+        }
     },
 
     bindEvents() {
@@ -72,44 +165,43 @@ export const MISC = {
 
         this.elements.globalAudioBtn.addEventListener('click', () => {
             playAudio('UISelectOn.mp3');
-            const current = localStorage.getItem('setting-global-audio') || '100';
+            const current = String(Settings.getGlobal('globalAudio'));
             let index = this.configs.globalAudio.indexOf(current);
             if (index === -1) index = 0;
             const next = this.configs.globalAudio[(index + 1) % this.configs.globalAudio.length];
-            localStorage.setItem('setting-global-audio', next);
+            Settings.setGlobal('globalAudio', next);
             this.updateUI();
         });
 
         this.elements.sfxBtn.addEventListener('click', () => {
             playAudio('UISelectOff.mp3');
-            const current = localStorage.getItem('setting-sfx') || '100';
+            const current = String(Settings.getGlobal('sfx'));
             let index = this.configs.sfx.indexOf(current);
             if (index === -1) index = 0;
             const next = this.configs.sfx[(index + 1) % this.configs.sfx.length];
-            localStorage.setItem('setting-sfx', next);
+            Settings.setGlobal('sfx', next);
             this.updateUI();
         });
 
-        this.elements.maxSlotRange?.addEventListener('input', () => {
-            const val = this.elements.maxSlotRange.value;
-            if (this.elements.maxSlotValue) this.elements.maxSlotValue.textContent = val;
-            localStorage.setItem('setting-max-slot', val);
-            window.dispatchEvent(new CustomEvent('settings:maxSlotChanged'));
-        });
-        this.elements.maxSlotRange?.addEventListener('change', () => {
-            playAudio('UIGeneralFocus.mp3');
-        });
-
-        this.elements.maxFilesRange?.addEventListener('input', () => {
-            const val = this.elements.maxFilesRange.value;
-            if (this.elements.maxFilesValue) this.elements.maxFilesValue.textContent = val;
-            localStorage.setItem('setting-max-files', val);
-        });
-        this.elements.maxFilesRange?.addEventListener('change', () => {
-            playAudio('UIGeneralFocus.mp3');
-        });
+        // Reset button
+        if (this.elements.resetBtn) {
+            new MultiStepButton(this.elements.resetBtn, {
+                sound: 'UIGeneralCancel.mp3',
+                confirm: true,
+                confirmLabel: t('common.sure'),
+                action: async () => {
+                    Settings.resetAll();
+                    BBMessage.info(t('config.resetComplete'));
+                    this.renderBBConfig();
+                    this.updateUI();
+                }
+            });
+        }
     }
 };
 
 MISC.init();
-window.addEventListener('i18n:ready', () => MISC.updateUI());
+window.addEventListener('i18n:ready', () => {
+    MISC.renderBBConfig();
+    MISC.updateUI();
+});

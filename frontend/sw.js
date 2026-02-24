@@ -1,4 +1,4 @@
-const CACHE_NAME = 'blackboard-v18-2026-02-25'; // Bump: i18n key fix + locale cleanup
+const CACHE_NAME = 'blackboard-v19-2026-02-25'; // Bump: per-scope settings + config pages + settings sync
 const ASSETS = [
   '/',
   '/index.html',
@@ -18,6 +18,9 @@ const ASSETS = [
   '/javascript/echo-service.js',
   '/javascript/broadcast-channel.js',
   '/javascript/broadcast-list.js',
+  '/javascript/broadcast-config.js',
+  '/javascript/walkie-typie-config.js',
+  '/javascript/settings.js',
   '/javascript/audio.js',
   '/audio/Cassette.mp3',
   '/audio/Click.mp3',
