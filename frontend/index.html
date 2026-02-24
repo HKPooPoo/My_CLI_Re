@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My CLI</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#32FF32">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <script type="module" src="./javascript/audio.js"></script>
+    <!-- i18n: fire-and-forget init — locale JSON loads before any user interaction -->
+    <script type="module">
+        import { initI18n } from './javascript/i18n.js';
+        initI18n();
+    </script>
+    <link rel="icon" href="./images/favicon.ico">
+    <link rel="apple-touch-icon" href="./images/favicon.ico">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="stylesheets/hud.css">
+    <link rel="stylesheet" href="stylesheets/crt-vfx.css">
+    <link rel="stylesheet" href="stylesheets/navi.css">
+    <link rel="stylesheet" href="stylesheets/page.css">
+    <link rel="stylesheet" href="stylesheets/page-auth.css">
+    <link rel="stylesheet" href="stylesheets/page-blackboard-log.css">
+    <link rel="stylesheet" href="stylesheets/page-ai-translate.css">
+    <link rel="stylesheet" href="stylesheets/page-blackboard-vcs.css">
+    <link rel="stylesheet" href="stylesheets/toast.css">
+    <link rel="stylesheet" href="stylesheets/page-walkie-typie.css">
+    <link rel="stylesheet" href="stylesheets/page-broadcast.css">
+    <link rel="stylesheet" href="stylesheets/page-misc.css">
+    <link rel="stylesheet" href="stylesheets/editor-attachments.css">
+    <!--注意@media放在尾！！！-->
+    <link rel="stylesheet" href="stylesheets/@media.css">
+    <link rel="stylesheet" href="stylesheets/layer.css">
+</head>
+
+<body>
+    <div class="header">
+        <img src="./images/banner.png" class="header-img" alt="banner in header">
+        <!--hud.css-->
+        <div class="hud-bar">
+            <div id="login-status-bar">UID: <div class="crt-text-cyan" id="login-status-display">Connecting...</div>
+            </div>
+            <div id="db-status-bar">DB: <div id="db-status-display">Connecting...</div>
+            </div>
+        </div>
+        <button id="theme-change-btn"></button>
+        <!--hud.js-->
+        <script type="module" src="./javascript/hud.js"></script>
+    </div>
+    <div class="body">
+        <!--crt-vfx.css-->
+        <div class="crt-scanner"></div>
+        <div class="crt-noise-layer"></div>
+        <!--crt-vfx.css-->
+        <!--pressStart.js-->
+        <div id="press-start-overlay" data-i18n="pressStart.label">PRESS START</div>
+        <script type="module" src="javascript/pressStart.js"></script>
+        <!--navi.css-->
+        <nav class="navi-bar crt-text-green">
+            <div class="navi-mask"></div>
+            <div class="navi-item" data-navi-item="blackboard" data-sound-main="UIGeneralCancel.mp3"
+                data-sound-sub="UIGeneralFocus.mp3">
+                <div class="navi-item-text" data-i18n="nav.blackboard">BLACKBOARD</div>
+                <div class="sub-navi-indicator"></div>
+                <div class="sub-navi-container">
+                    <div class="sub-navi-track">
+                        <div class="sub-navi-item" data-sub-navi-item="blackboard-log">
+                            <div class="sub-navi-item-text" data-i18n="blackboard.logTab">LOG</div>
+                        </div>
+                        <div class="sub-navi-item" data-sub-navi-item="blackboard-branch">
+                            <div class="sub-navi-item-text" data-i18n="blackboard.vcsTab">BRANCH</div>
+                        </div>
+                        <div class="sub-navi-item" data-sub-navi-item="auth">
+                            <div class="sub-navi-item-text" data-i18n="nav.account">AUTH</div>
+                        </div>
+                        <div class="sub-navi-item" data-sub-navi-item="blackboard-misc">
+                            <div class="sub-navi-item-text" data-i18n="nav.misc">MISC</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="navi-item" data-navi-item="walkie-typie" data-sound-main="UIGeneralOK.mp3"
+                data-sound-sub="UIPipboyOK.mp3">
+                <div class="navi-item-text" data-i18n="nav.walkieTypie">WALKIE-TYPIE</div>
+                <div class="sub-navi-indicator"></div>
+                <div class="sub-navi-container">
+                    <div class="sub-navi-track">
+                        <div class="sub-navi-item" data-sub-navi-item="walkie-typie-list">
+                            <div class="sub-navi-item-text" data-i18n="walkieTypie.listTab">LIST</div>
+                        </div>
+                        <div class="sub-navi-item" data-sub-navi-item="walkie-typie-text">
+                            <div class="sub-navi-item-text" data-i18n="walkieTypie.boardTab">TEXT</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="navi-item" data-navi-item="broadcast" data-sound-main="UIGeneralOK.mp3"
+                data-sound-sub="UISelectOff.mp3">
+                <div class="navi-item-text" data-i18n="nav.broadcast">BROADCAST</div>
+                <div class="sub-navi-indicator"></div>
+                <div class="sub-navi-container">
+                    <div class="sub-navi-track">
+                        <div class="sub-navi-item" data-sub-navi-item="broadcast-channel">
+                            <div class="sub-navi-item-text" data-i18n="broadcast.channelTab">&lt;--&gt;</div>
+                        </div>
+                        <div class="sub-navi-item" data-sub-navi-item="broadcast-list">
+                            <div class="sub-navi-item-text" data-i18n="broadcast.listTab">LIST</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </nav>
+        <div class="sub-navi-indicator-mask"></div>
+        <!--navi.js-->
+        <script type="module" src="javascript/navi.js"></script>
+        <div class="page-container" id="page-container">
+            <div class="feature-container" style="display: flex;">
+                <!-- <button class="feature-btn" data-feature-btn="">N/A</button>
+                <button class="feature-btn" data-feature-btn="ai-picture-analyse">pic</button>
+                <button class="feature-btn" data-feature-btn="ai-text-analyze">txt</button> -->
+                <button class="feature-btn" data-feature-btn="translate-zh-TW"></button>
+                <button class="feature-btn" data-feature-btn="translate-zh-CN"></button>
+                <button class="feature-btn" data-feature-btn="translate-en"></button>
+                <button class="feature-btn" data-feature-btn="translate-ja"></button>
+                <button class="feature-btn" data-feature-btn="voice-to-textbox"></button>
+                <div class="feature-shelf-container frosted-glass">
+                    <button class="feature-shelf-back-btn">>></button>
+                    <!-- <div class="feature-shelf" data-feature-shelf="ai-picture-analyse"></div> -->
+                    <div class="feature-shelf" data-feature-shelf="ai-text-analyze"></div>
+                    <div class="feature-shelf" data-feature-shelf="translator" style="display: flex;">
+                        <textarea name="" id="feature-translator-output"></textarea>
+                    </div>
+                </div>
+            </div>
+            <button class="push-btn" data-i18n="common.push">PUSH</button>
+            <button class="pull-btn" data-i18n="common.pull">PULL</button>
+            <div class="head-indicator">
+                <div class="branch-is-saved">&#36;{is_saved}</div>:
+                <div class="branch-name">&#36;{branch_name}</div>:
+                <div class="branch-head">&#36;{branch_head}</div>
+            </div>
+            <div class="page can-push-pull have-feature show-branch" data-page="blackboard-log" data-feature-btns="translate-zh-TW,translate-zh-CN,translate-en,translate-ja,voice-to-textbox">
+                <div class="editor-wrapper" id="bb-drop-zone">
+                    <div class="attachment-chips" id="bb-attachment-chips"></div>
+                    <textarea name="" id="log-textarea" data-i18n-placeholder="blackboard.textPlaceholder" placeholder="Enter..."></textarea>
+                    <input type="file" id="bb-file-input" multiple hidden accept="*/*">
+                    <div class="drop-overlay" id="bb-drop-overlay" data-i18n="files.dropZoneHint">DROP FILES HERE</div>
+                </div>
+            </div>
+            <div class="page show-branch" data-page="blackboard-branch">
+                <div class="vcs-container">
+                    <div class="vcs-title crt-text-orange" data-i18n="blackboard.pageTitle">BRANCH CONTROLLER</div>
+                    <div class="vcs-list-container" data-sound-item="UIGeneralFocus.mp3">
+                        <!--Just for mock up use-->
+                        <!--Let id be its' vcs-list-timestamp-->
+                        <!-- <div class="vcs-list-item active">
+                            <input type="text" class="vcs-list-branch" placeholder="branch name" id=""
+                                name="vcs-list-branch">
+                            <div class="vcs-list-timestamp">2026-02-13T14:05:27.123Z</div>
+                            <div class="vcs-list-owner">local</div>
+                        </div>
+                        <div class="vcs-list-item">
+                            <input type="text" class="vcs-list-branch" placeholder="branch name" id=""
+                                name="vcs-list-branch">
+                            <div class="vcs-list-timestamp">2026-02-13T14:05:27.123Z</div>
+                            <div class="vcs-list-owner">local</div>
+                        </div>
+                        <div class="vcs-list-item">
+                            <input type="text" class="vcs-list-branch" placeholder="branch name" id=""
+                                name="vcs-list-branch">
+                            <div class="vcs-list-timestamp">2026-02-13T14:05:27.123Z</div>
+                            <div class="vcs-list-owner">local</div>
+                        </div>
+                        <div class="vcs-list-item">
+                            <input type="text" class="vcs-list-branch" placeholder="branch name" id=""
+                                name="vcs-list-branch">
+                            <div class="vcs-list-timestamp">2026-02-13T14:05:27.123Z</div>
+                            <div class="vcs-list-owner">local</div>
+                        </div>
+                        <div class="vcs-list-item">
+                            <input type="text" class="vcs-list-branch" placeholder="branch name" id=""
+                                name="vcs-list-branch">
+                            <div class="vcs-list-timestamp">2026-02-13T14:05:27.123Z</div>
+                            <div class="vcs-list-owner">local</div>
+                        </div> -->
+                    </div>
+                    <div class="vcs-button-container-container">
+                        <div class="vcs-button-container">
+                            <button class="vcs-btn" id="commit-btn" data-i18n="blackboard.commitBtn">COMMIT</button>
+                            <button class="vcs-btn" id="checkout-btn" data-i18n="blackboard.checkoutBtn">CHECKOUT</button>
+                        </div>
+                        <div class="vcs-button-container">
+                            <button class="vcs-btn" id="branch-btn" data-i18n="blackboard.forkBtn">FORK</button>
+                            <button class="vcs-btn" id="drop-btn">DROP</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="page" data-page="auth">
+                <div class="auth-container">
+                    <div class="auth-title crt-text-orange" data-i18n="auth.pageTitle">ACCOUNT AUTHENTICATION</div>
+
+                    <div class="auth-login-register-container" style="display: none;">
+                        <input type="text" id="auth-uid" class="auth-input" placeholder="UID" maxlength="64" data-i18n-placeholder="auth.uidPlaceholder">
+                        <input type="password" id="auth-passcode" class="auth-input" placeholder="PASSCODE"
+                            maxlength="64" data-i18n-placeholder="auth.passcodePlaceholder">
+
+                        <button id="btn-login" class="auth-btn crt-text-green" data-i18n="auth.loginBtn">LOGIN</button>
+                        <button id="btn-register" class="auth-btn crt-text-green" data-i18n="auth.registerBtn">REGISTER</button>
+                        <!--Detect auth-uid-->
+                        <button id="btn-reset-passcode" class="auth-btn crt-text-green" data-i18n="auth.resetPasscodeBtn">RESET PASSCODE</button>
+                    </div>
+
+                    <div class="auth-logout-container" style="display: none;">
+                        <div class="auth-user-info-container"><div id="auth-user-info-uid"></div></div>
+                        <button id="btn-logout" class="auth-btn crt-text-green" data-i18n="auth.logoutBtn">LOGOUT</button>
+                        <hr style="border: var(--border-line);">
+                        <!--later 32 + regex -> max length-->
+                        <!--If email is registered, then placeholder = email-->
+                        <input type="text" id="auth-register-email" class="auth-input" placeholder="EMAIL"
+                            maxlength="64" data-i18n-placeholder="auth.emailPlaceholder">
+                        <button id="btn-register-email" class="auth-btn crt-text-green" data-i18n="auth.registerBtn">REGISTER</button>
+                    </div>
+
+                    <!-- <input type="email" id="auth-email" class="auth-input" placeholder="EMAIL (OPTIONAL)"
+                        maxlength="64"> -->
+                </div>
+            </div>
+            <div class="page" data-page="blackboard-misc">
+                <div class="misc-container">
+                    <div class="misc-title crt-text-orange" data-i18n="misc.pageTitle">MISC & SETTINGS</div>
+
+                    <div class="misc-list-container">
+                        <!-- Language Toggle -->
+                        <div class="misc-list-item">
+                            <div class="misc-label" data-i18n="misc.languageLabel">LANGUAGE</div>
+                            <button class="misc-toggle-btn crt-text-green" id="misc-toggle-lang">ENGLISH</button>
+                        </div>
+
+                        <!-- Global Audio Toggle -->
+                        <div class="misc-list-item">
+                            <div class="misc-label" data-i18n="misc.globalAudioLabel">GLOBAL AUDIO</div>
+                            <button class="misc-toggle-btn crt-text-green" id="misc-toggle-global-audio">ON</button>
+                        </div>
+
+                        <!-- SFX Toggle -->
+                        <div class="misc-list-item">
+                            <div class="misc-label" data-i18n="misc.sfxLabel">SFX</div>
+                            <button class="misc-toggle-btn crt-text-green" id="misc-toggle-sfx">ON</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!--blackboard.js-->
+            <script type="module" src="javascript/blackboard.js"></script>
+            <script type="module" src="javascript/feature.js"></script>
+            <script type="module" src="javascript/feature-shelf.js"></script>
+            <script type="module" src="javascript/feature-translator.js"></script>
+            <script type="module" src="javascript/auth.js"></script>
+            <script type="module" src="javascript/misc.js"></script>
+            <!-- Walkie-Typie Dependencies -->
+            <script src="./javascript/vendor/pusher.min.js"></script>
+            <script src="./javascript/vendor/echo.iife.js"></script>
+            <!-- Walkie-Typie Modules -->
+            <script type="module" src="./javascript/walkie-typie-core.js"></script>
+            <script type="module" src="./javascript/walkie-typie-list.js"></script>
+            <script type="module" src="./javascript/walkie-typie-text.js"></script>
+            <!-- Broadcast Modules -->
+            <script type="module" src="./javascript/broadcast-list.js"></script>
+            <script type="module" src="./javascript/broadcast-channel.js"></script>
+            <!---->
+            <!-- <div class="page page-flex-direction-row can-push-pull" data-page="ai-translate">
+                <textarea name="" id="ai-translate-input" placeholder="Enter..."></textarea>
+                <div class="ai-translate-cursor">
+                    <ul>
+                        <li>1</li>
+                        <li>2</li>
+                        <li>3</li>
+                    </ul>
+                </div>
+                <textarea name="" id="ai-translate-output" placeholder="On hold..."></textarea>
+            </div> -->
+            <!-- <div class="page page-flex-direction-row can-push-pull" data-page="ai-cqc">cqc output</div> -->
+            <!---->
+            <div class="page" data-page="walkie-typie-list">
+                <div class="page-auth-overlay walkie-typie-auth-overlay">
+                    <div class="crt-text-orange" data-i18n="walkieTypie.loginRequiredOverlay">LOGIN REQUIRED</div>
+                </div>
+                <div class="walkie-typie-list-container">
+                    <div class="walkie-typie-list-title crt-text-orange" data-i18n="walkieTypie.pageTitle">WALKIE-TYPIE CONTROLLER</div>
+                    <div class="walkie-typie-list-list-container" data-sound-item="UIGeneralFocus.mp3">
+                        <!-- <div class="walkie-typie-list-list-item">
+                        <input type="text" class="walkie-typie-list-tag" placeholder="Name this guy..." id=""
+                            name="walkie-typie-list-tag">
+                        <div class="walkie-typie-list-last-signal">2026-02-15T20:45.186+08:00</div>
+                        <div class="walkie-typie-list-uid">uid</div>
+                    </div> -->
+                    </div>
+                    <input type="text" id="walkie-typie-add-uid" placeholder="UID" maxlength="64" data-i18n-placeholder="walkieTypie.uidPlaceholder">
+                    <button id="walkie-typie-add-btn" class="crt-text-green" data-i18n="walkieTypie.addBtn">ADD</button>
+                    <button id="walkie-typie-cut-btn" class="crt-text-green" data-i18n="walkieTypie.cutBtn">CUT</button>
+                </div>
+            </div>
+            <div class="page" data-page="walkie-typie-text">
+                <div class="page-auth-overlay walkie-typie-auth-overlay">
+                    <div class="crt-text-orange" data-i18n="walkieTypie.loginRequiredOverlay">LOGIN REQUIRED</div>
+                </div>
+                <!-- <div class="walkie-typie-feature-container"> -->
+                <!-- </div> -->
+                <div class="walkie-typie-blackboard">
+                    <div class="walkie-typie-blackboard-they-title crt-text-orange" data-i18n="walkieTypie.theyBoard">THEIR BLACKBOARD</div>
+                    <button class="they-push-btn" data-i18n="common.push">PUSH</button>
+                    <div class="attachment-chips readonly" id="wt-they-attachments"></div>
+                    <textarea name="" id="walkie-typie-they-blackboard"></textarea>
+                    <button class="they-pull-btn" data-i18n="common.pull">PULL</button>
+                </div>
+                <button class="walkie-typie-feature-btn" id="walkie-typie-blackboard-feature-switch"></button>
+                <div class="walkie-typie-blackboard">
+                    <div class="walkie-typie-blackboard-we-title crt-text-orange" data-i18n="walkieTypie.weBoard">OUR BLACKBOARD</div>
+                    <button class="we-push-btn" data-i18n="common.push">PUSH</button>
+                    <div class="editor-wrapper" id="wt-drop-zone">
+                        <div class="attachment-chips" id="wt-we-attachments"></div>
+                        <textarea name="" id="walkie-typie-we-blackboard"></textarea>
+                        <input type="file" id="wt-file-input" multiple hidden accept="*/*">
+                        <div class="drop-overlay" id="wt-drop-overlay" data-i18n="files.dropZoneHint">DROP FILES HERE</div>
+                    </div>
+                    <button class="we-pull-btn" data-i18n="common.pull">PULL</button>
+                </div>
+            </div>
+            <!-- <div class="page" data-page="walkie-typie-add">
+                <div class="walkie-typie-add-container">
+                    <div class="walkie-typie-add-title crt-text-orange">WALKIE-TYPIE CONTROLLER</div>
+
+                    <input type="text" id="walkie-typie-add-uid" placeholder="UID" maxlength="64">
+
+                    <button id="btn-add" class="crt-text-green">ADD</button>
+                </div>
+            </div> -->
+            <!---->
+            <div class="page can-push-pull have-feature show-branch" data-page="broadcast-channel" data-feature-btns="translate-zh-TW,translate-zh-CN,translate-en,translate-ja">
+                <div class="editor-wrapper" id="bc-drop-zone">
+                    <div class="attachment-chips" id="bc-attachment-chips"></div>
+                    <textarea name="" id="channel-textarea" placeholder="Enter..." data-i18n-placeholder="blackboard.textPlaceholder"></textarea>
+                    <input type="file" id="bc-file-input" multiple hidden accept="*/*">
+                    <div class="drop-overlay" id="bc-drop-overlay" data-i18n="files.dropZoneHint">DROP FILES HERE</div>
+                </div>
+            </div>
+            <div class="page have-feature show-branch" data-page="broadcast-list">
+                <div class="broadcast-list-container">
+                    <div class="broadcast-list-title crt-text-orange" data-i18n="broadcast.pageTitle">CHANNEL MODULATION</div>
+                    <div class="broadcast-list-list-container" data-sound-item="UIGeneralFocus.mp3">
+                        <!-- <div class="broadcast-list-list-item">
+                        <input type="text" class="broadcast-list-tag" placeholder="Name this guy..." id=""
+                            name="broadcast-list-tag">
+                        <div class="broadcast-list-last-signal">2026-02-15T20:45.186+08:00</div>
+                        <div class="broadcast-list-title">title</div>
+                    </div> -->
+                    </div>
+                    <button id="broadcast-pin-btn" class="crt-text-green" data-i18n="broadcast.pinBtn">PIN</button>
+                    <button id="broadcast-cast-btn" class="crt-text-green" data-i18n="broadcast.castStep1">CAST</button>
+                    <button id="broadcast-create-btn" class="crt-text-green" data-i18n="broadcast.createStep1">CREATE</button>
+                    <button id="broadcast-delete-btn" class="crt-text-green" data-i18n="broadcast.deleteStep1">DELETE</button>
+                </div>
+            </div>
+            <div id="toast-container"></div>
+        </div>
+    </div>
+    <div class="footer">
+        <div class="footer-text">&copy; 2026 My CLI | YU Shing Hei</div>
+    </div>
+</body>
+
+</html>

@@ -1,0 +1,160 @@
+<?php
+
+namespace App\Services;
+
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Cache;
+use App\Models\User;
+use App\Events\WalkieTypieSignal;
+use App\Services\FileService;
+
+class WalkieTypieBoardService
+{
+    protected FileService $fileService;
+
+    public function __construct(FileService $fileService)
+    {
+        $this->fileService = $fileService;
+    }
+
+    /**
+     * Commit board records to walkie_typie_boards table.
+     * Same as BlackboardService::commit(): delete-then-upsert to keep history in sync.
+     */
+    public function commit(User $user, string $branchId, string $branchName, array $records)
+    {
+        return DB::transaction(function () use ($user, $branchId, $branchName, $records) {
+            $incomingTimestamps = array_column($records, 'timestamp');
+
+            // 同 Blackboard：先刪除不在新列表中的舊記錄，防止歷史膨脹
+            DB::table('walkie_typie_boards')
+                ->where('owner', $user->uid)
+                ->where('branch_id', $branchId)
+                ->whereNotIn('timestamp', $incomingTimestamps)
+                ->delete();
+
+            $insertData = [];
+            $fileHashes = [];
+            foreach ($records as $record) {
+                $text = $record['text'] ?? '';
+                if (trim($text) === "" && empty($record['bin'])) {
+                    continue;
+                }
+
+                $bin = $record['bin'] ?? null;
+                if ($bin) {
+                    $fileHashes[] = $bin;
+                }
+
+                $insertData[] = [
+                    'owner' => $user->uid,
+                    'branch_id' => $branchId,
+                    'branch_name' => $branchName,
+                    'timestamp' => $record['timestamp'],
+                    'text' => $text,
+                    'bin' => $bin,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ];
+            }
+
+            if (!empty($insertData)) {
+                DB::table('walkie_typie_boards')->upsert(
+                    $insertData,
+                    ['owner', 'branch_id', 'timestamp'],
+                    ['branch_name', 'text', 'bin', 'updated_at']
+                );
+            }
+
+            // Mark referenced files as committed
+            foreach ($fileHashes as $hash) {
+                $this->fileService->markCommitted($hash);
+            }
+
+            Cache::forget("wt:boards:{$branchId}");
+
+            // Broadcast to partner if connection exists
+            $this->broadcastUpdate($user, $branchId);
+        });
+    }
+
+    /**
+     * Broadcast update signal to the connected partner.
+     */
+    protected function broadcastUpdate(User $user, string $branchId)
+    {
+        $connection = DB::table('walkie_typie_connections')
+            ->where('user_uid', $user->uid)
+            ->where('my_branch_id', $branchId)
+            ->first();
+
+        if ($connection) {
+            $nowMs = (int) (microtime(true) * 1000);
+            DB::table('walkie_typie_connections')
+                ->where('user_uid', $user->uid)
+                ->where('partner_uid', $connection->partner_uid)
+                ->update(['last_signal' => $nowMs, 'updated_at' => now()]);
+
+            DB::table('walkie_typie_connections')
+                ->where('user_uid', $connection->partner_uid)
+                ->where('partner_uid', $user->uid)
+                ->update(['last_signal' => $nowMs, 'updated_at' => now()]);
+
+            broadcast(new WalkieTypieSignal($user->uid, $connection->partner_uid, $branchId));
+        }
+    }
+
+    /**
+     * Fetch board records for a given branch.
+     * Access check: user must own the branch or have a WT connection to it.
+     */
+    public function fetchBoardRecords($user, $branchId)
+    {
+        // 1. Check if user owns the branch
+        $isOwner = DB::table('walkie_typie_boards')
+            ->where('branch_id', $branchId)
+            ->where('owner', $user->uid)
+            ->exists();
+
+        // 2. Check if user has access via Walkie-Typie connection
+        $hasConnection = false;
+        if (!$isOwner) {
+            $hasConnection = DB::table('walkie_typie_connections')
+                ->where('user_uid', $user->uid)
+                ->where(function ($query) use ($branchId) {
+                    $query->where('my_branch_id', $branchId)
+                        ->orWhere('partner_branch_id', $branchId);
+                })
+                ->exists();
+        }
+
+        if (!$isOwner && !$hasConnection) {
+            return [];
+        }
+
+        return Cache::remember("wt:boards:{$branchId}", 30, fn() =>
+            DB::table('walkie_typie_boards')
+                ->leftJoin('files', 'walkie_typie_boards.bin', '=', 'files.hash')
+                ->where('branch_id', $branchId)
+                ->orderBy('timestamp', 'asc')
+                ->select(
+                    'walkie_typie_boards.*',
+                    'files.original_name as file_name',
+                    'files.size as file_size',
+                    'files.mime_type as file_mime'
+                )
+                ->get()
+        );
+    }
+
+    /**
+     * Delete all board records for a connection (used when CUT).
+     */
+    public function deleteBoards(string $ownerUid, string $branchId)
+    {
+        return DB::table('walkie_typie_boards')
+            ->where('owner', $ownerUid)
+            ->where('branch_id', $branchId)
+            ->delete();
+    }
+}

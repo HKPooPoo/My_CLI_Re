@@ -1,0 +1,7 @@
+<FilesMatch "^\.">
+    Require all denied
+</FilesMatch>
+
+<FilesMatch "^(Dockerfile|docker-compose\.yml)$">
+    Require all denied
+</FilesMatch>

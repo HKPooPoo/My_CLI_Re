@@ -1,0 +1,109 @@
+#channel-textarea {
+    /*follow push and pull btn height (by margin); add value -> gap -> no stick together with btn */
+    margin: var(--single-textbox-margin);
+    height: 100%;
+    /*idk why, the font-size same as navi and btn, but looks smaller; needs add value*/
+    /*note: unified in root*/
+    font-size: var(--textbox-font-size);
+}
+
+.broadcast-list-container {
+    justify-content: space-around;
+    /* gap: 2vh; */
+    gap: var(--panel-gap);
+    /* width: 48vw; */
+    width: var(--container-width);
+    /* max-width: 512px; */
+    max-width: var(--container-max-width);
+    /* margin: max(4vh, 32px) auto; */
+    margin: var(--container-margin);
+    /* padding: 16px; */
+    padding: var(--panel-padding);
+    border: var(--border-line);
+    max-height: 86%;
+}
+
+.broadcast-list-container > .broadcast-list-title {
+    position: absolute;
+    top: 0px;
+    transform: translateY(-50%);
+    left: 16px;
+    background-color: var(--bg-secondary);
+    /* padding: 0.4vw; */
+    padding: var(--title-padding);
+    width: max-content;
+    /* transition: left 0.16s ease-in, transform 0.16s ease-in; */
+    transition: left var(--transition-normal) ease-in, transform var(--transition-normal) ease-in;
+}
+
+.broadcast-list-list-item .broadcast-list-title {
+    position: static;
+    transform: none;
+    background-color: transparent;
+    padding: 0;
+    width: auto;
+}
+
+.broadcast-list-list-container {
+    border-bottom: var(--border-line);
+    /* height: calc(var(--container-width) / 4); */
+    height: clamp(192px, calc(var(--container-width) / 2), 40vh);
+    overflow-y: auto;
+    overflow-x: hidden;
+    scrollbar-width: thin;
+    scrollbar-color: var(--text-green) var(--bg-primary);
+}
+
+.broadcast-list-list-container::-webkit-scrollbar {
+    width: 4px;
+}
+
+.broadcast-list-list-container::-webkit-scrollbar-track {
+    background: var(--bg-primary);
+}
+
+.broadcast-list-list-container::-webkit-scrollbar-thumb {
+    background-color: var(--text-green);
+    border-radius: 2px;
+}
+
+.broadcast-list-list-item {
+    padding: calc(var(--panel-gap) / 4);
+}
+
+.broadcast-list-list-item.active {
+    background: var(--text-green);
+    color: var(--bg-primary);
+    box-shadow: 0 0 10px var(--text-green);
+}
+
+.broadcast-list-list-item.active .broadcast-list-tag {
+    color: var(--bg-primary);
+}
+
+.broadcast-list-list-item.active ::selection {
+    background: var(--bg-primary);
+    color: var(--text-green);
+}
+
+.broadcast-list-list-item.active .broadcast-list-last-signal {
+    color: var(--bg-primary);
+}
+
+.broadcast-list-list-item.active .broadcast-list-title {
+    color: var(--bg-primary);
+}
+
+.broadcast-list-list-item.active .crt-text-yellow {
+    color: var(--bg-primary);
+    text-shadow: none;
+}
+
+#broadcast-pin-btn,
+#broadcast-cast-btn,
+#broadcast-create-btn,
+#broadcast-delete-btn {
+    border: var(--border-line);
+    border-radius: var(--border-radius);
+    padding: 8px 0;
+}

@@ -1,0 +1,74 @@
+.misc-container {
+    justify-content: space-around;
+    gap: var(--panel-gap);
+    width: var(--container-width);
+    max-width: var(--container-max-width);
+    margin: var(--container-margin);
+    padding: var(--panel-padding);
+    border: var(--border-line);
+    position: relative;
+}
+
+.misc-title {
+    position: absolute;
+    top: 0px;
+    transform: translateY(-50%);
+    left: 16px;
+    background-color: var(--bg-secondary);
+    padding: var(--title-padding);
+    width: max-content;
+    transition: left var(--transition-normal) ease-in, transform var(--transition-normal) ease-in;
+}
+
+.misc-list-container {
+    border-bottom: var(--border-line);
+    height: clamp(192px, calc(var(--container-width) / 2), 40vh);
+    overflow-y: auto;
+    overflow-x: hidden;
+    scrollbar-width: thin;
+    scrollbar-color: var(--text-green) var(--bg-primary);
+}
+
+.misc-list-container::-webkit-scrollbar {
+    width: 4px;
+}
+
+.misc-list-container::-webkit-scrollbar-track {
+    background: var(--bg-primary);
+}
+
+.misc-list-container::-webkit-scrollbar-thumb {
+    background-color: var(--text-green);
+    border-radius: 2px;
+}
+
+.misc-list-item {
+    padding: calc(var(--panel-gap) / 2);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--text-green);
+}
+
+.misc-list-item:last-child {
+    border-bottom: none;
+}
+
+.misc-label {
+    font-size: 1em;
+}
+
+.misc-toggle-btn {
+    border: var(--border-line);
+    padding: 4px 16px;
+    min-width: 120px;
+    text-align: center;
+    cursor: pointer;
+    transition: all var(--transition-normal);
+}
+
+.misc-toggle-btn:hover {
+    background: var(--text-green);
+    color: var(--bg-primary);
+    box-shadow: 0 0 10px var(--text-green);
+}

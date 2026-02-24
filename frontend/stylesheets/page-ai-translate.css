@@ -1,0 +1,10 @@
+#ai-translate-input,
+#ai-translate-output {
+    margin: var(--double-textbox-margin);
+    font-size: var(--textbox-font-size);
+    box-shadow: var(--box-shadow);
+}
+
+.ai-translate-cursor {
+    width: max-content;
+}

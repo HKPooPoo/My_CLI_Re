@@ -1,0 +1,53 @@
+/*HUD Status Bar*/
+.hud-bar {
+    position: absolute;
+    bottom: 4px;
+    left: 8px;
+    flex-direction: row;
+}
+
+.hud-bar * {
+    font-size: var(--header-footer-font-size);
+}
+
+#login-status-bar,
+#db-status-bar {
+    position: relative;
+    padding: 0 8px;
+    flex-direction: row;
+}
+
+#login-status-display,
+#db-status-display {
+    padding: 0 4px;
+    max-width: 32vw;
+    display: inline-block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Theme Change Button */
+#theme-change-btn {
+    position: absolute;
+    justify-self: center;
+    top: 0px;
+    right: 0px;
+    width: 64px;
+    height: 64px;
+    padding: 1vh;
+    margin: 1vh;
+    cursor: pointer;
+    border: none;
+    background-color: var(--text-green);
+    -webkit-mask: url('../images/theme_switch.svg');
+    mask: url('../images/theme_switch.svg');
+    transition: all 0.16s ease-in;
+}
+
+@media (hover: hover) {
+    #theme-change-btn:hover {
+        opacity: 1;
+        background-color: var(--feature-shelf-btn-color);
+        box-shadow: 0 0 10px var(--feature-shelf-btn-color);
+    }
+}

@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100%" height="100%">
+    <defs>
+        <!-- Mask for the Back Card: Hide where Front Card overlaps + border margin -->
+        <mask id="mask-overlap">
+            <rect x="0" y="0" width="100" height="100" fill="white" />
+            <!-- Cut out area slightly larger than front card to create a 'stroke' gap -->
+            <rect x="25" y="37" width="36" height="41" rx="6" fill="black" />
+        </mask>
+
+        <!-- Mask for the Front Card: Cut out the 'A' -->
+        <mask id="cutout-A">
+            <rect x="0" y="0" width="100" height="100" fill="white" />
+            <polyline points="35,65 43,45 51,65" stroke="black" stroke-width="6" fill="none" stroke-linecap="round" stroke-linejoin="round" />
+            <line x1="38" y1="58" x2="48" y2="58" stroke="black" stroke-width="6" stroke-linecap="round" />
+        </mask>
+    </defs>
+
+    <!-- Back Card (Character) with Mask to avoid clashing with Front Card -->
+    <g mask="url(#mask-overlap)">
+        <rect x="42" y="25" width="30" height="35" rx="4" stroke="black" stroke-width="6" fill="none" />
+        <line x1="50" y1="35" x2="64" y2="35" stroke="black" stroke-width="4" stroke-linecap="round" />
+        <line x1="50" y1="42" x2="64" y2="42" stroke="black" stroke-width="4" stroke-linecap="round" />
+        <line x1="50" y1="49" x2="64" y2="49" stroke="black" stroke-width="4" stroke-linecap="round" />
+    </g>
+
+    <!-- Front Card (A) - Solid Block with Mask applied -->
+    <rect x="28" y="40" width="30" height="35" rx="4" fill="black" mask="url(#cutout-A)" />
+</svg>

@@ -1,0 +1,28 @@
+# Environment
+.env
+/backend/.env
+
+# Dependencies
+/backend/vendor
+
+# Storage & Logs
+/backend/storage/logs
+*.txt
+
+# Prototypes & Docs (local only)
+/prototypes
+/documents
+
+# AI Agent configs (local only)
+.agent/
+.gemini/
+.claude/
+mcp/
+
+# Obsolete
+/obsolete
+docker-compose.old.yml
+
+# OS Files
+.DS_Store
+Thumbs.db
