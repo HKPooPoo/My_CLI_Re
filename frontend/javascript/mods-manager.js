@@ -78,9 +78,10 @@ function renderModList() {
             const meta = document.createElement('div');
             meta.className = 'mods-list-item-meta';
 
-            // Show provider types
-            const hasServer = mod.providers?.some(p => p.type === 'server');
-            if (hasServer) {
+            // Show server status only when active provider is server-type
+            const activeProviderId = ModState.getConfig(mod.id, 'provider');
+            const activeProvider = mod.providers?.find(p => p.id === activeProviderId);
+            if (activeProvider?.type === 'server') {
                 const statusEl = document.createElement('span');
                 statusEl.className = `mods-server-status ${serverStatus}`;
                 statusEl.dataset.modId = mod.id;
@@ -142,10 +143,11 @@ function renderConfig(modId) {
     renderConfigStatus(modId);
     renderConfigFields(modId);
 
-    // Show refresh button if MOD has server providers
-    const hasServer = mod.providers?.some(p => p.type === 'server');
+    // Show refresh button only when active provider is server-type
+    const activeProviderId = ModState.getConfig(mod.id, 'provider');
+    const activeProvider = mod.providers?.find(p => p.id === activeProviderId);
     if (elements.configRefreshBtn) {
-        elements.configRefreshBtn.style.display = hasServer ? '' : 'none';
+        elements.configRefreshBtn.style.display = activeProvider?.type === 'server' ? '' : 'none';
     }
 }
 
@@ -153,8 +155,9 @@ function renderConfigStatus(modId) {
     const mod = getAllMods().find(m => m.id === modId);
     if (!elements.configStatus) return;
 
-    const hasServer = mod?.providers?.some(p => p.type === 'server');
-    if (hasServer) {
+    const activeProviderId = ModState.getConfig(modId, 'provider');
+    const activeProvider = mod?.providers?.find(p => p.id === activeProviderId);
+    if (activeProvider?.type === 'server') {
         const status = ModState.getServerStatus(modId);
         elements.configStatus.innerHTML = '';
 
@@ -408,9 +411,14 @@ function bindEvents() {
     });
 
     // Re-render config fields when config changes (for showWhen re-evaluation)
+    // Also re-render list + config status when provider changes
     window.addEventListener('mods:configChanged', ({ detail }) => {
+        if (detail.key === 'provider') {
+            renderModList();
+        }
         if (detail.modId === selectedModId) {
             renderConfigFields(selectedModId);
+            renderConfigStatus(selectedModId);
         }
     });
 

@@ -89,9 +89,7 @@ function createModDOM(mod) {
             const btn = document.createElement('button');
             btn.className = 'feature-btn';
             btn.dataset.featureBtn = btnDef.id;
-            if (btnDef.labelKey) {
-                btn.textContent = t(btnDef.labelKey);
-            }
+            // No textContent — icons are rendered via CSS ::after mask-image
             // Insert before the shelf container
             btnContainer.insertBefore(btn, shelfContainer);
         }

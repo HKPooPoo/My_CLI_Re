@@ -63,11 +63,6 @@ export const ModState = {
             };
         }
 
-        // CLIENT-only providers always show 'online'
-        if (def.providers?.every(p => p.type === 'client' || p.type === 'cloud')) {
-            this._states[id].serverStatus = 'online';
-        }
-
         // Initialise config defaults from configSchema
         if (!this._configs[id]) {
             this._configs[id] = {};
@@ -76,6 +71,13 @@ export const ModState = {
             if (field.default !== undefined && this._configs[id][field.key] === undefined) {
                 this._configs[id][field.key] = field.default;
             }
+        }
+
+        // Set server status based on active provider type
+        const activeProviderId = this._configs[id]?.provider;
+        const activeProvider = def.providers?.find(p => p.id === activeProviderId);
+        if (!activeProvider || activeProvider.type === 'client' || activeProvider.type === 'cloud') {
+            this._states[id].serverStatus = 'online';
         }
 
         this._persistStates();

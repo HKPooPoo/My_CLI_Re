@@ -208,45 +208,178 @@
     font-size: 0.9em;
     opacity: 0.7;
     line-height: 1.4;
+    padding: 0 calc(var(--panel-gap) / 2);
+    text-align: left;
 }
 
 .mods-config-status {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    padding: calc(var(--panel-gap) / 2);
+    border-bottom: 1px solid var(--text-green);
 }
 
 .mods-config-fields {
     display: flex;
     flex-direction: column;
-    gap: calc(var(--panel-gap) / 2);
+    gap: 0;
 }
 
+/* Config field row — mirrors .misc-list-item layout */
 .mods-config-field {
     display: flex;
-    flex-direction: column;
-    gap: 4px;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    padding: calc(var(--panel-gap) / 2);
+    border-bottom: 1px solid var(--text-green);
+}
+
+.mods-config-field:last-child {
+    border-bottom: none;
 }
 
 .mods-config-field-label {
-    font-size: 0.8em;
-    opacity: 0.6;
+    font-size: 1em;
     text-transform: uppercase;
 }
 
+/* Text input */
 .mods-config-field-input {
     border-bottom: var(--border-line);
     padding: calc(var(--panel-gap) / 4);
     font-size: var(--font-size);
-    width: 100%;
+    text-align: right;
+    max-width: 60%;
 }
 
 .mods-config-field-input:focus {
     border-bottom-color: var(--text-orange);
 }
 
+/* Select dropdown — CRT themed */
+.mods-config-field-select {
+    -webkit-appearance: none;
+    appearance: none;
+    border: var(--border-line);
+    padding: 4px 24px 4px 8px;
+    font-size: var(--font-size);
+    font-family: inherit;
+    color: var(--text-green);
+    background-color: var(--bg-primary);
+    cursor: pointer;
+    transition: all var(--transition-normal);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%2332ff32'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 8px center;
+    background-size: 10px 6px;
+}
+
+.mods-config-field-select:focus {
+    border-color: var(--text-orange);
+    outline: none;
+}
+
+.mods-config-field-select option {
+    background-color: var(--bg-primary);
+    color: var(--text-green);
+}
+
+:root[data-theme="light"] .mods-config-field-select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23000000'/%3E%3C/svg%3E");
+}
+
+@media (hover: hover) {
+    .mods-config-field-select:hover {
+        box-shadow: 0 0 6px var(--text-green);
+    }
+}
+
+/* Range slider — reuses misc-range styling */
+.mods-config-range-group {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: calc(var(--panel-gap) / 2);
+    min-width: 120px;
+}
+
+.mods-config-range-value {
+    min-width: 2.5em;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+.mods-config-field-range {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 2px;
+    background: var(--text-green);
+    outline: none;
+    cursor: pointer;
+}
+
+.mods-config-field-range::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 14px;
+    height: 14px;
+    border-radius: 0;
+    background: var(--text-green);
+    border: 1px solid var(--bg-primary);
+    box-shadow: 0 0 6px var(--text-green);
+    cursor: pointer;
+}
+
+.mods-config-field-range::-moz-range-thumb {
+    width: 14px;
+    height: 14px;
+    border-radius: 0;
+    background: var(--text-green);
+    border: 1px solid var(--bg-primary);
+    box-shadow: 0 0 6px var(--text-green);
+    cursor: pointer;
+}
+
+/* Info field — read-only status text */
+.mods-config-field-info {
+    font-size: 0.9em;
+}
+
+/* Action button */
+.mods-config-field-action {
+    border: var(--border-line);
+    padding: 3px 10px;
+    cursor: pointer;
+    font-size: 0.85em;
+    transition: all var(--transition-normal);
+}
+
+@media (hover: hover) {
+    .mods-config-field-action:hover {
+        background: var(--text-green);
+        color: var(--bg-primary);
+        box-shadow: 0 0 10px var(--text-green);
+    }
+}
+
 .mods-config-default {
     opacity: 0.5;
     text-align: center;
     padding: var(--panel-gap);
+}
+
+/* === Light mode overrides === */
+:root[data-theme="light"] .mods-config-field-select:hover,
+:root[data-theme="light"] .mods-config-field-action:hover,
+:root[data-theme="light"] .mods-config-field-range::-webkit-slider-thumb,
+:root[data-theme="light"] .mods-config-field-range::-moz-range-thumb {
+    box-shadow: none;
+}
+
+:root[data-theme="light"] .mods-server-status.online,
+:root[data-theme="light"] .mods-server-status.offline {
+    text-shadow: none;
 }
