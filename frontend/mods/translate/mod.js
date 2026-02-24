@@ -26,8 +26,8 @@ export default {
     },
 
     getInstanceName(config, tFn) {
-        const langKey = 'mods.translate.lang.' + (config.targetLang || 'zh-TW');
-        return (tFn || t)('mods.translate.name') + ' \u2192 ' + (tFn || t)(langKey);
+        const lang = (config.targetLang || 'zh-TW').replace(/-/g, '');  // zh-TW → zhTW
+        return (tFn || t)('mods.translate.name') + ' \u2192 ' + (tFn || t)('mods.translate.lang.' + lang);
     },
 
     defaultInstances: [

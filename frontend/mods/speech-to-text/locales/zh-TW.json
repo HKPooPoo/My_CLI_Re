@@ -3,7 +3,6 @@
     "speechToText": {
       "name": "語音轉文字",
       "desc": "透過 Google Speech API 將語音輸入轉換為文字。",
-      "btn": "MIC",
       "provider": {
         "google": "Google Speech API"
       },

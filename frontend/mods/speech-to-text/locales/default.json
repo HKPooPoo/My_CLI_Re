@@ -3,7 +3,6 @@
     "speechToText": {
       "name": "Voice Input",
       "desc": "Convert speech to text.",
-      "btn": "MIC",
       "provider": {
         "google": "Google Speech"
       },

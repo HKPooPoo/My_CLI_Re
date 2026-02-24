@@ -241,11 +241,6 @@
     "refreshComplete": "Check complete!",
     "serverOfflineWarning": "Service is offline.",
     "statusLabel": "Status",
-    "group": {
-      "linguistics": "Language",
-      "utilities": "Utilities",
-      "llm": "AI / LLM"
-    },
     "catalog": "Available",
     "active": "Active",
     "addBtn": "Add",

@@ -3,7 +3,6 @@
     "markdownPreview": {
       "name": "MARKDOWN 預覽",
       "desc": "在功能面板中渲染 Markdown。",
-      "btn": "MD",
       "provider": {
         "marked": "Marked.js"
       },

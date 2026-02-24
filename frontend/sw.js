@@ -1,4 +1,4 @@
-const CACHE_NAME = 'blackboard-v17-2026-02-25'; // Bump: custom select dropdown + CSS cleanup
+const CACHE_NAME = 'blackboard-v18-2026-02-25'; // Bump: i18n key fix + locale cleanup
 const ASSETS = [
   '/',
   '/index.html',

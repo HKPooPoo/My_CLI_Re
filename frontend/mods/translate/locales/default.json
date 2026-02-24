@@ -3,12 +3,6 @@
     "translate": {
       "name": "Translation",
       "desc": "Translate text using cloud API or local server.",
-      "btn": {
-        "zhTW": "繁中",
-        "zhCN": "简中",
-        "en": "EN",
-        "ja": "日"
-      },
       "lang": {
         "zhTW": "繁中",
         "zhCN": "简中",

@@ -3,7 +3,6 @@
     "markdownPreview": {
       "name": "MARKDOWN PREVIEW",
       "desc": "RENDER MARKDOWN IN FEATURE SHELF.",
-      "btn": "MD",
       "provider": {
         "marked": "MARKED.JS"
       },

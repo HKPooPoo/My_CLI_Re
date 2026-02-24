@@ -241,11 +241,6 @@
     "refreshComplete": "SCAN COMPLETE",
     "serverOfflineWarning": "WARNING: SERVICE OFFLINE",
     "statusLabel": "STATUS",
-    "group": {
-      "linguistics": "LINGUISTICS",
-      "utilities": "UTILITIES",
-      "llm": "AI / LLM"
-    },
     "catalog": "AVAILABLE MODS",
     "active": "ACTIVE MODS",
     "addBtn": "ADD",

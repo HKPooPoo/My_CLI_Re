@@ -3,12 +3,6 @@
     "translate": {
       "name": "TRANSLATION",
       "desc": "MULTI-LANGUAGE TRANSLATION VIA GOOGLE CLOUD API OR LOCAL LIBRETRANSLATE.",
-      "btn": {
-        "zhTW": "繁中",
-        "zhCN": "简中",
-        "en": "EN",
-        "ja": "日"
-      },
       "lang": {
         "zhTW": "繁中",
         "zhCN": "简中",
