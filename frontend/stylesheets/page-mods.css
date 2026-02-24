@@ -61,7 +61,7 @@
     align-items: center;
     gap: calc(var(--panel-gap) / 2);
     cursor: pointer;
-    border-bottom: 1px solid rgba(50, 255, 50, 0.1);
+    border-bottom: 1px solid var(--text-green-10);
     transition: background var(--transition-normal), color var(--transition-normal);
 }
 
@@ -258,10 +258,12 @@
     border-bottom-color: var(--text-orange);
 }
 
-/* Select dropdown — CRT themed */
-.mods-config-field-select {
-    -webkit-appearance: none;
-    appearance: none;
+/* Custom select dropdown — CRT themed */
+.mods-select {
+    position: relative;
+}
+
+.mods-select-display {
     border: var(--border-line);
     padding: 4px 24px 4px 8px;
     font-size: var(--font-size);
@@ -270,33 +272,60 @@
     background-color: var(--bg-primary);
     cursor: pointer;
     transition: all var(--transition-normal);
+    text-align: left;
+    white-space: nowrap;
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%2332ff32'/%3E%3C/svg%3E");
     background-repeat: no-repeat;
     background-position: right 8px center;
     background-size: 10px 6px;
 }
 
-.mods-config-field-select:focus {
+.mods-select.open .mods-select-display {
     border-color: var(--text-orange);
-    outline: none;
 }
 
-.mods-config-field-select option {
+.mods-select-dropdown {
+    display: none;
+    position: absolute;
+    right: 0;
+    top: 100%;
+    min-width: 100%;
     background-color: var(--bg-primary);
-    color: var(--text-green);
+    border: var(--border-line);
+    border-top: none;
+    z-index: 10;
+    max-height: 200px;
+    overflow-y: auto;
 }
 
-.mods-config-field-select option:checked {
+.mods-select.open .mods-select-dropdown {
+    display: block;
+}
+
+.mods-select-option {
+    padding: 6px 8px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background var(--transition-normal), color var(--transition-normal);
+}
+
+.mods-select-option.selected {
     background-color: var(--text-green);
     color: var(--bg-primary);
 }
 
-:root[data-theme="light"] .mods-config-field-select {
+.mods-select-option:not(.selected):hover {
+    background-color: var(--text-green);
+    color: var(--bg-primary);
+    opacity: 0.7;
+}
+
+:root[data-theme="light"] .mods-select-display {
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23000000'/%3E%3C/svg%3E");
 }
 
 @media (hover: hover) {
-    .mods-config-field-select:hover {
+    .mods-select-display:hover {
         box-shadow: 0 0 6px var(--text-green);
     }
 }
@@ -377,7 +406,8 @@
 }
 
 /* === Light mode overrides === */
-:root[data-theme="light"] .mods-config-field-select:hover,
+:root[data-theme="light"] .mods-select-display:hover,
+:root[data-theme="light"] .mods-toggle-btn:hover,
 :root[data-theme="light"] .mods-config-field-action:hover,
 :root[data-theme="light"] .mods-config-field-range::-webkit-slider-thumb,
 :root[data-theme="light"] .mods-config-field-range::-moz-range-thumb {

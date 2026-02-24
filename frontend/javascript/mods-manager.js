@@ -20,6 +20,7 @@ let infiniteList = null;
 let selectionTimer = null;
 let selectedInstanceId = null;
 let deleteMultiStep = null;
+let _selectAbort = null;  // AbortController for custom select close-handlers
 
 const elements = {
     listContainer: document.querySelector('.mods-list-container'),
@@ -351,6 +352,10 @@ function renderConfigFields(instanceId) {
     const inst = ModState.getInstance(instanceId);
     if (!elements.configFields || !inst) return;
 
+    // Abort previous select close-handlers to prevent leaks
+    if (_selectAbort) _selectAbort.abort();
+    _selectAbort = new AbortController();
+
     const template = getTemplate(inst.templateId);
     elements.configFields.innerHTML = '';
 
@@ -403,19 +408,66 @@ function createConfigField(instanceId, template, field) {
 }
 
 function createSelectField(instanceId, field) {
-    const select = document.createElement('select');
-    select.className = 'mods-config-field-select';
-    for (const opt of (field.options || [])) {
-        const option = document.createElement('option');
-        option.value = opt.value;
-        option.textContent = t(opt.labelKey) || opt.value;
-        select.appendChild(option);
+    const currentValue = ModState.getConfig(instanceId, field.key) ?? field.default ?? '';
+    const options = field.options || [];
+    const currentOpt = options.find(o => o.value === currentValue);
+
+    // Container
+    const container = document.createElement('div');
+    container.className = 'mods-select';
+
+    // Display button (shows current selection)
+    const display = document.createElement('button');
+    display.className = 'mods-select-display';
+    display.textContent = currentOpt ? (t(currentOpt.labelKey) || currentOpt.value) : currentValue;
+
+    // Dropdown panel
+    const dropdown = document.createElement('div');
+    dropdown.className = 'mods-select-dropdown';
+
+    for (const opt of options) {
+        const item = document.createElement('div');
+        item.className = 'mods-select-option';
+        if (opt.value === currentValue) item.classList.add('selected');
+        item.dataset.value = opt.value;
+        item.textContent = t(opt.labelKey) || opt.value;
+
+        item.addEventListener('click', (e) => {
+            e.stopPropagation();
+            // Update state
+            ModState.setConfig(instanceId, field.key, opt.value);
+            // Update display
+            display.textContent = t(opt.labelKey) || opt.value;
+            // Update selected class
+            dropdown.querySelectorAll('.mods-select-option').forEach(el => el.classList.remove('selected'));
+            item.classList.add('selected');
+            // Close
+            container.classList.remove('open');
+        });
+
+        dropdown.appendChild(item);
     }
-    select.value = ModState.getConfig(instanceId, field.key) ?? field.default ?? '';
-    select.addEventListener('change', () => {
-        ModState.setConfig(instanceId, field.key, select.value);
+
+    // Toggle open/close
+    display.addEventListener('click', (e) => {
+        e.stopPropagation();
+        // Close any other open selects first
+        document.querySelectorAll('.mods-select.open').forEach(el => {
+            if (el !== container) el.classList.remove('open');
+        });
+        container.classList.toggle('open');
     });
-    return select;
+
+    // Close on outside click (cleaned up via AbortController on re-render)
+    document.addEventListener('click', (e) => {
+        if (!container.contains(e.target)) {
+            container.classList.remove('open');
+        }
+    }, { signal: _selectAbort?.signal });
+
+    container.appendChild(display);
+    container.appendChild(dropdown);
+    return container;
 }
 
 function createTextField(instanceId, field) {

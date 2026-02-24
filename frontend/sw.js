@@ -1,4 +1,4 @@
-const CACHE_NAME = 'blackboard-v16-2026-02-25'; // Bump: UIUX fixes — list actions + select color
+const CACHE_NAME = 'blackboard-v17-2026-02-25'; // Bump: custom select dropdown + CSS cleanup
 const ASSETS = [
   '/',
   '/index.html',
