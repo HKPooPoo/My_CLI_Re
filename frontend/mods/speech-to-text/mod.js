@@ -1,8 +1,8 @@
 /**
- * Speech-to-Text MOD - Voice input to text conversion
+ * Speech-to-Text MOD Template - Voice input to text conversion
  * =================================================================
- * Records audio via MediaRecorder, sends to Google Speech API,
- * inserts transcribed text at cursor position in the active textarea.
+ * Singleton template. Records audio via MediaRecorder, sends to
+ * Google Speech API, inserts transcribed text at cursor position.
  * =================================================================
  */
 
@@ -25,13 +25,22 @@ export default {
     group: 'linguistics',
     nameKey: 'mods.speechToText.name',
     descriptionKey: 'mods.speechToText.desc',
-    defaultEnabled: true,
+
+    // --- Instance architecture ---
+    singleton: true,
+
+    getButtonDataId(config) {
+        return 'voice-to-textbox';
+    },
+
+    getInstanceName(config, tFn) {
+        return (tFn || t)('mods.speechToText.name');
+    },
+
+    defaultInstances: [{ config: {} }],
 
     // --- Feature integration ---
-    featureButtons: [
-        { id: 'voice-to-textbox', labelKey: 'mods.speechToText.btn' },
-    ],
-    shelfPanelId: null, // No shelf panel — inserts directly into textarea
+    shelfPanelId: null,
 
     // --- Page awareness ---
     pages: {
@@ -47,17 +56,13 @@ export default {
 
     // --- Lifecycle ---
     async init(ctx) {
-        // Defer DOM binding until button is created by loader
-        // Use event delegation on the feature container
         const container = document.querySelector('.feature-container');
         container?.addEventListener('click', (e) => {
             const btn = e.target.closest('[data-feature-btn="voice-to-textbox"]');
             if (!btn) return;
-            // Don't call toggleRecording here — feature-shelf already plays Click.mp3
-            // and calls activate(). We handle it in activate().
+            // feature-shelf already plays Click.mp3 and calls activate()
         });
 
-        // Prevent mousedown on button from stealing textarea focus
         container?.addEventListener('mousedown', (e) => {
             const btn = e.target.closest('[data-feature-btn="voice-to-textbox"]');
             if (!btn) return;
@@ -96,14 +101,12 @@ export default {
 
     _bindTextareaEvents() {
         if (!$textarea) return;
-        // Track focus state
         $textarea._sttFocusHandler = $textarea._sttFocusHandler || (() => { isTextareaFocused = true; });
         $textarea._sttBlurHandler = $textarea._sttBlurHandler || (() => { isTextareaFocused = false; });
         $textarea._sttCursorHandler = $textarea._sttCursorHandler || (() => {
             savedCursorPosition = $textarea.selectionStart;
         });
 
-        // Remove old listeners to avoid duplication
         $textarea.removeEventListener('focus', $textarea._sttFocusHandler);
         $textarea.removeEventListener('blur', $textarea._sttBlurHandler);
 
@@ -115,7 +118,6 @@ export default {
             $textarea.addEventListener(event, $textarea._sttCursorHandler);
         });
 
-        // Check if currently focused
         isTextareaFocused = (document.activeElement === $textarea);
         savedCursorPosition = $textarea.selectionStart;
     },

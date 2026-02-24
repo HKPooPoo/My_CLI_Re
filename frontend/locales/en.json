@@ -246,6 +246,14 @@
       "utilities": "UTILITIES",
       "llm": "AI / LLM"
     },
+    "catalog": "AVAILABLE MODS",
+    "active": "ACTIVE MODS",
+    "addBtn": "ADD",
+    "moveUp": "UP",
+    "moveDown": "DOWN",
+    "deleteInstance": "DELETE",
+    "deleteConfirm": "CONFIRM?",
+    "singletonAdded": "ADDED",
     "status": {
       "unknown": "SCANNING...",
       "online": "ONLINE",

@@ -233,10 +233,13 @@ Hierarchical two-level navigation that drives the entire SPA page switching:
 | `blackboard:branchRename` | blackboard-branch.js | — | Branch name edited |
 | `pwa:installable` | pwa.js | — | PWA install prompt available |
 | `i18n:ready` | i18n.js | — | Locale loaded and DOM rendered |
-| `mods:loaded` | mod-loader.js | — | All MODs loaded and init() called; mods-manager initialises |
-| `mods:changed` | mod-state.js | `{ modId, enabled }` | MOD toggled on/off; feature-shelf re-evaluates button visibility |
-| `mods:configChanged` | mod-state.js | `{ modId, key, value }` | MOD config value changed; mods-manager re-renders fields (showWhen) |
-| `mods:selected` | mods-manager.js | `{ modId }` | MOD selected in list (500ms debounce); config page renders |
+| `mods:loaded` | mod-loader.js | — | All templates loaded and init() called; mods-manager initialises |
+| `mods:changed` | mod-state.js | `{ instanceId, templateId, enabled }` | Instance toggled on/off; feature-shelf re-evaluates button visibility |
+| `mods:configChanged` | mod-state.js | `{ instanceId, templateId, key, value }` | Instance config changed; mods-manager re-renders fields (showWhen) + updates button icon |
+| `mods:instanceAdded` | mod-state.js | `{ instance }` | New instance created; re-render list + create button |
+| `mods:instanceRemoved` | mod-state.js | `{ instanceId, templateId }` | Instance deleted; re-render list + remove button |
+| `mods:reordered` | mod-state.js | — | Instance order changed; re-render list + reorder buttons |
+| `mods:selected` | mods-manager.js | `{ instanceId }` | Instance selected in list (500ms debounce); config page renders |
 | `settings:maxSlotChanged` | misc.js | — | MAX_SLOT range slider changed; lists adjust limits |
 
 ### i18n System (`i18n.js`)
@@ -328,30 +331,31 @@ Prevents double-fire via `aria-busy="true"` during async actions. No artificial 
 - Everything else under `/api` — PHP-FPM FastCGI
 - All other paths — `index.html` (SPA fallback)
 
-### MOD System (Plug-and-Play Framework)
+### MOD System (Instance-Based Architecture)
 
-Self-contained, plug-and-play feature system. **1 MOD = 1 feature** with internal provider selection. The 4th main navigation section (`mods`) has two pages: list + config.
+Self-contained, plug-and-play feature system. **1 Instance = 1 Feature Button**. Templates (`mod.js`) are blueprints that can be instantiated multiple times, each with independent config, enabled state, and order. The 4th main navigation section (`mods`) has two pages: list (template catalog + active instances) + config.
 
-#### Architecture: `mod-manifest.js` → `mod-loader.js` → MODs
+#### Architecture: `mod-manifest.js` → `mod-loader.js` → Templates → Instances
 
-**Boot sequence:** `i18n:ready` → `loadAllMods()` → register all MODs in ModState → fetch MOD-local locales → create DOM (buttons + shelves) → call each MOD's `init()` → dispatch `mods:loaded` → `mods-manager.init()`
+**Boot sequence:** `i18n:ready` → `loadAllMods()` → register templates in ModState → run migration (v1→v2→v3) → create default instances if none exist → fetch MOD-local locales → create DOM (buttons from instances + shelves from templates) → call each template's `init()` → dispatch `mods:loaded` → `mods-manager.init()`
 
 A `setTimeout(bootMods, 0)` fallback in `index.html` ensures boot even if `i18n:ready` fires before the listener is registered.
 
-**Manifest** (`mods/mod-manifest.js`): Single source of truth — static `export { default as X }` for each MOD.
+**Manifest** (`mods/mod-manifest.js`): Single source of truth — static `export { default as X }` for each template.
 
 **Loader** (`mods/mod-loader.js`):
-- Imports all MODs from manifest, calls `ModState.registerMod(id, def)` for each
+- Imports all templates from manifest, calls `ModState.registerTemplate(id, def)` for each
+- Runs migration chain (v1→v2→v3), then `ensureDefaultInstances()` per template
 - Fetches `mods/{id}/locales/{locale}.json` and deep-merges via `mergeStrings()` (fallback: locale → en → default)
-- Creates feature buttons (`<button class="feature-btn" data-feature-btn="{id}">`) — **NO textContent** (icons are CSS `::after` mask-image)
-- Creates empty shelf panels (`<div class="feature-shelf" data-feature-shelf="{id}">`) — MOD fills content in `init()`
-- Calls `mod.init({ getMod, getAllMods })` on each MOD
-- Exports: `getMod(id)`, `getAllMods()`, `getModsByGroup()`
-- Always dispatches `mods:loaded` even on partial failure (try/catch per MOD)
+- Creates feature buttons **from instances** (`<button class="feature-btn" data-feature-btn="{getButtonDataId(config)}" data-instance-id="{instanceId}">`)
+- Creates empty shelf panels per template (`<div class="feature-shelf" data-feature-shelf="{id}">`) — template fills in `init()`
+- Calls `template.init()` once per template (not per instance)
+- Exports: `getTemplate(id)`, `getAllTemplates()`, `getInstances()`, `getInstancesByTemplate(id)`, `rebuildInstanceButtons()`, `updateInstanceButton(instanceId)`, `removeInstanceButton(instanceId)`
+- Always dispatches `mods:loaded` even on partial failure (try/catch per template)
 
-#### Unified MOD Interface
+#### Template Interface
 
-Every MOD in `mods/{id}/mod.js` exports a default object:
+Every template in `mods/{id}/mod.js` exports a default object:
 
 ```js
 export default {
@@ -359,38 +363,53 @@ export default {
     group: 'linguistics',               // UI grouping: 'linguistics' | 'utilities' | 'llm'
     nameKey: 'mods.translate.name',     // i18n key
     descriptionKey: 'mods.translate.desc',
-    defaultEnabled: true,
 
-    featureButtons: [                   // loader creates <button> for each (no textContent — icon via CSS)
-        { id: 'translate-zh-TW', labelKey: 'mods.translate.btn.zhTW' },
-    ],
-    shelfPanelId: 'translator',         // loader creates empty div; MOD fills in init(). null = no shelf.
+    singleton: false,                   // true = only 1 instance allowed
 
-    pages: {                            // page-aware textarea binding
-        'blackboard-log': { textareaSelector: '#log-textarea' },
-        'broadcast-channel': { textareaSelector: '#channel-textarea' },
+    getButtonDataId(config) {           // instance config → button data-feature-btn attribute
+        return 'translate-' + config.targetLang;  // → CSS ::after mask-image
     },
-
-    providers: [                        // provider types: 'cloud' | 'server' | 'client'
-        { id: 'google', type: 'cloud', nameKey: '...' },
-        { id: 'libretranslate', type: 'server', nameKey: '...',
-          healthEndpoint: '/api/mods/offline-translate/health' },
+    getInstanceName(config, t) {        // display name in list (differentiates instances)
+        return t('mods.translate.name') + ' → ' + t('mods.translate.lang.' + config.targetLang);
+    },
+    defaultInstances: [                 // created on first run (no existing localStorage)
+        { config: { targetLang: 'zh-TW', provider: 'google' } },
+        { config: { targetLang: 'zh-CN', provider: 'google' } },
+        { config: { targetLang: 'en',    provider: 'google' } },
+        { config: { targetLang: 'ja',    provider: 'google' } },
     ],
 
-    configSchema: [                     // drives config page UI (see field types below)
-        { key: 'provider', type: 'select', labelKey: '...', options: [...], default: 'google' },
-        { key: 'libreStatus', type: 'info', showWhen: { key: 'provider', value: 'libretranslate' } },
+    shelfPanelId: 'translator',         // shared by all instances (1 shelf per template)
+    pages: { ... },                     // page-aware textarea binding (unchanged)
+    providers: [ ... ],                 // provider types (unchanged)
+    configSchema: [                     // includes per-instance fields
+        { key: 'targetLang', type: 'select', ... },
+        { key: 'provider', type: 'select', ... },
     ],
-
-    sharedConfigGroup: null,            // 'llm' for LLM MODs (shared provider config)
 
     async init(ctx) {},                 // Once at boot — cache DOM, inject shelf UI, bind events
-    async activate(ctx) {},             // Feature button clicked / shelf opened
-    async deactivate() {},              // Shelf closed / page changed away
-    async checkHealth() {},             // Returns 'online'|'offline'|'unknown'
-    destroy() {},                       // Teardown (cleanup listeners)
+    async activate(ctx) {},             // ctx = { page, buttonId, instanceId, instanceConfig }
+    async deactivate() {},
+    async checkHealth(instanceConfig) {},
+    destroy() {},
 }
 ```
+
+#### Instance Data Model (persisted in localStorage)
+
+```js
+{
+    instanceId: 'i_translate_1',     // unique: 'i_' + templateId + '_' + Date.now()
+    templateId: 'translate',
+    enabled: true,
+    order: 0,                        // global ordering, determines button position
+    config: { targetLang: 'zh-TW', provider: 'google' }
+}
+```
+
+- **`mod-instances`** — JSON array of instance objects, ordered by `order`
+- **`mod-shared-configs`** — kept for LLM shared config (unchanged)
+- **Migration chain:** v1 (8 translate MODs) → v2 (1 translate MOD) → v3 (instances array)
 
 #### Config Schema Field Types
 
@@ -405,65 +424,85 @@ export default {
 
 Each field supports `showWhen: { key, value }` — only rendered when another config key matches. Re-evaluated on `mods:configChanged`.
 
-#### MOD Occupies 4 UI Positions
+#### Instance Occupies 4 UI Positions
 
 | Position | What | Who builds it |
 |----------|------|---------------|
-| 1. **List page** | Item in MOD manager list | Framework (from metadata) |
-| 2. **Config page** | Config panel fields | Framework (from `configSchema`) |
-| 3. **Feature button** | Button icon in HUD bar | Framework creates `<button>`, icon via CSS `::after` |
-| 4. **Shelf panel** | Panel content when button clicked | **MOD itself** fills HTML in `init()` |
+| 1. **List page** | Item in active instances list | Framework (from instance + template metadata) |
+| 2. **Config page** | Config panel fields + actions (UP/DOWN/DELETE) | Framework (from `configSchema` + instance management) |
+| 3. **Feature button** | Button icon in HUD bar | Framework creates `<button>` with `data-instance-id`, icon via CSS `::after` |
+| 4. **Shelf panel** | Panel content when button clicked | **Template** fills HTML in `init()` (shared across instances) |
 
 #### State (`mod-state.js`)
 
-Decoupled from any registry — MODs are registered at runtime via `registerMod(id, def)`.
+Instance-based state management. Templates are registered, instances are CRUD-managed.
 
-- `ModState.isEnabled(id)` / `setEnabled(id, bool)` — dispatches `mods:changed`
-- `ModState.getConfig(id, key)` / `setConfig(id, key, value)` — dispatches `mods:configChanged`
-- `ModState.getSharedConfig(group, key)` / `setSharedConfig(group, key, value)` — for LLM shared config
-- `refreshServerStatus(id)` / `refreshAllServerStatuses()` — checks active provider's `healthEndpoint`
-- Server status only checked/shown when active provider type is `'server'`; cloud/client providers are always `'online'`
-- **v1 migration:** auto-detects old `translate-zh-TW-online` keys in localStorage, collapses to new `translate` MOD
+**Template management:**
+- `ModState.registerTemplate(id, def)` / `getTemplate(id)` / `getAllTemplates()`
+
+**Instance CRUD:**
+- `getInstances()` / `getInstancesByTemplate(templateId)` / `getInstance(instanceId)`
+- `addInstance(templateId, config?)` — dispatches `mods:instanceAdded`
+- `removeInstance(instanceId)` — dispatches `mods:instanceRemoved` (blocked for singletons)
+- `ensureDefaultInstances(templateId)` — creates default instances on first run
+
+**Instance state:**
+- `isEnabled(instanceId)` / `setEnabled(instanceId, bool)` — dispatches `mods:changed`
+- `getConfig(instanceId, key)` / `setConfig(instanceId, key, value)` — dispatches `mods:configChanged`
+- `reorderInstance(instanceId, direction)` — dispatches `mods:reordered`
+
+**Server health:** `getServerStatus(instanceId)` / `refreshServerStatus(instanceId)` / `refreshAllServerStatuses()`
+
+**Shared config (unchanged):** `getSharedConfig(group, key)` / `setSharedConfig(group, key, value)`
 
 #### Manager UI (`mods-manager.js`)
 
-- Imports from `mod-loader.js` (NOT `mod-registry.js`)
-- `renderModList()`: groups from `getModsByGroup()`, shows server status only for server-type providers
-- `renderConfigFields(modId)`: dispatches to type-specific creators (`createSelectField`, `createTextField`, `createRangeField`, `createToggleField`, `createInfoField`, `createActionField`)
-- `evaluateShowWhen(modId, field)`: checks `ModState.getConfig()` against `showWhen` condition
-- `mods:configChanged` listener re-renders list when provider changes, re-renders config fields for showWhen re-evaluation
-- Init via `window.addEventListener('mods:loaded', () => init())`
+**List page (two containers):**
+- **Template catalog** (top): one row per template with [ADD] button. Singletons with existing instance show "ADDED" label.
+- **Active instances** (bottom): InfiniteList ordered by `order`. Toggle buttons per instance. Selecting shows config.
+
+**Config page:**
+- Instance name + template description
+- Config fields from `configSchema`
+- Instance management: [▲ UP] [▼ DOWN] [DELETE] action buttons
+- DELETE uses MultiStepButton confirm pattern; hidden for singletons
+- Config changes update button icon via `updateInstanceButton()`
+
+**Events handled:**
+- `mods:instanceAdded` / `mods:instanceRemoved` / `mods:reordered` → re-render list + buttons
+- `mods:configChanged` → re-render config fields (showWhen) + update button `data-feature-btn`
 - Toggle buttons use `e.stopPropagation()` to avoid triggering InfiniteList click
 - `list:selectionChanged` listener MUST check `container.contains(detail.item)` to filter events from other lists
 
 #### Feature Shelf (`feature-shelf.js`)
 
 - **Dynamic DOM queries** — `getFeatureBtns()` / `getFeatureShelves()` re-query each call (buttons created at runtime)
-- **Event delegation** on `.feature-container` for click handling (supports dynamically created buttons)
-- `isFeatureBtnAllowedByMods(btnId)`: queries `getAllMods()` with `m.featureButtons?.some(b => b.id === btnId)`
-- `resolveShelfId(btnId)`: looks up MOD's `shelfPanelId` from button ID
-- `handleFeatureBtnClick()`: calls `mod.activate()` BEFORE shelf panel check — MODs without shelves (e.g. speech-to-text) still get activated
+- **Event delegation** on `.feature-container` for click handling
+- `isFeatureBtnAllowed($btn)`: reads `data-instance-id`, checks `ModState.isEnabled(instanceId)`
+- `resolveShelfId($btn)`: reads `data-instance-id`, looks up template's `shelfPanelId`
+- `handleFeatureBtnClick()`: reads instance + template, calls `template.activate({ page, buttonId, instanceId, instanceConfig })` BEFORE shelf panel check
+- `updateFeatureButtons(page)`: page's `data-feature-mods` lists template IDs; show buttons for enabled instances of those templates
 
-#### Current MODs (3 self-contained)
+#### Current Templates (3 self-contained)
 
-| ID | Group | Feature Buttons | Providers | Shelf |
-|----|-------|----------------|-----------|-------|
-| `translate` | linguistics | `translate-zh-TW`, `translate-zh-CN`, `translate-en`, `translate-ja` | google (cloud), libretranslate (server) | `translator` |
-| `speech-to-text` | linguistics | `voice-to-textbox` | google-speech (cloud) | none |
-| `markdown-preview` | utilities | `markdown-preview` | marked (client) | `markdown-preview` |
+| ID | Group | Singleton | Default Instances | Providers | Shelf |
+|----|-------|-----------|------------------|-----------|-------|
+| `translate` | linguistics | false | 4 (zh-TW, zh-CN, en, ja) | google (cloud), libretranslate (server) | `translator` |
+| `speech-to-text` | linguistics | true | 1 | google-speech (cloud) | none |
+| `markdown-preview` | utilities | true | 1 | marked (client) | `markdown-preview` |
 
-#### Adding a New MOD
+#### Adding a New Template
 
-1. Create `mods/{id}/mod.js` exporting the unified interface
-2. Create `mods/{id}/locales/{en,zh-TW,default}.json` with MOD-local i18n keys
+1. Create `mods/{id}/mod.js` exporting the template interface (with `getButtonDataId`, `getInstanceName`, `defaultInstances`)
+2. Create `mods/{id}/locales/{en,zh-TW,default}.json` with template-local i18n keys
 3. Add `export { default as myMod } from './{id}/mod.js'` to `mod-manifest.js`
 4. Add CSS icon for feature button: `.feature-btn[data-feature-btn="{btn-id}"]::after { mask-image: url(...) }`
-5. Add `{btn-id}` to `data-feature-btns` on relevant pages in `index.html`
+5. Add template ID to `data-feature-mods` on relevant pages in `index.html`
 6. **Bump SW cache version** in `sw.js` (required when `index.html` structure changes)
 
 #### SW Cache Bump Reminder
 
-When modifying `index.html` or adding new MOD files, **always bump the `CACHE_NAME` in `sw.js`**. Stale SW cache serving old `index.html` is a common cause of "all extensions gone" after refactoring.
+When modifying `index.html` or adding new template files, **always bump the `CACHE_NAME` in `sw.js`**. Stale SW cache serving old `index.html` is a common cause of "all extensions gone" after refactoring.
 
 ## MCP Servers
 

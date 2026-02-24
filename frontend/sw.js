@@ -1,4 +1,4 @@
-const CACHE_NAME = 'blackboard-v14-2026-02-25'; // Bump: MOD system refactoring — plug-and-play framework
+const CACHE_NAME = 'blackboard-v15-2026-02-25'; // Bump: MOD instance-based architecture redesign
 const ASSETS = [
   '/',
   '/index.html',

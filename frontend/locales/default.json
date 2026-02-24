@@ -246,6 +246,14 @@
       "utilities": "Utilities",
       "llm": "AI / LLM"
     },
+    "catalog": "Available",
+    "active": "Active",
+    "addBtn": "Add",
+    "moveUp": "Up",
+    "moveDown": "Down",
+    "deleteInstance": "Delete",
+    "deleteConfirm": "Confirm?",
+    "singletonAdded": "Added",
     "status": {
       "unknown": "Checking...",
       "online": "Available",

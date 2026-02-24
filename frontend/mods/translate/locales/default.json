@@ -9,11 +9,18 @@
         "en": "EN",
         "ja": "日"
       },
+      "lang": {
+        "zhTW": "繁中",
+        "zhCN": "简中",
+        "en": "EN",
+        "ja": "日"
+      },
       "provider": {
         "google": "Cloud (Google)",
         "libre": "Local (LibreTranslate)"
       },
       "config": {
+        "targetLang": "Target Language",
         "provider": "Provider",
         "libreStatus": "Server Status"
       },

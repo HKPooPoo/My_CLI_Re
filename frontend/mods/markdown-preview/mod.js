@@ -1,7 +1,7 @@
 /**
- * Markdown Preview MOD - Renders Markdown in feature shelf
+ * Markdown Preview MOD Template - Renders Markdown in feature shelf
  * =================================================================
- * Uses the global `marked` library (loaded via vendor script).
+ * Singleton template. Uses the global `marked` library.
  * Page-aware: binds to the active textarea and renders on input.
  * =================================================================
  */
@@ -12,6 +12,7 @@ import { t } from '../../javascript/i18n.js';
 let _debounceTimer = null;
 let _activeTextarea = null;
 let _outputEl = null;
+let _currentInstanceId = null;
 
 export default {
     // --- Identity ---
@@ -19,12 +20,21 @@ export default {
     group: 'utilities',
     nameKey: 'mods.markdownPreview.name',
     descriptionKey: 'mods.markdownPreview.desc',
-    defaultEnabled: true,
+
+    // --- Instance architecture ---
+    singleton: true,
+
+    getButtonDataId(config) {
+        return 'markdown-preview';
+    },
+
+    getInstanceName(config, tFn) {
+        return (tFn || t)('mods.markdownPreview.name');
+    },
+
+    defaultInstances: [{ config: {} }],
 
     // --- Feature integration ---
-    featureButtons: [
-        { id: 'markdown-preview', labelKey: 'mods.markdownPreview.btn' },
-    ],
     shelfPanelId: 'markdown-preview',
 
     // --- Page awareness ---
@@ -42,7 +52,6 @@ export default {
 
     // --- Lifecycle ---
     async init(ctx) {
-        // Create output div inside shelf panel
         const shelf = document.querySelector('[data-feature-shelf="markdown-preview"]');
         if (shelf) {
             const output = document.createElement('div');
@@ -52,21 +61,23 @@ export default {
             _outputEl = output;
         }
 
-        // Listen for page changes to rebind textarea
         window.addEventListener('navi:pageChanged', () => {
             this._bindTextarea();
         });
 
-        // MOD state change: clear output if disabled
         window.addEventListener('mods:changed', (e) => {
-            if (e.detail?.modId === 'markdown-preview' && !e.detail.enabled && _outputEl) {
+            // Check if any markdown-preview instance was disabled
+            if (e.detail?.templateId === 'markdown-preview' && !e.detail.enabled && _outputEl) {
                 _outputEl.innerHTML = '';
             }
         });
     },
 
     async activate(ctx) {
-        if (!ModState.isEnabled('markdown-preview')) {
+        _currentInstanceId = ctx?.instanceId || null;
+
+        // Check if instance is enabled
+        if (_currentInstanceId && !ModState.isEnabled(_currentInstanceId)) {
             if (_outputEl) _outputEl.innerHTML = `<div class="md-empty">${t('mods.markdownPreview.disabled')}</div>`;
             return;
         }
@@ -110,7 +121,10 @@ export default {
 
         if (_activeTextarea) {
             _activeTextarea.addEventListener('input', this._onTextareaInput);
-            if (ModState.isEnabled('markdown-preview')) {
+            // Check if any markdown-preview instance is enabled
+            const mdInstances = ModState.getInstancesByTemplate('markdown-preview');
+            const anyEnabled = mdInstances.some(i => ModState.isEnabled(i.instanceId));
+            if (anyEnabled) {
                 this._renderMarkdown(_activeTextarea.value);
             }
         }
@@ -119,7 +133,9 @@ export default {
     _onTextareaInput: function() {
         clearTimeout(_debounceTimer);
         _debounceTimer = setTimeout(() => {
-            if (!ModState.isEnabled('markdown-preview')) return;
+            const mdInstances = ModState.getInstancesByTemplate('markdown-preview');
+            const anyEnabled = mdInstances.some(i => ModState.isEnabled(i.instanceId));
+            if (!anyEnabled) return;
             const textarea = _activeTextarea;
             if (textarea && _outputEl) {
                 _renderMarkdownImpl(textarea.value);

@@ -246,6 +246,14 @@
       "utilities": "工具",
       "llm": "AI / LLM"
     },
+    "catalog": "可用模組",
+    "active": "啟用中模組",
+    "addBtn": "新增",
+    "moveUp": "上移",
+    "moveDown": "下移",
+    "deleteInstance": "刪除",
+    "deleteConfirm": "確定？",
+    "singletonAdded": "已新增",
     "status": {
       "unknown": "掃描中...",
       "online": "線上",

@@ -383,3 +383,109 @@
 :root[data-theme="light"] .mods-server-status.offline {
     text-shadow: none;
 }
+
+/* === Template Catalog (Available MODs) === */
+.mods-catalog-item {
+    padding: calc(var(--panel-gap) / 3) calc(var(--panel-gap) / 2);
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: calc(var(--panel-gap) / 2);
+    border-bottom: 1px solid var(--text-green-10);
+}
+
+.mods-catalog-item:last-of-type {
+    border-bottom: none;
+}
+
+.mods-catalog-item-name {
+    font-size: 0.95em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex: 1 1 auto;
+}
+
+.mods-catalog-add-btn {
+    border: var(--border-line);
+    padding: 3px 10px;
+    min-width: 48px;
+    text-align: center;
+    cursor: pointer;
+    font-size: 0.75em;
+    letter-spacing: 0.05em;
+    transition: all var(--transition-normal);
+    flex: 0 0 auto;
+}
+
+@media (hover: hover) {
+    .mods-catalog-add-btn:hover {
+        background: var(--text-green);
+        color: var(--bg-primary);
+        box-shadow: 0 0 10px var(--text-green);
+    }
+}
+
+.mods-catalog-added {
+    font-size: 0.75em;
+    opacity: 0.5;
+    letter-spacing: 0.05em;
+    flex: 0 0 auto;
+}
+
+/* === Instance Actions (config page) === */
+.mods-instance-actions {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    gap: calc(var(--panel-gap) / 2);
+    padding: var(--panel-gap) calc(var(--panel-gap) / 2);
+    border-top: 1px solid var(--text-green);
+    margin-top: calc(var(--panel-gap) / 2);
+}
+
+.mods-action-btn {
+    border: var(--border-line);
+    padding: 6px 12px;
+    cursor: pointer;
+    font-size: 0.8em;
+    letter-spacing: 0.05em;
+    transition: all var(--transition-normal);
+    text-align: center;
+    min-width: 64px;
+}
+
+.mods-action-btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+
+.mods-action-btn.mods-action-delete {
+    border-color: var(--text-red);
+}
+
+.mods-action-btn.btn-armed {
+    background: var(--text-red);
+    color: var(--bg-primary);
+    border-color: var(--text-red);
+}
+
+@media (hover: hover) {
+    .mods-action-btn:not(:disabled):hover {
+        background: var(--text-green);
+        color: var(--bg-primary);
+        box-shadow: 0 0 10px var(--text-green);
+    }
+
+    .mods-action-btn.mods-action-delete:not(:disabled):hover {
+        background: var(--text-red);
+        box-shadow: 0 0 10px var(--text-red);
+    }
+}
+
+:root[data-theme="light"] .mods-catalog-add-btn:hover,
+:root[data-theme="light"] .mods-action-btn:not(:disabled):hover {
+    box-shadow: none;
+}

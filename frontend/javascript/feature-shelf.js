@@ -1,22 +1,15 @@
 /**
- * Feature Shelf - Lateral Dashboard Controller
+ * Feature Shelf - Lateral Dashboard Controller (Instance-Aware)
  * =================================================================
  * Manages the feature shelf panel (sliding drawer) interactions.
- * Responsibilities:
- * 1. Drawer: control slide open/close with transform.
- * 2. Draggable: horizontal drag via handle button.
- * 3. Snapping: auto-snap to nearest percentage width on drag end.
- * 4. Content dispatch: show correct shelf panel based on button click.
- * 5. MOD-aware: button visibility driven by MOD enabled state.
- *
- * DOM queries for feature-btn and feature-shelf are DYNAMIC —
- * MODs create buttons/panels at runtime via mod-loader.
+ * Now instance-aware: buttons carry data-instance-id, and page
+ * visibility is driven by data-feature-mods (template IDs).
  * =================================================================
  */
 
 import { playAudio } from "./audio.js";
 import { ModState } from "./mod-state.js";
-import { getAllMods } from "../mods/mod-loader.js";
+import { getAllTemplates, getInstances } from "../mods/mod-loader.js";
 
 // --- DOM refs (static containers) ---
 const $featureShelfContainer = document.querySelector('.feature-shelf-container');
@@ -72,50 +65,65 @@ window.addEventListener('resize', () => {
 });
 
 /**
- * Check if a feature button is controlled by a MOD, and if so, whether that MOD is enabled.
+ * Check if a feature button (by instance) is allowed (instance enabled).
  */
-function isFeatureBtnAllowedByMods(btnId) {
-    const mods = getAllMods();
-    const relatedMods = mods.filter(m =>
-        m.featureButtons?.some(b => b.id === btnId)
-    );
-    if (relatedMods.length === 0) return true; // Not controlled by any MOD
-    return relatedMods.some(m => ModState.isEnabled(m.id));
+function isFeatureBtnAllowed($btn) {
+    const instanceId = $btn.dataset.instanceId;
+    if (!instanceId) return true; // Not an instance button
+    return ModState.isEnabled(instanceId);
 }
 
 /**
- * Resolve the shelf panel ID for a given feature button ID.
- * Looks up the MOD that owns this button and returns its shelfPanelId.
+ * Resolve the shelf panel ID for a given feature button element.
+ * Reads the instance ID, looks up template's shelfPanelId.
  */
-function resolveShelfId(btnId) {
-    const mods = getAllMods();
-    for (const mod of mods) {
-        if (mod.featureButtons?.some(b => b.id === btnId)) {
-            return mod.shelfPanelId || btnId;
-        }
-    }
-    return btnId;
+function resolveShelfId($btn) {
+    const instanceId = $btn.dataset.instanceId;
+    if (!instanceId) return $btn.dataset.featureBtn;
+
+    const instance = ModState.getInstance(instanceId);
+    if (!instance) return $btn.dataset.featureBtn;
+
+    const templates = getAllTemplates();
+    const template = templates.find(t => t.id === instance.templateId);
+    return template?.shelfPanelId || $btn.dataset.featureBtn;
 }
 
-// Update feature button visibility per page (MOD-aware)
+/**
+ * Update feature button visibility per page (instance-aware).
+ * Pages use data-feature-mods="translate,speech-to-text,markdown-preview"
+ * to list which template IDs are allowed.
+ */
 function updateFeatureButtons(page) {
     const $activePage = document.querySelector(`.page[data-page="${page}"]`);
-    const featureBtns = $activePage?.dataset.featureBtns;
+    const featureMods = $activePage?.dataset.featureMods;
     const $btns = getFeatureBtns();
 
-    if (featureBtns === undefined) {
+    if (featureMods === undefined) {
+        // No data-feature-mods attribute: show all enabled instance buttons
         $btns.forEach($btn => {
-            $btn.style.display = isFeatureBtnAllowedByMods($btn.dataset.featureBtn) ? '' : 'none';
+            $btn.style.display = isFeatureBtnAllowed($btn) ? '' : 'none';
         });
         return;
     }
 
-    const allowed = featureBtns ? featureBtns.split(',') : [];
+    const allowedTemplates = featureMods ? featureMods.split(',').map(s => s.trim()) : [];
     $btns.forEach($btn => {
-        const btnId = $btn.dataset.featureBtn;
-        const pageAllows = allowed.includes(btnId);
-        const modAllows = isFeatureBtnAllowedByMods(btnId);
-        $btn.style.display = (pageAllows && modAllows) ? '' : 'none';
+        const instanceId = $btn.dataset.instanceId;
+        if (!instanceId) {
+            $btn.style.display = 'none';
+            return;
+        }
+
+        const instance = ModState.getInstance(instanceId);
+        if (!instance) {
+            $btn.style.display = 'none';
+            return;
+        }
+
+        const templateAllowed = allowedTemplates.includes(instance.templateId);
+        const instanceEnabled = ModState.isEnabled(instanceId);
+        $btn.style.display = (templateAllowed && instanceEnabled) ? '' : 'none';
     });
 }
 
@@ -123,7 +131,7 @@ window.addEventListener('navi:pageChanged', ({ detail }) => {
     updateFeatureButtons(detail.page);
 });
 
-// Re-evaluate button visibility when MOD state changes
+// Re-evaluate button visibility when instance state changes
 window.addEventListener('mods:changed', () => {
     const activePage = document.querySelector('.page.active');
     if (activePage) updateFeatureButtons(activePage.dataset.page);
@@ -135,30 +143,51 @@ window.addEventListener('mods:loaded', () => {
     if (activePage) updateFeatureButtons(activePage.dataset.page);
 });
 
+// Re-evaluate after instances are added/removed/reordered
+window.addEventListener('mods:instanceAdded', () => {
+    const activePage = document.querySelector('.page.active');
+    if (activePage) updateFeatureButtons(activePage.dataset.page);
+});
+
+window.addEventListener('mods:instanceRemoved', () => {
+    const activePage = document.querySelector('.page.active');
+    if (activePage) updateFeatureButtons(activePage.dataset.page);
+});
+
+window.addEventListener('mods:reordered', () => {
+    const activePage = document.querySelector('.page.active');
+    if (activePage) updateFeatureButtons(activePage.dataset.page);
+});
+
 /**
- * Feature button click dispatch.
+ * Feature button click dispatch (instance-aware).
  */
 function handleFeatureBtnClick($clickedBtn) {
     const targetFeatureId = $clickedBtn.dataset.featureBtn;
+    const instanceId = $clickedBtn.dataset.instanceId;
     if (!targetFeatureId) return;
 
-    // Notify MOD of activation (even MODs without shelf panels)
-    const mods = getAllMods();
+    // Find the instance and its template
+    const instance = instanceId ? ModState.getInstance(instanceId) : null;
     const activePage = document.querySelector('.page.active');
-    for (const mod of mods) {
-        const ownsButton = mod.featureButtons?.some(b => b.id === targetFeatureId);
-        if (ownsButton && typeof mod.activate === 'function') {
-            mod.activate({
+
+    if (instance) {
+        const templates = getAllTemplates();
+        const template = templates.find(t => t.id === instance.templateId);
+        if (template && typeof template.activate === 'function') {
+            template.activate({
                 page: activePage?.dataset?.page,
-                buttonId: targetFeatureId
+                buttonId: targetFeatureId,
+                instanceId: instance.instanceId,
+                instanceConfig: instance.config
             });
         }
     }
 
     // Resolve shelf panel (if any) and open it
-    const resolvedId = resolveShelfId(targetFeatureId);
+    const resolvedId = resolveShelfId($clickedBtn);
     const $targetShelf = document.querySelector(`.feature-shelf[data-feature-shelf="${resolvedId}"]`);
-    if (!$targetShelf) return; // No shelf — MOD was already activated above
+    if (!$targetShelf) return; // No shelf — template was already activated above
 
     getFeatureShelves().forEach($shelf => {
         $shelf.style.display = ($shelf === $targetShelf) ? 'flex' : 'none';

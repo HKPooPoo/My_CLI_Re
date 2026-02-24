@@ -1,18 +1,15 @@
 /**
- * Translate MOD - Multi-language translation with provider selection
+ * Translate MOD Template - Multi-language translation with provider selection
  * =================================================================
- * Collapses the old 8 atomic MODs (4 online + 4 offline) into 1.
- * Provider is selected via config (google / libretranslate).
+ * Instance-based: each instance targets a specific language.
+ * Provider is selected via instance config (google / libretranslate).
  * Page-aware: reads from the active page's textarea.
  * =================================================================
  */
 
 import { TranslationService } from '../../javascript/services/translation-service.js';
 import { ModState } from '../../javascript/mod-state.js';
-import { playAudio } from '../../javascript/audio.js';
 import { t } from '../../javascript/i18n.js';
-
-const TRANSLATE_BTN_PREFIX = 'translate-';
 
 export default {
     // --- Identity ---
@@ -20,15 +17,27 @@ export default {
     group: 'linguistics',
     nameKey: 'mods.translate.name',
     descriptionKey: 'mods.translate.desc',
-    defaultEnabled: true,
+
+    // --- Instance architecture ---
+    singleton: false,
+
+    getButtonDataId(config) {
+        return 'translate-' + (config.targetLang || 'zh-TW');
+    },
+
+    getInstanceName(config, tFn) {
+        const langKey = 'mods.translate.lang.' + (config.targetLang || 'zh-TW');
+        return (tFn || t)('mods.translate.name') + ' \u2192 ' + (tFn || t)(langKey);
+    },
+
+    defaultInstances: [
+        { config: { targetLang: 'zh-TW', provider: 'google' } },
+        { config: { targetLang: 'zh-CN', provider: 'google' } },
+        { config: { targetLang: 'en',    provider: 'google' } },
+        { config: { targetLang: 'ja',    provider: 'google' } },
+    ],
 
     // --- Feature integration ---
-    featureButtons: [
-        { id: 'translate-zh-TW', labelKey: 'mods.translate.btn.zhTW' },
-        { id: 'translate-zh-CN', labelKey: 'mods.translate.btn.zhCN' },
-        { id: 'translate-en', labelKey: 'mods.translate.btn.en' },
-        { id: 'translate-ja', labelKey: 'mods.translate.btn.ja' },
-    ],
     shelfPanelId: 'translator',
 
     // --- Page awareness ---
@@ -44,6 +53,18 @@ export default {
           healthEndpoint: '/api/mods/offline-translate/health' },
     ],
     configSchema: [
+        {
+            key: 'targetLang',
+            type: 'select',
+            labelKey: 'mods.translate.config.targetLang',
+            options: [
+                { value: 'zh-TW', labelKey: 'mods.translate.lang.zhTW' },
+                { value: 'zh-CN', labelKey: 'mods.translate.lang.zhCN' },
+                { value: 'en',    labelKey: 'mods.translate.lang.en' },
+                { value: 'ja',    labelKey: 'mods.translate.lang.ja' },
+            ],
+            default: 'zh-TW'
+        },
         {
             key: 'provider',
             type: 'select',
@@ -68,7 +89,6 @@ export default {
 
     // --- Lifecycle ---
     async init(ctx) {
-        // Find or create shelf panel and inject translator UI
         const shelf = document.querySelector('[data-feature-shelf="translator"]');
         if (shelf) {
             const output = document.createElement('textarea');
@@ -80,12 +100,13 @@ export default {
     },
 
     async activate(ctx) {
-        // Called when a translate button is clicked
-        if (!ctx?.buttonId) return;
+        if (!ctx) return;
 
-        const targetLang = ctx.buttonId.replace(TRANSLATE_BTN_PREFIX, '');
+        // Instance-aware: read target language from instance config
+        const targetLang = ctx.instanceConfig?.targetLang || ctx.buttonId?.replace('translate-', '') || 'zh-TW';
+        const instanceId = ctx.instanceId;
+
         const inputEl = this._getActiveTextarea();
-
         if (!inputEl || !this._outputEl) return;
 
         const text = inputEl.value.trim();
@@ -97,7 +118,7 @@ export default {
         this._outputEl.value = t('mods.translate.decrypting');
 
         try {
-            const translation = await this._translateText(text, targetLang);
+            const translation = await this._translateText(text, targetLang, instanceId);
             this._outputEl.value = translation || t('mods.translate.nullResult');
         } catch (e) {
             console.error("Translation Error:", e);
@@ -107,8 +128,8 @@ export default {
 
     async deactivate() {},
 
-    async checkHealth() {
-        const provider = ModState.getConfig('translate', 'provider');
+    async checkHealth(instanceConfig) {
+        const provider = instanceConfig?.provider || 'google';
         if (provider === 'libretranslate') {
             const libre = this.providers.find(p => p.id === 'libretranslate');
             if (libre?.healthEndpoint) {
@@ -126,12 +147,14 @@ export default {
 
     destroy() {},
 
-    getInfoValue(key) {
+    getInfoValue(key, instanceId) {
         if (key === 'libreStatus') {
-            const status = ModState.getServerStatus('translate');
+            const status = instanceId
+                ? ModState.getServerStatus(instanceId)
+                : 'unknown';
             return t(`mods.status.${status}`);
         }
-        return '—';
+        return '\u2014';
     },
 
     // --- Private helpers ---
@@ -145,10 +168,12 @@ export default {
         return document.querySelector(pageDef.textareaSelector);
     },
 
-    async _translateText(text, targetLang) {
+    async _translateText(text, targetLang, instanceId) {
         const payload = { text, target: targetLang };
 
-        const provider = ModState.getConfig('translate', 'provider');
+        const provider = instanceId
+            ? ModState.getConfig(instanceId, 'provider')
+            : 'google';
         if (provider === 'libretranslate') {
             payload.provider = 'libretranslate';
         }
