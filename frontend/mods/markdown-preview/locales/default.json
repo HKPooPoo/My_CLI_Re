@@ -1,0 +1,14 @@
+{
+  "mods": {
+    "markdownPreview": {
+      "name": "Markdown Preview",
+      "desc": "Preview formatted text.",
+      "btn": "MD",
+      "provider": {
+        "marked": "Marked.js"
+      },
+      "disabled": "Extension disabled",
+      "emptyContent": "Empty"
+    }
+  }
+}

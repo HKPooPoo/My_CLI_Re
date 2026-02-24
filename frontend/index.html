@@ -136,25 +136,9 @@
         <script type="module" src="javascript/navi.js"></script>
         <div class="page-container" id="page-container">
             <div class="feature-container" style="display: flex;">
-                <!-- <button class="feature-btn" data-feature-btn="">N/A</button>
-                <button class="feature-btn" data-feature-btn="ai-picture-analyse">pic</button>
-                <button class="feature-btn" data-feature-btn="ai-text-analyze">txt</button> -->
-                <button class="feature-btn" data-feature-btn="translate-zh-TW"></button>
-                <button class="feature-btn" data-feature-btn="translate-zh-CN"></button>
-                <button class="feature-btn" data-feature-btn="translate-en"></button>
-                <button class="feature-btn" data-feature-btn="translate-ja"></button>
-                <button class="feature-btn" data-feature-btn="voice-to-textbox"></button>
-                <button class="feature-btn" data-feature-btn="markdown-preview"></button>
+                <!-- Feature buttons and shelf panels are created dynamically by MOD loader -->
                 <div class="feature-shelf-container frosted-glass">
                     <button class="feature-shelf-back-btn">>></button>
-                    <!-- <div class="feature-shelf" data-feature-shelf="ai-picture-analyse"></div> -->
-                    <div class="feature-shelf" data-feature-shelf="ai-text-analyze"></div>
-                    <div class="feature-shelf" data-feature-shelf="translator" style="display: flex;">
-                        <textarea name="" id="feature-translator-output"></textarea>
-                    </div>
-                    <div class="feature-shelf" data-feature-shelf="markdown-preview" style="display: flex;">
-                        <div id="feature-markdown-output" class="markdown-rendered"></div>
-                    </div>
                 </div>
             </div>
             <button class="push-btn" data-i18n="common.push">PUSH</button>
@@ -300,10 +284,7 @@
             </div>
             <!--blackboard.js-->
             <script type="module" src="javascript/blackboard.js"></script>
-            <script type="module" src="javascript/feature.js"></script>
             <script type="module" src="javascript/feature-shelf.js"></script>
-            <script type="module" src="javascript/feature-translator.js"></script>
-            <script type="module" src="javascript/feature-markdown.js"></script>
             <script type="module" src="javascript/auth.js"></script>
             <script type="module" src="javascript/misc.js"></script>
             <!-- Vendor: Markdown -->
@@ -433,7 +414,13 @@
                     <button id="mods-config-refresh-btn" class="crt-text-green" data-i18n="mods.refreshBtn" style="display:none;">REFRESH</button>
                 </div>
             </div>
-            <!-- MOD Manager -->
+            <!-- MOD System -->
+            <script type="module">
+                import { ModState } from './javascript/mod-state.js';
+                import { loadAllMods } from './mods/mod-loader.js';
+                ModState.init();
+                window.addEventListener('i18n:ready', () => loadAllMods());
+            </script>
             <script type="module" src="./javascript/mods-manager.js"></script>
             <div id="toast-container"></div>
         </div>

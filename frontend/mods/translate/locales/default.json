@@ -1,0 +1,26 @@
+{
+  "mods": {
+    "translate": {
+      "name": "Translation",
+      "desc": "Translate text using cloud API or local server.",
+      "btn": {
+        "zhTW": "繁中",
+        "zhCN": "简中",
+        "en": "EN",
+        "ja": "日"
+      },
+      "provider": {
+        "google": "Cloud (Google)",
+        "libre": "Local (LibreTranslate)"
+      },
+      "config": {
+        "provider": "Provider",
+        "libreStatus": "Server Status"
+      },
+      "bufferEmpty": "Nothing to translate. Write something first.",
+      "decrypting": "Translating...",
+      "nullResult": "Translation returned empty.",
+      "criticalBreach": "Translation error: {error}"
+    }
+  }
+}

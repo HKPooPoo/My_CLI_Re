@@ -214,20 +214,6 @@
     "statusWait": "[Waiting]",
     "removeBtn": "[X]"
   },
-  "speech": {
-    "listening": "Listening...",
-    "processing": "Processing...",
-    "verified": "Done!",
-    "selectBoard": "Select a board first.",
-    "noSpeech": "No speech detected.",
-    "offline": "You are offline."
-  },
-  "translator": {
-    "bufferEmpty": "Nothing to translate. Write something first.",
-    "decrypting": "Translating...",
-    "nullResult": "Translation returned empty.",
-    "criticalBreach": "Translation error: {error}"
-  },
   "pwa": {
     "updateAvailable": "Update available"
   },
@@ -257,22 +243,13 @@
     "statusLabel": "Status",
     "group": {
       "linguistics": "Language",
-      "utilities": "Utilities"
+      "utilities": "Utilities",
+      "llm": "AI / LLM"
     },
     "status": {
       "unknown": "Checking...",
       "online": "Available",
       "offline": "Unavailable"
-    },
-    "translateZhTwOnline":  { "name": "Traditional Chinese (Cloud)",  "desc": "Translate to Traditional Chinese via cloud API." },
-    "translateZhCnOnline":  { "name": "Simplified Chinese (Cloud)",   "desc": "Translate to Simplified Chinese via cloud API." },
-    "translateEnOnline":    { "name": "English (Cloud)",               "desc": "Translate to English via cloud API." },
-    "translateJaOnline":    { "name": "Japanese (Cloud)",              "desc": "Translate to Japanese via cloud API." },
-    "translateZhTwOffline": { "name": "Traditional Chinese (Local)",   "desc": "Translate to Traditional Chinese using local server." },
-    "translateZhCnOffline": { "name": "Simplified Chinese (Local)",    "desc": "Translate to Simplified Chinese using local server." },
-    "translateEnOffline":   { "name": "English (Local)",               "desc": "Translate to English using local server." },
-    "translateJaOffline":   { "name": "Japanese (Local)",              "desc": "Translate to Japanese using local server." },
-    "speechToText":         { "name": "Voice Input",                   "desc": "Convert speech to text." },
-    "markdownPreview":      { "name": "Markdown Preview",              "desc": "Preview formatted text." }
+    }
   }
 }

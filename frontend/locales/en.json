@@ -214,20 +214,6 @@
     "statusWait": "[WAIT]",
     "removeBtn": "[X]"
   },
-  "speech": {
-    "listening": "LISTENING...",
-    "processing": "PROCESSING...",
-    "verified": "VERIFIED",
-    "selectBoard": "ERROR: SELECT BOARD",
-    "noSpeech": "ERROR: NO SPEECH",
-    "offline": "ERROR: OFFLINE"
-  },
-  "translator": {
-    "bufferEmpty": "PROTOCOL ERROR: BUFFER EMPTY. INPUT REQUIRED.",
-    "decrypting": "DECRYPTING LINGUISTICS... STANDBY.",
-    "nullResult": "RESULT: NULL. UNABLE TO DECODE.",
-    "criticalBreach": "CRITICAL BREACH: {error}"
-  },
   "pwa": {
     "updateAvailable": "UPDATE AVAILABLE"
   },
@@ -257,22 +243,13 @@
     "statusLabel": "STATUS",
     "group": {
       "linguistics": "LINGUISTICS",
-      "utilities": "UTILITIES"
+      "utilities": "UTILITIES",
+      "llm": "AI / LLM"
     },
     "status": {
       "unknown": "SCANNING...",
       "online": "ONLINE",
       "offline": "OFFLINE"
-    },
-    "translateZhTwOnline":  { "name": "繁體中文（ONLINE）",  "desc": "TRANSLATE TO TRADITIONAL CHINESE VIA GOOGLE CLOUD API." },
-    "translateZhCnOnline":  { "name": "简体中文（ONLINE）",  "desc": "TRANSLATE TO SIMPLIFIED CHINESE VIA GOOGLE CLOUD API." },
-    "translateEnOnline":    { "name": "ENGLISH（ONLINE）",    "desc": "TRANSLATE TO ENGLISH VIA GOOGLE CLOUD API." },
-    "translateJaOnline":    { "name": "日本語（ONLINE）",     "desc": "TRANSLATE TO JAPANESE VIA GOOGLE CLOUD API." },
-    "translateZhTwOffline": { "name": "繁體中文（OFFLINE）",  "desc": "TRANSLATE TO TRADITIONAL CHINESE VIA LOCAL LIBRETRANSLATE." },
-    "translateZhCnOffline": { "name": "简体中文（OFFLINE）",  "desc": "TRANSLATE TO SIMPLIFIED CHINESE VIA LOCAL LIBRETRANSLATE." },
-    "translateEnOffline":   { "name": "ENGLISH（OFFLINE）",   "desc": "TRANSLATE TO ENGLISH VIA LOCAL LIBRETRANSLATE." },
-    "translateJaOffline":   { "name": "日本語（OFFLINE）",    "desc": "TRANSLATE TO JAPANESE VIA LOCAL LIBRETRANSLATE." },
-    "speechToText":         { "name": "SPEECH TO TEXT",       "desc": "CONVERT VOICE INPUT TO TEXT VIA GOOGLE SPEECH API." },
-    "markdownPreview":      { "name": "MARKDOWN PREVIEW",     "desc": "RENDER MARKDOWN IN FEATURE SHELF." }
+    }
   }
 }

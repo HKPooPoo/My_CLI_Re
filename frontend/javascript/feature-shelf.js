@@ -1,27 +1,29 @@
 /**
  * Feature Shelf - Lateral Dashboard Controller
  * =================================================================
- * 介紹：負責管理側邊展開式功能面板 (Feature Shelf) 的交互邏輯。
- * 職責：
- * 1. 抽屜式展開：控制面板在畫面右側的顯隱與位移。
- * 2. 自由拖拽 (Draggable)：支援透過手把按鈕進行水平拖拽調整寬度。
- * 3. 磁吸對齊 (Snapping)：拖拽結束後自動對齊至最近的預設百分比寬度。
- * 4. 內容分發：根據點擊的功能按鈕 ID，自動顯示對應的子面板 (如 Translator)。
- * 依賴：CSS 變數 (--shelf-open-width), no-transition class, audio.js
+ * Manages the feature shelf panel (sliding drawer) interactions.
+ * Responsibilities:
+ * 1. Drawer: control slide open/close with transform.
+ * 2. Draggable: horizontal drag via handle button.
+ * 3. Snapping: auto-snap to nearest percentage width on drag end.
+ * 4. Content dispatch: show correct shelf panel based on button click.
+ * 5. MOD-aware: button visibility driven by MOD enabled state.
+ *
+ * DOM queries for feature-btn and feature-shelf are DYNAMIC —
+ * MODs create buttons/panels at runtime via mod-loader.
  * =================================================================
  */
 
 import { playAudio } from "./audio.js";
 import { ModState } from "./mod-state.js";
-import { MOD_REGISTRY } from "./mod-registry.js";
+import { getAllMods } from "../mods/mod-loader.js";
 
-// --- DOM 引用 ---
+// --- DOM refs (static containers) ---
 const $featureShelfContainer = document.querySelector('.feature-shelf-container');
 const $featureShelfBackBtn = document.querySelector('.feature-shelf-back-btn');
-const $featureBtns = document.querySelectorAll('.feature-btn');
-const $featureShelves = document.querySelectorAll('.feature-shelf');
+const $featureContainer = document.querySelector('.feature-container');
 
-// --- 拖拽狀態 ---
+// --- Drag state ---
 let isDragging = false;
 let dragStartX = 0;
 let initialTranslateX = 0;
@@ -29,32 +31,41 @@ let currentTranslateX = 0;
 
 const DEFAULT_OPEN_WIDTH_VW = 60;
 
-// --- 初始化監聽 ---
-$featureBtns.forEach($btn => {
-    $btn.addEventListener('click', () => {
-        playAudio("Click.mp3"); // 特徵切換音效
-        handleFeatureBtnClick($btn);
-    });
+// --- Dynamic DOM queries ---
+function getFeatureBtns() {
+    return $featureContainer ? $featureContainer.querySelectorAll('.feature-btn') : [];
+}
+
+function getFeatureShelves() {
+    return $featureShelfContainer ? $featureShelfContainer.querySelectorAll('.feature-shelf') : [];
+}
+
+// --- Init listeners (delegated on container for dynamic buttons) ---
+$featureContainer?.addEventListener('click', (e) => {
+    const btn = e.target.closest('.feature-btn');
+    if (!btn) return;
+    playAudio("Click.mp3");
+    handleFeatureBtnClick(btn);
 });
 
-// 手把拖拽 (PC 鼠標)
-$featureShelfBackBtn.addEventListener('mousedown', (e) => {
+// Handle drag (PC mouse)
+$featureShelfBackBtn?.addEventListener('mousedown', (e) => {
     e.preventDefault();
     startDrag(e.clientX);
 });
 
-// 手把拖拽 (移動端觸控)
-$featureShelfBackBtn.addEventListener('touchstart', (e) => {
+// Handle drag (mobile touch)
+$featureShelfBackBtn?.addEventListener('touchstart', (e) => {
     startDrag(e.touches[0].clientX);
 }, { passive: false });
 
-// 快速關閉：按兩下手把
-$featureShelfBackBtn.addEventListener('dblclick', () => {
+// Double-click to close
+$featureShelfBackBtn?.addEventListener('dblclick', () => {
     playAudio("UISelectOff.mp3");
     closeShelf();
 });
 
-// 窗口自動補償
+// Resize compensation
 window.addEventListener('resize', () => {
     if (currentTranslateX === 0) return;
     snapToNearestPosition();
@@ -64,26 +75,43 @@ window.addEventListener('resize', () => {
  * Check if a feature button is controlled by a MOD, and if so, whether that MOD is enabled.
  */
 function isFeatureBtnAllowedByMods(btnId) {
-    const relatedMods = Object.entries(MOD_REGISTRY)
-        .filter(([, def]) => def.featureButtons?.includes(btnId));
+    const mods = getAllMods();
+    const relatedMods = mods.filter(m =>
+        m.featureButtons?.some(b => b.id === btnId)
+    );
     if (relatedMods.length === 0) return true; // Not controlled by any MOD
-    return relatedMods.some(([id]) => ModState.isEnabled(id));
+    return relatedMods.some(m => ModState.isEnabled(m.id));
 }
 
-// 按頁面配置顯隱功能按鈕 (MOD-aware)
+/**
+ * Resolve the shelf panel ID for a given feature button ID.
+ * Looks up the MOD that owns this button and returns its shelfPanelId.
+ */
+function resolveShelfId(btnId) {
+    const mods = getAllMods();
+    for (const mod of mods) {
+        if (mod.featureButtons?.some(b => b.id === btnId)) {
+            return mod.shelfPanelId || btnId;
+        }
+    }
+    return btnId;
+}
+
+// Update feature button visibility per page (MOD-aware)
 function updateFeatureButtons(page) {
     const $activePage = document.querySelector(`.page[data-page="${page}"]`);
     const featureBtns = $activePage?.dataset.featureBtns;
+    const $btns = getFeatureBtns();
 
     if (featureBtns === undefined) {
-        $featureBtns.forEach($btn => {
+        $btns.forEach($btn => {
             $btn.style.display = isFeatureBtnAllowedByMods($btn.dataset.featureBtn) ? '' : 'none';
         });
         return;
     }
 
     const allowed = featureBtns ? featureBtns.split(',') : [];
-    $featureBtns.forEach($btn => {
+    $btns.forEach($btn => {
         const btnId = $btn.dataset.featureBtn;
         const pageAllows = allowed.includes(btnId);
         const modAllows = isFeatureBtnAllowedByMods(btnId);
@@ -101,20 +129,38 @@ window.addEventListener('mods:changed', () => {
     if (activePage) updateFeatureButtons(activePage.dataset.page);
 });
 
+// Re-evaluate after MODs are loaded and DOM is populated
+window.addEventListener('mods:loaded', () => {
+    const activePage = document.querySelector('.page.active');
+    if (activePage) updateFeatureButtons(activePage.dataset.page);
+});
+
 /**
- * 功能按鈕點擊分發邏輯
+ * Feature button click dispatch.
  */
 function handleFeatureBtnClick($clickedBtn) {
     const targetFeatureId = $clickedBtn.dataset.featureBtn;
     if (!targetFeatureId) return;
 
-    const shelfId = (id) => id.startsWith('translate-') ? 'translator' : id;
-    const resolvedId = shelfId(targetFeatureId);
+    // Notify MOD of activation (even MODs without shelf panels)
+    const mods = getAllMods();
+    const activePage = document.querySelector('.page.active');
+    for (const mod of mods) {
+        const ownsButton = mod.featureButtons?.some(b => b.id === targetFeatureId);
+        if (ownsButton && typeof mod.activate === 'function') {
+            mod.activate({
+                page: activePage?.dataset?.page,
+                buttonId: targetFeatureId
+            });
+        }
+    }
 
+    // Resolve shelf panel (if any) and open it
+    const resolvedId = resolveShelfId(targetFeatureId);
     const $targetShelf = document.querySelector(`.feature-shelf[data-feature-shelf="${resolvedId}"]`);
-    if (!$targetShelf) return;
+    if (!$targetShelf) return; // No shelf — MOD was already activated above
 
-    $featureShelves.forEach($shelf => {
+    getFeatureShelves().forEach($shelf => {
         $shelf.style.display = ($shelf === $targetShelf) ? 'flex' : 'none';
     });
 
@@ -123,14 +169,14 @@ function handleFeatureBtnClick($clickedBtn) {
 }
 
 /**
- * 物理渲染執行
+ * Update shelf transform position.
  */
 function updateShelfTransform(translateX) {
     currentTranslateX = translateX;
     $featureShelfContainer.style.transform = `translate3d(${translateX}px, 0, 0)`;
 }
 
-// --- 輔助工具 ---
+// --- Helpers ---
 function getScreenWidth() {
     return Math.max(document.documentElement.clientWidth || 0, window.innerWidth || 0);
 }
@@ -143,7 +189,7 @@ function calculateMaxOpenPx() {
 }
 
 function openShelf() {
-    playAudio("UISelectOn.mp3"); // 展開音效
+    playAudio("UISelectOn.mp3");
     updateShelfTransform(calculateMaxOpenPx());
 }
 
@@ -151,14 +197,9 @@ function closeShelf() {
     updateShelfTransform(0);
 }
 
-// --- 拖拽核心邏輯 ---
-
-/**
- * 啟動拖拽
- * @param {number} clientX 初始水平坐標
- */
+// --- Drag logic ---
 function startDrag(clientX) {
-    playAudio("UIPipboyOKPress.mp3"); // 按下即鳴：提供即時物理反饋
+    playAudio("UIPipboyOKPress.mp3");
     isDragging = true;
     dragStartX = clientX;
     initialTranslateX = currentTranslateX;
@@ -198,7 +239,6 @@ function handleDragEnd() {
 
     snapToNearestPosition();
 
-    // 根據結果播放不同音效
     if (currentTranslateX === 0) {
         playAudio("UISelectOff.mp3");
     } else {

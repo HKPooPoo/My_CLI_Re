@@ -1,0 +1,18 @@
+{
+  "mods": {
+    "speechToText": {
+      "name": "Voice Input",
+      "desc": "Convert speech to text.",
+      "btn": "MIC",
+      "provider": {
+        "google": "Google Speech"
+      },
+      "listening": "Listening...",
+      "processing": "Processing...",
+      "verified": "Done!",
+      "selectBoard": "Select a board first.",
+      "noSpeech": "No speech detected.",
+      "offline": "You are offline."
+    }
+  }
+}

@@ -69,6 +69,26 @@ export function getActiveLocale() {
     return getLocale();
 }
 
+/**
+ * Deep-merge a partial locale object into the current strings.
+ * Used by mod-loader to inject MOD-local i18n keys at runtime.
+ * @param {object} partial  e.g. { mods: { translate: { name: "..." } } }
+ */
+export function mergeStrings(partial) {
+    _deepMerge(_strings, partial);
+}
+
+function _deepMerge(target, source) {
+    for (const key of Object.keys(source)) {
+        if (source[key] && typeof source[key] === 'object' && !Array.isArray(source[key])) {
+            if (!target[key] || typeof target[key] !== 'object') target[key] = {};
+            _deepMerge(target[key], source[key]);
+        } else {
+            target[key] = source[key];
+        }
+    }
+}
+
 /** Scan the DOM and apply translations to all data-i18n / data-i18n-placeholder elements. */
 function renderDOM() {
     document.querySelectorAll('[data-i18n]').forEach(el => {

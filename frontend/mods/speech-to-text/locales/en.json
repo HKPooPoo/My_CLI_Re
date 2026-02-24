@@ -1,0 +1,18 @@
+{
+  "mods": {
+    "speechToText": {
+      "name": "SPEECH TO TEXT",
+      "desc": "CONVERT VOICE INPUT TO TEXT VIA GOOGLE SPEECH API.",
+      "btn": "MIC",
+      "provider": {
+        "google": "GOOGLE SPEECH API"
+      },
+      "listening": "LISTENING...",
+      "processing": "PROCESSING...",
+      "verified": "VERIFIED",
+      "selectBoard": "ERROR: SELECT BOARD",
+      "noSpeech": "ERROR: NO SPEECH",
+      "offline": "ERROR: OFFLINE"
+    }
+  }
+}

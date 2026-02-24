@@ -214,20 +214,6 @@
     "statusWait": "[等待]",
     "removeBtn": "[X]"
   },
-  "speech": {
-    "listening": "聆聽中...",
-    "processing": "處理中...",
-    "verified": "已驗證",
-    "selectBoard": "錯誤：請選擇留言板",
-    "noSpeech": "錯誤：未偵測到語音",
-    "offline": "錯誤：離線"
-  },
-  "translator": {
-    "bufferEmpty": "協定錯誤：緩衝區為空，請輸入內容。",
-    "decrypting": "解密語言中... 請稍候。",
-    "nullResult": "結果：空值，無法解碼。",
-    "criticalBreach": "嚴重錯誤：{error}"
-  },
   "pwa": {
     "updateAvailable": "有可用更新"
   },
@@ -257,22 +243,13 @@
     "statusLabel": "狀態",
     "group": {
       "linguistics": "語言",
-      "utilities": "工具"
+      "utilities": "工具",
+      "llm": "AI / LLM"
     },
     "status": {
       "unknown": "掃描中...",
       "online": "線上",
       "offline": "離線"
-    },
-    "translateZhTwOnline":  { "name": "繁體中文（線上）",  "desc": "透過 Google Cloud API 翻譯為繁體中文。" },
-    "translateZhCnOnline":  { "name": "简体中文（線上）",  "desc": "透過 Google Cloud API 翻譯為簡體中文。" },
-    "translateEnOnline":    { "name": "ENGLISH（線上）",    "desc": "透過 Google Cloud API 翻譯為英文。" },
-    "translateJaOnline":    { "name": "日本語（線上）",     "desc": "透過 Google Cloud API 翻譯為日文。" },
-    "translateZhTwOffline": { "name": "繁體中文（線下）",  "desc": "透過本機 LibreTranslate 翻譯為繁體中文。" },
-    "translateZhCnOffline": { "name": "简体中文（線下）",  "desc": "透過本機 LibreTranslate 翻譯為簡體中文。" },
-    "translateEnOffline":   { "name": "ENGLISH（線下）",   "desc": "透過本機 LibreTranslate 翻譯為英文。" },
-    "translateJaOffline":   { "name": "日本語（線下）",    "desc": "透過本機 LibreTranslate 翻譯為日文。" },
-    "speechToText":         { "name": "語音轉文字",         "desc": "透過 Google Speech API 將語音輸入轉換為文字。" },
-    "markdownPreview":      { "name": "MARKDOWN 預覽",      "desc": "在功能面板中渲染 Markdown。" }
+    }
   }
 }
