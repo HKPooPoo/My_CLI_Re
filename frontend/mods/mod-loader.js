@@ -15,6 +15,9 @@
 import * as manifest from './mod-manifest.js';
 import { mergeStrings, getActiveLocale, t } from '../javascript/i18n.js';
 import { ModState } from '../javascript/mod-state.js';
+import { createInitContext } from '../javascript/mod-context.js';
+import { ModHooks } from '../javascript/mod-hooks.js';
+import { ModTools } from '../javascript/mod-tools.js';
 
 const _templates = {};
 
@@ -45,11 +48,28 @@ export async function loadAllMods() {
         // 4. Create DOM elements (buttons from instances + shelves from templates)
         createAllInstanceDOM();
 
-        // 5. Call init() on each template once
+        // 5. Register declarative hooks and tools from templates
+        for (const tpl of templateDefs) {
+            // Register declarative hooks (template.hooks[])
+            if (Array.isArray(tpl.hooks)) {
+                for (const hook of tpl.hooks) {
+                    ModHooks.register(hook.name, hook.handler, hook.priority || 100, tpl.id);
+                }
+            }
+            // Register declarative tools (template.tools[])
+            if (Array.isArray(tpl.tools)) {
+                for (const tool of tpl.tools) {
+                    ModTools.register(tpl.id, tool);
+                }
+            }
+        }
+
+        // 6. Call init() on each template once — pass full ModContext
         for (const tpl of templateDefs) {
             try {
                 if (typeof tpl.init === 'function') {
-                    await tpl.init({ getTemplate, getAllTemplates, getInstances, getInstancesByTemplate });
+                    const initCtx = createInitContext(tpl.id, tpl);
+                    await tpl.init(initCtx);
                 }
             } catch (e) {
                 console.error(`[mod-loader] init failed for ${tpl.id}:`, e);

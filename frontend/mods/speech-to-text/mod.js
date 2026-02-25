@@ -3,13 +3,13 @@
  * =================================================================
  * Singleton template. Records audio via MediaRecorder, sends to
  * Google Speech API, inserts transcribed text at cursor position.
+ *
+ * v2.0.0: Uses ModContext API (ctx.board.insertAtCursor, ctx.ui.toast)
  * =================================================================
  */
 
 import { playAudio } from '../../javascript/audio.js';
-import { BBMessage } from '../../javascript/blackboard-msg.js';
 import { SpeechService } from '../../javascript/services/speech-service.js';
-import { t } from '../../javascript/i18n.js';
 
 let mediaRecorder;
 let audioChunks = [];
@@ -19,12 +19,19 @@ let isTextareaFocused = false;
 let $voiceBtn = null;
 let $textarea = null;
 
+/** Keep a reference to ctx.i18n.t and ctx.ui for use in callbacks */
+let _t = null;
+let _ui = null;
+
 export default {
     // --- Identity ---
     id: 'speech-to-text',
     group: 'linguistics',
     nameKey: 'mods.speechToText.name',
     descriptionKey: 'mods.speechToText.desc',
+
+    // --- Metadata (v2) ---
+    version: '2.0.0',
 
     // --- Instance architecture ---
     singleton: true,
@@ -34,7 +41,7 @@ export default {
     },
 
     getInstanceName(config, tFn) {
-        return (tFn || t)('mods.speechToText.name');
+        return tFn('mods.speechToText.name');
     },
 
     defaultInstances: [{ config: {} }],
@@ -56,13 +63,11 @@ export default {
 
     // --- Lifecycle ---
     async init(ctx) {
-        const container = document.querySelector('.feature-container');
-        container?.addEventListener('click', (e) => {
-            const btn = e.target.closest('[data-feature-btn="voice-to-textbox"]');
-            if (!btn) return;
-            // feature-shelf already plays Click.mp3 and calls activate()
-        });
+        // Cache i18n for use in async callbacks
+        _t = ctx.i18n.t;
+        _ui = ctx.ui;
 
+        const container = document.querySelector('.feature-container');
         container?.addEventListener('mousedown', (e) => {
             const btn = e.target.closest('[data-feature-btn="voice-to-textbox"]');
             if (!btn) return;
@@ -72,12 +77,16 @@ export default {
     },
 
     async activate(ctx) {
+        // Update refs from latest ctx
+        _t = ctx.i18n.t;
+        _ui = ctx.ui;
+
         $voiceBtn = document.querySelector('[data-feature-btn="voice-to-textbox"]');
-        $textarea = this._getActiveTextarea();
+        $textarea = ctx.board.getTextarea() || this._getActiveTextarea();
         if (!$voiceBtn || !$textarea) return;
 
         this._bindTextareaEvents();
-        await this._toggleRecording();
+        await this._toggleRecording(ctx);
     },
 
     async deactivate() {},
@@ -122,13 +131,13 @@ export default {
         savedCursorPosition = $textarea.selectionStart;
     },
 
-    async _toggleRecording() {
+    async _toggleRecording(ctx) {
         if (!$textarea) return;
 
         if (!isRecording) {
             if (!isTextareaFocused) {
                 this._flashError();
-                BBMessage.error(t('mods.speechToText.selectBoard'));
+                _ui.toastError(_t('mods.speechToText.selectBoard'));
                 return;
             }
             savedCursorPosition = $textarea.selectionStart;
@@ -166,7 +175,7 @@ export default {
             isRecording = true;
             if ($voiceBtn) $voiceBtn.classList.add("recording");
             playAudio("UISelectOn.mp3");
-            window.voiceMsg = BBMessage.info(t('mods.speechToText.listening'));
+            window.voiceMsg = _ui.toast(_t('mods.speechToText.listening'));
         } catch (err) {
             console.error("Mic Access Error:", err);
             if ($voiceBtn) $voiceBtn.classList.remove("recording");
@@ -185,7 +194,7 @@ export default {
         }
         playAudio("UISelectOff.mp3");
         if (window.voiceMsg) {
-            window.voiceMsg.update(t('mods.speechToText.processing'));
+            window.voiceMsg.update(_t('mods.speechToText.processing'));
         }
     },
 
@@ -202,17 +211,17 @@ export default {
                     this._insertTextAtCursor(transcript);
                     playAudio("UIGeneralOK.mp3");
                     if (window.voiceMsg) {
-                        window.voiceMsg.update(t('mods.speechToText.verified'));
+                        window.voiceMsg.update(_t('mods.speechToText.verified'));
                     }
                 } else {
                     if (window.voiceMsg) window.voiceMsg.close();
-                    BBMessage.error(t('mods.speechToText.noSpeech'));
+                    _ui.toastError(_t('mods.speechToText.noSpeech'));
                 }
             } catch (error) {
                 console.error("Transcribe Request Error:", error);
                 this._flashError();
                 if (window.voiceMsg) window.voiceMsg.close();
-                BBMessage.error(t('mods.speechToText.offline'));
+                _ui.toastError(_t('mods.speechToText.offline'));
             } finally {
                 if ($voiceBtn) $voiceBtn.classList.remove("active", "recording", "processing");
                 isRecording = false;

@@ -331,13 +331,26 @@ Prevents double-fire via `aria-busy="true"` during async actions. No artificial 
 - Everything else under `/api` — PHP-FPM FastCGI
 - All other paths — `index.html` (SPA fallback)
 
-### MOD System (Instance-Based Architecture)
+### MOD System v2 (Instance-Based + ModContext API)
 
 Self-contained, plug-and-play feature system. **1 Instance = 1 Feature Button**. Templates (`mod.js`) are blueprints that can be instantiated multiple times, each with independent config, enabled state, and order. The 4th main navigation section (`mods`) has two pages: list (template catalog + active instances) + config.
 
+**v2 additions:** Rich `ModContext` API, `ModHooks` pipeline, `ModTools` cross-MOD registry, `_template` skeleton.
+
+#### MOD Developer Quick Start (5-minute guide)
+
+1. Copy `mods/_template/` → `mods/{your-id}/`
+2. Edit `mod.js`: set `id`, `nameKey`, `descriptionKey`, `group`, fill `configSchema` and `defaultInstances`
+3. Create locale files in `locales/{en,zh-TW,default}.json`
+4. Add `export { default as myMod } from './{id}/mod.js'` to `mod-manifest.js`
+5. Add CSS icon: `.feature-btn[data-feature-btn="{btn-id}"]::after { mask-image: url(...) }`
+6. Add template ID to `data-feature-mods` on relevant `.page` elements in `index.html`
+7. Bump `CACHE_NAME` in `sw.js`
+8. Implement `init(ctx)` (shelf UI setup) and `activate(ctx)` (per-click logic)
+
 #### Architecture: `mod-manifest.js` → `mod-loader.js` → Templates → Instances
 
-**Boot sequence:** `i18n:ready` → `loadAllMods()` → register templates in ModState → run migration (v1→v2→v3) → create default instances if none exist → fetch MOD-local locales → create DOM (buttons from instances + shelves from templates) → call each template's `init()` → dispatch `mods:loaded` → `mods-manager.init()`
+**Boot sequence:** `i18n:ready` → `loadAllMods()` → register templates in ModState → run migration (v1→v2→v3) → create default instances if none exist → fetch MOD-local locales → create DOM (buttons from instances + shelves from templates) → register declarative hooks + tools → call each template's `init(ctx)` with ModContext → dispatch `mods:loaded` → `mods-manager.init()`
 
 A `setTimeout(bootMods, 0)` fallback in `index.html` ensures boot even if `i18n:ready` fires before the listener is registered.
 
@@ -349,49 +362,179 @@ A `setTimeout(bootMods, 0)` fallback in `index.html` ensures boot even if `i18n:
 - Fetches `mods/{id}/locales/{locale}.json` and deep-merges via `mergeStrings()` (fallback: locale → en → default)
 - Creates feature buttons **from instances** (`<button class="feature-btn" data-feature-btn="{getButtonDataId(config)}" data-instance-id="{instanceId}">`)
 - Creates empty shelf panels per template (`<div class="feature-shelf" data-feature-shelf="{id}">`) — template fills in `init()`
-- Calls `template.init()` once per template (not per instance)
+- Registers declarative `template.hooks[]` into `ModHooks` and `template.tools[]` into `ModTools`
+- Calls `template.init(ctx)` once per template — passes full `ModContext` (instanceId = null)
 - Exports: `getTemplate(id)`, `getAllTemplates()`, `getInstances()`, `getInstancesByTemplate(id)`, `rebuildInstanceButtons()`, `updateInstanceButton(instanceId)`, `removeInstanceButton(instanceId)`
 - Always dispatches `mods:loaded` even on partial failure (try/catch per template)
 
-#### Template Interface
+#### ModContext API Reference (`mod-context.js`)
+
+Every lifecycle method receives a `ModContext` object built by `createModContext()`. The context wraps all platform APIs into a clean, sandboxed interface.
+
+```
+ctx
+├── Identity (read-only)
+│   ├── .instanceId          'i_translate_1' (null during init)
+│   ├── .templateId          'translate'
+│   ├── .page                'blackboard-log' | null
+│   ├── .buttonId            'translate-zh-TW'
+│   ├── .config              frozen { targetLang, provider }
+│   └── .instanceConfig      alias for .config (backward compat)
+│
+├── .instance                Instance state management
+│   ├── getConfig(key)
+│   ├── setConfig(key, val)  → dispatches mods:configChanged
+│   ├── isEnabled()
+│   ├── setEnabled(bool)     → dispatches mods:changed
+│   ├── getServerStatus()
+│   └── getSiblings()        other instances of same template
+│
+├── .board                   Active textarea / board data
+│   ├── getText()            read textarea value
+│   ├── setText(text)        write + dispatch 'input' event
+│   ├── insertAtCursor(text) insert at cursor position
+│   ├── replaceSelection(t)  replace selected text
+│   ├── getSelection()       { start, end, text }
+│   ├── getTextarea()        raw HTMLTextAreaElement (escape hatch)
+│   ├── getScope()           'bb' | 'wt' | 'bc'
+│   ├── getBranchId()        current branch_id
+│   └── getBranchName()      current branch name
+│
+├── .ui                      User interface
+│   ├── toast(msg, dur?)     → { update(), close() }
+│   ├── toastError(msg)      CRITICAL > prefix
+│   ├── toastSuccess(msg)    SYSTEM > prefix
+│   ├── getShelfElement()    this template's shelf panel DOM
+│   ├── openShelf()          programmatic open
+│   ├── closeShelf()         programmatic close
+│   └── playSound(filename)  play from /audio/
+│
+├── .i18n
+│   ├── t(key, vars?)        translate with interpolation
+│   └── getLocale()          current locale code
+│
+├── .storage                 Per-instance sandboxed localStorage
+│   ├── get(key)             prefix: 'mod-data:{instanceId}:{key}'
+│   ├── set(key, value)
+│   ├── remove(key)
+│   └── clear()
+│
+├── .net                     Network access
+│   ├── apiRequest(ep, opts) authenticated /api/* calls
+│   └── fetch(url, opts)     raw fetch wrapper
+│
+├── .file                    File operations
+│   ├── upload(fileOrBlob)   → { hash, name, mime, size }
+│   ├── download(hash)       → Blob
+│   ├── exists(hash)         → boolean
+│   ├── getMeta(hash)        → { hash, name, mime, size }
+│   └── getDownloadUrl(hash) → URL string
+│
+├── .events                  Managed event subscriptions (auto-cleanup)
+│   ├── on(event, handler)
+│   ├── off(event, handler)
+│   ├── once(event, handler)
+│   └── emit(event, detail)
+│
+├── .hooks                   Hook registration
+│   ├── register(name, handler, priority?)
+│   └── unregister(name, handler)
+│
+└── .query                   MOD ecosystem queries
+    ├── getTemplate(id)
+    ├── getAllTemplates()
+    ├── getInstances()
+    └── getInstancesByTemplate(id)
+```
+
+**Init-time context** (`createInitContext()`): same as above but `instanceId = null`, plus legacy aliases (`ctx.getTemplate`, `ctx.getAllTemplates`, etc.) for backward compatibility.
+
+#### ModHooks (`mod-hooks.js`)
+
+Priority-ordered pipeline for named hook points. Handlers run lower-priority-first. Any handler can call `event.cancel()` to stop the pipeline.
+
+```js
+// Declarative (in template.hooks[])
+hooks: [{ name: 'board:beforeSave', priority: 100, handler: async (event) => { ... } }]
+
+// Imperative (in init/activate)
+ctx.hooks.register('board:beforeSave', myHandler, 50);
+
+// Run hooks (in core modules — Phase C, deferred)
+const event = await ModHooks.run('board:beforeSave', { text });
+if (event.cancelled) return;
+```
+
+API: `register(name, handler, priority?, ownerId?)` · `unregister(name, handler)` · `unregisterAll(ownerId)` · `run(name, data)` · `has(name)`
+
+**Hook points:** Not yet instrumented (Phase C deferred). Will be added to `blackboard-vcs.js` and `navi.js` when first hook-consuming MOD is built.
+
+#### ModTools (`mod-tools.js`)
+
+Cross-MOD tool registry. Tools are OpenAI function-calling compatible and can be invoked by LLM agents or other MODs.
+
+```js
+// Declarative (in template.tools[])
+tools: [{
+    name: 'translate_text',
+    description: 'Translate text to a target language',
+    parameters: { type: 'object', properties: { text: { type: 'string' }, targetLang: { type: 'string' } } },
+    async execute(args, ctx) { return { translatedText: '...' }; }
+}]
+
+// Cross-MOD invocation
+const result = await ModTools.executeTool('translate.translate_text', { text, targetLang: 'ja' });
+```
+
+API: `register(templateId, tool)` · `unregisterAll(templateId)` · `executeTool(fullName, args, ctx?)` · `getToolDefinitions()` · `getToolNames()` · `hasTool(fullName)`
+
+#### Template Interface (v2)
 
 Every template in `mods/{id}/mod.js` exports a default object:
 
 ```js
 export default {
+    // --- Identity ---
     id: 'translate',                    // unique, matches folder name
     group: 'linguistics',               // UI grouping: 'linguistics' | 'utilities' | 'llm'
     nameKey: 'mods.translate.name',     // i18n key
     descriptionKey: 'mods.translate.desc',
 
+    // --- Metadata (NEW in v2) ---
+    version: '2.0.0',                   // SemVer
+    author: 'Developer Name',           // optional
+
+    // --- Instance architecture ---
     singleton: false,                   // true = only 1 instance allowed
 
     getButtonDataId(config) {           // instance config → button data-feature-btn attribute
-        return 'translate-' + config.targetLang;  // → CSS ::after mask-image
+        return 'translate-' + config.targetLang;
     },
-    getInstanceName(config, t) {        // display name in list (differentiates instances)
+    getInstanceName(config, t) {        // display name in list
         return t('mods.translate.name') + ' → ' + t('mods.translate.lang.' + config.targetLang);
     },
-    defaultInstances: [                 // created on first run (no existing localStorage)
+    defaultInstances: [                 // created on first run
         { config: { targetLang: 'zh-TW', provider: 'google' } },
-        { config: { targetLang: 'zh-CN', provider: 'google' } },
-        { config: { targetLang: 'en',    provider: 'google' } },
-        { config: { targetLang: 'ja',    provider: 'google' } },
     ],
 
     shelfPanelId: 'translator',         // shared by all instances (1 shelf per template)
-    pages: { ... },                     // page-aware textarea binding (unchanged)
-    providers: [ ... ],                 // provider types (unchanged)
-    configSchema: [                     // includes per-instance fields
-        { key: 'targetLang', type: 'select', ... },
-        { key: 'provider', type: 'select', ... },
-    ],
+    pages: { ... },                     // page-aware textarea binding
+    providers: [ ... ],                 // provider types (cloud/server/client)
+    configSchema: [ ... ],              // per-instance config fields
 
-    async init(ctx) {},                 // Once at boot — cache DOM, inject shelf UI, bind events
-    async activate(ctx) {},             // ctx = { page, buttonId, instanceId, instanceConfig }
-    async deactivate() {},
+    // --- NEW: LLM Tools (optional) ---
+    tools: [{ name, description, parameters, execute }],
+
+    // --- NEW: Hooks (optional) ---
+    hooks: [{ name, priority, handler }],
+
+    // --- Lifecycle (all receive ModContext) ---
+    async init(ctx) {},                 // once per template (ctx.instanceId = null)
+    async activate(ctx) {},             // per button click (full ModContext)
+    async deactivate(ctx) {},           // shelf close / button deactivation
+    onConfigChange(ctx, key, value) {}, // config field changed
     async checkHealth(instanceConfig) {},
-    destroy() {},
+    destroy(ctx) {},
 }
 ```
 
@@ -443,12 +586,12 @@ Instance-based state management. Templates are registered, instances are CRUD-ma
 **Instance CRUD:**
 - `getInstances()` / `getInstancesByTemplate(templateId)` / `getInstance(instanceId)`
 - `addInstance(templateId, config?)` — dispatches `mods:instanceAdded`
-- `removeInstance(instanceId)` — dispatches `mods:instanceRemoved` (blocked for singletons)
+- `removeInstance(instanceId)` — dispatches `mods:instanceRemoved` (blocked for singletons) + calls `ModHooks.unregisterAll(instanceId)`
 - `ensureDefaultInstances(templateId)` — creates default instances on first run
 
 **Instance state:**
 - `isEnabled(instanceId)` / `setEnabled(instanceId, bool)` — dispatches `mods:changed`
-- `getConfig(instanceId, key)` / `setConfig(instanceId, key, value)` — dispatches `mods:configChanged`
+- `getConfig(instanceId, key)` / `setConfig(instanceId, key, value)` — dispatches `mods:configChanged` + calls `template.onConfigChange()` if defined
 - `reorderInstance(instanceId, direction)` — dispatches `mods:reordered`
 
 **Server health:** `getServerStatus(instanceId)` / `refreshServerStatus(instanceId)` / `refreshAllServerStatuses()`
@@ -480,25 +623,29 @@ Instance-based state management. Templates are registered, instances are CRUD-ma
 - **Event delegation** on `.feature-container` for click handling
 - `isFeatureBtnAllowed($btn)`: reads `data-instance-id`, checks `ModState.isEnabled(instanceId)`
 - `resolveShelfId($btn)`: reads `data-instance-id`, looks up template's `shelfPanelId`
-- `handleFeatureBtnClick()`: reads instance + template, calls `template.activate({ page, buttonId, instanceId, instanceConfig })` BEFORE shelf panel check
+- `handleFeatureBtnClick()`: builds full `ModContext`, calls `template.activate(ctx)` BEFORE shelf panel check
 - `updateFeatureButtons(page)`: page's `data-feature-mods` lists template IDs; show buttons for enabled instances of those templates
+- Exports: `openShelf()`, `closeShelf()` — for programmatic shelf control
 
-#### Current Templates (3 self-contained)
+#### Current Templates (3 self-contained, all v2.0.0)
 
-| ID | Group | Singleton | Default Instances | Providers | Shelf |
-|----|-------|-----------|------------------|-----------|-------|
-| `translate` | linguistics | false | 4 (zh-TW, zh-CN, en, ja) | google (cloud), libretranslate (server) | `translator` |
-| `speech-to-text` | linguistics | true | 1 | google-speech (cloud) | none |
-| `markdown-preview` | utilities | true | 1 | marked (client) | `markdown-preview` |
+| ID | Group | Singleton | Default Instances | Providers | Shelf | Tools |
+|----|-------|-----------|------------------|-----------|-------|-------|
+| `translate` | linguistics | false | 4 (zh-TW, zh-CN, en, ja) | google (cloud), libretranslate (server) | `translator` | `translate_text` |
+| `speech-to-text` | linguistics | true | 1 | google-speech (cloud) | none | — |
+| `markdown-preview` | utilities | true | 1 | marked (client) | `markdown-preview` | — |
 
 #### Adding a New Template
 
-1. Create `mods/{id}/mod.js` exporting the template interface (with `getButtonDataId`, `getInstanceName`, `defaultInstances`)
-2. Create `mods/{id}/locales/{en,zh-TW,default}.json` with template-local i18n keys
-3. Add `export { default as myMod } from './{id}/mod.js'` to `mod-manifest.js`
-4. Add CSS icon for feature button: `.feature-btn[data-feature-btn="{btn-id}"]::after { mask-image: url(...) }`
-5. Add template ID to `data-feature-mods` on relevant pages in `index.html`
-6. **Bump SW cache version** in `sw.js` (required when `index.html` structure changes)
+1. Copy `mods/_template/` → `mods/{id}/` (full skeleton with docs)
+2. Edit `mod.js`: set `id`, `group`, `nameKey`, `descriptionKey`, fill `configSchema`, `defaultInstances`, `providers`
+3. Create `mods/{id}/locales/{en,zh-TW,default}.json` with template-local i18n keys
+4. Add `export { default as myMod } from './{id}/mod.js'` to `mod-manifest.js`
+5. Add CSS icon: `.feature-btn[data-feature-btn="{btn-id}"]::after { mask-image: url(...) }`
+6. Add template ID to `data-feature-mods` on relevant pages in `index.html`
+7. Implement `init(ctx)` and `activate(ctx)` using ModContext API
+8. Optionally add `tools[]` and `hooks[]` for cross-MOD integration
+9. **Bump SW cache version** in `sw.js`
 
 #### SW Cache Bump Reminder
 

@@ -11,6 +11,7 @@
  */
 
 import { ModService } from './services/mod-service.js';
+import { ModHooks } from './mod-hooks.js';
 
 const INSTANCES_KEY = 'mod-instances';
 const SHARED_CONFIGS_KEY = 'mod-shared-configs';
@@ -149,6 +150,9 @@ export const ModState = {
         const template = this._templates[instance.templateId];
         if (template?.singleton) return;
 
+        // Cleanup hooks owned by this instance
+        ModHooks.unregisterAll(instanceId);
+
         this._instances.splice(idx, 1);
         delete this._serverStatuses[instanceId];
         this._persistInstances();
@@ -206,6 +210,17 @@ export const ModState = {
         }
 
         this._persistInstances();
+
+        // Call template's onConfigChange callback if exists
+        const template = this._templates[inst.templateId];
+        if (template && typeof template.onConfigChange === 'function') {
+            try {
+                template.onConfigChange(null, key, value);
+            } catch (e) {
+                console.error(`[mod-state] onConfigChange failed for ${inst.templateId}:`, e);
+            }
+        }
+
         window.dispatchEvent(new CustomEvent('mods:configChanged', {
             detail: { instanceId, templateId: inst.templateId, key, value }
         }));

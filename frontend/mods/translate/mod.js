@@ -3,7 +3,9 @@
  * =================================================================
  * Instance-based: each instance targets a specific language.
  * Provider is selected via instance config (google / libretranslate).
- * Page-aware: reads from the active page's textarea.
+ * Page-aware: reads from the active page's textarea via ModContext.
+ *
+ * v2.0.0: Uses ModContext API (ctx.board.*, ctx.instance.*, ctx.i18n.*)
  * =================================================================
  */
 
@@ -18,6 +20,9 @@ export default {
     nameKey: 'mods.translate.name',
     descriptionKey: 'mods.translate.desc',
 
+    // --- Metadata (v2) ---
+    version: '2.0.0',
+
     // --- Instance architecture ---
     singleton: false,
 
@@ -27,7 +32,7 @@ export default {
 
     getInstanceName(config, tFn) {
         const lang = (config.targetLang || 'zh-TW').replace(/-/g, '');  // zh-TW → zhTW
-        return (tFn || t)('mods.translate.name') + ' \u2192 ' + (tFn || t)('mods.translate.lang.' + lang);
+        return tFn('mods.translate.name') + ' \u2192 ' + tFn('mods.translate.lang.' + lang);
     },
 
     defaultInstances: [
@@ -84,12 +89,37 @@ export default {
     ],
     sharedConfigGroup: null,
 
+    // --- LLM Tools (v2) ---
+    tools: [
+        {
+            name: 'translate_text',
+            description: 'Translate text to a target language',
+            parameters: {
+                type: 'object',
+                properties: {
+                    text: { type: 'string', description: 'Text to translate' },
+                    targetLang: { type: 'string', description: 'Target language code (zh-TW, zh-CN, en, ja)', enum: ['zh-TW', 'zh-CN', 'en', 'ja'] },
+                    provider: { type: 'string', description: 'Translation provider', enum: ['google', 'libretranslate'] },
+                },
+                required: ['text', 'targetLang']
+            },
+            async execute(args) {
+                const payload = { text: args.text, target: args.targetLang };
+                if (args.provider === 'libretranslate') {
+                    payload.provider = 'libretranslate';
+                }
+                const data = await TranslationService.translate(payload);
+                return { translatedText: data.data?.translations?.[0]?.translatedText };
+            }
+        }
+    ],
+
     // --- Internal state ---
     _outputEl: null,
 
     // --- Lifecycle ---
     async init(ctx) {
-        const shelf = document.querySelector('[data-feature-shelf="translator"]');
+        const shelf = ctx.ui.getShelfElement();
         if (shelf) {
             const output = document.createElement('textarea');
             output.id = 'feature-translator-output';
@@ -102,27 +132,34 @@ export default {
     async activate(ctx) {
         if (!ctx) return;
 
-        // Instance-aware: read target language from instance config
-        const targetLang = ctx.instanceConfig?.targetLang || ctx.buttonId?.replace('translate-', '') || 'zh-TW';
-        const instanceId = ctx.instanceId;
+        const targetLang = ctx.config.targetLang || ctx.buttonId?.replace('translate-', '') || 'zh-TW';
+        const t = ctx.i18n.t;
 
-        const inputEl = this._getActiveTextarea();
-        if (!inputEl || !this._outputEl) return;
-
-        const text = inputEl.value.trim();
+        const text = ctx.board.getText().trim();
         if (!text) {
-            this._outputEl.value = t('mods.translate.bufferEmpty');
+            if (this._outputEl) this._outputEl.value = t('mods.translate.bufferEmpty');
             return;
         }
 
-        this._outputEl.value = t('mods.translate.decrypting');
+        if (this._outputEl) this._outputEl.value = t('mods.translate.decrypting');
 
         try {
-            const translation = await this._translateText(text, targetLang, instanceId);
-            this._outputEl.value = translation || t('mods.translate.nullResult');
+            const provider = ctx.instance.getConfig('provider') || 'google';
+            const payload = { text, target: targetLang };
+            if (provider === 'libretranslate') {
+                payload.provider = 'libretranslate';
+            }
+
+            const data = await TranslationService.translate(payload);
+            const translation = data.data?.translations?.[0]?.translatedText;
+            if (this._outputEl) {
+                this._outputEl.value = translation || t('mods.translate.nullResult');
+            }
         } catch (e) {
             console.error("Translation Error:", e);
-            this._outputEl.value = t('mods.translate.criticalBreach', { error: e.message.toUpperCase() });
+            if (this._outputEl) {
+                this._outputEl.value = t('mods.translate.criticalBreach', { error: e.message.toUpperCase() });
+            }
         }
     },
 
@@ -156,34 +193,4 @@ export default {
         }
         return '\u2014';
     },
-
-    // --- Private helpers ---
-
-    _getActiveTextarea() {
-        const activePage = document.querySelector('.page.active');
-        if (!activePage) return null;
-        const page = activePage.dataset.page;
-        const pageDef = this.pages[page];
-        if (!pageDef) return null;
-        return document.querySelector(pageDef.textareaSelector);
-    },
-
-    async _translateText(text, targetLang, instanceId) {
-        const payload = { text, target: targetLang };
-
-        const provider = instanceId
-            ? ModState.getConfig(instanceId, 'provider')
-            : 'google';
-        if (provider === 'libretranslate') {
-            payload.provider = 'libretranslate';
-        }
-
-        try {
-            const data = await TranslationService.translate(payload);
-            return data.data?.translations?.[0]?.translatedText;
-        } catch (error) {
-            if (error.message) throw new Error(error.message);
-            throw error;
-        }
-    }
 };

@@ -10,6 +10,7 @@
 import { playAudio } from "./audio.js";
 import { ModState } from "./mod-state.js";
 import { getAllTemplates, getInstances } from "../mods/mod-loader.js";
+import { createModContext } from "./mod-context.js";
 
 // --- DOM refs (static containers) ---
 const $featureShelfContainer = document.querySelector('.feature-shelf-container');
@@ -175,12 +176,15 @@ function handleFeatureBtnClick($clickedBtn) {
         const templates = getAllTemplates();
         const template = templates.find(t => t.id === instance.templateId);
         if (template && typeof template.activate === 'function') {
-            template.activate({
-                page: activePage?.dataset?.page,
-                buttonId: targetFeatureId,
+            const ctx = createModContext({
                 instanceId: instance.instanceId,
-                instanceConfig: instance.config
+                templateId: instance.templateId,
+                page: activePage?.dataset?.page || null,
+                buttonId: targetFeatureId,
+                config: instance.config,
+                template,
             });
+            template.activate(ctx);
         }
     }
 
@@ -217,12 +221,12 @@ function calculateMaxOpenPx() {
     return -1 * (widthVw / 100) * screenWidth;
 }
 
-function openShelf() {
+export function openShelf() {
     playAudio("UISelectOn.mp3");
     updateShelfTransform(calculateMaxOpenPx());
 }
 
-function closeShelf() {
+export function closeShelf() {
     updateShelfTransform(0);
 }
 

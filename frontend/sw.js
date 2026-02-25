@@ -1,4 +1,4 @@
-const CACHE_NAME = 'blackboard-v20-2026-02-25'; // Bump: fix DROP btn i18n binding
+const CACHE_NAME = 'blackboard-v21-2026-02-25'; // Bump: MOD System v2 — ModContext API
 const ASSETS = [
   '/',
   '/index.html',

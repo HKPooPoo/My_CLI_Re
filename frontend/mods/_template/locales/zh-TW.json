@@ -1,0 +1,25 @@
+{
+    "mods": {
+        "myMod": {
+            "name": "\u6211\u7684 MOD",
+            "desc": "\u7bc4\u672c MOD\uff0c\u4f9b\u53c3\u8003\u4f7f\u7528",
+            "empty": "\u6c92\u6709\u53ef\u8655\u7406\u7684\u6587\u5b57",
+            "provider": {
+                "default": "\u9810\u8a2d"
+            },
+            "config": {
+                "mode": "\u6a21\u5f0f",
+                "apiKey": "API \u91d1\u9470",
+                "intensity": "\u5f37\u5ea6",
+                "autoRun": "\u81ea\u52d5\u57f7\u884c",
+                "status": "\u4f3a\u670d\u5668\u72c0\u614b",
+                "test": "\u6e2c\u8a66\u9023\u7dda",
+                "testBtn": "\u6e2c\u8a66"
+            },
+            "mode": {
+                "auto": "\u81ea\u52d5",
+                "manual": "\u624b\u52d5"
+            }
+        }
+    }
+}

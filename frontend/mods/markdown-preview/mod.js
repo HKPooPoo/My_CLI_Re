@@ -3,6 +3,9 @@
  * =================================================================
  * Singleton template. Uses the global `marked` library.
  * Page-aware: binds to the active textarea and renders on input.
+ *
+ * v2.0.0: Uses ModContext API (ctx.events.on for auto-cleanup,
+ * ctx.instance.isEnabled, ctx.i18n.t)
  * =================================================================
  */
 
@@ -21,6 +24,9 @@ export default {
     nameKey: 'mods.markdownPreview.name',
     descriptionKey: 'mods.markdownPreview.desc',
 
+    // --- Metadata (v2) ---
+    version: '2.0.0',
+
     // --- Instance architecture ---
     singleton: true,
 
@@ -29,7 +35,7 @@ export default {
     },
 
     getInstanceName(config, tFn) {
-        return (tFn || t)('mods.markdownPreview.name');
+        return tFn('mods.markdownPreview.name');
     },
 
     defaultInstances: [{ config: {} }],
@@ -52,7 +58,7 @@ export default {
 
     // --- Lifecycle ---
     async init(ctx) {
-        const shelf = document.querySelector('[data-feature-shelf="markdown-preview"]');
+        const shelf = ctx.ui.getShelfElement();
         if (shelf) {
             const output = document.createElement('div');
             output.id = 'feature-markdown-output';
@@ -61,12 +67,12 @@ export default {
             _outputEl = output;
         }
 
-        window.addEventListener('navi:pageChanged', () => {
+        // Use ctx.events.on for managed subscriptions
+        ctx.events.on('navi:pageChanged', () => {
             this._bindTextarea();
         });
 
-        window.addEventListener('mods:changed', (e) => {
-            // Check if any markdown-preview instance was disabled
+        ctx.events.on('mods:changed', (e) => {
             if (e.detail?.templateId === 'markdown-preview' && !e.detail.enabled && _outputEl) {
                 _outputEl.innerHTML = '';
             }
@@ -74,11 +80,10 @@ export default {
     },
 
     async activate(ctx) {
-        _currentInstanceId = ctx?.instanceId || null;
+        _currentInstanceId = ctx.instanceId || null;
 
-        // Check if instance is enabled
-        if (_currentInstanceId && !ModState.isEnabled(_currentInstanceId)) {
-            if (_outputEl) _outputEl.innerHTML = `<div class="md-empty">${t('mods.markdownPreview.disabled')}</div>`;
+        if (_currentInstanceId && !ctx.instance.isEnabled()) {
+            if (_outputEl) _outputEl.innerHTML = `<div class="md-empty">${ctx.i18n.t('mods.markdownPreview.disabled')}</div>`;
             return;
         }
         this._bindTextarea();
@@ -121,7 +126,6 @@ export default {
 
         if (_activeTextarea) {
             _activeTextarea.addEventListener('input', this._onTextareaInput);
-            // Check if any markdown-preview instance is enabled
             const mdInstances = ModState.getInstancesByTemplate('markdown-preview');
             const anyEnabled = mdInstances.some(i => ModState.isEnabled(i.instanceId));
             if (anyEnabled) {
