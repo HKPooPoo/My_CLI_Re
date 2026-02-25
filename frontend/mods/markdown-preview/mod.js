@@ -1,7 +1,7 @@
 /**
  * Markdown Preview MOD Template - Renders Markdown in feature shelf
  * =================================================================
- * Singleton template. Uses the global `marked` library.
+ * Single-instance template. Uses the global `marked` library.
  * Page-aware: binds to the active textarea and renders on input.
  *
  * v2.0.0: Uses ModContext API (ctx.events.on for auto-cleanup,
@@ -28,7 +28,7 @@ export default {
     version: '2.0.0',
 
     // --- Instance architecture ---
-    singleton: true,
+    maxInstances: 1,
 
     getButtonDataId(config) {
         return 'markdown-preview';

@@ -257,7 +257,7 @@
     "moveDown": "DOWN",
     "deleteInstance": "DELETE",
     "deleteConfirm": "CONFIRM?",
-    "singletonAdded": "ADDED",
+    "maxReached": "ADDED",
     "status": {
       "unknown": "SCANNING...",
       "online": "ONLINE",

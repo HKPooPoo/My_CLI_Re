@@ -1,7 +1,7 @@
 /**
  * Speech-to-Text MOD Template - Voice input to text conversion
  * =================================================================
- * Singleton template. Records audio via MediaRecorder, sends to
+ * Single-instance template. Records audio via MediaRecorder, sends to
  * Google Speech API, inserts transcribed text at cursor position.
  *
  * v2.0.0: Uses ModContext API (ctx.board.insertAtCursor, ctx.ui.toast)
@@ -34,7 +34,7 @@ export default {
     version: '2.0.0',
 
     // --- Instance architecture ---
-    singleton: true,
+    maxInstances: 1,
 
     getButtonDataId(config) {
         return 'voice-to-textbox';

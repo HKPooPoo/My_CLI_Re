@@ -505,7 +505,7 @@ export default {
     author: 'Developer Name',           // optional
 
     // --- Instance architecture ---
-    singleton: false,                   // true = only 1 instance allowed
+    // maxInstances: 0,                 // 0 or omitted = unlimited; 1 = one (undeletable); N = cap
 
     getButtonDataId(config) {           // instance config → button data-feature-btn attribute
         return 'translate-' + config.targetLang;
@@ -586,7 +586,7 @@ Instance-based state management. Templates are registered, instances are CRUD-ma
 **Instance CRUD:**
 - `getInstances()` / `getInstancesByTemplate(templateId)` / `getInstance(instanceId)`
 - `addInstance(templateId, config?)` — dispatches `mods:instanceAdded`
-- `removeInstance(instanceId)` — dispatches `mods:instanceRemoved` (blocked for singletons) + calls `ModHooks.unregisterAll(instanceId)`
+- `removeInstance(instanceId)` — dispatches `mods:instanceRemoved` (blocked when `maxInstances === 1`) + calls `ModHooks.unregisterAll(instanceId)`
 - `ensureDefaultInstances(templateId)` — creates default instances on first run
 
 **Instance state:**
@@ -601,14 +601,14 @@ Instance-based state management. Templates are registered, instances are CRUD-ma
 #### Manager UI (`mods-manager.js`)
 
 **List page (two containers):**
-- **Template catalog** (top): one row per template with [ADD] button. Singletons with existing instance show "ADDED" label.
+- **Template catalog** (top): one row per template with [ADD] button. Templates at their `maxInstances` limit show "ADDED" label.
 - **Active instances** (bottom): InfiniteList ordered by `order`. Toggle buttons per instance. Selecting shows config.
 
 **Config page:**
 - Instance name + template description
 - Config fields from `configSchema`
 - Instance management: [▲ UP] [▼ DOWN] [DELETE] action buttons
-- DELETE uses MultiStepButton confirm pattern; hidden for singletons
+- DELETE uses MultiStepButton confirm pattern; hidden when `maxInstances === 1`
 - Config changes update button icon via `updateInstanceButton()`
 
 **Events handled:**
@@ -629,11 +629,11 @@ Instance-based state management. Templates are registered, instances are CRUD-ma
 
 #### Current Templates (3 self-contained, all v2.0.0)
 
-| ID | Group | Singleton | Default Instances | Providers | Shelf | Tools |
-|----|-------|-----------|------------------|-----------|-------|-------|
-| `translate` | linguistics | false | 4 (zh-TW, zh-CN, en, ja) | google (cloud), libretranslate (server) | `translator` | `translate_text` |
-| `speech-to-text` | linguistics | true | 1 | google-speech (cloud) | none | — |
-| `markdown-preview` | utilities | true | 1 | marked (client) | `markdown-preview` | — |
+| ID | Group | maxInstances | Default Instances | Providers | Shelf | Tools |
+|----|-------|-------------|------------------|-----------|-------|-------|
+| `translate` | linguistics | — (unlimited) | 4 (zh-TW, zh-CN, en, ja) | google (cloud), libretranslate (server) | `translator` | `translate_text` |
+| `speech-to-text` | linguistics | 1 | 1 | google-speech (cloud) | none | — |
+| `markdown-preview` | utilities | 1 | 1 | marked (client) | `markdown-preview` | — |
 
 #### Adding a New Template
 

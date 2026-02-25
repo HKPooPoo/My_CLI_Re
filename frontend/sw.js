@@ -1,4 +1,4 @@
-const CACHE_NAME = 'blackboard-v22-2026-02-25'; // Bump: MOD page visibility from template.pages
+const CACHE_NAME = 'blackboard-v23-2026-02-25'; // Bump: singleton → maxInstances refactor
 const ASSETS = [
   '/',
   '/index.html',

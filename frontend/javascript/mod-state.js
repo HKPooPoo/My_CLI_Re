@@ -102,8 +102,9 @@ export const ModState = {
         const template = this._templates[templateId];
         if (!template) return null;
 
-        // For singletons, don't allow more than 1 instance
-        if (template.singleton && this.getInstancesByTemplate(templateId).length > 0) {
+        // Enforce maxInstances limit (0 or omitted = unlimited)
+        const max = template.maxInstances || 0;
+        if (max > 0 && this.getInstancesByTemplate(templateId).length >= max) {
             return null;
         }
 
@@ -146,9 +147,9 @@ export const ModState = {
 
         const instance = this._instances[idx];
 
-        // Don't allow removing singleton instances
+        // Don't allow removing if at minimum (maxInstances: 1 → undeletable)
         const template = this._templates[instance.templateId];
-        if (template?.singleton) return;
+        if (template?.maxInstances === 1) return;
 
         // Cleanup hooks owned by this instance
         ModHooks.unregisterAll(instanceId);

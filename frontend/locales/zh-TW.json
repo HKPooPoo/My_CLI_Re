@@ -257,7 +257,7 @@
     "moveDown": "下移",
     "deleteInstance": "刪除",
     "deleteConfirm": "確定？",
-    "singletonAdded": "已新增",
+    "maxReached": "已達上限",
     "status": {
       "unknown": "掃描中...",
       "online": "線上",

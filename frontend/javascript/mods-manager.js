@@ -81,7 +81,8 @@ function renderTemplateCatalog(container) {
     const templates = getAllTemplates();
     for (const tpl of templates) {
         const instances = ModState.getInstancesByTemplate(tpl.id);
-        const isSingletonWithInstance = tpl.singleton && instances.length > 0;
+        const maxInst = tpl.maxInstances || 0;
+        const atLimit = maxInst > 0 && instances.length >= maxInst;
 
         const item = document.createElement('div');
         item.className = 'mods-catalog-item';
@@ -93,12 +94,12 @@ function renderTemplateCatalog(container) {
 
         item.appendChild(nameEl);
 
-        if (isSingletonWithInstance) {
+        if (atLimit) {
             const addedLabel = document.createElement('span');
             addedLabel.className = 'mods-catalog-added crt-text-green';
-            addedLabel.textContent = t('mods.singletonAdded');
+            addedLabel.textContent = t('mods.maxReached');
             item.appendChild(addedLabel);
-        } else if (!tpl.singleton || instances.length === 0) {
+        } else {
             const addBtn = document.createElement('button');
             addBtn.className = 'mods-catalog-add-btn crt-text-green';
             addBtn.textContent = t('mods.addBtn');
@@ -177,7 +178,7 @@ function handleAddInstance(templateId) {
     playAudio('UISelectOn.mp3');
     const instance = ModState.addInstance(templateId);
     if (!instance) {
-        BBMessage.error(t('mods.singletonAdded'));
+        BBMessage.error(t('mods.maxReached'));
         return;
     }
     rebuildInstanceButtons();
@@ -236,8 +237,8 @@ function renderInstanceActions(instanceId) {
     container.appendChild(upBtn);
     container.appendChild(downBtn);
 
-    // DELETE (hidden for singletons)
-    if (!template?.singleton) {
+    // DELETE (hidden when maxInstances === 1)
+    if (template?.maxInstances !== 1) {
         const deleteBtn = document.createElement('button');
         deleteBtn.className = 'mods-action-btn mods-action-delete crt-text-red';
         deleteBtn.textContent = t('mods.deleteInstance');

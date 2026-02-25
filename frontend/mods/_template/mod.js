@@ -45,8 +45,12 @@ export default {
 
     // ===================== Instance Architecture =====================
 
-    /** true = only 1 instance allowed; false = multiple instances */
-    singleton: false,
+    /**
+     * Max number of instances allowed.
+     * 0 or omitted = unlimited. 1 = exactly one (cannot delete).
+     * N = up to N instances.
+     */
+    // maxInstances: 0,
 
     /**
      * Map instance config → button's data-feature-btn attribute value.

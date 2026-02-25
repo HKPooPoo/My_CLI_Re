@@ -24,7 +24,7 @@ export default {
     version: '2.0.0',
 
     // --- Instance architecture ---
-    singleton: false,
+    // maxInstances: 0 = unlimited (default when omitted)
 
     getButtonDataId(config) {
         return 'translate-' + (config.targetLang || 'zh-TW');
