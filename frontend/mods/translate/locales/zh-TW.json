@@ -5,7 +5,7 @@
       "desc": "透過 Google Cloud API 或本機 LibreTranslate 進行多語言翻譯。",
       "lang": {
         "zhTW": "繁中",
-        "zhCN": "简中",
+        "zhCN": "簡中",
         "en": "EN",
         "ja": "日"
       },

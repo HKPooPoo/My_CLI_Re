@@ -53,6 +53,31 @@ export const ModState = {
             this._dismissed = new Set();
         }
 
+        // Boot cleanup: remove legacy enabled:false instances → dismissed
+        const disabledTemplates = new Set();
+        const beforeCount = this._instances.length;
+
+        this._instances = this._instances.filter(inst => {
+            if (inst.enabled === false) {
+                disabledTemplates.add(inst.templateId);
+                delete this._serverStatuses[inst.instanceId];
+                return false;
+            }
+            delete inst.enabled; // strip vestigial field
+            return true;
+        });
+
+        for (const tplId of disabledTemplates) {
+            if (this._instances.filter(i => i.templateId === tplId).length === 0) {
+                this._dismissed.add(tplId);
+            }
+        }
+
+        if (beforeCount !== this._instances.length) {
+            this._persistInstances();
+            this._persistDismissed();
+        }
+
         // Initialise server statuses from instances
         for (const inst of this._instances) {
             this._serverStatuses[inst.instanceId] = 'unknown';
@@ -133,7 +158,6 @@ export const ModState = {
         const instance = {
             instanceId: 'i_' + templateId + '_' + Date.now(),
             templateId,
-            enabled: true,
             order: maxOrder + 1,
             config: { ...defaultConfig, ...(config || {}) }
         };
@@ -373,7 +397,6 @@ export const ModState = {
                 const instance = {
                     instanceId: 'i_' + modId + '_' + (Date.now() + order),
                     templateId: modId,
-                    enabled: state.enabled ?? template.defaultEnabled ?? false,
                     order: order++,
                     config
                 };

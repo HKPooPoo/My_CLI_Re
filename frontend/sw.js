@@ -1,4 +1,4 @@
-const CACHE_NAME = 'blackboard-v25-2026-02-25'; // Bump: remove ON/OFF toggle, ADD/DELETE model
+const CACHE_NAME = 'blackboard-v26-2026-02-25'; // Bump: boot cleanup, i18n fix, feature visibility
 const ASSETS = [
   '/',
   '/index.html',

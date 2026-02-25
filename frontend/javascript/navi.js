@@ -219,15 +219,20 @@ function updatePage(subNaviItem) {
             $page.classList.add("active");
             $activePage = $page;
 
-            // PUSH/PULL 按鈕欄動態位移 (只有具備 can-push-pull 類別的頁面才顯示)
+            // Push/Pull buttons: only on can-push-pull pages
             if ($page.classList.contains("can-push-pull")) {
                 $pushBtn.style.transform = "translateY(0)";
                 $pullBtn.style.transform = "translateY(0)";
-                $featureScaffold.style.transform = "translateX(0)";
             } else {
                 $pushBtn.style.transform = "translateY(-256%)";
                 $pullBtn.style.transform = "translateY(256%)";
-                $featureScaffold.style.transform = "translateX(256%)";
+            }
+
+            // Feature container: visible on can-push-pull OR have-feature pages
+            if ($page.classList.contains("can-push-pull") || $page.classList.contains("have-feature")) {
+                $featureScaffold.style.transform = "translateX(0)";
+            } else {
+                $featureScaffold.style.transform = isIOS ? "translateX(256%)" : "translateX(256%)";
             }
 
             // 分支指標位移 (iOS: scale(-1,-1) reverses X axis, so use positive value to hide left)
