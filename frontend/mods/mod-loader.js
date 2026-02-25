@@ -15,7 +15,7 @@
 import * as manifest from './mod-manifest.js';
 import { mergeStrings, getActiveLocale, t } from '../javascript/i18n.js';
 import { ModState } from '../javascript/mod-state.js';
-import { createInitContext } from '../javascript/mod-context.js';
+import { createInitContext, setQueryProvider } from '../javascript/mod-context.js';
 import { ModHooks } from '../javascript/mod-hooks.js';
 import { ModTools } from '../javascript/mod-tools.js';
 
@@ -26,6 +26,9 @@ const _templates = {};
  * Called once on i18n:ready.
  */
 export async function loadAllMods() {
+    // Inject query functions into ModContext (breaks circular dependency)
+    setQueryProvider({ getTemplate, getAllTemplates, getInstances, getInstancesByTemplate });
+
     try {
         const templateDefs = Object.values(manifest);
 

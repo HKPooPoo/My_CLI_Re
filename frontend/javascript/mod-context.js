@@ -10,6 +10,9 @@
  *
  * Backward-compatible: all old ctx fields (page, buttonId, instanceId,
  * instanceConfig) are preserved as top-level aliases.
+ *
+ * IMPORTANT: This module must NOT import from mod-loader.js to avoid
+ * circular dependencies. Query functions are injected via setQueryProvider().
  * =================================================================
  */
 
@@ -20,7 +23,25 @@ import { FileService } from './services/file-service.js';
 import { t, getActiveLocale } from './i18n.js';
 import { BBMessage } from './blackboard-msg.js';
 import { playAudio } from './audio.js';
-import { getTemplate, getAllTemplates, getInstances, getInstancesByTemplate } from '../mods/mod-loader.js';
+
+/**
+ * Late-bound query provider — set by mod-loader.js at boot to break
+ * the circular dependency (mod-context ↔ mod-loader).
+ */
+let _queryProvider = {
+    getTemplate:            () => null,
+    getAllTemplates:         () => [],
+    getInstances:           () => [],
+    getInstancesByTemplate: () => [],
+};
+
+/**
+ * Called by mod-loader.js once during boot to inject query functions.
+ * @param {object} provider  { getTemplate, getAllTemplates, getInstances, getInstancesByTemplate }
+ */
+export function setQueryProvider(provider) {
+    _queryProvider = provider;
+}
 
 /**
  * Page-to-textarea mapping (shared across templates).
@@ -171,7 +192,6 @@ export function createModContext(opts) {
                 return page ? (PAGE_SCOPE_MAP[page] || null) : null;
             },
             getBranchId() {
-                // Read from the active page's data attributes or global state
                 const activePage = document.querySelector('.page.active');
                 return activePage?.dataset?.branchId || null;
             },
@@ -198,13 +218,6 @@ export function createModContext(opts) {
                 return document.querySelector(`[data-feature-shelf="${shelfId}"]`);
             },
             openShelf() {
-                // Delegate to feature-shelf module's exported function
-                try {
-                    const shelf = import('../javascript/feature-shelf.js');
-                    // Since feature-shelf exports openShelf/closeShelf after Phase B,
-                    // use the DOM-based approach as fallback
-                } catch { /* ignore */ }
-                // Direct DOM manipulation as reliable approach
                 const container = document.querySelector('.feature-shelf-container');
                 if (!container) return;
                 const shelfId = template?.shelfPanelId;
@@ -336,17 +349,13 @@ export function createModContext(opts) {
 
         // ===================== Query (MOD ecosystem) =====================
         query: {
-            getTemplate(id) { return getTemplate(id); },
-            getAllTemplates() { return getAllTemplates(); },
-            getInstances() { return getInstances(); },
-            getInstancesByTemplate(id) { return getInstancesByTemplate(id); }
+            getTemplate(id) { return _queryProvider.getTemplate(id); },
+            getAllTemplates() { return _queryProvider.getAllTemplates(); },
+            getInstances() { return _queryProvider.getInstances(); },
+            getInstancesByTemplate(id) { return _queryProvider.getInstancesByTemplate(id); }
         },
 
         // ===================== Cleanup =====================
-        /**
-         * Remove all event subscriptions registered via ctx.events.
-         * Called internally when a MOD is deactivated or destroyed.
-         */
         _cleanup() {
             for (const { event, handler } of _eventSubscriptions) {
                 window.removeEventListener(event, handler);
