@@ -11,7 +11,18 @@
  * ======================================================
  */
 
-import { WebLlmService } from '../../javascript/services/webllm-service.js';
+// WebLlmService is loaded LAZILY (dynamic import) to prevent a static-import
+// failure from crashing the entire MOD manifest and killing all other MODs.
+let WebLlmService = null;
+
+async function _getWebLlmService() {
+    if (!WebLlmService) {
+        const mod = await import('../../javascript/services/webllm-service.js');
+        WebLlmService = mod.WebLlmService;
+    }
+    return WebLlmService;
+}
+
 import { LlmService } from '../../javascript/services/llm-service.js';
 import { ModState } from '../../javascript/mod-state.js';
 import { MultiStepButton } from '../../javascript/multiStepButton.js';
@@ -212,10 +223,11 @@ export default {
                 const provider = args.provider || cfg.provider || 'client';
 
                 if (provider === 'client') {
+                    const svc = await _getWebLlmService();
                     const model = args.model || cfg.clientModel || 'Qwen2.5-0.5B-Instruct-q4f16_1-MLC';
-                    await WebLlmService.ensureModel(model);
+                    await svc.ensureModel(model);
                     let result = '';
-                    for await (const chunk of WebLlmService.chat(args.messages, {
+                    for await (const chunk of svc.chat(args.messages, {
                         temperature: args.temperature ?? cfg.temperature ?? 0.3,
                     })) {
                         result += chunk.delta;
@@ -228,7 +240,7 @@ export default {
                     ? (cfg.apiProvider || 'openai')
                     : 'ollama';
                 const model = args.model
-                    || (provider === 'server' ? cfg.serverModel : cfg.apiModel)
+                    || (provider === 'server' ? (cfg.serverModel || cfg.model) : cfg.apiModel)
                     || 'qwen3:4b';
 
                 const result = await LlmService.chat({
@@ -315,19 +327,23 @@ export default {
     async activate(ctx) {
         if (!ctx || !_outputEl) return;
 
-        const task = ctx.config.task || 'summarize';
-        const provider = ctx.config.provider || 'client';
-        _lastCtx = ctx;
-
-        // Show/hide overwrite button
-        _overwriteBtn.style.display = task === 'polish' ? '' : 'none';
-        _stopBtn.style.display = 'none';
-
-        // Set processing status
-        _statusEl.textContent = t('mods.llm.processing');
-        _outputEl.value = '';
-
         try {
+            const task = ctx.config.task || 'summarize';
+            _lastCtx = ctx;
+
+            // Normalize legacy provider values (v1 had 'ollama'/'openai'/'anthropic')
+            let provider = ctx.config.provider || 'client';
+            if (provider === 'ollama') provider = 'server';
+            if (provider === 'openai' || provider === 'anthropic') provider = 'apikey';
+
+            // Show/hide overwrite button
+            _overwriteBtn.style.display = task === 'polish' ? '' : 'none';
+            _stopBtn.style.display = 'none';
+
+            // Set processing status
+            _statusEl.textContent = t('mods.llm.processing');
+            _outputEl.value = '';
+
             const userContent = await _collectData(ctx, task);
             if (!userContent) {
                 _outputEl.value = t('mods.llm.empty');
@@ -352,7 +368,7 @@ export default {
             _outputEl.value = t('mods.llm.error', { error: (e.message || String(e)).toUpperCase() });
             _statusEl.textContent = '';
         } finally {
-            _stopBtn.style.display = 'none';
+            if (_stopBtn) _stopBtn.style.display = 'none';
             _abortCtrl = null;
         }
     },
@@ -361,7 +377,11 @@ export default {
     destroy() {},
 
     async checkHealth(instanceConfig) {
-        const provider = instanceConfig?.provider || 'client';
+        let provider = instanceConfig?.provider || 'client';
+        // Normalize legacy v1 provider names
+        if (provider === 'ollama') provider = 'server';
+        if (provider === 'openai' || provider === 'anthropic') provider = 'apikey';
+
         if (provider === 'client') {
             return navigator.gpu ? 'online' : 'offline';
         }
@@ -379,7 +399,7 @@ export default {
     getInfoValue(key, instanceId) {
         if (key === 'clientStatus') {
             if (!navigator.gpu) return t('mods.llm.noWebGPU');
-            const loaded = WebLlmService.getLoadedModel();
+            const loaded = WebLlmService?.getLoadedModel?.();
             return loaded || t('mods.llm.notLoaded');
         }
         if (key === 'serverStatus') {
@@ -397,11 +417,14 @@ export default {
 // =================================================================
 
 async function _activateClient(ctx, messages) {
-    if (!WebLlmService.isSupported()) {
+    if (!navigator.gpu) {
         _outputEl.value = t('mods.llm.noWebGPU');
         _statusEl.textContent = '';
         return;
     }
+
+    // Lazy-load WebLlmService (prevents static import from crashing all MODs)
+    const svc = await _getWebLlmService();
 
     const clientModel = ctx.config.clientModel || 'Qwen2.5-0.5B-Instruct-q4f16_1-MLC';
     const temperature = parseFloat(ctx.config.temperature) || 0.3;
@@ -412,14 +435,14 @@ async function _activateClient(ctx, messages) {
 
     // Loading phase
     _statusEl.textContent = t('mods.llm.loading');
-    await WebLlmService.ensureModel(clientModel, (text) => {
+    await svc.ensureModel(clientModel, (text) => {
         _statusEl.textContent = text;
     });
 
     // Streaming phase
     _statusEl.textContent = t('mods.llm.streaming', { tokens: '0' });
 
-    for await (const chunk of WebLlmService.chat(messages, {
+    for await (const chunk of svc.chat(messages, {
         temperature,
         signal: _abortCtrl.signal,
     })) {
@@ -441,15 +464,16 @@ async function _activateClient(ctx, messages) {
 async function _activateBackend(ctx, messages, provider) {
     const config = ctx.config;
 
-    // Resolve actual provider and model for the backend
+    // Resolve actual provider and model for the backend.
+    // Also handles legacy v1 config where 'model' was a single shared field.
     let actualProvider, model;
     if (provider === 'server') {
         actualProvider = 'ollama';
-        model = config.serverModel || 'qwen3:4b';
+        model = config.serverModel || config.model || 'qwen3:4b';
     } else {
         // apikey
         actualProvider = config.apiProvider || 'openai';
-        model = config.apiModel || 'gpt-4o-mini';
+        model = config.apiModel || config.model || 'gpt-4o-mini';
     }
 
     const result = await LlmService.chat({

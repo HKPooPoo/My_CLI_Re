@@ -93,14 +93,14 @@ export const WebLlmService = {
         const maxTokens = opts.maxTokens ?? 2048;
         const signal = opts.signal;
 
-        // Qwen3: disable thinking mode for small models (better instruction following)
-        // Prepend /no_think to user message content and set extra_body
-        const processedMessages = messages.map(m => {
-            if (m.role === 'user') {
-                return { ...m, content: '/no_think\n' + m.content };
-            }
-            return m;
-        });
+        // Qwen3 models: disable thinking mode (better instruction following).
+        // /no_think prefix + extra_body are Qwen3-specific; skip for Qwen2.5.
+        const isQwen3 = _currentModel.toLowerCase().includes('qwen3');
+        const processedMessages = isQwen3
+            ? messages.map(m => m.role === 'user'
+                ? { ...m, content: '/no_think\n' + m.content }
+                : m)
+            : messages;
 
         const requestParams = {
             messages: processedMessages,
@@ -108,7 +108,7 @@ export const WebLlmService = {
             max_tokens: maxTokens,
             stream: true,
             stream_options: { include_usage: true },
-            extra_body: { enable_thinking: false },
+            ...(isQwen3 && { extra_body: { enable_thinking: false } }),
         };
 
         const chunks = await _engine.chat.completions.create(requestParams);
