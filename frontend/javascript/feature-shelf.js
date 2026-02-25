@@ -92,23 +92,13 @@ function resolveShelfId($btn) {
 
 /**
  * Update feature button visibility per page (instance-aware).
- * Pages use data-feature-mods="translate,speech-to-text,markdown-preview"
- * to list which template IDs are allowed.
+ * Visibility is derived from each template's `pages` declaration —
+ * a button is shown on a page if that page key exists in the template's
+ * `pages` object. No HTML data-feature-mods attribute needed.
  */
 function updateFeatureButtons(page) {
-    const $activePage = document.querySelector(`.page[data-page="${page}"]`);
-    const featureMods = $activePage?.dataset.featureMods;
     const $btns = getFeatureBtns();
 
-    if (featureMods === undefined) {
-        // No data-feature-mods attribute: show all enabled instance buttons
-        $btns.forEach($btn => {
-            $btn.style.display = isFeatureBtnAllowed($btn) ? '' : 'none';
-        });
-        return;
-    }
-
-    const allowedTemplates = featureMods ? featureMods.split(',').map(s => s.trim()) : [];
     $btns.forEach($btn => {
         const instanceId = $btn.dataset.instanceId;
         if (!instanceId) {
@@ -122,7 +112,14 @@ function updateFeatureButtons(page) {
             return;
         }
 
-        const templateAllowed = allowedTemplates.includes(instance.templateId);
+        const template = getAllTemplates().find(t => t.id === instance.templateId);
+
+        // Derive allowed pages from template.pages keys
+        const templatePages = template?.pages;
+        const templateAllowed = !templatePages                  // no pages → show everywhere
+            || Object.keys(templatePages).length === 0          // empty pages → show everywhere
+            || (page && templatePages[page] !== undefined);     // page listed → show
+
         const instanceEnabled = ModState.isEnabled(instanceId);
         $btn.style.display = (templateAllowed && instanceEnabled) ? '' : 'none';
     });

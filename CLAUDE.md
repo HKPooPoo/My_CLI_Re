@@ -624,7 +624,7 @@ Instance-based state management. Templates are registered, instances are CRUD-ma
 - `isFeatureBtnAllowed($btn)`: reads `data-instance-id`, checks `ModState.isEnabled(instanceId)`
 - `resolveShelfId($btn)`: reads `data-instance-id`, looks up template's `shelfPanelId`
 - `handleFeatureBtnClick()`: builds full `ModContext`, calls `template.activate(ctx)` BEFORE shelf panel check
-- `updateFeatureButtons(page)`: page's `data-feature-mods` lists template IDs; show buttons for enabled instances of those templates
+- `updateFeatureButtons(page)`: derives allowed templates from each template's `pages` keys; show buttons for enabled instances whose template declares that page
 - Exports: `openShelf()`, `closeShelf()` — for programmatic shelf control
 
 #### Current Templates (3 self-contained, all v2.0.0)
@@ -639,10 +639,10 @@ Instance-based state management. Templates are registered, instances are CRUD-ma
 
 1. Copy `mods/_template/` → `mods/{id}/` (full skeleton with docs)
 2. Edit `mod.js`: set `id`, `group`, `nameKey`, `descriptionKey`, fill `configSchema`, `defaultInstances`, `providers`
-3. Create `mods/{id}/locales/{en,zh-TW,default}.json` with template-local i18n keys
-4. Add `export { default as myMod } from './{id}/mod.js'` to `mod-manifest.js`
-5. Add CSS icon: `.feature-btn[data-feature-btn="{btn-id}"]::after { mask-image: url(...) }`
-6. Add template ID to `data-feature-mods` on relevant pages in `index.html`
+3. Set `pages` keys to declare which pages this MOD's buttons appear on (e.g. `{ 'blackboard-log': { textareaSelector: '#log-textarea' } }`)
+4. Create `mods/{id}/locales/{en,zh-TW,default}.json` with template-local i18n keys
+5. Add `export { default as myMod } from './{id}/mod.js'` to `mod-manifest.js`
+6. Add CSS icon: `.feature-btn[data-feature-btn="{btn-id}"]::after { mask-image: url(...) }`
 7. Implement `init(ctx)` and `activate(ctx)` using ModContext API
 8. Optionally add `tools[]` and `hooks[]` for cross-MOD integration
 9. **Bump SW cache version** in `sw.js`

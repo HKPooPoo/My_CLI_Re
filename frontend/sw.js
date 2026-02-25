@@ -1,4 +1,4 @@
-const CACHE_NAME = 'blackboard-v21-2026-02-25'; // Bump: MOD System v2 — ModContext API
+const CACHE_NAME = 'blackboard-v22-2026-02-25'; // Bump: MOD page visibility from template.pages
 const ASSETS = [
   '/',
   '/index.html',

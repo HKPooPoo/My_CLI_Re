@@ -8,11 +8,11 @@
  * 1. Copy mods/_template/ → mods/{your-id}/
  * 2. Update id, nameKey, descriptionKey, group
  * 3. Fill in configSchema, providers, defaultInstances
- * 4. Implement init() (shelf UI) and activate() (core logic)
- * 5. Create locale files in locales/{en,zh-TW,default}.json
- * 6. Add export to mod-manifest.js
- * 7. Add CSS icon: .feature-btn[data-feature-btn="{btn-id}"]::after
- * 8. Add template ID to data-feature-mods on relevant pages
+ * 4. Set pages{} to declare which pages this MOD appears on
+ * 5. Implement init() (shelf UI) and activate() (core logic)
+ * 6. Create locale files in locales/{en,zh-TW,default}.json
+ * 7. Add export to mod-manifest.js
+ * 8. Add CSS icon: .feature-btn[data-feature-btn="{btn-id}"]::after
  * 9. Bump CACHE_NAME in sw.js
  * =================================================================
  */
@@ -86,8 +86,10 @@ export default {
     shelfPanelId: 'my-mod',
 
     /**
-     * Page-to-textarea mapping. Keys are page IDs (data-page values),
-     * values specify which textarea to bind on that page.
+     * Page-to-textarea mapping AND button visibility declaration.
+     * Keys are page IDs (data-page values). The button only appears
+     * on pages listed here. Values specify which textarea to bind.
+     * Empty object or omitted → button appears on all pages.
      */
     pages: {
         'blackboard-log':    { textareaSelector: '#log-textarea' },
