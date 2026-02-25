@@ -32,9 +32,9 @@ export default {
     },
 
     defaultInstances: [
-        { config: { task: 'translate', targetLang: 'zh-TW', provider: 'client', clientModel: 'Qwen2.5-0.5B-Instruct-q4f16_1-MLC' } },
-        { config: { task: 'summarize', provider: 'client', clientModel: 'Qwen2.5-0.5B-Instruct-q4f16_1-MLC' } },
-        { config: { task: 'polish', provider: 'client', clientModel: 'Qwen2.5-0.5B-Instruct-q4f16_1-MLC' } },
+        { config: { task: 'translate', targetLang: 'zh-TW', provider: 'client', clientModel: 'Qwen3-0.6B-q4f16_1-MLC' } },
+        { config: { task: 'summarize', provider: 'client', clientModel: 'Qwen3-0.6B-q4f16_1-MLC' } },
+        { config: { task: 'polish', provider: 'client', clientModel: 'Qwen3-0.6B-q4f16_1-MLC' } },
     ],
 
     pages: {
@@ -69,8 +69,7 @@ export default {
             { value: 'server', labelKey: 'mods.llm.provider.server' },
             { value: 'apikey', labelKey: 'mods.llm.provider.apikey' },
         ]},
-        { key: 'clientModel', type: 'select', labelKey: 'mods.llm.config.clientModel', default: 'Qwen2.5-0.5B-Instruct-q4f16_1-MLC', showWhen: { key: 'provider', value: 'client' }, options: [
-            { value: 'Qwen2.5-0.5B-Instruct-q4f16_1-MLC', labelKey: 'mods.llm.clientModel.qwen25_05b' },
+        { key: 'clientModel', type: 'select', labelKey: 'mods.llm.config.clientModel', default: 'Qwen3-0.6B-q4f16_1-MLC', showWhen: { key: 'provider', value: 'client' }, options: [
             { value: 'Qwen3-0.6B-q4f16_1-MLC',             labelKey: 'mods.llm.clientModel.qwen3_06b' },
             { value: 'Qwen3-1.7B-q4f16_1-MLC',             labelKey: 'mods.llm.clientModel.qwen3_17b' },
             { value: 'Qwen3-4B-q4f16_1-MLC',               labelKey: 'mods.llm.clientModel.qwen3_4b' },
@@ -93,54 +92,109 @@ export default {
 
     // --- Lifecycle ---
 
-    async init(ctx) {
-        const shelf = ctx.ui.getShelfElement();
+    /**
+     * Resilient output element lookup.
+     * Re-queries DOM if _outputEl is stale/null. Creates if shelf exists but element doesn't.
+     */
+    _ensureOutputEl() {
+        if (this._outputEl && this._outputEl.isConnected) return this._outputEl;
+
+        // Re-query DOM (element might exist from init)
+        this._outputEl = document.getElementById('llm-output');
+        if (this._outputEl) return this._outputEl;
+
+        // Create if shelf exists but element doesn't
+        const shelf = document.querySelector('[data-feature-shelf="llm"]');
         if (shelf) {
             const el = document.createElement('textarea');
             el.id = 'llm-output';
             el.readOnly = true;
             shelf.appendChild(el);
             this._outputEl = el;
+            console.log('[llm-mod] _ensureOutputEl: created #llm-output');
+        }
+        return this._outputEl;
+    },
+
+    async init(ctx) {
+        const shelf = ctx.ui.getShelfElement();
+        if (shelf) {
+            // Avoid duplicate
+            const existing = shelf.querySelector('#llm-output');
+            if (existing) {
+                this._outputEl = existing;
+            } else {
+                const el = document.createElement('textarea');
+                el.id = 'llm-output';
+                el.readOnly = true;
+                shelf.appendChild(el);
+                this._outputEl = el;
+            }
+            console.log('[llm-mod] init: _outputEl ready');
+        } else {
+            console.warn('[llm-mod] init: shelf element NOT found');
         }
     },
 
     async activate(ctx) {
         if (!ctx) return;
-        if (!this._outputEl) return;
+
+        const out = this._ensureOutputEl();
+        if (!out) {
+            console.error('[llm-mod] activate: no output element — aborting');
+            return;
+        }
 
         const tFn = ctx.i18n.t;
         const text = ctx.board.getText().trim();
 
         if (!text) {
-            this._outputEl.value = tFn('mods.llm.empty');
+            out.value = tFn('mods.llm.empty');
             return;
         }
 
-        this._outputEl.value = tFn('mods.llm.processing');
+        out.value = tFn('mods.llm.processing');
 
         try {
             const task = ctx.config.task || 'summarize';
             const provider = ctx.config.provider || 'client';
-            const prompt = _buildSystemPrompt(ctx.config, task);
-            const messages = [
-                { role: 'system', content: prompt },
-                { role: 'user', content: text },
-            ];
 
             if (provider === 'client') {
                 const svc = await _getWebLlm();
-                const model = ctx.config.clientModel || 'Qwen2.5-0.5B-Instruct-q4f16_1-MLC';
+                const model = ctx.config.clientModel || 'Qwen3-0.6B-q4f16_1-MLC';
                 const temp = parseFloat(ctx.config.temperature) || 0.3;
 
-                this._outputEl.value = tFn('mods.llm.loading');
-                await svc.ensureModel(model, (p) => { this._outputEl.value = p; });
+                out.value = tFn('mods.llm.loading');
+                console.log('[llm-mod] loading model:', model);
+                await svc.ensureModel(model, (p) => { out.value = p; });
+                console.log('[llm-mod] model ready');
 
-                this._outputEl.value = '';
+                // Single user message with embedded instruction
+                // (proven pattern from test-client-llm.html — better for small models)
+                const prefix = _buildUserPrefix(ctx.config, task);
+                const messages = [{ role: 'user', content: prefix + text }];
+
+                out.value = '';
+                let tokenCount = 0;
                 for await (const chunk of svc.chat(messages, { temperature: temp })) {
                     if (chunk.done) break;
-                    this._outputEl.value += chunk.delta;
+                    out.value += chunk.delta;
+                    tokenCount++;
+                }
+
+                console.log('[llm-mod] streaming done, tokens:', tokenCount);
+
+                // Handle zero-token output (model only produced think tokens)
+                if (!out.value.trim()) {
+                    out.value = tFn('mods.llm.empty');
                 }
             } else {
+                // Server/API: system + user messages (standard for capable models)
+                const prompt = _buildSystemPrompt(ctx.config, task);
+                const messages = [
+                    { role: 'system', content: prompt },
+                    { role: 'user', content: text },
+                ];
                 const actualProvider = provider === 'server' ? 'ollama' : (ctx.config.apiProvider || 'openai');
                 const model = provider === 'server' ? (ctx.config.serverModel || 'qwen3:4b') : (ctx.config.apiModel || 'gpt-4o-mini');
                 const result = await LlmService.chat({
@@ -148,10 +202,11 @@ export default {
                     temperature: parseFloat(ctx.config.temperature) || 0.3,
                     apiKey: ctx.config.apiKey || '',
                 });
-                this._outputEl.value = result.content || tFn('mods.llm.empty');
+                out.value = result.content || tFn('mods.llm.empty');
             }
         } catch (e) {
-            this._outputEl.value = tFn('mods.llm.error', { error: e.message || String(e) });
+            console.error('[llm-mod] activate error:', e);
+            out.value = tFn('mods.llm.error', { error: e.message || String(e) });
         }
     },
 
@@ -188,7 +243,40 @@ async function _getWebLlm() {
     return _webLlmSvc;
 }
 
-const PROMPTS = {
+/**
+ * Language name map for prompts (native names work better with small models).
+ */
+const LANG_NAMES = {
+    'zh-TW': '繁體中文',
+    'zh-CN': '简体中文',
+    'en': 'English',
+    'ja': '日本語',
+};
+
+/**
+ * Build a user-message prefix for client-side (browser) LLM.
+ * Single user message with embedded instruction — proven pattern from test page.
+ * Small models follow this better than system + user split.
+ */
+function _buildUserPrefix(config, task) {
+    if (config.systemPrompt) return config.systemPrompt + '\n\n';
+
+    const lang = LANG_NAMES[config.targetLang] || config.targetLang || '繁體中文';
+    switch (task) {
+        case 'translate':        return `翻譯成${lang}：\n\n`;
+        case 'summarize':        return `摘要以下文字：\n\n`;
+        case 'polish':           return `改善以下文字的文法和風格，保持原意：\n\n`;
+        case 'summarize-files':  return `摘要以下文字與檔案內容：\n\n`;
+        case 'summarize-branch': return `摘要以下紀錄，找出關鍵主題：\n\n`;
+        case 'summarize-all':    return `綜合摘要以下所有分支，找出模式：\n\n`;
+        default:                 return `摘要以下文字：\n\n`;
+    }
+}
+
+/**
+ * Build a system prompt for server/API providers (capable models).
+ */
+const SYSTEM_PROMPTS = {
     translate: (lang) => `Translate the following text to ${lang}. Output only the translation.`,
     summarize: 'Summarize the following text concisely. Output only the summary.',
     polish: 'Improve the grammar, clarity, and style. Keep the original meaning. Output only the improved text.',
@@ -199,6 +287,6 @@ const PROMPTS = {
 
 function _buildSystemPrompt(config, task) {
     if (config.systemPrompt) return config.systemPrompt;
-    const base = PROMPTS[task];
-    return typeof base === 'function' ? base(config.targetLang || 'zh-TW') : (base || PROMPTS.summarize);
+    const base = SYSTEM_PROMPTS[task];
+    return typeof base === 'function' ? base(config.targetLang || 'zh-TW') : (base || SYSTEM_PROMPTS.summarize);
 }

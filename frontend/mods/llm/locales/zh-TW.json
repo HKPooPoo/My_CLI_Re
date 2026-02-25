@@ -37,7 +37,6 @@
         "apikey": "API 金鑰（雲端）"
       },
       "clientModel": {
-        "qwen25_05b": "Qwen2.5 0.5B（快速，約 300MB）",
         "qwen3_06b": "Qwen3 0.6B（快速，約 400MB）",
         "qwen3_17b": "Qwen3 1.7B（均衡，約 1.2GB）",
         "qwen3_4b": "Qwen3 4B（高品質，約 2.8GB）"

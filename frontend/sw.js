@@ -1,4 +1,4 @@
-const CACHE_NAME = 'blackboard-v34-2026-02-26'; // Feat: BB auto-sync multi-device
+const CACHE_NAME = 'blackboard-v35-2026-02-26'; // Fix: LLM MOD output not showing
 const ASSETS = [
   '/',
   '/index.html',
