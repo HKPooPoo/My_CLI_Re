@@ -114,28 +114,39 @@ docker exec my-cli-api sh -c "cp .env.example .env && php artisan key:generate &
 | Mailpit | `http://localhost:8025` |
 | Reverb (WS) | `ws://localhost:8081` |
 | PostgreSQL | `localhost:5431` |
+| LibreTranslate | `http://localhost:5000` (internal, accessed via api container) |
 
 ## Architecture
 
-### High-Level Stack
-- **Nginx** — serves `frontend/` as a static SPA and reverse-proxies `/api` to PHP-FPM
+### High-Level Stack (11 Docker Services)
+- **nginx** — serves `frontend/` as a static SPA and reverse-proxies `/api` to PHP-FPM
 - **api** — Laravel 12 PHP-FPM application (JSON API only, no Blade views)
 - **reverb** — Laravel Reverb WebSocket server for real-time broadcasting
 - **queue** — Laravel queue worker (`php artisan queue:listen`)
+- **scheduler** — Laravel task scheduler (cron-based: orphaned file cleanup, etc.)
 - **db** — PostgreSQL 16
 - **redis** — Sessions, cache, and queues
+- **pgadmin** — PostgreSQL web admin UI
+- **mailpit** — Local SMTP testing (email capture)
+- **tunnel** — Cloudflare Tunnel (public exposure)
+- **libretranslate** — Optional offline translation service (MOD provider)
 
 ### Backend Structure (`backend/`)
 
 ```
 app/
-  Http/Controllers/   # Thin controllers — validate input, call service, return JSON
+  Http/
+    Controllers/      # Thin controllers — validate input, call service, return JSON
+    Requests/         # Form request validation (Auth/, Blackboard/)
   Services/           # All business logic lives here
-  Events/             # Broadcastable events for Reverb
-  Models/             # Eloquent models
-config/               # Laravel config (cors.php, broadcasting.php, etc.)
+  Events/             # Broadcastable events for Reverb (4 events)
+  Models/             # Eloquent models (User, File)
+  Mail/               # Queued mailables (ResetPasscodeMail, BindEmailMail)
+  Console/Commands/   # Artisan commands (CleanOrphanedFiles)
+  Providers/          # Service providers (App, Broadcast)
+config/               # Laravel config (cors.php, broadcasting.php, services.php, etc.)
 routes/api.php        # All API routes (no web.php routes used)
-database/migrations/  # Schema definitions
+database/migrations/  # Schema definitions (10 migrations)
 ```
 
 **Key pattern:** Controllers are kept thin — they validate the request, call a Service method, and return the result. All logic is in Services.
@@ -155,16 +166,24 @@ database/migrations/  # Schema definitions
 | **Broadcast Channels** | `BroadcastChannelController` | `BroadcastChannelService` | Board(PUBLIC) — public channels, owner writes + readers fetch, Last-Write-Wins |
 | **Files** | `FileController` | `FileService` | SHA-256 deduplicated file storage (up to 10GB) |
 | **Auth** | `AuthController` | `AuthService` | UID+passcode auth, email binding, `/passwd` & `/bind` commands |
+| **Settings** | `SettingsController` | `SettingsService` | Per-user JSON settings (sync push/pull on login) |
+| **Translation** | `TranslationController` | — (in controller) | Google Cloud + LibreTranslate proxy for MOD |
+| **Speech** | `SpeechController` | — (in controller) | Google Cloud Speech-to-Text (V1 + V2 Chirp 2) proxy |
+| **Status** | `StatusController` | — | Server liveness check (DB ping, 10s cache) |
+| **MOD Health** | `ModController` | — | LibreTranslate reachability check (30s cache) |
 
 ### Database Schema (key tables)
-- `users` — uid (unique), passcode, title, email
-- `blackboards` — user_id (FK), branch_id (varchar), branch_name, timestamp (bigint ms), text, file_hash; UNIQUE(user_id, branch_id, timestamp)
+- `users` — uid (unique), passcode, title, email, settings (JSONB, nullable)
+- `blackboards` — user_id (FK), branch_id (varchar), branch_name, timestamp (bigint ms), text, file_hash (text); UNIQUE(user_id, branch_id, timestamp)
 - `walkie_typie_connections` — user_id (FK), partner_id (FK), partner_tag, my_branch_id, partner_branch_id, last_signal; UNIQUE(user_id, partner_id)
-- `walkie_typie_boards` — user_id (FK), branch_id, timestamp (bigint ms), text, file_hash; UNIQUE(user_id, branch_id, timestamp)
+- `walkie_typie_boards` — user_id (FK), branch_id, timestamp (bigint ms), text, file_hash (text); UNIQUE(user_id, branch_id, timestamp)
 - `broadcast_channels` — name (unique), user_id (FK), last_signal (bigint ms)
-- `broadcast_boards` — channel_id (FK cascade), timestamp (bigint ms), text, file_hash; UNIQUE(channel_id, timestamp)
+- `broadcast_boards` — channel_id (FK cascade), timestamp (bigint ms), text, file_hash (text); UNIQUE(channel_id, timestamp)
 - `broadcast_pins` — user_id (FK cascade), channel_id (FK cascade); UNIQUE(user_id, channel_id)
 - `files` — hash (unique), user_id (FK), original_name, mime_type, size (bigint), disk_path, status (default 'staged')
+- `sessions` — Laravel session storage
+
+**Note:** `file_hash` was migrated from `varchar(512)` to `text` on all board tables to support JSON array serialization (multiple file attachments per record).
 
 **File status lifecycle:** `staged` → `committed` → `orphaned` (orphaned files cleaned up after 24h)
 
@@ -174,31 +193,93 @@ The frontend is a **multi-section SPA** with no framework — pure HTML, CSS, an
 
 ```
 javascript/
-  services/           # API/data layer (api.js, auth-service.js, broadcast-service.js, mod-service.js, etc.)
-  blackboard*.js      # Blackboard feature modules
-  walkie-typie*.js    # Walkie-Typie feature modules
-  broadcast*.js       # Broadcast Channels feature modules
-  mod-state.js        # MOD state + config persistence (decoupled from registry)
-  mods-manager.js     # MOD Manager UI (list + config pages, consumes mod-loader)
-  feature-shelf.js    # Feature shelf lateral panel + MOD-aware button visibility (dynamic DOM)
-  echo-service.js     # Singleton Laravel Echo instance (shared by all modules)
-  indexedDB.js        # IndexedDB wrapper for client-side persistence
-  audio.js            # Sound effects for UI
-  multiStepButton.js  # Reusable multi-step confirmation button component
+  services/              # API/data layer (11 service modules)
+    api.js               #   Base HTTP client (auth headers, error handling)
+    auth-service.js      #   Auth endpoints (login, register, logout, command)
+    blackboard-service.js#   BB sync/commit/checkout
+    broadcast-service.js #   BC channel/cast operations
+    file-service.js      #   File upload/download with SHA-256 hashing
+    mod-service.js       #   MOD health check
+    settings-sync-service.js # User settings sync (push on change, pull on login)
+    speech-service.js    #   Google Cloud Speech API proxy
+    status-service.js    #   Server liveness check
+    translation-service.js#  Translation API proxy
+    walkie-typie-service.js# WT board CRUD
+  vendor/                # Third-party libraries
+    dexie.js             #   IndexedDB wrapper (Dexie v3)
+    echo.iife.js         #   Laravel Echo (WebSocket client)
+    pusher.min.js        #   Pusher SDK (Echo dependency)
+    marked.min.js        #   Markdown parser (for MOD)
+  # --- Core system ---
+  navi.js                # Two-level navigation state machine
+  i18n.js                # Internationalization (locale loading, DOM binding, interpolation)
+  hud.js                 # Header status bar (login/DB status, theme toggle)
+  pressStart.js          # Splash screen overlay + CRT on/off animation
+  pwa.js                 # PWA install prompt + SW update flow
+  auth.js                # Authentication UI (login/register/logout forms)
+  toast.js               # Toast notification system
+  audio.js               # Sound effects for UI (skips on mobile)
+  utils.js               # Shared utilities (HKT timestamp formatting)
+  settings.js            # Centralized settings accessor (scope-prefixed localStorage)
+  misc.js                # Settings page controller (language, audio, range/toggle helpers)
+  multiStepButton.js     # Reusable multi-step confirmation button component
+  # --- Blackboard (BB) ---
+  blackboard.js          # Main BB controller (global state, button binding, init)
+  blackboard-core.js     # Low-level IndexedDB operations for BB
+  blackboard-ui.js       # BB presentation layer (DOM refs, state indicators, textarea)
+  blackboard-ui-list.js  # InfiniteList: scroll/wheel/swipe cursor navigation for any list
+  blackboard-vcs.js      # BB VCS logic (PUSH/PULL/COMMIT/FORK/DROP)
+  blackboard-msg.js      # Semantic message facade (SYSTEM >, CRITICAL > prefixes)
+  # --- Walkie-Typie (WT) ---
+  walkie-typie-core.js   # WT WebSocket core (Echo init, private channel, events)
+  walkie-typie-list.js   # Connection list (InfiniteList, ADD/CUT, tag rename)
+  walkie-typie-text.js   # Twin textarea controller (WE/THEY sides, whisper)
+  walkie-typie-vcs.js    # WT VCS logic (PUSH/PULL/COMMIT/FORK/DROP)
+  walkie-typie-db.js     # WT IndexedDB operations
+  walkie-typie-config.js # WT settings page
+  # --- Broadcast (BC) ---
+  broadcast-list.js      # Channel list (InfiniteList, PIN/CAST/CREATE/DELETE)
+  broadcast-channel.js   # Channel content controller (owner/reader modes, LWW)
+  broadcast-config.js    # BC settings page
+  broadcast-db.js        # BC IndexedDB operations
+  # --- MOD system ---
+  mod-state.js           # Instance-based state manager (template registry, instance CRUD)
+  mod-context.js         # ModContext API factory (sandboxed platform access)
+  mod-hooks.js           # Priority-ordered hook pipeline
+  mod-tools.js           # Cross-MOD tool registry (OpenAI function-calling compatible)
+  mods-manager.js        # MOD Manager UI (list + config pages, instance actions)
+  feature-shelf.js       # Feature shelf lateral panel + MOD-aware button visibility
+  # --- MOD template entry points (called from mods/*.js) ---
+  feature-translator.js  # Translate handler (multi-lang, multi-provider)
+  feature-markdown.js    # Markdown preview handler (marked.js rendering)
+  feature.js             # Speech-to-text handler (MediaRecorder + Google Speech)
+  # --- Real-time & data ---
+  echo-service.js        # Singleton Laravel Echo instance (shared WebSocket)
+  indexedDB.js           # Dexie DB config (BB, WT, BC, files tables)
+  editor-attachments.js  # File attachment UI (drag-drop, upload progress, chips)
 
 mods/
-  mod-manifest.js     # Static import list (single source of truth for all MODs)
-  mod-loader.js       # Loads MODs from manifest, merges i18n, creates DOM, calls init()
+  mod-manifest.js        # Static import list (single source of truth for all MODs)
+  mod-loader.js          # Loads MODs from manifest, merges i18n, creates DOM, calls init()
+  _template/             # Skeleton for creating new MODs (full interface docs)
+    mod.js, locales/{en,zh-TW,default}.json
   translate/
-    mod.js            # Translate MOD (4 languages, 2 providers: google + libretranslate)
+    mod.js               # Translate MOD (4 languages, 2 providers: google + libretranslate)
     locales/{en,zh-TW,default}.json
   speech-to-text/
-    mod.js            # Speech-to-Text MOD (Google Cloud Speech)
+    mod.js               # Speech-to-Text MOD (Google Cloud Speech)
     locales/{en,zh-TW,default}.json
   markdown-preview/
-    mod.js            # Markdown Preview MOD (client-side marked.js)
+    mod.js               # Markdown Preview MOD (client-side marked.js)
     locales/{en,zh-TW,default}.json
 ```
+
+**Other frontend directories:**
+- `stylesheets/` — 18 CSS files organized by page/component (see CSS Architecture section)
+- `locales/` — `{en,zh-TW,default}.json` global locale files
+- `images/` — SVG icons (translate variants, theme, markdown, swap), PWA icons, banner, background
+- `audio/` — 10 MP3 sound effects (UI clicks, cassette, erase)
+- Root files: `index.html` (SPA shell), `sw.js` (Service Worker), `style.css` (global variables), `manifest.json` (PWA)
 
 **Frontend architectural patterns:**
 - **Event-driven:** modules communicate via `window.dispatchEvent()` with custom events
@@ -341,10 +422,10 @@ Self-contained, plug-and-play feature system. **1 Instance = 1 Feature Button**.
 
 1. Copy `mods/_template/` → `mods/{your-id}/`
 2. Edit `mod.js`: set `id`, `nameKey`, `descriptionKey`, `group`, fill `configSchema` and `defaultInstances`
-3. Create locale files in `locales/{en,zh-TW,default}.json`
-4. Add `export { default as myMod } from './{id}/mod.js'` to `mod-manifest.js`
-5. Add CSS icon: `.feature-btn[data-feature-btn="{btn-id}"]::after { mask-image: url(...) }`
-6. Add template ID to `data-feature-mods` on relevant `.page` elements in `index.html`
+3. Set `pages` keys to declare which pages this MOD's buttons appear on (e.g. `{ 'blackboard-log': { textareaSelector: '#log-textarea' } }`)
+4. Create locale files in `locales/{en,zh-TW,default}.json`
+5. Add `export { default as myMod } from './{id}/mod.js'` to `mod-manifest.js`
+6. Add CSS icon: `.feature-btn[data-feature-btn="{btn-id}"]::after { mask-image: url(...) }`
 7. Bump `CACHE_NAME` in `sw.js`
 8. Implement `init(ctx)` (shelf UI setup) and `activate(ctx)` (per-click logic)
 
@@ -612,10 +693,11 @@ Instance-based state management. Templates are registered, instances are CRUD-ma
 - Config changes update button icon via `updateInstanceButton()`
 
 **Events handled:**
-- `mods:instanceAdded` / `mods:instanceRemoved` / `mods:reordered` → re-render list + buttons
 - `mods:configChanged` → re-render config fields (showWhen) + update button `data-feature-btn`
 - Toggle buttons use `e.stopPropagation()` to avoid triggering InfiniteList click
 - `list:selectionChanged` listener MUST check `container.contains(detail.item)` to filter events from other lists
+
+**Note:** `mods:instanceAdded` / `mods:instanceRemoved` / `mods:reordered` are handled by `feature-shelf.js` for button rebuilding. The mods-manager no longer listens to these events — all instance mutations (ADD/DELETE/UP/DOWN) are initiated from mods-manager's own handlers which call `renderListPage()` directly with selection preservation.
 
 #### Feature Shelf (`feature-shelf.js`)
 
@@ -639,7 +721,7 @@ Instance-based state management. Templates are registered, instances are CRUD-ma
 
 1. Copy `mods/_template/` → `mods/{id}/` (full skeleton with docs)
 2. Edit `mod.js`: set `id`, `group`, `nameKey`, `descriptionKey`, fill `configSchema`, `defaultInstances`, `providers`
-3. Set `pages` keys to declare which pages this MOD's buttons appear on (e.g. `{ 'blackboard-log': { textareaSelector: '#log-textarea' } }`)
+3. Set `pages` keys to declare which pages this MOD's buttons appear on (e.g. `{ 'blackboard-log': { textareaSelector: '#log-textarea' } }`) — page visibility is driven by `template.pages`, NOT HTML attributes
 4. Create `mods/{id}/locales/{en,zh-TW,default}.json` with template-local i18n keys
 5. Add `export { default as myMod } from './{id}/mod.js'` to `mod-manifest.js`
 6. Add CSS icon: `.feature-btn[data-feature-btn="{btn-id}"]::after { mask-image: url(...) }`
