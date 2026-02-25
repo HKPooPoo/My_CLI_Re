@@ -2,7 +2,7 @@
   "mods": {
     "llm": {
       "name": "LLM",
-      "desc": "AI 文字處理套件 — 透過本機或雲端 LLM 進行翻譯、摘要、潤飾。",
+      "desc": "AI 文字處理套件 — 透過瀏覽器、本機或雲端 LLM 進行翻譯、摘要、潤飾。",
       "task": {
         "translate": "翻譯",
         "summarize": "摘要",
@@ -21,21 +21,40 @@
         "task": "任務模式",
         "targetLang": "目標語言",
         "provider": "提供者",
-        "model": "模型",
+        "clientModel": "瀏覽器模型",
+        "clientStatus": "WebGPU 狀態",
+        "serverModel": "Ollama 模型",
+        "serverStatus": "伺服器狀態",
+        "apiProvider": "API 提供者",
+        "apiModel": "API 模型",
         "apiKey": "API 金鑰",
         "temperature": "溫度",
-        "systemPrompt": "系統提示詞（選填）",
-        "status": "伺服器狀態"
+        "systemPrompt": "系統提示詞（選填）"
       },
       "provider": {
-        "ollama": "Ollama（本機）",
+        "client": "用戶端（瀏覽器）",
+        "server": "伺服器（Ollama）",
+        "apikey": "API 金鑰（雲端）"
+      },
+      "clientModel": {
+        "qwen25_05b": "Qwen2.5 0.5B（快速，約 300MB）",
+        "qwen3_06b": "Qwen3 0.6B（快速，約 400MB）",
+        "qwen3_17b": "Qwen3 1.7B（均衡，約 1.2GB）",
+        "qwen3_4b": "Qwen3 4B（高品質，約 2.8GB）"
+      },
+      "apiProvider": {
         "openai": "OpenAI",
         "anthropic": "Anthropic"
       },
       "processing": "處理中... 請稍候。",
+      "loading": "載入模型中...",
+      "streaming": "串流中... {tokens} 個 token",
       "complete": "處理完成。",
       "empty": "協定錯誤：緩衝區為空，無輸入文字。",
       "error": "嚴重錯誤：{error}",
+      "noWebGPU": "不支援 WebGPU — 請切換至伺服器或 API 金鑰。",
+      "notLoaded": "尚未載入模型",
+      "stopBtn": "停止",
       "copyBtn": "複製",
       "copyDone": "已複製",
       "overwriteBtn": "覆寫",

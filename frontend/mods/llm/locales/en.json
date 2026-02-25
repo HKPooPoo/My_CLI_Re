@@ -2,7 +2,7 @@
   "mods": {
     "llm": {
       "name": "LLM",
-      "desc": "AI TEXT PROCESSING SUITE — TRANSLATE, SUMMARIZE, POLISH VIA LOCAL OR CLOUD LLM.",
+      "desc": "AI TEXT PROCESSING SUITE — TRANSLATE, SUMMARIZE, POLISH VIA BROWSER, LOCAL, OR CLOUD LLM.",
       "task": {
         "translate": "TRANSLATE",
         "summarize": "SUMMARIZE",
@@ -21,21 +21,40 @@
         "task": "TASK MODE",
         "targetLang": "TARGET LANGUAGE",
         "provider": "PROVIDER",
-        "model": "MODEL",
+        "clientModel": "BROWSER MODEL",
+        "clientStatus": "WEBGPU STATUS",
+        "serverModel": "OLLAMA MODEL",
+        "serverStatus": "SERVER STATUS",
+        "apiProvider": "API PROVIDER",
+        "apiModel": "API MODEL",
         "apiKey": "API KEY",
         "temperature": "TEMPERATURE",
-        "systemPrompt": "SYSTEM PROMPT (OPTIONAL)",
-        "status": "SERVER STATUS"
+        "systemPrompt": "SYSTEM PROMPT (OPTIONAL)"
       },
       "provider": {
-        "ollama": "OLLAMA (LOCAL)",
+        "client": "CLIENT (BROWSER)",
+        "server": "SERVER (OLLAMA)",
+        "apikey": "API KEY (CLOUD)"
+      },
+      "clientModel": {
+        "qwen25_05b": "Qwen2.5 0.5B (FAST, ~300MB)",
+        "qwen3_06b": "Qwen3 0.6B (FAST, ~400MB)",
+        "qwen3_17b": "Qwen3 1.7B (BALANCED, ~1.2GB)",
+        "qwen3_4b": "Qwen3 4B (QUALITY, ~2.8GB)"
+      },
+      "apiProvider": {
         "openai": "OPENAI",
         "anthropic": "ANTHROPIC"
       },
       "processing": "PROCESSING... STANDBY.",
+      "loading": "LOADING MODEL...",
+      "streaming": "STREAMING... {tokens} TOKENS",
       "complete": "PROCESSING COMPLETE.",
       "empty": "PROTOCOL ERROR: BUFFER EMPTY. NO INPUT TEXT.",
       "error": "CRITICAL BREACH: {error}",
+      "noWebGPU": "WEBGPU NOT SUPPORTED — SWITCH TO SERVER OR API KEY.",
+      "notLoaded": "NO MODEL LOADED",
+      "stopBtn": "STOP",
       "copyBtn": "COPY",
       "copyDone": "COPIED",
       "overwriteBtn": "OVERWRITE",

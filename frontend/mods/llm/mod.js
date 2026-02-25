@@ -1,14 +1,17 @@
 /**
- * LLM MOD Template - AI Text Processing Suite
- * =================================================================
- * Single template, multiple task modes: translate, summarize, polish,
- * summarize-files, summarize-branch, summarize-all.
+ * LLM MOD Template v2 — Client-First AI Text Processing
+ * ======================================================
+ * 3-tier provider architecture:
+ *   client  (WebLLM/WebGPU, default) — runs entirely in-browser
+ *   server  (Ollama)                 — local server via backend proxy
+ *   apikey  (OpenAI/Anthropic)       — cloud API via backend proxy
  *
- * Shared LLM backend config (provider, model, temperature, API key).
- * Results displayed in a shared shelf panel.
- * =================================================================
+ * Tasks: translate, summarize, polish, summarize-files,
+ *        summarize-branch, summarize-all.
+ * ======================================================
  */
 
+import { WebLlmService } from '../../javascript/services/webllm-service.js';
 import { LlmService } from '../../javascript/services/llm-service.js';
 import { ModState } from '../../javascript/mod-state.js';
 import { MultiStepButton } from '../../javascript/multiStepButton.js';
@@ -19,9 +22,11 @@ import * as BoardProvider from '../../javascript/mod-board-provider.js';
 let _statusEl = null;
 let _outputEl = null;
 let _copyBtn = null;
+let _stopBtn = null;
 let _overwriteBtn = null;
 let _overwriteMSB = null;
 let _lastCtx = null;
+let _abortCtrl = null;
 
 const CHAR_LIMIT_BRANCH = 100_000;
 const CHAR_LIMIT_ALL = 200_000;
@@ -43,7 +48,7 @@ export default {
     nameKey: 'mods.llm.name',
     descriptionKey: 'mods.llm.desc',
 
-    version: '1.0.0',
+    version: '2.0.0',
 
     // maxInstances: 0 = unlimited
 
@@ -71,9 +76,9 @@ export default {
     },
 
     defaultInstances: [
-        { config: { task: 'translate', targetLang: 'zh-TW', provider: 'ollama', model: 'qwen3-vl:2b' } },
-        { config: { task: 'summarize', provider: 'ollama', model: 'qwen3-vl:2b' } },
-        { config: { task: 'polish', provider: 'ollama', model: 'qwen3-vl:2b' } },
+        { config: { task: 'translate', targetLang: 'zh-TW', provider: 'client', clientModel: 'Qwen2.5-0.5B-Instruct-q4f16_1-MLC' } },
+        { config: { task: 'summarize', provider: 'client', clientModel: 'Qwen2.5-0.5B-Instruct-q4f16_1-MLC' } },
+        { config: { task: 'polish', provider: 'client', clientModel: 'Qwen2.5-0.5B-Instruct-q4f16_1-MLC' } },
     ],
 
     shelfPanelId: 'llm',
@@ -85,13 +90,14 @@ export default {
     },
 
     providers: [
-        { id: 'ollama', type: 'server', nameKey: 'mods.llm.provider.ollama',
+        { id: 'client', type: 'client', nameKey: 'mods.llm.provider.client' },
+        { id: 'server', type: 'server', nameKey: 'mods.llm.provider.server',
           healthEndpoint: '/mods/llm/ollama/health' },
-        { id: 'openai', type: 'cloud', nameKey: 'mods.llm.provider.openai' },
-        { id: 'anthropic', type: 'cloud', nameKey: 'mods.llm.provider.anthropic' },
+        { id: 'apikey', type: 'cloud', nameKey: 'mods.llm.provider.apikey' },
     ],
 
     configSchema: [
+        // --- Task ---
         {
             key: 'task', type: 'select', labelKey: 'mods.llm.config.task',
             options: [
@@ -104,6 +110,7 @@ export default {
             ],
             default: 'summarize',
         },
+        // --- Target language (translate only) ---
         {
             key: 'targetLang', type: 'select', labelKey: 'mods.llm.config.targetLang',
             options: [
@@ -115,26 +122,73 @@ export default {
             default: 'zh-TW',
             showWhen: { key: 'task', value: 'translate' },
         },
+        // --- Provider ---
         {
             key: 'provider', type: 'select', labelKey: 'mods.llm.config.provider',
             options: [
-                { value: 'ollama',    labelKey: 'mods.llm.provider.ollama' },
-                { value: 'openai',    labelKey: 'mods.llm.provider.openai' },
-                { value: 'anthropic', labelKey: 'mods.llm.provider.anthropic' },
+                { value: 'client', labelKey: 'mods.llm.provider.client' },
+                { value: 'server', labelKey: 'mods.llm.provider.server' },
+                { value: 'apikey', labelKey: 'mods.llm.provider.apikey' },
             ],
-            default: 'ollama',
+            default: 'client',
         },
-        { key: 'model', type: 'text', labelKey: 'mods.llm.config.model', default: 'qwen3-vl:2b' },
-        { key: 'apiKey', type: 'text', labelKey: 'mods.llm.config.apiKey', default: '' },
+        // --- Client: browser model select ---
+        {
+            key: 'clientModel', type: 'select', labelKey: 'mods.llm.config.clientModel',
+            options: [
+                { value: 'Qwen2.5-0.5B-Instruct-q4f16_1-MLC', labelKey: 'mods.llm.clientModel.qwen25_05b' },
+                { value: 'Qwen3-0.6B-q4f16_1-MLC',             labelKey: 'mods.llm.clientModel.qwen3_06b' },
+                { value: 'Qwen3-1.7B-q4f16_1-MLC',             labelKey: 'mods.llm.clientModel.qwen3_17b' },
+                { value: 'Qwen3-4B-q4f16_1-MLC',               labelKey: 'mods.llm.clientModel.qwen3_4b' },
+            ],
+            default: 'Qwen2.5-0.5B-Instruct-q4f16_1-MLC',
+            showWhen: { key: 'provider', value: 'client' },
+        },
+        // --- Client: engine status (info) ---
+        {
+            key: 'clientStatus', type: 'info', labelKey: 'mods.llm.config.clientStatus',
+            showWhen: { key: 'provider', value: 'client' },
+        },
+        // --- Server: model name ---
+        {
+            key: 'serverModel', type: 'text', labelKey: 'mods.llm.config.serverModel',
+            default: 'qwen3:4b',
+            showWhen: { key: 'provider', value: 'server' },
+        },
+        // --- Server: status (info) ---
+        {
+            key: 'serverStatus', type: 'info', labelKey: 'mods.llm.config.serverStatus',
+            showWhen: { key: 'provider', value: 'server' },
+        },
+        // --- API key: provider select ---
+        {
+            key: 'apiProvider', type: 'select', labelKey: 'mods.llm.config.apiProvider',
+            options: [
+                { value: 'openai',    labelKey: 'mods.llm.apiProvider.openai' },
+                { value: 'anthropic', labelKey: 'mods.llm.apiProvider.anthropic' },
+            ],
+            default: 'openai',
+            showWhen: { key: 'provider', value: 'apikey' },
+        },
+        // --- API key: model name ---
+        {
+            key: 'apiModel', type: 'text', labelKey: 'mods.llm.config.apiModel',
+            default: 'gpt-4o-mini',
+            showWhen: { key: 'provider', value: 'apikey' },
+        },
+        // --- API key: key input ---
+        {
+            key: 'apiKey', type: 'text', labelKey: 'mods.llm.config.apiKey',
+            default: '',
+            showWhen: { key: 'provider', value: 'apikey' },
+        },
+        // --- Shared: temperature ---
         {
             key: 'temperature', type: 'range', labelKey: 'mods.llm.config.temperature',
             min: 0, max: 1, step: 0.1, default: 0.3,
         },
+        // --- Shared: system prompt override ---
         { key: 'systemPrompt', type: 'text', labelKey: 'mods.llm.config.systemPrompt', default: '' },
-        {
-            key: 'ollamaStatus', type: 'info', labelKey: 'mods.llm.config.status',
-            showWhen: { key: 'provider', value: 'ollama' },
-        },
     ],
 
     tools: [
@@ -145,10 +199,9 @@ export default {
                 type: 'object',
                 properties: {
                     messages: { type: 'array', description: 'Chat messages array [{role, content}]' },
-                    provider: { type: 'string', description: 'LLM provider', enum: ['ollama', 'openai', 'anthropic'] },
+                    provider: { type: 'string', description: 'LLM provider', enum: ['client', 'server', 'apikey'] },
                     model: { type: 'string', description: 'Model name' },
                     temperature: { type: 'number', description: 'Temperature (0-1)' },
-                    apiKey: { type: 'string', description: 'API key (for cloud providers)' },
                 },
                 required: ['messages'],
             },
@@ -156,12 +209,34 @@ export default {
                 const instances = ModState.getInstancesByTemplate('llm');
                 const inst = instances[0];
                 const cfg = inst?.config || {};
+                const provider = args.provider || cfg.provider || 'client';
+
+                if (provider === 'client') {
+                    const model = args.model || cfg.clientModel || 'Qwen2.5-0.5B-Instruct-q4f16_1-MLC';
+                    await WebLlmService.ensureModel(model);
+                    let result = '';
+                    for await (const chunk of WebLlmService.chat(args.messages, {
+                        temperature: args.temperature ?? cfg.temperature ?? 0.3,
+                    })) {
+                        result += chunk.delta;
+                    }
+                    return { content: result };
+                }
+
+                // server / apikey → backend
+                const actualProvider = provider === 'apikey'
+                    ? (cfg.apiProvider || 'openai')
+                    : 'ollama';
+                const model = args.model
+                    || (provider === 'server' ? cfg.serverModel : cfg.apiModel)
+                    || 'qwen3:4b';
+
                 const result = await LlmService.chat({
-                    provider: args.provider || cfg.provider || 'ollama',
-                    model: args.model || cfg.model || 'qwen3-vl:2b',
+                    provider: actualProvider,
+                    model,
                     messages: args.messages,
                     temperature: args.temperature ?? cfg.temperature ?? 0.3,
-                    apiKey: args.apiKey || cfg.apiKey || '',
+                    apiKey: cfg.apiKey || '',
                 });
                 return { content: result.content };
             },
@@ -189,6 +264,18 @@ export default {
         const actions = document.createElement('div');
         actions.className = 'llm-actions';
 
+        // Stop button (hidden by default)
+        _stopBtn = document.createElement('button');
+        _stopBtn.className = 'crt-text-yellow';
+        _stopBtn.textContent = t('mods.llm.stopBtn');
+        _stopBtn.style.display = 'none';
+        _stopBtn.addEventListener('click', () => {
+            if (_abortCtrl) {
+                _abortCtrl.abort();
+            }
+        });
+
+        // Overwrite button (confirm pattern)
         _overwriteBtn = document.createElement('button');
         _overwriteBtn.className = 'crt-text-red';
         _overwriteBtn.textContent = t('mods.llm.overwriteBtn');
@@ -206,6 +293,7 @@ export default {
             },
         });
 
+        // Copy button
         _copyBtn = document.createElement('button');
         _copyBtn.className = 'crt-text-green';
         _copyBtn.textContent = t('mods.llm.copyBtn');
@@ -218,6 +306,7 @@ export default {
             }
         });
 
+        actions.appendChild(_stopBtn);
         actions.appendChild(_overwriteBtn);
         actions.appendChild(_copyBtn);
         shelf.appendChild(actions);
@@ -227,10 +316,12 @@ export default {
         if (!ctx || !_outputEl) return;
 
         const task = ctx.config.task || 'summarize';
+        const provider = ctx.config.provider || 'client';
         _lastCtx = ctx;
 
         // Show/hide overwrite button
         _overwriteBtn.style.display = task === 'polish' ? '' : 'none';
+        _stopBtn.style.display = 'none';
 
         // Set processing status
         _statusEl.textContent = t('mods.llm.processing');
@@ -250,20 +341,19 @@ export default {
                 { role: 'user', content: userContent },
             ];
 
-            const result = await LlmService.chat({
-                provider: ctx.config.provider || 'ollama',
-                model: ctx.config.model || 'qwen3-vl:2b',
-                messages,
-                temperature: parseFloat(ctx.config.temperature) || 0.3,
-                apiKey: ctx.config.apiKey || '',
-            });
-
-            _outputEl.value = result.content || t('mods.llm.empty');
-            _statusEl.textContent = `${result.provider}/${result.model}`;
+            if (provider === 'client') {
+                await _activateClient(ctx, messages);
+            } else {
+                await _activateBackend(ctx, messages, provider);
+            }
         } catch (e) {
+            if (e.name === 'AbortError') return; // user stopped — partial output preserved
             console.error('[llm] activate error:', e);
             _outputEl.value = t('mods.llm.error', { error: (e.message || String(e)).toUpperCase() });
             _statusEl.textContent = '';
+        } finally {
+            _stopBtn.style.display = 'none';
+            _abortCtrl = null;
         }
     },
 
@@ -271,23 +361,28 @@ export default {
     destroy() {},
 
     async checkHealth(instanceConfig) {
-        const provider = instanceConfig?.provider || 'ollama';
-        if (provider === 'ollama') {
-            const ollama = this.providers.find(p => p.id === 'ollama');
-            if (ollama?.healthEndpoint) {
-                try {
-                    await LlmService.ollamaHealth();
-                    return 'online';
-                } catch {
-                    return 'offline';
-                }
+        const provider = instanceConfig?.provider || 'client';
+        if (provider === 'client') {
+            return navigator.gpu ? 'online' : 'offline';
+        }
+        if (provider === 'server') {
+            try {
+                await LlmService.ollamaHealth();
+                return 'online';
+            } catch {
+                return 'offline';
             }
         }
-        return 'online';
+        return 'online'; // apikey — no health check
     },
 
     getInfoValue(key, instanceId) {
-        if (key === 'ollamaStatus') {
+        if (key === 'clientStatus') {
+            if (!navigator.gpu) return t('mods.llm.noWebGPU');
+            const loaded = WebLlmService.getLoadedModel();
+            return loaded || t('mods.llm.notLoaded');
+        }
+        if (key === 'serverStatus') {
             const status = instanceId
                 ? ModState.getServerStatus(instanceId)
                 : 'unknown';
@@ -296,6 +391,78 @@ export default {
         return '\u2014';
     },
 };
+
+// =================================================================
+//  Client activation (WebLLM streaming)
+// =================================================================
+
+async function _activateClient(ctx, messages) {
+    if (!WebLlmService.isSupported()) {
+        _outputEl.value = t('mods.llm.noWebGPU');
+        _statusEl.textContent = '';
+        return;
+    }
+
+    const clientModel = ctx.config.clientModel || 'Qwen2.5-0.5B-Instruct-q4f16_1-MLC';
+    const temperature = parseFloat(ctx.config.temperature) || 0.3;
+
+    // Show stop button, create abort controller
+    _stopBtn.style.display = '';
+    _abortCtrl = new AbortController();
+
+    // Loading phase
+    _statusEl.textContent = t('mods.llm.loading');
+    await WebLlmService.ensureModel(clientModel, (text) => {
+        _statusEl.textContent = text;
+    });
+
+    // Streaming phase
+    _statusEl.textContent = t('mods.llm.streaming', { tokens: '0' });
+
+    for await (const chunk of WebLlmService.chat(messages, {
+        temperature,
+        signal: _abortCtrl.signal,
+    })) {
+        if (chunk.done) {
+            _statusEl.textContent = `client/${chunk.meta.model} | ${chunk.meta.answerTokens} tok | ${chunk.meta.elapsed}s | ${chunk.meta.tokensPerSecond} tok/s`;
+            break;
+        }
+        _outputEl.value += chunk.delta;
+        _statusEl.textContent = t('mods.llm.streaming', { tokens: String(chunk.meta.answerTokens) });
+    }
+
+    _stopBtn.style.display = 'none';
+}
+
+// =================================================================
+//  Backend activation (Server / API key)
+// =================================================================
+
+async function _activateBackend(ctx, messages, provider) {
+    const config = ctx.config;
+
+    // Resolve actual provider and model for the backend
+    let actualProvider, model;
+    if (provider === 'server') {
+        actualProvider = 'ollama';
+        model = config.serverModel || 'qwen3:4b';
+    } else {
+        // apikey
+        actualProvider = config.apiProvider || 'openai';
+        model = config.apiModel || 'gpt-4o-mini';
+    }
+
+    const result = await LlmService.chat({
+        provider: actualProvider,
+        model,
+        messages,
+        temperature: parseFloat(config.temperature) || 0.3,
+        apiKey: config.apiKey || '',
+    });
+
+    _outputEl.value = result.content || t('mods.llm.empty');
+    _statusEl.textContent = `${result.provider}/${result.model}`;
+}
 
 // =================================================================
 //  Private helpers

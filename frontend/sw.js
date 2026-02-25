@@ -1,4 +1,4 @@
-const CACHE_NAME = 'blackboard-v30-2026-02-25'; // Bump: LLM MOD
+const CACHE_NAME = 'blackboard-v31-2026-02-26'; // Bump: LLM MOD v2 client-first
 const ASSETS = [
   '/',
   '/index.html',
@@ -34,6 +34,7 @@ const ASSETS = [
   '/mods/mod-manifest.js',
   '/mods/llm/mod.js',
   '/javascript/services/llm-service.js',
+  '/javascript/services/webllm-service.js',
   '/images/llm-translate.svg',
   '/images/llm-summarize.svg',
   '/images/llm-polish.svg',
