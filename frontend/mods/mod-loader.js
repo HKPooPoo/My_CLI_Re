@@ -135,6 +135,8 @@ function createAllInstanceDOM() {
 
 /**
  * Create a feature button for an instance.
+ * Sets initial visibility based on enabled state AND current page context
+ * so buttons never flash as visible before updateFeatureButtons runs.
  */
 function createInstanceButton(instance, btnContainer, shelfContainer) {
     const template = _templates[instance.templateId];
@@ -150,6 +152,19 @@ function createInstanceButton(instance, btnContainer, shelfContainer) {
     btn.dataset.featureBtn = btnId;
     btn.dataset.instanceId = instance.instanceId;
     // No textContent — icons are rendered via CSS ::after mask-image
+
+    // Set initial visibility: hidden if disabled OR not relevant to current page
+    const enabled = ModState.isEnabled(instance.instanceId);
+    const activePage = document.querySelector('.page.active');
+    const currentPage = activePage?.dataset?.page;
+    const templatePages = template.pages;
+    const pageAllowed = !templatePages
+        || Object.keys(templatePages).length === 0
+        || (currentPage && templatePages[currentPage] !== undefined);
+
+    if (!enabled || !pageAllowed) {
+        btn.style.display = 'none';
+    }
 
     // Insert before the shelf container
     if (!shelfContainer) shelfContainer = document.querySelector('.feature-shelf-container');
@@ -182,6 +197,9 @@ export function rebuildInstanceButtons() {
     for (const inst of instances) {
         createInstanceButton(inst, btnContainer, shelfContainer);
     }
+
+    // Notify feature-shelf to re-evaluate button visibility after DOM rebuild
+    window.dispatchEvent(new CustomEvent('mods:buttonsRebuilt'));
 }
 
 /**

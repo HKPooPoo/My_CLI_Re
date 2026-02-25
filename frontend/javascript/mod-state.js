@@ -461,6 +461,10 @@ export const ModState = {
     },
 
     _persistInstances() {
-        localStorage.setItem(INSTANCES_KEY, JSON.stringify(this._instances));
+        try {
+            localStorage.setItem(INSTANCES_KEY, JSON.stringify(this._instances));
+        } catch (e) {
+            console.error('[mod-state] Failed to persist instances:', e);
+        }
     }
 };

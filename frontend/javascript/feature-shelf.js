@@ -157,6 +157,12 @@ window.addEventListener('mods:reordered', () => {
     if (activePage) updateFeatureButtons(activePage.dataset.page);
 });
 
+// Re-evaluate after buttons are rebuilt (ADD/REORDER recreates DOM)
+window.addEventListener('mods:buttonsRebuilt', () => {
+    const activePage = document.querySelector('.page.active');
+    if (activePage) updateFeatureButtons(activePage.dataset.page);
+});
+
 /**
  * Feature button click dispatch (instance-aware).
  */

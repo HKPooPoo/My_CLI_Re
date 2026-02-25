@@ -1,4 +1,4 @@
-const CACHE_NAME = 'blackboard-v23-2026-02-25'; // Bump: singleton → maxInstances refactor
+const CACHE_NAME = 'blackboard-v24-2026-02-25'; // Bump: fix MOD button visibility + pre-cache MOD files
 const ASSETS = [
   '/',
   '/index.html',
@@ -22,6 +22,14 @@ const ASSETS = [
   '/javascript/walkie-typie-config.js',
   '/javascript/settings.js',
   '/javascript/audio.js',
+  '/javascript/feature-shelf.js',
+  '/javascript/mod-state.js',
+  '/javascript/mod-context.js',
+  '/javascript/mod-hooks.js',
+  '/javascript/mod-tools.js',
+  '/javascript/mods-manager.js',
+  '/mods/mod-loader.js',
+  '/mods/mod-manifest.js',
   '/audio/Cassette.mp3',
   '/audio/Click.mp3',
   '/audio/Erase.mp3',
@@ -88,7 +96,7 @@ self.addEventListener('fetch', (event) => {
   // 對於 HTML，優先使用 Network (確保首屏最新)
   if (event.request.mode === 'navigate') {
     event.respondWith(
-      fetch(event.request).catch(() => {
+      fetch(event.request, { cache: 'no-cache' }).catch(() => {
         return caches.match(event.request);
       })
     );
@@ -97,7 +105,9 @@ self.addEventListener('fetch', (event) => {
 
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
-      const fetchPromise = fetch(event.request).then((networkResponse) => {
+      // [FIX]: Use no-cache to bypass browser HTTP cache during background revalidation
+      // — ensures stale-while-revalidate actually gets fresh files from server
+      const fetchPromise = fetch(event.request, { cache: 'no-cache' }).then((networkResponse) => {
         // [FIX]: 忽略 206 Partial Content (影片/音頻串流)，Cache API 不支援
         if (networkResponse.status === 206) {
           return networkResponse;
