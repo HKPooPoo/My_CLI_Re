@@ -284,7 +284,6 @@
 /* --- LLM MOD shelf --- */
 
 .feature-shelf[data-feature-shelf="llm"] {
-    display: flex;
     flex-direction: column;
     gap: 0;
 }

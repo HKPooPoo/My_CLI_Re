@@ -1,4 +1,4 @@
-const CACHE_NAME = 'blackboard-v32-2026-02-26'; // Bump: LLM MOD v2 bugfix
+const CACHE_NAME = 'blackboard-v33-2026-02-26'; // Fix: LLM shelf CSS specificity
 const ASSETS = [
   '/',
   '/index.html',
