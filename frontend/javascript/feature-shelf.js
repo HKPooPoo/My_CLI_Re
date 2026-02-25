@@ -66,15 +66,6 @@ window.addEventListener('resize', () => {
 });
 
 /**
- * Check if a feature button (by instance) is allowed (instance enabled).
- */
-function isFeatureBtnAllowed($btn) {
-    const instanceId = $btn.dataset.instanceId;
-    if (!instanceId) return true; // Not an instance button
-    return ModState.isEnabled(instanceId);
-}
-
-/**
  * Resolve the shelf panel ID for a given feature button element.
  * Reads the instance ID, looks up template's shelfPanelId.
  */
@@ -120,19 +111,12 @@ function updateFeatureButtons(page) {
             || Object.keys(templatePages).length === 0          // empty pages → show everywhere
             || (page && templatePages[page] !== undefined);     // page listed → show
 
-        const instanceEnabled = ModState.isEnabled(instanceId);
-        $btn.style.display = (templateAllowed && instanceEnabled) ? '' : 'none';
+        $btn.style.display = templateAllowed ? '' : 'none';
     });
 }
 
 window.addEventListener('navi:pageChanged', ({ detail }) => {
     updateFeatureButtons(detail.page);
-});
-
-// Re-evaluate button visibility when instance state changes
-window.addEventListener('mods:changed', () => {
-    const activePage = document.querySelector('.page.active');
-    if (activePage) updateFeatureButtons(activePage.dataset.page);
 });
 
 // Re-evaluate after MODs are loaded and DOM is populated

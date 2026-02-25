@@ -16,6 +16,7 @@ import { MultiStepButton } from "./multiStepButton.js";
 import { BBCore } from "./blackboard-core.js";
 import { AuthService } from "./services/auth-service.js";
 import { SettingsSyncService } from "./services/settings-sync-service.js";
+import { playAudio } from "./audio.js";
 import { t } from './i18n.js';
 
 export const AuthManager = {

@@ -187,8 +187,6 @@ export const MISC = {
         if (this.elements.resetBtn) {
             new MultiStepButton(this.elements.resetBtn, {
                 sound: 'UIGeneralCancel.mp3',
-                confirm: true,
-                confirmLabel: t('common.sure'),
                 action: async () => {
                     Settings.resetAll();
                     BBMessage.info(t('config.resetComplete'));

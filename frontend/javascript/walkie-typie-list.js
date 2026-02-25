@@ -57,82 +57,74 @@ export const WTList = {
             }
         });
 
-        // ADD Button — MultiStepButton: [click -> show SURE? -> click again -> execute]
+        // ADD Button
         if (this.elements.addBtn) {
-            new MultiStepButton(this.elements.addBtn, [
-                { label: t('walkieTypie.addBtn'), sound: "UIGeneralFocus.mp3", action: () => { } },
-                {
-                    label: t('common.sure'),
-                    sound: "UIGeneralOK.mp3",
-                    action: async () => {
-                        const uid = this.elements.uidInput?.value?.trim();
-                        if (!uid) {
-                            BBMessage.error(t('walkieTypie.uidRequired'));
-                            return;
-                        }
+            new MultiStepButton(this.elements.addBtn, {
+                sound: "UIGeneralOK.mp3",
+                action: async () => {
+                    const uid = this.elements.uidInput?.value?.trim();
+                    if (!uid) {
+                        BBMessage.error(t('walkieTypie.uidRequired'));
+                        return;
+                    }
 
-                        try {
-                            BBMessage.info(t('walkieTypie.connecting'));
-                            const result = await WalkieTypieService.createConnection({ uid });
-                            if (result.connection) {
-                                this.handleUpdate(result.connection);
-                                this.elements.uidInput.value = "";
-                                BBMessage.info(t('walkieTypie.connected'));
-                            }
-                        } catch (e) {
-                            console.error("CONNECT ERROR:", e);
-                            BBMessage.error(t('walkieTypie.connectFailed'));
+                    try {
+                        BBMessage.info(t('walkieTypie.connecting'));
+                        const result = await WalkieTypieService.createConnection({ uid });
+                        if (result.connection) {
+                            this.handleUpdate(result.connection);
+                            this.elements.uidInput.value = "";
+                            BBMessage.info(t('walkieTypie.connected'));
                         }
+                    } catch (e) {
+                        console.error("CONNECT ERROR:", e);
+                        BBMessage.error(t('walkieTypie.connectFailed'));
                     }
                 }
-            ]);
+            });
         }
 
-        // CUT Button — MultiStepButton: delete selected connection
+        // CUT Button — delete selected connection
         if (this.elements.cutBtn) {
-            new MultiStepButton(this.elements.cutBtn, [
-                { label: t('walkieTypie.cutStep1'), sound: "UIGeneralFocus.mp3", action: () => { } },
-                {
-                    label: t('common.sure'),
-                    sound: "UIGeneralCancel.mp3",
-                    action: async () => {
-                        if (!this.selectedConnection) {
-                            BBMessage.error(t('walkieTypie.noTarget'));
-                            return;
-                        }
+            new MultiStepButton(this.elements.cutBtn, {
+                sound: "UIGeneralCancel.mp3",
+                action: async () => {
+                    if (!this.selectedConnection) {
+                        BBMessage.error(t('walkieTypie.noTarget'));
+                        return;
+                    }
 
-                        const partnerUid = this.selectedConnection.partner_uid;
-                        const myBranchId = this.selectedConnection.my_branch_id;
-                        const partnerBranchId = this.selectedConnection.partner_branch_id;
+                    const partnerUid = this.selectedConnection.partner_uid;
+                    const myBranchId = this.selectedConnection.my_branch_id;
+                    const partnerBranchId = this.selectedConnection.partner_branch_id;
 
-                        try {
-                            BBMessage.info(t('walkieTypie.cutting'));
+                    try {
+                        BBMessage.info(t('walkieTypie.cutting'));
 
-                            await WalkieTypieService.deleteConnection(partnerUid);
+                        await WalkieTypieService.deleteConnection(partnerUid);
 
-                            // Wipe local IndexedDB
-                            await WTDb.deleteBranchRecords(myBranchId);
-                            await WTDb.deleteBranchRecords(partnerBranchId);
+                        // Wipe local IndexedDB
+                        await WTDb.deleteBranchRecords(myBranchId);
+                        await WTDb.deleteBranchRecords(partnerBranchId);
 
-                            // Remove from array
-                            const index = this.connections.findIndex(c => c.partner_uid === partnerUid);
-                            if (index !== -1) this.connections.splice(index, 1);
+                        // Remove from array
+                        const index = this.connections.findIndex(c => c.partner_uid === partnerUid);
+                        if (index !== -1) this.connections.splice(index, 1);
 
-                            // Dispatch disconnection event
-                            window.dispatchEvent(new CustomEvent("walkie-typie:disconnected", {
-                                detail: { partnerUid }
-                            }));
+                        // Dispatch disconnection event
+                        window.dispatchEvent(new CustomEvent("walkie-typie:disconnected", {
+                            detail: { partnerUid }
+                        }));
 
-                            this.selectedConnection = null;
-                            this.render();
-                            BBMessage.success(t('walkieTypie.cutComplete'));
-                        } catch (e) {
-                            console.error("CUT ERROR:", e);
-                            BBMessage.error(t('walkieTypie.cutFailed'));
-                        }
+                        this.selectedConnection = null;
+                        this.render();
+                        BBMessage.success(t('walkieTypie.cutComplete'));
+                    } catch (e) {
+                        console.error("CUT ERROR:", e);
+                        BBMessage.error(t('walkieTypie.cutFailed'));
                     }
                 }
-            ]);
+            });
         }
 
         // Listen for real-time connection updates (from WebSocket)

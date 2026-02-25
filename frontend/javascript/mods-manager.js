@@ -19,7 +19,6 @@ import { t } from './i18n.js';
 let infiniteList = null;
 let selectionTimer = null;
 let selectedInstanceId = null;
-let deleteMultiStep = null;
 let _selectAbort = null;  // AbortController for custom select close-handlers
 
 const elements = {
@@ -130,7 +129,6 @@ function renderActiveInstances(container) {
         const template = getTemplate(inst.templateId);
         if (!template) continue;
 
-        const enabled = ModState.isEnabled(inst.instanceId);
         const serverStatus = ModState.getServerStatus(inst.instanceId);
 
         const item = document.createElement('div');
@@ -163,13 +161,7 @@ function renderActiveInstances(container) {
         info.appendChild(nameEl);
         info.appendChild(meta);
 
-        const toggleBtn = document.createElement('button');
-        toggleBtn.className = `mods-toggle-btn ${enabled ? 'enabled' : 'disabled'}`;
-        toggleBtn.textContent = enabled ? t('mods.enabled') : t('mods.disabled');
-        toggleBtn.dataset.instanceId = inst.instanceId;
-
         item.appendChild(info);
-        item.appendChild(toggleBtn);
         container.appendChild(item);
     }
 }
@@ -237,41 +229,37 @@ function renderInstanceActions(instanceId) {
     container.appendChild(upBtn);
     container.appendChild(downBtn);
 
-    // DELETE (hidden when maxInstances === 1)
-    if (template?.maxInstances !== 1) {
-        const deleteBtn = document.createElement('button');
-        deleteBtn.className = 'mods-action-btn mods-action-delete crt-text-red';
-        deleteBtn.textContent = t('mods.deleteInstance');
+    // DELETE
+    const deleteBtn = document.createElement('button');
+    deleteBtn.className = 'mods-action-btn mods-action-delete crt-text-red';
+    deleteBtn.textContent = t('mods.deleteInstance');
 
-        deleteMultiStep = new MultiStepButton(deleteBtn, {
-            confirm: true,
-            confirmLabel: t('mods.deleteConfirm'),
-            action: () => {
-                playAudio('UIGeneralCancel.mp3');
-                removeInstanceButton(instanceId);
-                ModState.removeInstance(instanceId);
-                renderListPage();
+    new MultiStepButton(deleteBtn, {
+        sound: 'UIGeneralCancel.mp3',
+        action: () => {
+            removeInstanceButton(instanceId);
+            ModState.removeInstance(instanceId);
+            renderListPage();
 
-                // Select another instance or clear
-                const remaining = ModState.getInstances();
-                if (remaining.length > 0) {
-                    selectedInstanceId = remaining[0].instanceId;
-                    renderConfig(selectedInstanceId);
-                    renderInstanceActions(selectedInstanceId);
-                } else {
-                    selectedInstanceId = null;
-                    renderInstanceActions(null);
-                    if (elements.configDefault) elements.configDefault.style.display = '';
-                    if (elements.configTitle) elements.configTitle.textContent = '\u2014';
-                    if (elements.configDescription) elements.configDescription.textContent = '';
-                    if (elements.configFields) elements.configFields.innerHTML = '';
-                    if (elements.configStatus) elements.configStatus.style.display = 'none';
-                }
+            // Select another instance or clear
+            const remaining = ModState.getInstances();
+            if (remaining.length > 0) {
+                selectedInstanceId = remaining[0].instanceId;
+                renderConfig(selectedInstanceId);
+                renderInstanceActions(selectedInstanceId);
+            } else {
+                selectedInstanceId = null;
+                renderInstanceActions(null);
+                if (elements.configDefault) elements.configDefault.style.display = '';
+                if (elements.configTitle) elements.configTitle.textContent = '\u2014';
+                if (elements.configDescription) elements.configDescription.textContent = '';
+                if (elements.configFields) elements.configFields.innerHTML = '';
+                if (elements.configStatus) elements.configStatus.style.display = 'none';
             }
-        });
+        }
+    });
 
-        container.appendChild(deleteBtn);
-    }
+    container.appendChild(deleteBtn);
 }
 
 // --- Update server status indicators ---
@@ -562,39 +550,6 @@ function evaluateShowWhen(instanceId, field) {
 // ===================== Events =====================
 
 function bindEvents() {
-    // Toggle button delegation on list
-    elements.listContainer?.addEventListener('click', (e) => {
-        const toggleBtn = e.target.closest('.mods-toggle-btn');
-        if (!toggleBtn) return;
-
-        e.stopPropagation();
-
-        const instanceId = toggleBtn.dataset.instanceId;
-        const inst = ModState.getInstance(instanceId);
-        if (!inst) return;
-
-        const template = getTemplate(inst.templateId);
-        const currentlyEnabled = ModState.isEnabled(instanceId);
-
-        if (!currentlyEnabled && template) {
-            const hasServer = template.providers?.some(p => p.type === 'server');
-            if (hasServer) {
-                const status = ModState.getServerStatus(instanceId);
-                if (status === 'offline') {
-                    BBMessage.error(t('mods.serverOfflineWarning'));
-                }
-            }
-        }
-
-        const newState = !currentlyEnabled;
-        ModState.setEnabled(instanceId, newState);
-
-        playAudio(newState ? 'UISelectOn.mp3' : 'UISelectOff.mp3');
-
-        toggleBtn.className = `mods-toggle-btn ${newState ? 'enabled' : 'disabled'}`;
-        toggleBtn.textContent = newState ? t('mods.enabled') : t('mods.disabled');
-    });
-
     // InfiniteList selection → debounce → show config + update actions
     window.addEventListener('list:selectionChanged', ({ detail }) => {
         if (!elements.listContainer?.contains(detail.item)) return;

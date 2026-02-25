@@ -123,12 +123,11 @@ export function createModContext(opts) {
                 ModState.setConfig(instanceId, key, val);
             },
             isEnabled() {
-                if (!instanceId) return false;
-                return ModState.isEnabled(instanceId);
+                // Instance existence = enabled (ADD/DELETE model)
+                return !!instanceId && !!ModState.getInstance(instanceId);
             },
-            setEnabled(bool) {
-                if (!instanceId) return;
-                ModState.setEnabled(instanceId, bool);
+            setEnabled(_bool) {
+                // No-op: ADD/DELETE model — use addInstance/removeInstance instead
             },
             getServerStatus() {
                 if (!instanceId) return 'unknown';

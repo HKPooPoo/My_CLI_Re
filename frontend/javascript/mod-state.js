@@ -1,12 +1,11 @@
 /**
- * MOD State Manager - Instance-Based Architecture
+ * MOD State Manager - Instance-Based Architecture (ADD/DELETE model)
  * =================================================================
  * Manages instances (1 instance = 1 feature button), templates,
- * enabled/disabled state, server health, and per-instance config.
+ * server health, and per-instance config.
+ * Instance existence = enabled. No separate ON/OFF toggle.
  * Persists instances to localStorage as a single ordered array.
- *
- * Templates are registered by the loader; instances are created
- * from templates with independent config, enabled state, and order.
+ * Dismissed templates tracked to prevent auto-recreation on boot.
  * =================================================================
  */
 
@@ -15,6 +14,7 @@ import { ModHooks } from './mod-hooks.js';
 
 const INSTANCES_KEY = 'mod-instances';
 const SHARED_CONFIGS_KEY = 'mod-shared-configs';
+const DISMISSED_KEY = 'mod-dismissed';
 
 // Legacy keys for migration
 const LEGACY_STATES_KEY = 'mod-states';
@@ -33,6 +33,7 @@ export const ModState = {
     _instances: [],       // ordered array of instance objects
     _sharedConfigs: {},   // shared config (e.g. LLM group)
     _serverStatuses: {},  // instanceId → 'online'|'offline'|'unknown'
+    _dismissed: new Set(), // templateIds user explicitly removed (skip ensureDefault)
 
     init() {
         try {
@@ -44,6 +45,12 @@ export const ModState = {
             this._sharedConfigs = JSON.parse(localStorage.getItem(SHARED_CONFIGS_KEY) || '{}');
         } catch {
             this._sharedConfigs = {};
+        }
+        try {
+            const arr = JSON.parse(localStorage.getItem(DISMISSED_KEY) || '[]');
+            this._dismissed = new Set(arr);
+        } catch {
+            this._dismissed = new Set();
         }
 
         // Initialise server statuses from instances
@@ -108,6 +115,10 @@ export const ModState = {
             return null;
         }
 
+        // Un-dismiss this template (user explicitly adding it back)
+        this._dismissed.delete(templateId);
+        this._persistDismissed();
+
         // Compute default config from schema
         const defaultConfig = {};
         for (const field of (template.configSchema || [])) {
@@ -147,15 +158,19 @@ export const ModState = {
 
         const instance = this._instances[idx];
 
-        // Don't allow removing if at minimum (maxInstances: 1 → undeletable)
-        const template = this._templates[instance.templateId];
-        if (template?.maxInstances === 1) return;
-
         // Cleanup hooks owned by this instance
         ModHooks.unregisterAll(instanceId);
 
         this._instances.splice(idx, 1);
         delete this._serverStatuses[instanceId];
+
+        // If no instances remain for this template, mark it dismissed
+        // so ensureDefaultInstances won't recreate it on next boot
+        if (this.getInstancesByTemplate(instance.templateId).length === 0) {
+            this._dismissed.add(instance.templateId);
+            this._persistDismissed();
+        }
+
         this._persistInstances();
         window.dispatchEvent(new CustomEvent('mods:instanceRemoved', { detail: { instanceId, templateId: instance.templateId } }));
     },
@@ -168,6 +183,9 @@ export const ModState = {
         const template = this._templates[templateId];
         if (!template) return;
 
+        // Skip if user previously dismissed all instances of this template
+        if (this._dismissed.has(templateId)) return;
+
         const existing = this.getInstancesByTemplate(templateId);
         if (existing.length > 0) return;
 
@@ -178,21 +196,6 @@ export const ModState = {
     },
 
     // ===================== Instance State =====================
-
-    isEnabled(instanceId) {
-        const inst = this.getInstance(instanceId);
-        return inst?.enabled ?? false;
-    },
-
-    setEnabled(instanceId, enabled) {
-        const inst = this.getInstance(instanceId);
-        if (!inst) return;
-        inst.enabled = enabled;
-        this._persistInstances();
-        window.dispatchEvent(new CustomEvent('mods:changed', {
-            detail: { instanceId, templateId: inst.templateId, enabled }
-        }));
-    },
 
     getConfig(instanceId, key) {
         const inst = this.getInstance(instanceId);
@@ -465,6 +468,14 @@ export const ModState = {
             localStorage.setItem(INSTANCES_KEY, JSON.stringify(this._instances));
         } catch (e) {
             console.error('[mod-state] Failed to persist instances:', e);
+        }
+    },
+
+    _persistDismissed() {
+        try {
+            localStorage.setItem(DISMISSED_KEY, JSON.stringify([...this._dismissed]));
+        } catch (e) {
+            console.error('[mod-state] Failed to persist dismissed:', e);
         }
     }
 };

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'blackboard-v24-2026-02-25'; // Bump: fix MOD button visibility + pre-cache MOD files
+const CACHE_NAME = 'blackboard-v25-2026-02-25'; // Bump: remove ON/OFF toggle, ADD/DELETE model
 const ASSETS = [
   '/',
   '/index.html',

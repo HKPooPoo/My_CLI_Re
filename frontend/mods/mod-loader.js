@@ -153,8 +153,7 @@ function createInstanceButton(instance, btnContainer, shelfContainer) {
     btn.dataset.instanceId = instance.instanceId;
     // No textContent — icons are rendered via CSS ::after mask-image
 
-    // Set initial visibility: hidden if disabled OR not relevant to current page
-    const enabled = ModState.isEnabled(instance.instanceId);
+    // Set initial visibility: hidden if not relevant to current page
     const activePage = document.querySelector('.page.active');
     const currentPage = activePage?.dataset?.page;
     const templatePages = template.pages;
@@ -162,7 +161,7 @@ function createInstanceButton(instance, btnContainer, shelfContainer) {
         || Object.keys(templatePages).length === 0
         || (currentPage && templatePages[currentPage] !== undefined);
 
-    if (!enabled || !pageAllowed) {
+    if (!pageAllowed) {
         btn.style.display = 'none';
     }
 

@@ -179,137 +179,125 @@ export const BCList = {
 
         // --- CAST ---
         if (this.elements.castBtn) {
-            new MultiStepButton(this.elements.castBtn, [
-                { label: t('broadcast.castStep1'), sound: 'UIGeneralFocus.mp3', action: () => { } },
-                {
-                    label: t('common.sure'),
-                    sound: 'UIPipboyOK.mp3',
-                    action: async () => {
-                        if (!this.hasTitle()) return BBMessage.error(t('broadcast.titleRequired'));
-                        if (!this.selectedChannel) return BBMessage.error(t('broadcast.noTarget'));
-                        if (!this.isOwnerOf(this.selectedChannel)) return BBMessage.error(t('broadcast.notOwner'));
+            new MultiStepButton(this.elements.castBtn, {
+                sound: 'UIPipboyOK.mp3',
+                action: async () => {
+                    if (!this.hasTitle()) return BBMessage.error(t('broadcast.titleRequired'));
+                    if (!this.selectedChannel) return BBMessage.error(t('broadcast.noTarget'));
+                    if (!this.isOwnerOf(this.selectedChannel)) return BBMessage.error(t('broadcast.notOwner'));
 
-                        const ch = this.selectedChannel;
-                        const msg = BBMessage.info(t('broadcast.casting'));
+                    const ch = this.selectedChannel;
+                    const msg = BBMessage.info(t('broadcast.casting'));
 
-                        try {
-                            // Gather local board records
-                            const localRecords = await BCDb.getAllRecords(ch.localId);
-                            const apiRecords = localRecords
-                                .filter(r => (r.text && r.text.trim()) || r.file_hash)
-                                .map(r => ({
-                                    timestamp: r.timestamp,
-                                    text: r.text || '',
-                                    file_hash: (r.file_hash && typeof r.file_hash === 'object') ? r.file_hash.hash : r.file_hash
-                                }));
+                    try {
+                        // Gather local board records
+                        const localRecords = await BCDb.getAllRecords(ch.localId);
+                        const apiRecords = localRecords
+                            .filter(r => (r.text && r.text.trim()) || r.file_hash)
+                            .map(r => ({
+                                timestamp: r.timestamp,
+                                text: r.text || '',
+                                file_hash: (r.file_hash && typeof r.file_hash === 'object') ? r.file_hash.hash : r.file_hash
+                            }));
 
-                            const result = await BroadcastService.cast({
-                                channel_name: ch.name,
-                                records: apiRecords
-                            });
+                        const result = await BroadcastService.cast({
+                            channel_name: ch.name,
+                            records: apiRecords
+                        });
 
-                            const serverCh = result.channel;
+                        const serverCh = result.channel;
 
-                            // Store server ID mapping locally
-                            await BCMeta.setServerChannelId(ch.localId, serverCh.id);
-                            await BCMeta.updateLastSignal(ch.localId, serverCh.last_signal);
+                        // Store server ID mapping locally
+                        await BCMeta.setServerChannelId(ch.localId, serverCh.id);
+                        await BCMeta.updateLastSignal(ch.localId, serverCh.last_signal);
 
-                            ch.serverChannelId = serverCh.id;
-                            ch.lastSignal = serverCh.last_signal;
+                        ch.serverChannelId = serverCh.id;
+                        ch.lastSignal = serverCh.last_signal;
 
-                            msg.update(t('broadcast.castComplete'));
-                            await this.fetchAndRender();
-                        } catch (e) {
-                            console.error('CAST ERROR:', e);
-                            msg.close();
-                            BBMessage.error(t('broadcast.castFailed'));
-                        }
+                        msg.update(t('broadcast.castComplete'));
+                        await this.fetchAndRender();
+                    } catch (e) {
+                        console.error('CAST ERROR:', e);
+                        msg.close();
+                        BBMessage.error(t('broadcast.castFailed'));
                     }
                 }
-            ]);
+            });
         }
 
         // --- CREATE --- (regardless of selected item)
         if (this.elements.createBtn) {
-            new MultiStepButton(this.elements.createBtn, [
-                { label: t('broadcast.createStep1'), sound: 'UIGeneralFocus.mp3', action: () => { } },
-                {
-                    label: t('common.sure'),
-                    sound: 'UIPipboyOKPress.mp3',
-                    action: async () => {
-                        if (!this.hasTitle()) return BBMessage.error(t('broadcast.titleRequired'));
+            new MultiStepButton(this.elements.createBtn, {
+                sound: 'UIPipboyOKPress.mp3',
+                action: async () => {
+                    if (!this.hasTitle()) return BBMessage.error(t('broadcast.titleRequired'));
 
-                        const autoName = `BC_${Date.now()}`;
-                        const msg = BBMessage.info(t('broadcast.creating'));
+                    const autoName = `BC_${Date.now()}`;
+                    const msg = BBMessage.info(t('broadcast.creating'));
 
-                        let localId;
-                        try {
-                            localId = await BCMeta.createChannel(autoName);
-                            // Create initial empty board record
-                            await BCDb.addRecord(localId, '');
+                    let localId;
+                    try {
+                        localId = await BCMeta.createChannel(autoName);
+                        // Create initial empty board record
+                        await BCDb.addRecord(localId, '');
 
-                            msg.update(t('broadcast.createComplete'));
-                            await this.fetchAndRender();
+                        msg.update(t('broadcast.createComplete'));
+                        await this.fetchAndRender();
 
-                            // Auto-select the new channel (it will be at top after sort)
-                            const newCh = this.channels.find(c => c.localId === localId);
-                            if (newCh) {
-                                this.selectedChannel = newCh;
-                                this.updateNaviText(newCh.name);
-                                window.dispatchEvent(new CustomEvent('broadcast:selected', { detail: newCh }));
-                            }
-                        } catch (e) {
-                            console.error('CREATE ERROR:', e);
-                            // If createChannel succeeded but addRecord failed, clean up the
-                            // orphaned channel entry so it doesn't linger in the list.
-                            if (localId != null) {
-                                await BCMeta.deleteChannel(localId).catch(() => {});
-                            }
-                            msg.close();
-                            BBMessage.error(t('broadcast.createFailed'));
+                        // Auto-select the new channel (it will be at top after sort)
+                        const newCh = this.channels.find(c => c.localId === localId);
+                        if (newCh) {
+                            this.selectedChannel = newCh;
+                            this.updateNaviText(newCh.name);
+                            window.dispatchEvent(new CustomEvent('broadcast:selected', { detail: newCh }));
                         }
+                    } catch (e) {
+                        console.error('CREATE ERROR:', e);
+                        // If createChannel succeeded but addRecord failed, clean up the
+                        // orphaned channel entry so it doesn't linger in the list.
+                        if (localId != null) {
+                            await BCMeta.deleteChannel(localId).catch(() => {});
+                        }
+                        msg.close();
+                        BBMessage.error(t('broadcast.createFailed'));
                     }
                 }
-            ]);
+            });
         }
 
         // --- DELETE ---
         if (this.elements.deleteBtn) {
-            new MultiStepButton(this.elements.deleteBtn, [
-                { label: t('broadcast.deleteStep1'), sound: 'UIGeneralFocus.mp3', action: () => { } },
-                {
-                    label: t('common.sure'),
-                    sound: 'UIGeneralCancel.mp3',
-                    action: async () => {
-                        if (!this.hasTitle()) return BBMessage.error(t('broadcast.titleRequired'));
-                        if (!this.selectedChannel) return BBMessage.error(t('broadcast.noTarget'));
-                        if (!this.isOwnerOf(this.selectedChannel)) return BBMessage.error(t('broadcast.notOwner'));
+            new MultiStepButton(this.elements.deleteBtn, {
+                sound: 'UIGeneralCancel.mp3',
+                action: async () => {
+                    if (!this.hasTitle()) return BBMessage.error(t('broadcast.titleRequired'));
+                    if (!this.selectedChannel) return BBMessage.error(t('broadcast.noTarget'));
+                    if (!this.isOwnerOf(this.selectedChannel)) return BBMessage.error(t('broadcast.notOwner'));
 
-                        const ch = this.selectedChannel;
-                        const msg = BBMessage.info(t('broadcast.deleting'));
+                    const ch = this.selectedChannel;
+                    const msg = BBMessage.info(t('broadcast.deleting'));
 
-                        try {
-                            // Delete from server if cast
-                            if (ch.serverChannelId) {
-                                await BroadcastService.destroy(ch.serverChannelId);
-                            }
-                            // Delete local data
-                            await BCMeta.deleteChannel(ch.localId);
-
-                            this.selectedChannel = null;
-                            this.updateNaviText('');
-
-                            msg.update(t('broadcast.deleteComplete'));
-                            window.dispatchEvent(new CustomEvent('broadcast:cleared'));
-                            await this.fetchAndRender();
-                        } catch (e) {
-                            console.error('DELETE ERROR:', e);
-                            msg.close();
-                            BBMessage.error(t('broadcast.deleteFailed'));
+                    try {
+                        // Delete from server if cast
+                        if (ch.serverChannelId) {
+                            await BroadcastService.destroy(ch.serverChannelId);
                         }
+                        // Delete local data
+                        await BCMeta.deleteChannel(ch.localId);
+
+                        this.selectedChannel = null;
+                        this.updateNaviText('');
+
+                        msg.update(t('broadcast.deleteComplete'));
+                        window.dispatchEvent(new CustomEvent('broadcast:cleared'));
+                        await this.fetchAndRender();
+                    } catch (e) {
+                        console.error('DELETE ERROR:', e);
+                        msg.close();
+                        BBMessage.error(t('broadcast.deleteFailed'));
                     }
                 }
-            ]);
+            });
         }
     },
 

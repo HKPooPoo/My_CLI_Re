@@ -9,7 +9,6 @@
  * =================================================================
  */
 
-import { ModState } from '../../javascript/mod-state.js';
 import { t } from '../../javascript/i18n.js';
 
 let _debounceTimer = null;
@@ -72,8 +71,8 @@ export default {
             this._bindTextarea();
         });
 
-        ctx.events.on('mods:changed', (e) => {
-            if (e.detail?.templateId === 'markdown-preview' && !e.detail.enabled && _outputEl) {
+        ctx.events.on('mods:instanceRemoved', (e) => {
+            if (e.detail?.templateId === 'markdown-preview' && _outputEl) {
                 _outputEl.innerHTML = '';
             }
         });
@@ -81,11 +80,6 @@ export default {
 
     async activate(ctx) {
         _currentInstanceId = ctx.instanceId || null;
-
-        if (_currentInstanceId && !ctx.instance.isEnabled()) {
-            if (_outputEl) _outputEl.innerHTML = `<div class="md-empty">${ctx.i18n.t('mods.markdownPreview.disabled')}</div>`;
-            return;
-        }
         this._bindTextarea();
         const textarea = this._getActiveTextarea();
         if (textarea) this._renderMarkdown(textarea.value);
@@ -126,20 +120,13 @@ export default {
 
         if (_activeTextarea) {
             _activeTextarea.addEventListener('input', this._onTextareaInput);
-            const mdInstances = ModState.getInstancesByTemplate('markdown-preview');
-            const anyEnabled = mdInstances.some(i => ModState.isEnabled(i.instanceId));
-            if (anyEnabled) {
-                this._renderMarkdown(_activeTextarea.value);
-            }
+            this._renderMarkdown(_activeTextarea.value);
         }
     },
 
     _onTextareaInput: function() {
         clearTimeout(_debounceTimer);
         _debounceTimer = setTimeout(() => {
-            const mdInstances = ModState.getInstancesByTemplate('markdown-preview');
-            const anyEnabled = mdInstances.some(i => ModState.isEnabled(i.instanceId));
-            if (!anyEnabled) return;
             const textarea = _activeTextarea;
             if (textarea && _outputEl) {
                 _renderMarkdownImpl(textarea.value);
