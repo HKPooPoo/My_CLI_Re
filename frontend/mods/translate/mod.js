@@ -55,7 +55,7 @@ export default {
     providers: [
         { id: 'google', type: 'cloud', nameKey: 'mods.translate.provider.google' },
         { id: 'libretranslate', type: 'server', nameKey: 'mods.translate.provider.libre',
-          healthEndpoint: '/api/mods/offline-translate/health' },
+          healthEndpoint: '/mods/offline-translate/health' },
     ],
     configSchema: [
         {

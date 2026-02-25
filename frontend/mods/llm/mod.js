@@ -71,9 +71,9 @@ export default {
     },
 
     defaultInstances: [
-        { config: { task: 'translate', targetLang: 'zh-TW', provider: 'ollama', model: 'qwen2.5:7b' } },
-        { config: { task: 'summarize', provider: 'ollama', model: 'qwen2.5:7b' } },
-        { config: { task: 'polish', provider: 'ollama', model: 'qwen2.5:7b' } },
+        { config: { task: 'translate', targetLang: 'zh-TW', provider: 'ollama', model: 'qwen3-vl:2b' } },
+        { config: { task: 'summarize', provider: 'ollama', model: 'qwen3-vl:2b' } },
+        { config: { task: 'polish', provider: 'ollama', model: 'qwen3-vl:2b' } },
     ],
 
     shelfPanelId: 'llm',
@@ -86,7 +86,7 @@ export default {
 
     providers: [
         { id: 'ollama', type: 'server', nameKey: 'mods.llm.provider.ollama',
-          healthEndpoint: '/api/mods/llm/ollama/health' },
+          healthEndpoint: '/mods/llm/ollama/health' },
         { id: 'openai', type: 'cloud', nameKey: 'mods.llm.provider.openai' },
         { id: 'anthropic', type: 'cloud', nameKey: 'mods.llm.provider.anthropic' },
     ],
@@ -124,7 +124,7 @@ export default {
             ],
             default: 'ollama',
         },
-        { key: 'model', type: 'text', labelKey: 'mods.llm.config.model', default: 'qwen2.5:7b' },
+        { key: 'model', type: 'text', labelKey: 'mods.llm.config.model', default: 'qwen3-vl:2b' },
         { key: 'apiKey', type: 'text', labelKey: 'mods.llm.config.apiKey', default: '' },
         {
             key: 'temperature', type: 'range', labelKey: 'mods.llm.config.temperature',
@@ -158,7 +158,7 @@ export default {
                 const cfg = inst?.config || {};
                 const result = await LlmService.chat({
                     provider: args.provider || cfg.provider || 'ollama',
-                    model: args.model || cfg.model || 'qwen2.5:7b',
+                    model: args.model || cfg.model || 'qwen3-vl:2b',
                     messages: args.messages,
                     temperature: args.temperature ?? cfg.temperature ?? 0.3,
                     apiKey: args.apiKey || cfg.apiKey || '',
@@ -252,7 +252,7 @@ export default {
 
             const result = await LlmService.chat({
                 provider: ctx.config.provider || 'ollama',
-                model: ctx.config.model || 'qwen2.5:7b',
+                model: ctx.config.model || 'qwen3-vl:2b',
                 messages,
                 temperature: parseFloat(ctx.config.temperature) || 0.3,
                 apiKey: ctx.config.apiKey || '',

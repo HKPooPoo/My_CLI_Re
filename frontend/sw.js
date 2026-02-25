@@ -65,12 +65,14 @@ self.addEventListener('install', (event) => {
   );
 });
 
-// 激活：清理舊快取
+// 激活：清理舊快取（保留第三方快取如 Transformers.js 模型）
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) => {
       return Promise.all(
-        keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key))
+        keys
+          .filter((key) => key !== CACHE_NAME && key.startsWith('blackboard-'))
+          .map((key) => caches.delete(key))
       );
     }).then(() => self.clients.claim()) // 立即接管頁面
   );

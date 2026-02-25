@@ -65,7 +65,7 @@ export const MOD_REGISTRY = {
         type: MOD_TYPES.SERVER,
         featureButtons: ['translate-zh-TW'],
         provider: 'libretranslate',
-        healthEndpoint: '/api/mods/offline-translate/health',
+        healthEndpoint: '/mods/offline-translate/health',
         config: [],
         defaultEnabled: false
     },
@@ -77,7 +77,7 @@ export const MOD_REGISTRY = {
         type: MOD_TYPES.SERVER,
         featureButtons: ['translate-zh-CN'],
         provider: 'libretranslate',
-        healthEndpoint: '/api/mods/offline-translate/health',
+        healthEndpoint: '/mods/offline-translate/health',
         config: [],
         defaultEnabled: false
     },
@@ -89,7 +89,7 @@ export const MOD_REGISTRY = {
         type: MOD_TYPES.SERVER,
         featureButtons: ['translate-en'],
         provider: 'libretranslate',
-        healthEndpoint: '/api/mods/offline-translate/health',
+        healthEndpoint: '/mods/offline-translate/health',
         config: [],
         defaultEnabled: false
     },
@@ -101,7 +101,7 @@ export const MOD_REGISTRY = {
         type: MOD_TYPES.SERVER,
         featureButtons: ['translate-ja'],
         provider: 'libretranslate',
-        healthEndpoint: '/api/mods/offline-translate/health',
+        healthEndpoint: '/mods/offline-translate/health',
         config: [],
         defaultEnabled: false
     },
