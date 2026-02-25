@@ -36,14 +36,17 @@ const elements = {
 // --- Initialise ---
 function init() {
     bindEvents();
-    renderListPage();
 
-    // Select first instance
-    const firstItem = elements.listContainer?.querySelector('.mods-list-item[data-instance-id]');
-    if (firstItem?.dataset?.instanceId) {
-        selectedInstanceId = firstItem.dataset.instanceId;
+    // Select first instance and pass to renderListPage so InfiniteList
+    // finds the .active class without dispatching a redundant event.
+    const instances = ModState.getInstances();
+    if (instances.length > 0) {
+        selectedInstanceId = instances[0].instanceId;
+        renderListPage(selectedInstanceId);
         renderConfig(selectedInstanceId);
         renderInstanceActions(selectedInstanceId);
+    } else {
+        renderListPage();
     }
 
     ModState.refreshAllServerStatuses().then(() => {
@@ -234,13 +237,18 @@ function renderInstanceActions(instanceId) {
     container.appendChild(upBtn);
     container.appendChild(downBtn);
 
-    // DELETE
+    // DELETE — hidden when maxInstances === 1 (undeletable singleton)
+    const maxInst = template?.maxInstances || 0;
+    if (maxInst === 1) return;
+
     const deleteBtn = document.createElement('button');
     deleteBtn.className = 'mods-action-btn mods-action-delete crt-text-red';
     deleteBtn.textContent = t('mods.deleteInstance');
 
     new MultiStepButton(deleteBtn, {
         sound: 'UIGeneralCancel.mp3',
+        confirm: true,
+        confirmLabel: t('mods.deleteConfirm'),
         action: () => {
             removeInstanceButton(instanceId);
             ModState.removeInstance(instanceId);
@@ -556,15 +564,18 @@ function evaluateShowWhen(instanceId, field) {
 // ===================== Events =====================
 
 function bindEvents() {
-    // InfiniteList selection → debounce → show config + update actions
+    // InfiniteList selection → set ID immediately, debounce rendering
     window.addEventListener('list:selectionChanged', ({ detail }) => {
         if (!elements.listContainer?.contains(detail.item)) return;
 
+        // Set selectedInstanceId immediately so navi:pageChanged → renderConfig
+        // always uses the latest selection (no stale ID during debounce window).
+        const instanceId = detail.item?.dataset?.instanceId;
+        if (instanceId) selectedInstanceId = instanceId;
+
         clearTimeout(selectionTimer);
         selectionTimer = setTimeout(() => {
-            const instanceId = detail.item?.dataset?.instanceId;
             if (instanceId) {
-                selectedInstanceId = instanceId;
                 renderInstanceActions(instanceId);
                 window.dispatchEvent(new CustomEvent('mods:selected', { detail: { instanceId } }));
             }
@@ -600,10 +611,6 @@ function bindEvents() {
             updateInstanceButton(detail.instanceId);
         }
 
-        if (detail.key === 'provider') {
-            renderListPage(selectedInstanceId);
-        }
-
         if (detail.instanceId === selectedInstanceId) {
             renderConfigFields(selectedInstanceId);
             renderConfigStatus(selectedInstanceId);
@@ -616,11 +623,11 @@ function bindEvents() {
                     ? template.getInstanceName(inst.config, t)
                     : t(template.nameKey);
             }
-
-            // Also update list page name display
-            renderListPage(selectedInstanceId);
-            renderInstanceActions(selectedInstanceId);
         }
+
+        // Re-render list once (covers provider change + name display update)
+        renderListPage(selectedInstanceId);
+        renderInstanceActions(selectedInstanceId);
     });
 
     // Refresh button on config page

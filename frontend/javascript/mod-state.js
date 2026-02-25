@@ -20,6 +20,9 @@ const DISMISSED_KEY = 'mod-dismissed';
 const LEGACY_STATES_KEY = 'mod-states';
 const LEGACY_CONFIGS_KEY = 'mod-configs';
 
+// Monotonic counter to prevent instanceId collision when Date.now() repeats
+let _idSeq = 0;
+
 // Old v1 MOD IDs that should be migrated
 const V1_TRANSLATE_IDS = [
     'translate-zh-TW-online', 'translate-zh-TW-offline',
@@ -156,7 +159,7 @@ export const ModState = {
         const maxOrder = this._instances.reduce((max, i) => Math.max(max, i.order), -1);
 
         const instance = {
-            instanceId: 'i_' + templateId + '_' + Date.now(),
+            instanceId: 'i_' + templateId + '_' + Date.now() + '_' + (_idSeq++),
             templateId,
             order: maxOrder + 1,
             config: { ...defaultConfig, ...(config || {}) }

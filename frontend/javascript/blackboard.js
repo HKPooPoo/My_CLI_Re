@@ -508,8 +508,10 @@ if (dropBtnEl) {
     });
 }
 
-// 監聽選取變更與列表刷新
-window.addEventListener("list:selectionChanged", () => {
+// 監聽選取變更與列表刷新 (guard: only react to VCS list, not mods/broadcast lists)
+const $vcsListContainer = document.querySelector('.vcs-list-container');
+window.addEventListener("list:selectionChanged", ({ detail }) => {
+    if (!$vcsListContainer?.contains(detail.item)) return;
     // 防抖：避免快速滾動時頻繁查詢 DB
     if (dropButtonTimer) clearTimeout(dropButtonTimer);
     dropButtonTimer = setTimeout(updateDropButtonState, 100);

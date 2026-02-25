@@ -38,11 +38,9 @@ export async function loadAllMods() {
             _templates[tpl.id] = tpl;
         }
 
-        // 2. Run migration (v1 → v2 → v3) then ensure default instances
+        // 2. Run migration (v1 → v2 → v3) only — no auto-creation.
+        //    Users ADD mods manually from the catalog; localStorage remembers.
         ModState.migrateV2ToV3();
-        for (const tpl of templateDefs) {
-            ModState.ensureDefaultInstances(tpl.id);
-        }
 
         // 3. Load locale files and merge into i18n
         const locale = getActiveLocale();

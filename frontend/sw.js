@@ -1,4 +1,4 @@
-const CACHE_NAME = 'blackboard-v27-2026-02-25'; // Bump: feature-btn layout, selection preservation
+const CACHE_NAME = 'blackboard-v28-2026-02-25'; // Bump: DELETE confirm, list isolation, selection race fix
 const ASSETS = [
   '/',
   '/index.html',
