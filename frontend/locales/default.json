@@ -122,7 +122,8 @@
     "fileSyncFailed": "File sync failed.",
     "loginRequired": "Please log in first.",
     "uploadFailed": "Upload failed.",
-    "searchPlaceholder": "Search topics..."
+    "searchPlaceholder": "Search topics...",
+    "autoSyncReceived": "Synced from another device"
   },
   "walkieTypie": {
     "pageTitle": "Direct Messages",
@@ -234,6 +235,7 @@
     "maxFilesLabel": "Max Files",
     "autoCleanBlanks": "Auto-Clean Blanks",
     "updateTimestamp": "Update Timestamp",
+    "autoSync": "Auto-Sync (Multi-Device)",
     "boardSwap": "Board Swap Default",
     "resetAll": "Reset All Settings",
     "resetComplete": "Settings reset to defaults."
