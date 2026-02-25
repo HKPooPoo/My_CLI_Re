@@ -2,24 +2,11 @@
   "mods": {
     "llm": {
       "name": "LLM",
-      "desc": "AI TEXT PROCESSING SUITE — TRANSLATE, SUMMARIZE, POLISH VIA BROWSER, LOCAL, OR CLOUD LLM.",
-      "task": {
-        "translate": "TRANSLATE",
-        "summarize": "SUMMARIZE",
-        "polish": "POLISH",
-        "summarizeFiles": "SUMMARIZE + FILES",
-        "summarizeBranch": "SUMMARIZE BRANCH",
-        "summarizeAll": "SUMMARIZE ALL"
-      },
-      "lang": {
-        "zhTW": "繁中",
-        "zhCN": "简中",
-        "en": "EN",
-        "ja": "日"
-      },
+      "desc": "AI TEXT PROCESSING — PROMPT-BASED INSTANCES WITH BROWSER, LOCAL, OR CLOUD LLM.",
       "config": {
-        "task": "TASK MODE",
-        "targetLang": "TARGET LANGUAGE",
+        "prompt": "PROMPT",
+        "icon": "ICON",
+        "target": "TARGET",
         "provider": "PROVIDER",
         "clientModel": "BROWSER MODEL",
         "clientStatus": "WEBGPU STATUS",
@@ -28,8 +15,30 @@
         "apiProvider": "API PROVIDER",
         "apiModel": "API MODEL",
         "apiKey": "API KEY",
-        "temperature": "TEMPERATURE",
-        "systemPrompt": "SYSTEM PROMPT (OPTIONAL)"
+        "temperature": "TEMPERATURE"
+      },
+      "target": {
+        "bbHead": "BB: CURRENT TEXT",
+        "bbBranch": "BB: FULL BRANCH",
+        "bbAll": "BB: ALL BRANCHES",
+        "wtText": "WT: CURRENT TEXT",
+        "wtDialogue": "WT: DIALOGUE",
+        "bcText": "BC: CURRENT TEXT",
+        "bcHistory": "BC: CHANNEL HISTORY"
+      },
+      "preset": {
+        "summarize": "SUMMARIZE",
+        "translate": "TRANSLATE 繁中",
+        "polish": "POLISH",
+        "explain": "EXPLAIN"
+      },
+      "icon": {
+        "summarize": "SUMMARIZE",
+        "translate": "TRANSLATE",
+        "polish": "POLISH",
+        "summarizeFiles": "FILES",
+        "summarizeBranch": "BRANCH",
+        "summarizeAll": "ALL"
       },
       "provider": {
         "client": "CLIENT (BROWSER)",
@@ -50,6 +59,7 @@
       "streaming": "STREAMING... {tokens} TOKENS",
       "complete": "PROCESSING COMPLETE.",
       "empty": "PROTOCOL ERROR: BUFFER EMPTY. NO INPUT TEXT.",
+      "noPrompt": "NO PROMPT SET. OPEN MOD CONFIG TO SET A PROMPT.",
       "error": "CRITICAL BREACH: {error}",
       "noWebGPU": "WEBGPU NOT SUPPORTED — SWITCH TO SERVER OR API KEY.",
       "notLoaded": "NO MODEL LOADED",

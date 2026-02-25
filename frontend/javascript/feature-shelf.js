@@ -120,11 +120,20 @@ function updateFeatureButtons(page) {
 
         const template = getAllTemplates().find(t => t.id === instance.templateId);
 
-        // Derive allowed pages from template.pages keys
-        const templatePages = template?.pages;
-        const templateAllowed = !templatePages                  // no pages → show everywhere
-            || Object.keys(templatePages).length === 0          // empty pages → show everywhere
-            || (page && templatePages[page] !== undefined);     // page listed → show
+        // Per-instance page visibility: getDeployPages(config) takes precedence
+        let templateAllowed;
+        if (typeof template?.getDeployPages === 'function') {
+            const deployPages = template.getDeployPages(instance.config);
+            templateAllowed = Array.isArray(deployPages)
+                ? deployPages.includes(page)
+                : false;
+        } else {
+            // Derive allowed pages from template.pages keys
+            const templatePages = template?.pages;
+            templateAllowed = !templatePages                  // no pages → show everywhere
+                || Object.keys(templatePages).length === 0    // empty pages → show everywhere
+                || (page && templatePages[page] !== undefined); // page listed → show
+        }
 
         $btn.style.display = templateAllowed ? '' : 'none';
     });
@@ -158,6 +167,12 @@ window.addEventListener('mods:reordered', () => {
 
 // Re-evaluate after buttons are rebuilt (ADD/REORDER recreates DOM)
 window.addEventListener('mods:buttonsRebuilt', () => {
+    const activePage = document.querySelector('.page.active');
+    if (activePage) updateFeatureButtons(activePage.dataset.page);
+});
+
+// Re-evaluate when config changes (getDeployPages may depend on config)
+window.addEventListener('mods:configChanged', () => {
     const activePage = document.querySelector('.page.active');
     if (activePage) updateFeatureButtons(activePage.dataset.page);
 });

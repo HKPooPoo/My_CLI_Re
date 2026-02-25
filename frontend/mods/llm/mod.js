@@ -2,43 +2,88 @@ import { LlmService } from '../../javascript/services/llm-service.js';
 import { ModState } from '../../javascript/mod-state.js';
 import { t } from '../../javascript/i18n.js';
 
+// ===================== Constants =====================
+
+/**
+ * Target definitions: each target maps to a page and a data scope.
+ * page  — which page the instance button appears on
+ * scope — how to collect input data in activate()
+ */
+const TARGETS = {
+    'bb-head':      { page: 'blackboard-log',    scope: 'head',     labelKey: 'mods.llm.target.bbHead' },
+    'bb-branch':    { page: 'blackboard-log',    scope: 'branch',   labelKey: 'mods.llm.target.bbBranch' },
+    'bb-all':       { page: 'blackboard-branch', scope: 'all',      labelKey: 'mods.llm.target.bbAll' },
+    'wt-text':      { page: 'walkie-typie-text', scope: 'text',     labelKey: 'mods.llm.target.wtText' },
+    'wt-dialogue':  { page: 'walkie-typie-text', scope: 'dialogue', labelKey: 'mods.llm.target.wtDialogue' },
+    'bc-text':      { page: 'broadcast-channel', scope: 'text',     labelKey: 'mods.llm.target.bcText' },
+    'bc-history':   { page: 'broadcast-channel', scope: 'history',  labelKey: 'mods.llm.target.bcHistory' },
+};
+
+/**
+ * Prompt presets — quick-fill chips for the textarea field.
+ */
+const PRESETS = [
+    { labelKey: 'mods.llm.preset.summarize', value: 'Summarize concisely.' },
+    { labelKey: 'mods.llm.preset.translate', value: 'Translate to 繁體中文.' },
+    { labelKey: 'mods.llm.preset.polish',    value: 'Improve grammar and style. Keep the original meaning.' },
+    { labelKey: 'mods.llm.preset.explain',   value: 'Explain this text in simple terms.' },
+];
+
+/**
+ * Icon choices for the icon-picker field.
+ */
+const ICONS = [
+    { value: 'summarize',        url: '/images/llm-summarize.svg',        labelKey: 'mods.llm.icon.summarize' },
+    { value: 'translate',        url: '/images/llm-translate.svg',        labelKey: 'mods.llm.icon.translate' },
+    { value: 'polish',           url: '/images/llm-polish.svg',           labelKey: 'mods.llm.icon.polish' },
+    { value: 'summarize-files',  url: '/images/llm-summarize-files.svg',  labelKey: 'mods.llm.icon.summarizeFiles' },
+    { value: 'summarize-branch', url: '/images/llm-summarize-branch.svg', labelKey: 'mods.llm.icon.summarizeBranch' },
+    { value: 'summarize-all',    url: '/images/llm-summarize-all.svg',    labelKey: 'mods.llm.icon.summarizeAll' },
+];
+
+// ===================== Template =====================
+
 export default {
     id: 'llm',
     group: 'llm',
     nameKey: 'mods.llm.name',
     descriptionKey: 'mods.llm.desc',
-    version: '2.0.0',
+    version: '3.0.0',
+    minApiVersion: 1,
     shelfPanelId: 'llm',
 
+    // --- Instance methods ---
+
     getButtonDataId(config) {
-        const task = config.task || 'summarize';
-        if (task === 'translate') return `llm-translate-${config.targetLang || 'zh-TW'}`;
-        return `llm-${task}`;
+        return 'llm-' + (config.icon || 'summarize');
     },
 
     getInstanceName(config, tFn) {
-        const task = config.task || 'summarize';
-        const key = task.replace(/-([a-z])/g, (_, c) => c.toUpperCase());
-        const label = tFn(`mods.llm.task.${key}`);
-        if (task === 'translate') {
-            const lang = (config.targetLang || 'zh-TW').replace(/-/g, '');
-            return `${tFn('mods.llm.name')} \u2192 ${label} (${tFn('mods.llm.lang.' + lang)})`;
-        }
-        return `${tFn('mods.llm.name')} \u2192 ${label}`;
+        const p = config.prompt || tFn('mods.llm.name');
+        return p.length > 30 ? p.slice(0, 27) + '...' : p;
     },
 
     getIconUrl(config) {
-        return `/images/llm-${config.task || 'summarize'}.svg`;
+        const icon = ICONS.find(i => i.value === config.icon);
+        return icon ? icon.url : '/images/llm-summarize.svg';
+    },
+
+    getDeployPages(config) {
+        const target = TARGETS[config.target];
+        return target ? [target.page] : [];
     },
 
     defaultInstances: [
-        { config: { task: 'translate', targetLang: 'zh-TW', provider: 'client', clientModel: 'Qwen3-0.6B-q4f16_1-MLC' } },
-        { config: { task: 'summarize', provider: 'client', clientModel: 'Qwen3-0.6B-q4f16_1-MLC' } },
-        { config: { task: 'polish', provider: 'client', clientModel: 'Qwen3-0.6B-q4f16_1-MLC' } },
+        { config: { prompt: 'Translate to 繁體中文.', icon: 'translate', target: 'bb-head', provider: 'client', clientModel: 'Qwen3-0.6B-q4f16_1-MLC' } },
+        { config: { prompt: 'Summarize concisely.', icon: 'summarize', target: 'bb-head', provider: 'client', clientModel: 'Qwen3-0.6B-q4f16_1-MLC' } },
+        { config: { prompt: 'Improve grammar and style. Keep the original meaning.', icon: 'polish', target: 'bb-head', provider: 'client', clientModel: 'Qwen3-0.6B-q4f16_1-MLC' } },
     ],
 
+    // pages is NOT used (getDeployPages handles per-instance visibility)
+    // but kept for DEFAULT_TEXTAREA_MAP resolution in mod-context.js
     pages: {
         'blackboard-log':    { textareaSelector: '#log-textarea' },
+        'blackboard-branch': {},
         'walkie-typie-text': { textareaSelector: '#walkie-typie-we-blackboard' },
         'broadcast-channel': { textareaSelector: '#channel-textarea' },
     },
@@ -50,29 +95,24 @@ export default {
     ],
 
     configSchema: [
-        { key: 'task', type: 'select', labelKey: 'mods.llm.config.task', default: 'summarize', options: [
-            { value: 'translate',        labelKey: 'mods.llm.task.translate' },
-            { value: 'summarize',        labelKey: 'mods.llm.task.summarize' },
-            { value: 'polish',           labelKey: 'mods.llm.task.polish' },
-            { value: 'summarize-files',  labelKey: 'mods.llm.task.summarizeFiles' },
-            { value: 'summarize-branch', labelKey: 'mods.llm.task.summarizeBranch' },
-            { value: 'summarize-all',    labelKey: 'mods.llm.task.summarizeAll' },
-        ]},
-        { key: 'targetLang', type: 'select', labelKey: 'mods.llm.config.targetLang', default: 'zh-TW', showWhen: { key: 'task', value: 'translate' }, options: [
-            { value: 'zh-TW', labelKey: 'mods.llm.lang.zhTW' },
-            { value: 'zh-CN', labelKey: 'mods.llm.lang.zhCN' },
-            { value: 'en',    labelKey: 'mods.llm.lang.en' },
-            { value: 'ja',    labelKey: 'mods.llm.lang.ja' },
-        ]},
+        // --- Identity ---
+        { key: 'prompt', type: 'textarea', labelKey: 'mods.llm.config.prompt', default: '',
+          rows: 3, presets: PRESETS },
+        { key: 'icon', type: 'icon-picker', labelKey: 'mods.llm.config.icon', default: 'summarize',
+          icons: ICONS },
+        // --- Target ---
+        { key: 'target', type: 'select', labelKey: 'mods.llm.config.target', default: 'bb-head',
+          options: Object.entries(TARGETS).map(([v, t]) => ({ value: v, labelKey: t.labelKey })) },
+        // --- Engine ---
         { key: 'provider', type: 'select', labelKey: 'mods.llm.config.provider', default: 'client', options: [
             { value: 'client', labelKey: 'mods.llm.provider.client' },
             { value: 'server', labelKey: 'mods.llm.provider.server' },
             { value: 'apikey', labelKey: 'mods.llm.provider.apikey' },
         ]},
         { key: 'clientModel', type: 'select', labelKey: 'mods.llm.config.clientModel', default: 'Qwen3-0.6B-q4f16_1-MLC', showWhen: { key: 'provider', value: 'client' }, options: [
-            { value: 'Qwen3-0.6B-q4f16_1-MLC',             labelKey: 'mods.llm.clientModel.qwen3_06b' },
-            { value: 'Qwen3-1.7B-q4f16_1-MLC',             labelKey: 'mods.llm.clientModel.qwen3_17b' },
-            { value: 'Qwen3-4B-q4f16_1-MLC',               labelKey: 'mods.llm.clientModel.qwen3_4b' },
+            { value: 'Qwen3-0.6B-q4f16_1-MLC', labelKey: 'mods.llm.clientModel.qwen3_06b' },
+            { value: 'Qwen3-1.7B-q4f16_1-MLC', labelKey: 'mods.llm.clientModel.qwen3_17b' },
+            { value: 'Qwen3-4B-q4f16_1-MLC',   labelKey: 'mods.llm.clientModel.qwen3_4b' },
         ]},
         { key: 'clientStatus', type: 'info', labelKey: 'mods.llm.config.clientStatus', showWhen: { key: 'provider', value: 'client' } },
         { key: 'serverModel', type: 'text', labelKey: 'mods.llm.config.serverModel', default: 'qwen3:4b', showWhen: { key: 'provider', value: 'server' } },
@@ -84,26 +124,18 @@ export default {
         { key: 'apiModel', type: 'text', labelKey: 'mods.llm.config.apiModel', default: 'gpt-4o-mini', showWhen: { key: 'provider', value: 'apikey' } },
         { key: 'apiKey', type: 'text', labelKey: 'mods.llm.config.apiKey', default: '', showWhen: { key: 'provider', value: 'apikey' } },
         { key: 'temperature', type: 'range', labelKey: 'mods.llm.config.temperature', min: 0, max: 1, step: 0.1, default: 0.3 },
-        { key: 'systemPrompt', type: 'text', labelKey: 'mods.llm.config.systemPrompt', default: '' },
     ],
 
-    // --- State ---
+    // --- State (per-template, not per-instance) ---
     _outputEl: null,
 
     // --- Lifecycle ---
 
-    /**
-     * Resilient output element lookup.
-     * Re-queries DOM if _outputEl is stale/null. Creates if shelf exists but element doesn't.
-     */
     _ensureOutputEl() {
         if (this._outputEl && this._outputEl.isConnected) return this._outputEl;
-
-        // Re-query DOM (element might exist from init)
         this._outputEl = document.getElementById('llm-output');
         if (this._outputEl) return this._outputEl;
 
-        // Create if shelf exists but element doesn't
         const shelf = document.querySelector('[data-feature-shelf="llm"]');
         if (shelf) {
             const el = document.createElement('textarea');
@@ -111,15 +143,16 @@ export default {
             el.readOnly = true;
             shelf.appendChild(el);
             this._outputEl = el;
-            console.log('[llm-mod] _ensureOutputEl: created #llm-output');
         }
         return this._outputEl;
     },
 
     async init(ctx) {
+        // Migrate old config format (task → prompt/icon/target)
+        _migrateOldConfig();
+
         const shelf = ctx.ui.getShelfElement();
         if (shelf) {
-            // Avoid duplicate
             const existing = shelf.querySelector('#llm-output');
             if (existing) {
                 this._outputEl = existing;
@@ -130,9 +163,6 @@ export default {
                 shelf.appendChild(el);
                 this._outputEl = el;
             }
-            console.log('[llm-mod] init: _outputEl ready');
-        } else {
-            console.warn('[llm-mod] init: shelf element NOT found');
         }
     },
 
@@ -140,67 +170,64 @@ export default {
         if (!ctx) return;
 
         const out = this._ensureOutputEl();
-        if (!out) {
-            console.error('[llm-mod] activate: no output element — aborting');
-            return;
-        }
+        if (!out) return;
 
         const tFn = ctx.i18n.t;
-        const text = ctx.board.getText().trim();
+        const config = ctx.config;
+        const prompt = config.prompt;
 
-        if (!text) {
-            out.value = tFn('mods.llm.empty');
+        if (!prompt) {
+            out.value = tFn('mods.llm.noPrompt');
             return;
         }
 
+        const target = TARGETS[config.target] || TARGETS['bb-head'];
         out.value = tFn('mods.llm.processing');
 
         try {
-            const task = ctx.config.task || 'summarize';
-            const provider = ctx.config.provider || 'client';
+            // Collect input data based on target scope
+            const inputText = await _collectInput(ctx, target.scope, tFn);
+
+            if (!inputText) {
+                out.value = tFn('mods.llm.empty');
+                return;
+            }
+
+            const provider = config.provider || 'client';
+            const temp = parseFloat(config.temperature) || 0.3;
 
             if (provider === 'client') {
                 const svc = await _getWebLlm();
-                const model = ctx.config.clientModel || 'Qwen3-0.6B-q4f16_1-MLC';
-                const temp = parseFloat(ctx.config.temperature) || 0.3;
+                const model = config.clientModel || 'Qwen3-0.6B-q4f16_1-MLC';
 
                 out.value = tFn('mods.llm.loading');
-                console.log('[llm-mod] loading model:', model);
                 await svc.ensureModel(model, (p) => { out.value = p; });
-                console.log('[llm-mod] model ready');
 
                 // Single user message with embedded instruction
-                // (proven pattern from test-client-llm.html — better for small models)
-                const prefix = _buildUserPrefix(ctx.config, task);
-                const messages = [{ role: 'user', content: prefix + text }];
+                // (proven pattern — better for small models)
+                const messages = [{ role: 'user', content: prompt + '\n\n' + inputText }];
 
                 out.value = '';
-                let tokenCount = 0;
                 for await (const chunk of svc.chat(messages, { temperature: temp })) {
                     if (chunk.done) break;
                     out.value += chunk.delta;
-                    tokenCount++;
                 }
 
-                console.log('[llm-mod] streaming done, tokens:', tokenCount);
-
-                // Handle zero-token output (model only produced think tokens)
                 if (!out.value.trim()) {
                     out.value = tFn('mods.llm.empty');
                 }
             } else {
                 // Server/API: system + user messages (standard for capable models)
-                const prompt = _buildSystemPrompt(ctx.config, task);
                 const messages = [
                     { role: 'system', content: prompt },
-                    { role: 'user', content: text },
+                    { role: 'user', content: inputText },
                 ];
-                const actualProvider = provider === 'server' ? 'ollama' : (ctx.config.apiProvider || 'openai');
-                const model = provider === 'server' ? (ctx.config.serverModel || 'qwen3:4b') : (ctx.config.apiModel || 'gpt-4o-mini');
+                const actualProvider = provider === 'server' ? 'ollama' : (config.apiProvider || 'openai');
+                const model = provider === 'server' ? (config.serverModel || 'qwen3:4b') : (config.apiModel || 'gpt-4o-mini');
                 const result = await LlmService.chat({
                     provider: actualProvider, model, messages,
-                    temperature: parseFloat(ctx.config.temperature) || 0.3,
-                    apiKey: ctx.config.apiKey || '',
+                    temperature: temp,
+                    apiKey: config.apiKey || '',
                 });
                 out.value = result.content || tFn('mods.llm.empty');
             }
@@ -232,7 +259,7 @@ export default {
     },
 };
 
-// --- Private helpers ---
+// ===================== Private helpers =====================
 
 let _webLlmSvc = null;
 async function _getWebLlm() {
@@ -244,49 +271,122 @@ async function _getWebLlm() {
 }
 
 /**
- * Language name map for prompts (native names work better with small models).
+ * Collect input text based on target scope.
  */
-const LANG_NAMES = {
-    'zh-TW': '繁體中文',
-    'zh-CN': '简体中文',
-    'en': 'English',
-    'ja': '日本語',
-};
+async function _collectInput(ctx, scope, tFn) {
+    switch (scope) {
+        case 'head':
+        case 'text':
+            return ctx.board.getText().trim();
 
-/**
- * Build a user-message prefix for client-side (browser) LLM.
- * Single user message with embedded instruction — proven pattern from test page.
- * Small models follow this better than system + user split.
- */
-function _buildUserPrefix(config, task) {
-    if (config.systemPrompt) return config.systemPrompt + '\n\n';
+        case 'branch':
+        case 'history': {
+            const records = await ctx.board.getAllRecords();
+            if (!records || records.length === 0) return '';
+            return records.map(r => {
+                const ts = r.timestamp ? new Date(Number(r.timestamp)).toLocaleString() : '';
+                return `[${ts}] ${r.text || ''}`;
+            }).join('\n\n');
+        }
 
-    const lang = LANG_NAMES[config.targetLang] || config.targetLang || '繁體中文';
-    switch (task) {
-        case 'translate':        return `翻譯成${lang}：\n\n`;
-        case 'summarize':        return `摘要以下文字：\n\n`;
-        case 'polish':           return `改善以下文字的文法和風格，保持原意：\n\n`;
-        case 'summarize-files':  return `摘要以下文字與檔案內容：\n\n`;
-        case 'summarize-branch': return `摘要以下紀錄，找出關鍵主題：\n\n`;
-        case 'summarize-all':    return `綜合摘要以下所有分支，找出模式：\n\n`;
-        default:                 return `摘要以下文字：\n\n`;
+        case 'all': {
+            const branches = await ctx.board.getAllBranches();
+            if (!branches || branches.length === 0) return '';
+            const parts = [];
+            for (const branch of branches) {
+                const name = branch.branch_name || branch.name || branch.id;
+                parts.push(`=== ${name} ===`);
+                if (Array.isArray(branch.records)) {
+                    for (const r of branch.records) {
+                        const ts = r.timestamp ? new Date(Number(r.timestamp)).toLocaleString() : '';
+                        parts.push(`[${ts}] ${r.text || ''}`);
+                    }
+                }
+            }
+            return parts.join('\n');
+        }
+
+        case 'dialogue': {
+            // BYPASS: read both WT textareas directly — no framework API for partner textarea yet
+            const myText = ctx.board.getText().trim();
+            const partnerEl = document.querySelector('#walkie-typie-they-blackboard');
+            const partnerText = partnerEl ? partnerEl.value.trim() : '';
+            const parts = [];
+            if (myText) parts.push(`[ME]\n${myText}`);
+            if (partnerText) parts.push(`[PARTNER]\n${partnerText}`);
+            return parts.join('\n\n');
+        }
+
+        default:
+            return ctx.board.getText().trim();
     }
 }
 
 /**
- * Build a system prompt for server/API providers (capable models).
+ * Migrate old config format (task-based) to new format (prompt/icon/target).
+ * Runs once at init — checks all LLM instances for old `task` key.
  */
-const SYSTEM_PROMPTS = {
-    translate: (lang) => `Translate the following text to ${lang}. Output only the translation.`,
-    summarize: 'Summarize the following text concisely. Output only the summary.',
-    polish: 'Improve the grammar, clarity, and style. Keep the original meaning. Output only the improved text.',
-    'summarize-files': 'Summarize the following text and file contents concisely.',
-    'summarize-branch': 'Summarize the following entries. Identify key themes.',
-    'summarize-all': 'Summarize across all the following branches. Identify patterns.',
-};
+function _migrateOldConfig() {
+    const instances = ModState.getInstancesByTemplate('llm');
+    for (const inst of instances) {
+        const config = inst.config;
+        if (!config.task) continue; // Already migrated or new format
 
-function _buildSystemPrompt(config, task) {
-    if (config.systemPrompt) return config.systemPrompt;
-    const base = SYSTEM_PROMPTS[task];
-    return typeof base === 'function' ? base(config.targetLang || 'zh-TW') : (base || SYSTEM_PROMPTS.summarize);
+        // Map old task → new prompt/icon/target
+        const task = config.task;
+        let prompt = config.systemPrompt || '';
+        let icon = 'summarize';
+        let target = 'bb-head';
+
+        const LANG_NAMES = { 'zh-TW': '繁體中文', 'zh-CN': '简体中文', 'en': 'English', 'ja': '日本語' };
+
+        switch (task) {
+            case 'translate': {
+                const lang = LANG_NAMES[config.targetLang] || config.targetLang || '繁體中文';
+                if (!prompt) prompt = `Translate to ${lang}.`;
+                icon = 'translate';
+                target = 'bb-head';
+                break;
+            }
+            case 'summarize':
+                if (!prompt) prompt = 'Summarize concisely.';
+                icon = 'summarize';
+                target = 'bb-head';
+                break;
+            case 'polish':
+                if (!prompt) prompt = 'Improve grammar and style. Keep the original meaning.';
+                icon = 'polish';
+                target = 'bb-head';
+                break;
+            case 'summarize-files':
+                if (!prompt) prompt = 'Summarize the text and file contents.';
+                icon = 'summarize-files';
+                target = 'bb-head';
+                break;
+            case 'summarize-branch':
+                if (!prompt) prompt = 'Summarize these entries. Identify key themes.';
+                icon = 'summarize-branch';
+                target = 'bb-branch';
+                break;
+            case 'summarize-all':
+                if (!prompt) prompt = 'Summarize across all branches. Identify patterns.';
+                icon = 'summarize-all';
+                target = 'bb-all';
+                break;
+            default:
+                if (!prompt) prompt = 'Summarize concisely.';
+                break;
+        }
+
+        // Apply new config keys
+        ModState.setConfig(inst.instanceId, 'prompt', prompt);
+        ModState.setConfig(inst.instanceId, 'icon', icon);
+        ModState.setConfig(inst.instanceId, 'target', target);
+
+        // Remove old keys by setting them to undefined (ModState stores to localStorage)
+        // We can't truly delete keys, but setting undefined effectively removes them
+        // from the frozen config snapshot. The old keys become harmless noise.
+
+        console.log(`[llm-mod] migrated instance ${inst.instanceId}: task="${task}" → prompt/icon/target`);
+    }
 }

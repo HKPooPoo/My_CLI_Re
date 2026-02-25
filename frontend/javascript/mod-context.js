@@ -51,6 +51,7 @@ export function setQueryProvider(provider) {
  */
 const DEFAULT_TEXTAREA_MAP = {
     'blackboard-log':    '#log-textarea',
+    'walkie-typie-text': '#walkie-typie-we-blackboard',
     'broadcast-channel': '#channel-textarea',
 };
 

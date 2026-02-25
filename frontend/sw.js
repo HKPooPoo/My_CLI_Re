@@ -1,4 +1,4 @@
-const CACHE_NAME = 'blackboard-v35-2026-02-26'; // Fix: LLM MOD output not showing
+const CACHE_NAME = 'blackboard-v36-2026-02-26'; // LLM MOD atomization + framework field types
 const ASSETS = [
   '/',
   '/index.html',
@@ -31,6 +31,7 @@ const ASSETS = [
   '/javascript/mod-board-provider.js',
   '/javascript/mod-field-registry.js',
   '/javascript/mods-manager.js',
+  '/javascript/version.js',
   '/mods/mod-loader.js',
   '/mods/mod-manifest.js',
   '/mods/llm/mod.js',

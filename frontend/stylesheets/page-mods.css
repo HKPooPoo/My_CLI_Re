@@ -525,3 +525,72 @@
 :root[data-theme="light"] .mods-action-btn:not(:disabled):hover {
     box-shadow: none;
 }
+
+/* === Stacked config fields (textarea, icon-picker) — column layout === */
+.mods-config-field-stacked {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+}
+
+/* === textarea field type === */
+.mods-textarea-field { display: flex; flex-direction: column; gap: 6px; width: 100%; }
+.mods-config-field-textarea {
+    width: 100%; resize: vertical;
+    font-family: inherit; font-size: inherit;
+    color: var(--text-green); background: transparent;
+    border: var(--border-line); border-radius: var(--border-radius);
+    padding: 6px 8px;
+}
+.mods-config-field-textarea:focus { border-color: var(--text-orange); outline: none; }
+.mods-textarea-presets { display: flex; flex-wrap: wrap; gap: 4px; }
+.mods-textarea-preset {
+    font-size: 0.75em; padding: 2px 8px;
+    border: 1px solid var(--text-green); border-radius: 12px;
+    color: var(--text-green); background: transparent; cursor: pointer;
+}
+@media (hover: hover) {
+    .mods-textarea-preset:hover { background: rgba(50, 255, 50, 0.1); }
+}
+
+/* === icon-picker field type === */
+.mods-icon-picker-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; width: 100%;
+}
+.mods-icon-picker-item {
+    aspect-ratio: 1; border: var(--border-line); border-radius: var(--border-radius);
+    background: transparent; cursor: pointer; position: relative;
+    display: flex; align-items: center; justify-content: center;
+}
+.mods-icon-picker-item::after {
+    content: ""; display: block; width: 60%; height: 60%;
+    background-color: var(--text-green);
+    -webkit-mask-image: var(--picker-icon); mask-image: var(--picker-icon);
+    -webkit-mask-size: contain; mask-size: contain;
+    -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
+    -webkit-mask-position: center; mask-position: center;
+}
+.mods-icon-picker-item.selected {
+    border-color: var(--text-orange); box-shadow: 0 0 6px var(--text-orange);
+}
+
+/* === Version badge in instance list === */
+.mods-list-item-version {
+    font-size: 0.7em; margin-left: 6px; opacity: 0.6;
+}
+.mods-list-item.active .mods-list-item-version {
+    color: var(--bg-primary); opacity: 0.7;
+}
+
+/* === Platform version === */
+.misc-platform-version {
+    text-align: center; font-size: 0.75em; opacity: 0.4;
+    padding: calc(var(--panel-gap) / 2) 0 0;
+}
+
+/* === Light mode overrides for new field types === */
+[data-theme="light"] .mods-icon-picker-item.selected {
+    box-shadow: none; border-color: #555; background: rgba(0, 0, 0, 0.05);
+}
+[data-theme="light"] .mods-config-field-textarea { color: var(--text-green); }
+[data-theme="light"] .mods-textarea-preset:hover { background: rgba(0, 0, 0, 0.05); }

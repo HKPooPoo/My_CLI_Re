@@ -36,12 +36,14 @@ const elements = {
 // --- Initialise ---
 function init() {
     // Register built-in config field type renderers
-    registerFieldType('select',  createSelectField);
-    registerFieldType('text',    createTextField);
-    registerFieldType('range',   createRangeField);
-    registerFieldType('toggle',  createToggleField);
-    registerFieldType('info',    createInfoField);
-    registerFieldType('action',  createActionField);
+    registerFieldType('select',      createSelectField);
+    registerFieldType('text',        createTextField);
+    registerFieldType('textarea',    createTextareaField);
+    registerFieldType('range',       createRangeField);
+    registerFieldType('toggle',      createToggleField);
+    registerFieldType('icon-picker', createIconPickerField);
+    registerFieldType('info',        createInfoField);
+    registerFieldType('action',      createActionField);
 
     bindEvents();
 
@@ -160,6 +162,13 @@ function renderActiveInstances(container) {
         nameEl.textContent = typeof template.getInstanceName === 'function'
             ? template.getInstanceName(inst.config, t)
             : t(template.nameKey);
+
+        if (template.version) {
+            const versionEl = document.createElement('span');
+            versionEl.className = 'mods-list-item-version crt-text-green';
+            versionEl.textContent = `v${template.version}`;
+            nameEl.appendChild(versionEl);
+        }
 
         const meta = document.createElement('div');
         meta.className = 'mods-list-item-meta';
@@ -375,8 +384,10 @@ function renderConfigFields(instanceId) {
 function createConfigField(instanceId, template, field) {
     if (!evaluateShowWhen(instanceId, field)) return null;
 
+    const isStacked = field.type === 'textarea' || field.type === 'icon-picker';
+
     const wrapper = document.createElement('div');
-    wrapper.className = 'mods-config-field';
+    wrapper.className = isStacked ? 'mods-config-field mods-config-field-stacked' : 'mods-config-field';
     wrapper.dataset.configKey = field.key;
 
     const label = document.createElement('div');
@@ -465,6 +476,70 @@ function createTextField(instanceId, template, field) {
         ModState.setConfig(instanceId, field.key, input.value);
     });
     return input;
+}
+
+function createTextareaField(instanceId, template, field) {
+    const container = document.createElement('div');
+    container.className = 'mods-textarea-field';
+
+    const textarea = document.createElement('textarea');
+    textarea.className = 'mods-config-field-textarea';
+    textarea.rows = field.rows || 3;
+    textarea.value = ModState.getConfig(instanceId, field.key) ?? field.default ?? '';
+    textarea.placeholder = field.placeholder || '';
+    textarea.addEventListener('change', () => {
+        ModState.setConfig(instanceId, field.key, textarea.value);
+    });
+
+    container.appendChild(textarea);
+
+    // Optional preset chips
+    if (Array.isArray(field.presets) && field.presets.length > 0) {
+        const presetContainer = document.createElement('div');
+        presetContainer.className = 'mods-textarea-presets';
+
+        for (const preset of field.presets) {
+            const chip = document.createElement('button');
+            chip.className = 'mods-textarea-preset';
+            chip.textContent = t(preset.labelKey) || preset.value;
+            chip.addEventListener('click', () => {
+                textarea.value = preset.value;
+                textarea.dispatchEvent(new Event('change'));
+            });
+            presetContainer.appendChild(chip);
+        }
+
+        container.appendChild(presetContainer);
+    }
+
+    return container;
+}
+
+function createIconPickerField(instanceId, template, field) {
+    const currentValue = ModState.getConfig(instanceId, field.key) ?? field.default ?? '';
+    const icons = field.icons || [];
+
+    const grid = document.createElement('div');
+    grid.className = 'mods-icon-picker-grid';
+
+    for (const icon of icons) {
+        const btn = document.createElement('button');
+        btn.className = 'mods-icon-picker-item';
+        if (icon.value === currentValue) btn.classList.add('selected');
+        btn.dataset.value = icon.value;
+        btn.title = t(icon.labelKey) || icon.value;
+        btn.style.setProperty('--picker-icon', `url('${icon.url}')`);
+
+        btn.addEventListener('click', () => {
+            grid.querySelectorAll('.mods-icon-picker-item').forEach(el => el.classList.remove('selected'));
+            btn.classList.add('selected');
+            ModState.setConfig(instanceId, field.key, icon.value);
+        });
+
+        grid.appendChild(btn);
+    }
+
+    return grid;
 }
 
 function createRangeField(instanceId, template, field) {

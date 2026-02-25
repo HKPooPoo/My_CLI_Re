@@ -2,24 +2,11 @@
   "mods": {
     "llm": {
       "name": "LLM",
-      "desc": "AI 文字處理套件 — 透過瀏覽器、本機或雲端 LLM 進行翻譯、摘要、潤飾。",
-      "task": {
-        "translate": "翻譯",
-        "summarize": "摘要",
-        "polish": "潤飾",
-        "summarizeFiles": "摘要 + 檔案",
-        "summarizeBranch": "分支摘要",
-        "summarizeAll": "全部摘要"
-      },
-      "lang": {
-        "zhTW": "繁中",
-        "zhCN": "簡中",
-        "en": "EN",
-        "ja": "日"
-      },
+      "desc": "AI 文字處理 — 以提示詞為基礎的實例，支援瀏覽器、本機或雲端 LLM。",
       "config": {
-        "task": "任務模式",
-        "targetLang": "目標語言",
+        "prompt": "提示詞",
+        "icon": "圖示",
+        "target": "目標",
         "provider": "提供者",
         "clientModel": "瀏覽器模型",
         "clientStatus": "WebGPU 狀態",
@@ -28,8 +15,30 @@
         "apiProvider": "API 提供者",
         "apiModel": "API 模型",
         "apiKey": "API 金鑰",
-        "temperature": "溫度",
-        "systemPrompt": "系統提示詞（選填）"
+        "temperature": "溫度"
+      },
+      "target": {
+        "bbHead": "BB：目前文字",
+        "bbBranch": "BB：整條分支",
+        "bbAll": "BB：所有分支",
+        "wtText": "WT：目前文字",
+        "wtDialogue": "WT：對話",
+        "bcText": "BC：目前文字",
+        "bcHistory": "BC：頻道歷史"
+      },
+      "preset": {
+        "summarize": "摘要",
+        "translate": "翻譯繁中",
+        "polish": "潤飾",
+        "explain": "解釋"
+      },
+      "icon": {
+        "summarize": "摘要",
+        "translate": "翻譯",
+        "polish": "潤飾",
+        "summarizeFiles": "檔案",
+        "summarizeBranch": "分支",
+        "summarizeAll": "全部"
       },
       "provider": {
         "client": "用戶端（瀏覽器）",
@@ -50,6 +59,7 @@
       "streaming": "串流中... {tokens} 個 token",
       "complete": "處理完成。",
       "empty": "協定錯誤：緩衝區為空，無輸入文字。",
+      "noPrompt": "尚未設定提示詞。請至 MOD 設定頁面設定。",
       "error": "嚴重錯誤：{error}",
       "noWebGPU": "不支援 WebGPU — 請切換至伺服器或 API 金鑰。",
       "notLoaded": "尚未載入模型",

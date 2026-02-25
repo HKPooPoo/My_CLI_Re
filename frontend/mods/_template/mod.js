@@ -1,5 +1,5 @@
 /**
- * _template MOD — Full Interface Skeleton
+ * _template MOD — Full Interface Skeleton (v2.1)
  * =================================================================
  * Copy this folder to create a new MOD. Replace all "mymod" and
  * "my-mod" references with your actual MOD ID.
@@ -9,12 +9,18 @@
  * 2. Update id, nameKey, descriptionKey, group
  * 3. Fill in configSchema, providers, defaultInstances
  * 4. Set pages{} to declare which pages this MOD appears on
+ *    — OR implement getDeployPages(config) for per-instance visibility
  * 5. Implement init() (shelf UI) and activate() (core logic)
  * 6. Create locale files in locales/{en,zh-TW,default}.json
  * 7. Add export to mod-manifest.js
  * 8. Add CSS icon: .feature-btn[data-feature-btn="{btn-id}"]::after
  *    OR implement getIconUrl() for runtime icons (no CSS editing needed)
  * 9. Bump CACHE_NAME in sw.js
+ *
+ * Version guidelines:
+ * - Set `version` to SemVer (displayed in mods-manager UI)
+ * - Set `minApiVersion` to the minimum MOD_API_VERSION required
+ *   (framework warns at boot if current API version is lower)
  *
  * Common Gotchas:
  * - SW cache: always bump CACHE_NAME in sw.js after changes, or stale
@@ -24,6 +30,13 @@
  *   template. Use ctx.storage.get/set() for per-instance state.
  * - ctx.board methods return null if no page is active (e.g. during init).
  * - onConfigChange() now receives a real ModContext (not null).
+ *
+ * Yellow-zone bypasses:
+ * - When the framework lacks an API you need (e.g. textarea event
+ *   listeners — no record:textChanged hook yet), direct DOM access
+ *   is acceptable WITH a comment:
+ *     // BYPASS: reason, migrate when API X exists
+ * - When the framework API is added, migrate all yellow-zone code.
  * =================================================================
  */
 
@@ -49,6 +62,9 @@ export default {
 
     /** SemVer — presence triggers v2 ModContext mode */
     version: '1.0.0',
+
+    /** Minimum MOD API version required. Framework warns if not met. */
+    minApiVersion: 1,
 
     /** Author name (shown in config page, optional) */
     author: '',
@@ -124,7 +140,7 @@ export default {
 
     /**
      * Config fields rendered in the MOD config page.
-     * Built-in types: select, text, range, toggle, info, action
+     * Built-in types: select, text, textarea, range, toggle, icon-picker, info, action
      * Custom types can be registered via ctx.ui.registerFieldType() in init().
      *
      * Each field supports:
@@ -186,6 +202,29 @@ export default {
         //     type: 'action',
         //     labelKey: 'mods.myMod.config.test',
         //     actionLabelKey: 'mods.myMod.config.testBtn'
+        // },
+
+        // Example: textarea with presets
+        // {
+        //     key: 'prompt',
+        //     type: 'textarea',
+        //     labelKey: 'mods.myMod.config.prompt',
+        //     rows: 3,
+        //     presets: [
+        //         { labelKey: 'mods.myMod.preset.option1', value: 'Preset text...' },
+        //     ],
+        //     default: ''
+        // },
+
+        // Example: icon picker
+        // {
+        //     key: 'icon',
+        //     type: 'icon-picker',
+        //     labelKey: 'mods.myMod.config.icon',
+        //     icons: [
+        //         { value: 'default', url: '/images/my-icon.svg', labelKey: 'mods.myMod.icon.default' },
+        //     ],
+        //     default: 'default'
         // },
     ],
 
@@ -328,6 +367,15 @@ export default {
     destroy(ctx) {},
 
     // ===================== Optional Methods (v2.1) =====================
+
+    /**
+     * Per-instance page visibility override.
+     * Return array of page IDs where this instance's button should appear.
+     * If not implemented, falls back to template.pages keys.
+     * @param {object} config  Instance config
+     * @returns {string[]}     Page IDs (e.g. ['blackboard-log', 'broadcast-channel'])
+     */
+    // getDeployPages(config) { return ['blackboard-log']; },
 
     /**
      * Dynamic value for 'info' config fields.

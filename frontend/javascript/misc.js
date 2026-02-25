@@ -13,6 +13,7 @@ import { playAudio } from './audio.js';
 import * as Settings from './settings.js';
 import { MultiStepButton } from './multiStepButton.js';
 import { BBMessage } from './blackboard-msg.js';
+import { PLATFORM_VERSION } from './version.js';
 
 // --- Shared Config Helpers (exported for WT/BC config pages) ---
 
@@ -204,4 +205,8 @@ MISC.init();
 window.addEventListener('i18n:ready', () => {
     MISC.renderBBConfig();
     MISC.updateUI();
+
+    // Display platform version
+    const versionEl = document.getElementById('platform-version');
+    if (versionEl) versionEl.textContent = `My CLI Re v${PLATFORM_VERSION}`;
 });

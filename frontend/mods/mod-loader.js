@@ -19,6 +19,7 @@ import { createInitContext, createModContext, setQueryProvider } from '../javasc
 import { ModHooks } from '../javascript/mod-hooks.js';
 import { ModTools } from '../javascript/mod-tools.js';
 import { BBMessage } from '../javascript/blackboard-msg.js';
+import { MOD_API_VERSION } from '../javascript/version.js';
 
 const _templates = {};
 
@@ -42,6 +43,11 @@ export async function loadAllMods() {
                 BBMessage.error(t('mods.validationFailed', { id: tpl.id || '(unknown)' }));
                 continue;
             }
+            // Check API version compatibility
+            if (tpl.minApiVersion && tpl.minApiVersion > MOD_API_VERSION) {
+                console.warn(`[mod-loader] Template "${tpl.id}" requires API v${tpl.minApiVersion}, current is v${MOD_API_VERSION}. Some features may not work.`);
+            }
+
             ModState.registerTemplate(tpl.id, tpl);
             _templates[tpl.id] = tpl;
             validatedDefs.push(tpl);

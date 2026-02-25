@@ -255,14 +255,6 @@ Instance data model (persisted in `localStorage['mod-instances']`):
 | Feature button | Icon button in HUD bar | Framework (data-instance-id, CSS ::after icon) |
 | Shelf panel | Content when button clicked | **Template** fills in `init()` (shared per template) |
 
-### Current Templates (3)
-
-| ID | Group | maxInstances | Defaults (migration only) | Providers | Tools |
-|----|-------|-------------|--------------------------|-----------|-------|
-| `translate` | linguistics | unlimited | 4 (zh-TW, zh-CN, en, ja) | google, libretranslate | `translate_text` |
-| `speech-to-text` | linguistics | 1 | 1 | google-speech | — |
-| `markdown-preview` | utilities | 1 | 1 | marked (client) | — |
-
 ### Adding a New Template
 
 1. Copy `mods/_template/` → `mods/{id}/` (full skeleton with docs)
@@ -274,6 +266,79 @@ Instance data model (persisted in `localStorage['mod-instances']`):
 7. Implement `init(ctx)` and `activate(ctx)` using ModContext API
 8. Optionally add `tools[]` and `hooks[]`
 9. **Bump `CACHE_NAME` in `sw.js`**
+
+### MOD Development Principles
+
+**1. Use framework APIs — never bypass them.**
+- Text access: `ctx.board.getText()`, `ctx.board.getTextarea()`, `ctx.board.insertAtCursor()`
+- Config: `ctx.instance.getConfig(key)` / `ctx.instance.setConfig(key, val)`
+- Events: `ctx.events.on()` / `ctx.events.off()` (auto-cleanup on deactivate)
+- UI: `ctx.ui.toast()`, `ctx.ui.getShelfElement()`, `ctx.ui.registerFieldType()`
+- Storage: `ctx.storage.get(key)` / `ctx.storage.set(key, val)` (per-instance sandboxed)
+- If an API is missing, add it to the framework (mod-context.js, mod-board-provider.js, etc.)
+  — do NOT hardcode DOM selectors for framework elements (.feature-container, .feature-btn, etc.)
+
+**2. No module-level mutable state.** Templates are singletons shared across instances.
+- Store per-instance state in `ctx.storage` or instance config
+- Store per-template state on `this` (the template object)
+- Never use module-level `let` for state that varies per activation
+- Never pollute `window.*`
+
+**3. Expose capabilities via tools and hooks.**
+- If your MOD does something another MOD could use, register it in `tools[]`
+- Tools use OpenAI function-calling schema for future LLM agent compatibility
+- Use `ctx.hooks.register()` for pipeline-based interception (when instrumented)
+
+**4. Per-instance page visibility.** If a template needs different instances on different pages,
+implement `getDeployPages(config)` returning an array of page IDs. The framework calls this
+per-instance to determine button visibility (falls back to `template.pages` keys if absent).
+
+**5. Field types.** Use built-in types: `select`, `text`, `textarea`, `range`, `toggle`,
+`icon-picker`, `info`, `action`. Register custom types via `ctx.ui.registerFieldType()` only
+when built-in types genuinely don't cover the use case.
+
+**6. Design for composition.** MODs should be small, focused, and composable:
+- 1 instance = 1 feature button = 1 specific behavior
+- Prefer multiple simple instances over one complex config
+- The `configSchema` should be scannable in under 5 seconds
+
+**7. Yellow-zone bypasses.** When no framework API exists for what you need:
+- Direct DOM access is acceptable WITH a comment: `// BYPASS: reason, migrate when API X exists`
+- Examples: textarea event listeners (no `record:textChanged` hook yet), secondary textarea reads
+- When the framework API is added, migrate all yellow-zone code to use it
+
+### Versioning
+
+**Platform version** — `PLATFORM_VERSION` in `frontend/javascript/version.js`, displayed in blackboard-misc page.
+
+**MOD API version** — `MOD_API_VERSION` in the same file. Templates can declare `minApiVersion: N`; the framework warns at boot if `MOD_API_VERSION < N`.
+
+**Template version** — `template.version` (SemVer string). Displayed in mods-manager list and config pages.
+
+### Current Templates (4)
+
+| ID | Group | maxInstances | Providers | Tools |
+|----|-------|-------------|-----------|-------|
+| `translate` | linguistics | unlimited | google, libretranslate | `translate_text` |
+| `speech-to-text` | linguistics | 1 | google-speech | — |
+| `markdown-preview` | utilities | 1 | marked (client) | — |
+| `llm` | llm | unlimited | client (WebLLM), server (Ollama), apikey (cloud) | — |
+
+### Future Framework Roadmap
+
+**C1. Hook instrumentation** — Instrument `ModHooks.run()` in core modules:
+`board:beforeCommit`, `board:afterFetch`, `record:textChanged`, `branch:switched`.
+Enables: auto-translate on typing, AI reactions to new content.
+
+**C2. Agent loop** — LLM MOD multi-turn tool calling:
+`ModTools.getToolDefinitions()` → send to LLM → parse tool_use → `ModTools.executeTool()` → feed result back → loop.
+Enables: autonomous AI that can translate, search, summarize in sequence.
+
+**C3. Board write API** — `ctx.board.createRecord(text)`, `ctx.board.commit()`.
+Enables: AI agent writes findings to new records, not just shelf output.
+
+**C4. Service registry** — `ctx.services.register(name, impl)` / `ctx.services.get(templateId, name)`.
+Enables: MOD-to-MOD service calls without brittle tool-name coupling.
 
 ## Platform Workarounds
 
