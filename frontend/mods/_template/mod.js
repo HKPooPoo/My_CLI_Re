@@ -13,7 +13,17 @@
  * 6. Create locale files in locales/{en,zh-TW,default}.json
  * 7. Add export to mod-manifest.js
  * 8. Add CSS icon: .feature-btn[data-feature-btn="{btn-id}"]::after
+ *    OR implement getIconUrl() for runtime icons (no CSS editing needed)
  * 9. Bump CACHE_NAME in sw.js
+ *
+ * Common Gotchas:
+ * - SW cache: always bump CACHE_NAME in sw.js after changes, or stale
+ *   cache will serve old files and your MOD won't appear.
+ * - init() receives instanceId=null; activate() gets the full context.
+ * - Module-level `let` state is shared across ALL instances of this
+ *   template. Use ctx.storage.get/set() for per-instance state.
+ * - ctx.board methods return null if no page is active (e.g. during init).
+ * - onConfigChange() now receives a real ModContext (not null).
  * =================================================================
  */
 
@@ -114,11 +124,12 @@ export default {
 
     /**
      * Config fields rendered in the MOD config page.
-     * Supported types: select, text, range, toggle, info, action
+     * Built-in types: select, text, range, toggle, info, action
+     * Custom types can be registered via ctx.ui.registerFieldType() in init().
      *
      * Each field supports:
      *   key       — config key name
-     *   type      — field type
+     *   type      — field type (built-in or custom-registered)
      *   labelKey  — i18n key for the label
      *   default   — default value (used when creating new instances)
      *   showWhen  — { key, value } — only show when another field matches
@@ -243,6 +254,14 @@ export default {
         // if (shelf) {
         //     shelf.innerHTML = '<div id="my-mod-output"></div>';
         // }
+        //
+        // Example: register a custom config field type
+        // ctx.ui.registerFieldType('api-key', (instanceId, template, field) => {
+        //     const input = document.createElement('input');
+        //     input.type = 'password';
+        //     // ... build custom UI ...
+        //     return input;
+        // });
     },
 
     /**
@@ -254,11 +273,18 @@ export default {
      *   ctx.board.getText()      — read active textarea
      *   ctx.board.setText(text)  — write + dispatch 'input'
      *   ctx.board.insertAtCursor(text) — insert at cursor
+     *   ctx.board.getCurrentRecord()   — live metadata (branchId, isVirtual, etc.)
+     *   ctx.board.getAllRecords()       — full branch history from IndexedDB
+     *   ctx.board.getAllBranches()      — all branches (BB only)
+     *   ctx.board.getAttachments()     — file hashes from active record
+     *   ctx.board.isVirtual()          — true if in virtual (new page) mode
      *   ctx.ui.toast(msg)        — show notification
      *   ctx.instance.getConfig(key) — live config read
      *   ctx.storage.get/set(k,v) — sandboxed localStorage
      *   ctx.net.apiRequest(ep)   — authenticated API calls
      *   ctx.file.upload(blob)    — file upload
+     *   ctx.file.readContent(hash) — read file from cache or server
+     *   ctx.file.readText(hash)    — read file as text
      */
     async activate(ctx) {
         // Example: read text, process, show result
@@ -272,14 +298,15 @@ export default {
     },
 
     /**
-     * Called when shelf closes or button is deactivated.
-     * @param {ModContext} ctx
+     * Called when shelf closes or a different button is clicked.
+     * Use for cleanup (stop timers, hide UI, etc.).
+     * @param {ModContext} ctx  The context from the last activate() call
      */
     async deactivate(ctx) {},
 
     /**
      * Called when any config field changes for any instance.
-     * @param {ModContext|null} ctx  May be null if called from mod-state
+     * @param {ModContext} ctx  ModContext for the instance (non-null in v2.1)
      * @param {string} key          Config key that changed
      * @param {*} value             New value
      */
@@ -299,4 +326,34 @@ export default {
      * @param {ModContext} ctx
      */
     destroy(ctx) {},
+
+    // ===================== Optional Methods (v2.1) =====================
+
+    /**
+     * Dynamic value for 'info' config fields.
+     * Called by the framework when rendering info-type config fields.
+     * @param {string} key        Config field key
+     * @param {string} instanceId Instance ID
+     * @returns {string}          Display value
+     */
+    // getInfoValue(key, instanceId) { return '—'; },
+
+    /**
+     * Handler for 'action' config fields.
+     * Called when user clicks an action button in config.
+     * @param {string} key        Config field key
+     * @param {string} instanceId Instance ID
+     */
+    // async onAction(key, instanceId) { },
+
+    /**
+     * Runtime icon URL — return path or data URI.
+     * If provided, the framework injects --mod-icon-url as an inline CSS var
+     * on the button, which is picked up by the .feature-btn[style*=]::after rule.
+     * Return null to fall back to CSS selector-based icons.
+     *
+     * @param {object} config  Instance config
+     * @returns {string|null}  URL to SVG/PNG icon, or null
+     */
+    // getIconUrl(config) { return null; },
 };

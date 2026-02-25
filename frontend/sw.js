@@ -1,4 +1,4 @@
-const CACHE_NAME = 'blackboard-v28-2026-02-25'; // Bump: DELETE confirm, list isolation, selection race fix
+const CACHE_NAME = 'blackboard-v29-2026-02-25'; // Bump: MOD v2.1 extensibility overhaul
 const ASSETS = [
   '/',
   '/index.html',
@@ -27,6 +27,8 @@ const ASSETS = [
   '/javascript/mod-context.js',
   '/javascript/mod-hooks.js',
   '/javascript/mod-tools.js',
+  '/javascript/mod-board-provider.js',
+  '/javascript/mod-field-registry.js',
   '/javascript/mods-manager.js',
   '/mods/mod-loader.js',
   '/mods/mod-manifest.js',

@@ -53,7 +53,6 @@ export default {
         { id: 'marked', type: 'client', nameKey: 'mods.markdownPreview.provider.marked' },
     ],
     configSchema: [],
-    sharedConfigGroup: null,
 
     // --- Lifecycle ---
     async init(ctx) {

@@ -188,6 +188,12 @@
     mask-image: url('../images/markdown_preview.svg');
 }
 
+/* Runtime icon — MODs that provide getIconUrl() inject --mod-icon-url */
+.feature-btn[style*="--mod-icon-url"]::after {
+    -webkit-mask-image: var(--mod-icon-url);
+    mask-image: var(--mod-icon-url);
+}
+
 /* Status states (toggled by JS) */
 .feature-btn.active::after {
     filter: drop-shadow(0 0 5px var(--text-orange));

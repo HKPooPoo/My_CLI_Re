@@ -244,11 +244,13 @@ javascript/
   broadcast-db.js        # BC IndexedDB operations
   # --- MOD system ---
   mod-state.js           # Instance-based state manager (template registry, instance CRUD)
-  mod-context.js         # ModContext API factory (sandboxed platform access)
+  mod-context.js         # ModContext API factory (sandboxed platform access, slim orchestrator)
+  mod-board-provider.js  # Board data access layer (metadata providers, history, file cache)
+  mod-field-registry.js  # Config field type registry (built-in + custom renderers)
   mod-hooks.js           # Priority-ordered hook pipeline
   mod-tools.js           # Cross-MOD tool registry (OpenAI function-calling compatible)
   mods-manager.js        # MOD Manager UI (list + config pages, instance actions)
-  feature-shelf.js       # Feature shelf lateral panel + MOD-aware button visibility
+  feature-shelf.js       # Feature shelf lateral panel + MOD-aware button visibility + deactivate lifecycle
   # --- MOD template entry points (called from mods/*.js) ---
   feature-translator.js  # Translate handler (multi-lang, multi-provider)
   feature-markdown.js    # Markdown preview handler (marked.js rendering)
@@ -318,8 +320,8 @@ Hierarchical two-level navigation that drives the entire SPA page switching:
 | `mods:changed` | mod-state.js | `{ instanceId, templateId, enabled }` | Instance toggled on/off; feature-shelf re-evaluates button visibility |
 | `mods:configChanged` | mod-state.js | `{ instanceId, templateId, key, value }` | Instance config changed; mods-manager re-renders fields (showWhen) + updates button icon |
 | `mods:instanceAdded` | mod-state.js | `{ instance }` | New instance created; re-render list + create button |
-| `mods:instanceRemoved` | mod-state.js | `{ instanceId, templateId }` | Instance deleted; re-render list + remove button |
-| `mods:reordered` | mod-state.js | — | Instance order changed; re-render list + reorder buttons |
+| `mods:instanceRemoved` | mod-state.js | `{ instanceId, templateId, instance }` | Instance deleted; re-render list + remove button |
+| `mods:reordered` | mod-state.js | `{ instanceId, direction }` | Instance order changed; re-render list + reorder buttons |
 | `mods:selected` | mods-manager.js | `{ instanceId }` | Instance selected in list (500ms debounce); config page renders |
 | `settings:maxSlotChanged` | misc.js | — | MAX_SLOT range slider changed; lists adjust limits |
 
@@ -431,7 +433,7 @@ Self-contained, plug-and-play feature system. **1 Instance = 1 Feature Button**.
 
 #### Architecture: `mod-manifest.js` → `mod-loader.js` → Templates → Instances
 
-**Boot sequence:** `i18n:ready` → `loadAllMods()` → register templates in ModState → run migration (v1→v2→v3) → create default instances if none exist → fetch MOD-local locales → create DOM (buttons from instances + shelves from templates) → register declarative hooks + tools → call each template's `init(ctx)` with ModContext → dispatch `mods:loaded` → `mods-manager.init()`
+**Boot sequence:** `i18n:ready` → `loadAllMods()` → validate templates (skip invalid) → register templates in ModState → wire context factory → run migration (v1→v2→v3) → create default instances if none exist → fetch MOD-local locales → create DOM (buttons with runtime icons from instances + shelves from templates) → register declarative hooks + tools → call each template's `init(ctx)` with ModContext → dispatch `mods:loaded` → `mods-manager.init()` (registers built-in field types)
 
 A `setTimeout(bootMods, 0)` fallback in `index.html` ensures boot even if `i18n:ready` fires before the listener is registered.
 
@@ -478,8 +480,13 @@ ctx
 │   ├── getSelection()       { start, end, text }
 │   ├── getTextarea()        raw HTMLTextAreaElement (escape hatch)
 │   ├── getScope()           'bb' | 'wt' | 'bc'
-│   ├── getBranchId()        current branch_id
-│   └── getBranchName()      current branch name
+│   ├── getBranchId()        current branch_id (via metadata provider)
+│   ├── getBranchName()      current branch name (via metadata provider)
+│   ├── getCurrentRecord()   → { branchId, branchName, isVirtual, headIndex, ... }
+│   ├── isVirtual()          true if in virtual (new page) mode
+│   ├── getAttachments()     → string[] file hashes from active record
+│   ├── getAllRecords()      → Record[] full branch history (async)
+│   └── getAllBranches()     → Branch[] all branches for scope (async, BB only)
 │
 ├── .ui                      User interface
 │   ├── toast(msg, dur?)     → { update(), close() }
@@ -488,7 +495,8 @@ ctx
 │   ├── getShelfElement()    this template's shelf panel DOM
 │   ├── openShelf()          programmatic open
 │   ├── closeShelf()         programmatic close
-│   └── playSound(filename)  play from /audio/
+│   ├── playSound(filename)  play from /audio/
+│   └── registerFieldType(t, fn) register custom config field renderer
 │
 ├── .i18n
 │   ├── t(key, vars?)        translate with interpolation
@@ -509,7 +517,9 @@ ctx
 │   ├── download(hash)       → Blob
 │   ├── exists(hash)         → boolean
 │   ├── getMeta(hash)        → { hash, name, mime, size }
-│   └── getDownloadUrl(hash) → URL string
+│   ├── getDownloadUrl(hash) → URL string
+│   ├── readContent(hash)    → Blob (local cache first, then server)
+│   └── readText(hash)       → string (convenience wrapper)
 │
 ├── .events                  Managed event subscriptions (auto-cleanup)
 │   ├── on(event, handler)
@@ -569,7 +579,7 @@ const result = await ModTools.executeTool('translate.translate_text', { text, ta
 
 API: `register(templateId, tool)` · `unregisterAll(templateId)` · `executeTool(fullName, args, ctx?)` · `getToolDefinitions()` · `getToolNames()` · `hasTool(fullName)`
 
-#### Template Interface (v2)
+#### Template Interface (v2.1)
 
 Every template in `mods/{id}/mod.js` exports a default object:
 
@@ -601,19 +611,24 @@ export default {
     shelfPanelId: 'translator',         // shared by all instances (1 shelf per template)
     pages: { ... },                     // page-aware textarea binding
     providers: [ ... ],                 // provider types (cloud/server/client)
-    configSchema: [ ... ],              // per-instance config fields
+    configSchema: [ ... ],              // per-instance config fields (built-in + custom types)
 
-    // --- NEW: LLM Tools (optional) ---
+    // --- LLM Tools (optional) ---
     tools: [{ name, description, parameters, execute }],
 
-    // --- NEW: Hooks (optional) ---
+    // --- Hooks (optional) ---
     hooks: [{ name, priority, handler }],
+
+    // --- Optional methods (v2.1) ---
+    getIconUrl(config) {},              // runtime icon URL (null = use CSS fallback)
+    getInfoValue(key, instanceId) {},   // dynamic value for 'info' config fields
+    async onAction(key, instanceId) {}, // handler for 'action' config fields
 
     // --- Lifecycle (all receive ModContext) ---
     async init(ctx) {},                 // once per template (ctx.instanceId = null)
     async activate(ctx) {},             // per button click (full ModContext)
-    async deactivate(ctx) {},           // shelf close / button deactivation
-    onConfigChange(ctx, key, value) {}, // config field changed
+    async deactivate(ctx) {},           // shelf close / button deactivation (NOW CALLED)
+    onConfigChange(ctx, key, value) {}, // config field changed (ctx is now non-null)
     async checkHealth(instanceConfig) {},
     destroy(ctx) {},
 }
@@ -632,10 +647,11 @@ export default {
 ```
 
 - **`mod-instances`** — JSON array of instance objects, ordered by `order`
-- **`mod-shared-configs`** — kept for LLM shared config (unchanged)
 - **Migration chain:** v1 (8 translate MODs) → v2 (1 translate MOD) → v3 (instances array)
 
 #### Config Schema Field Types
+
+Built-in types are registered by `mods-manager.js` at init via `mod-field-registry.js`. Templates can register custom types via `ctx.ui.registerFieldType(type, rendererFn)` in `init()`.
 
 | type | Renders | Use case |
 |------|---------|----------|
@@ -645,6 +661,9 @@ export default {
 | `toggle` | On/Off pill button | Sub-feature switch |
 | `info` | Read-only `<span>` | Server status, download progress |
 | `action` | `<button>` | Download model, test connection |
+| *(custom)* | Template-defined | Register via `ctx.ui.registerFieldType()` |
+
+Renderer function contract: `(instanceId, template, field) => HTMLElement`
 
 Each field supports `showWhen: { key, value }` — only rendered when another config key matches. Re-evaluated on `mods:configChanged`.
 
@@ -705,9 +724,9 @@ Instance-based state management. Templates are registered, instances are CRUD-ma
 - **Event delegation** on `.feature-container` for click handling
 - `isFeatureBtnAllowed($btn)`: reads `data-instance-id`, checks `ModState.isEnabled(instanceId)`
 - `resolveShelfId($btn)`: reads `data-instance-id`, looks up template's `shelfPanelId`
-- `handleFeatureBtnClick()`: builds full `ModContext`, calls `template.activate(ctx)` BEFORE shelf panel check
+- `handleFeatureBtnClick()`: calls `_deactivatePrevious()`, builds full `ModContext`, calls `template.activate(ctx)`, stores ctx for deactivate lifecycle
 - `updateFeatureButtons(page)`: derives allowed templates from each template's `pages` keys; show buttons for enabled instances whose template declares that page
-- Exports: `openShelf()`, `closeShelf()` — for programmatic shelf control
+- Exports: `openShelf()`, `closeShelf()` — for programmatic shelf control (closeShelf also calls deactivate)
 
 #### Current Templates (3 self-contained, all v2.0.0)
 
@@ -724,10 +743,11 @@ Instance-based state management. Templates are registered, instances are CRUD-ma
 3. Set `pages` keys to declare which pages this MOD's buttons appear on (e.g. `{ 'blackboard-log': { textareaSelector: '#log-textarea' } }`) — page visibility is driven by `template.pages`, NOT HTML attributes
 4. Create `mods/{id}/locales/{en,zh-TW,default}.json` with template-local i18n keys
 5. Add `export { default as myMod } from './{id}/mod.js'` to `mod-manifest.js`
-6. Add CSS icon: `.feature-btn[data-feature-btn="{btn-id}"]::after { mask-image: url(...) }`
+6. Add icon — EITHER: CSS selector `.feature-btn[data-feature-btn="{btn-id}"]::after { mask-image: url(...) }` OR implement `getIconUrl(config)` for runtime icons (no CSS editing needed)
 7. Implement `init(ctx)` and `activate(ctx)` using ModContext API
 8. Optionally add `tools[]` and `hooks[]` for cross-MOD integration
-9. **Bump SW cache version** in `sw.js`
+9. Optionally register custom config field types via `ctx.ui.registerFieldType()` in `init()`
+10. **Bump SW cache version** in `sw.js`
 
 #### SW Cache Bump Reminder
 

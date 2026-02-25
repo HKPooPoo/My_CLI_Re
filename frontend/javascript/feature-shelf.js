@@ -17,6 +17,21 @@ const $featureShelfContainer = document.querySelector('.feature-shelf-container'
 const $featureShelfBackBtn = document.querySelector('.feature-shelf-back-btn');
 const $featureContainer = document.querySelector('.feature-container');
 
+// --- Last-activated context for deactivate lifecycle ---
+let _lastActivatedCtx = null;
+
+function _deactivatePrevious() {
+    if (!_lastActivatedCtx) return;
+    const templates = getAllTemplates();
+    const tpl = templates.find(t => t.id === _lastActivatedCtx.templateId);
+    if (tpl && typeof tpl.deactivate === 'function') {
+        try { tpl.deactivate(_lastActivatedCtx); } catch(e) {
+            console.error('[feature-shelf] deactivate error:', e);
+        }
+    }
+    _lastActivatedCtx = null;
+}
+
 // --- Drag state ---
 let isDragging = false;
 let dragStartX = 0;
@@ -163,6 +178,7 @@ function handleFeatureBtnClick($clickedBtn) {
         const templates = getAllTemplates();
         const template = templates.find(t => t.id === instance.templateId);
         if (template && typeof template.activate === 'function') {
+            _deactivatePrevious();
             const ctx = createModContext({
                 instanceId: instance.instanceId,
                 templateId: instance.templateId,
@@ -172,6 +188,7 @@ function handleFeatureBtnClick($clickedBtn) {
                 template,
             });
             template.activate(ctx);
+            _lastActivatedCtx = ctx;
         }
     }
 
@@ -214,6 +231,7 @@ export function openShelf() {
 }
 
 export function closeShelf() {
+    _deactivatePrevious();
     updateShelfTransform(0);
 }
 

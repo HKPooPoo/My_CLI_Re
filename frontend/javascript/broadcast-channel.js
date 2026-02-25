@@ -35,6 +35,7 @@ import { BBMessage } from './blackboard-msg.js';
 import { getEcho } from './echo-service.js';
 import { t } from './i18n.js';
 import * as Settings from './settings.js';
+import { registerMetadataProvider } from './mod-board-provider.js';
 
 const _readerCache = new Map();  // serverChannelId → { records, fetchedAt }
 const READER_CACHE_TTL = 30_000; // 30 seconds
@@ -82,6 +83,18 @@ export const BCChannel = {
         this.bindEvents();
         this.lockTextarea();
         this.clearIndicators();
+
+        // Register metadata provider for MOD board data access
+        registerMetadataProvider('bc', () => ({
+            branchId:   this.state.localChannelId?.toString() ?? null,
+            branchName: this.currentChannel?.name ?? null,
+            timestamp:  null,
+            text:       this.elements.textarea?.value ?? '',
+            fileHash:   null,
+            owner:      null,
+            isVirtual:  this.state.isVirtual,
+            headIndex:  this.isOwnerMode ? this.state.currentHead : this.readerHead,
+        }));
     },
 
     // =====================================================================

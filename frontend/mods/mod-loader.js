@@ -14,10 +14,11 @@
 
 import * as manifest from './mod-manifest.js';
 import { mergeStrings, getActiveLocale, t } from '../javascript/i18n.js';
-import { ModState } from '../javascript/mod-state.js';
-import { createInitContext, setQueryProvider } from '../javascript/mod-context.js';
+import { ModState, setContextFactory } from '../javascript/mod-state.js';
+import { createInitContext, createModContext, setQueryProvider } from '../javascript/mod-context.js';
 import { ModHooks } from '../javascript/mod-hooks.js';
 import { ModTools } from '../javascript/mod-tools.js';
+import { BBMessage } from '../javascript/blackboard-msg.js';
 
 const _templates = {};
 
@@ -30,13 +31,25 @@ export async function loadAllMods() {
     setQueryProvider({ getTemplate, getAllTemplates, getInstances, getInstancesByTemplate });
 
     try {
-        const templateDefs = Object.values(manifest);
+        let templateDefs = Object.values(manifest);
 
-        // 1. Register all templates in ModState
+        // 1. Validate and register all templates in ModState
+        const validatedDefs = [];
         for (const tpl of templateDefs) {
+            const errors = validateTemplate(tpl);
+            if (errors.length > 0) {
+                console.warn(`[mod-loader] Template validation failed for "${tpl.id || '(unknown)'}":`, errors);
+                BBMessage.error(t('mods.validationFailed', { id: tpl.id || '(unknown)' }));
+                continue;
+            }
             ModState.registerTemplate(tpl.id, tpl);
             _templates[tpl.id] = tpl;
+            validatedDefs.push(tpl);
         }
+        templateDefs = validatedDefs;
+
+        // Wire context factory for onConfigChange lifecycle
+        setContextFactory(createModContext);
 
         // 2. Run migration (v1 → v2 → v3) only — no auto-creation.
         //    Users ADD mods manually from the catalog; localStorage remembers.
@@ -151,6 +164,12 @@ function createInstanceButton(instance, btnContainer, shelfContainer) {
     btn.dataset.instanceId = instance.instanceId;
     // No textContent — icons are rendered via CSS ::after mask-image
 
+    // Runtime icon injection — templates that provide getIconUrl() get inline CSS var
+    if (typeof template.getIconUrl === 'function') {
+        const url = template.getIconUrl(instance.config);
+        if (url) btn.style.setProperty('--mod-icon-url', `url('${url}')`);
+    }
+
     // Insert before the shelf container
     if (!shelfContainer) shelfContainer = document.querySelector('.feature-shelf-container');
     if (btnContainer && shelfContainer) {
@@ -201,7 +220,31 @@ export function updateInstanceButton(instanceId) {
     const btn = btnContainer?.querySelector(`[data-instance-id="${instanceId}"]`);
     if (btn) {
         btn.dataset.featureBtn = template.getButtonDataId(inst.config);
+        // Refresh runtime icon
+        if (typeof template.getIconUrl === 'function') {
+            const url = template.getIconUrl(inst.config);
+            if (url) {
+                btn.style.setProperty('--mod-icon-url', `url('${url}')`);
+            } else {
+                btn.style.removeProperty('--mod-icon-url');
+            }
+        }
     }
+}
+
+// --- Template Validation ---
+
+function validateTemplate(tpl) {
+    const errors = [];
+    if (!tpl.id)                                    errors.push('missing "id"');
+    if (!tpl.group)                                 errors.push('missing "group"');
+    if (!tpl.nameKey)                               errors.push('missing "nameKey"');
+    if (typeof tpl.getButtonDataId !== 'function')  errors.push('missing getButtonDataId()');
+    if (typeof tpl.getInstanceName !== 'function')  errors.push('missing getInstanceName()');
+    if (!Array.isArray(tpl.defaultInstances))        errors.push('missing defaultInstances[]');
+    if (typeof tpl.init !== 'function')             errors.push('missing init()');
+    if (typeof tpl.activate !== 'function')         errors.push('missing activate()');
+    return errors;
 }
 
 // --- Query API ---

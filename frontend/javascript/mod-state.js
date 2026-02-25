@@ -13,8 +13,21 @@
 import { ModService } from './services/mod-service.js';
 import { ModHooks } from './mod-hooks.js';
 
+/**
+ * Late-bound context factory — set by mod-loader.js to break circular dependency.
+ * Used to build a ModContext for onConfigChange callbacks.
+ */
+let _contextFactory = null;
+
+/**
+ * Inject the ModContext factory. Called once by mod-loader.js after boot.
+ * @param {Function} factory  (opts) => ModContext
+ */
+export function setContextFactory(factory) {
+    _contextFactory = factory;
+}
+
 const INSTANCES_KEY = 'mod-instances';
-const SHARED_CONFIGS_KEY = 'mod-shared-configs';
 
 // Legacy keys for migration
 const LEGACY_STATES_KEY = 'mod-states';
@@ -31,7 +44,6 @@ const V1_TRANSLATE_IDS = [
 export const ModState = {
     _templates: {},       // registered template definitions
     _instances: [],       // ordered array of instance objects
-    _sharedConfigs: {},   // shared config (e.g. LLM group)
     _serverStatuses: {},  // instanceId → 'online'|'offline'|'unknown'
 
     init() {
@@ -40,12 +52,6 @@ export const ModState = {
         } catch {
             this._instances = [];
         }
-        try {
-            this._sharedConfigs = JSON.parse(localStorage.getItem(SHARED_CONFIGS_KEY) || '{}');
-        } catch {
-            this._sharedConfigs = {};
-        }
-
         // Clean up legacy dismissed key (no longer used)
         localStorage.removeItem('mod-dismissed');
 
@@ -161,7 +167,7 @@ export const ModState = {
         const idx = this._instances.findIndex(i => i.instanceId === instanceId);
         if (idx === -1) return;
 
-        const instance = this._instances[idx];
+        const instance = { ...this._instances[idx] };  // shallow copy BEFORE splice
 
         // Cleanup hooks owned by this instance
         ModHooks.unregisterAll(instanceId);
@@ -169,7 +175,9 @@ export const ModState = {
         this._instances.splice(idx, 1);
         delete this._serverStatuses[instanceId];
         this._persistInstances();
-        window.dispatchEvent(new CustomEvent('mods:instanceRemoved', { detail: { instanceId, templateId: instance.templateId } }));
+        window.dispatchEvent(new CustomEvent('mods:instanceRemoved', {
+            detail: { instanceId, templateId: instance.templateId, instance }
+        }));
     },
 
     // ===================== Instance State =====================
@@ -195,8 +203,21 @@ export const ModState = {
         // Call template's onConfigChange callback if exists
         const template = this._templates[inst.templateId];
         if (template && typeof template.onConfigChange === 'function') {
+            let ctx = null;
+            if (_contextFactory) {
+                try {
+                    ctx = _contextFactory({
+                        instanceId: inst.instanceId,
+                        templateId: inst.templateId,
+                        page: null,
+                        buttonId: null,
+                        config: inst.config,
+                        template,
+                    });
+                } catch (_) { /* best-effort */ }
+            }
             try {
-                template.onConfigChange(null, key, value);
+                template.onConfigChange(ctx, key, value);
             } catch (e) {
                 console.error(`[mod-state] onConfigChange failed for ${inst.templateId}:`, e);
             }
@@ -226,7 +247,9 @@ export const ModState = {
         sorted[targetIdx].order = tmpOrder;
 
         this._persistInstances();
-        window.dispatchEvent(new CustomEvent('mods:reordered'));
+        window.dispatchEvent(new CustomEvent('mods:reordered', {
+            detail: { instanceId, direction }
+        }));
     },
 
     // ===================== Server Status =====================
@@ -286,19 +309,6 @@ export const ModState = {
         });
 
         await Promise.allSettled(promises);
-    },
-
-    // ===================== Shared Config =====================
-
-    getSharedConfig(group, key) {
-        return this._sharedConfigs[group]?.[key] ?? null;
-    },
-
-    setSharedConfig(group, key, value) {
-        if (!this._sharedConfigs[group]) this._sharedConfigs[group] = {};
-        this._sharedConfigs[group][key] = value;
-        localStorage.setItem(SHARED_CONFIGS_KEY, JSON.stringify(this._sharedConfigs));
-        window.dispatchEvent(new CustomEvent('mods:sharedConfigChanged', { detail: { group, key, value } }));
     },
 
     // ===================== Migration =====================

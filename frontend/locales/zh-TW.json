@@ -258,6 +258,7 @@
     "deleteInstance": "刪除",
     "deleteConfirm": "確定？",
     "maxReached": "已達上限",
+    "validationFailed": "模組 '{id}' 驗證失敗 — 請檢查主控台",
     "status": {
       "unknown": "掃描中...",
       "online": "線上",

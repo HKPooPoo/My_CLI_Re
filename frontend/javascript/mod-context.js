@@ -23,6 +23,8 @@ import { FileService } from './services/file-service.js';
 import { t, getActiveLocale } from './i18n.js';
 import { BBMessage } from './blackboard-msg.js';
 import { playAudio } from './audio.js';
+import * as BoardProvider from './mod-board-provider.js';
+import * as FieldRegistry from './mod-field-registry.js';
 
 /**
  * Late-bound query provider — set by mod-loader.js at boot to break
@@ -191,13 +193,46 @@ export function createModContext(opts) {
                 return page ? (PAGE_SCOPE_MAP[page] || null) : null;
             },
             getBranchId() {
-                const activePage = document.querySelector('.page.active');
-                return activePage?.dataset?.branchId || null;
+                const scope = this.getScope();
+                if (!scope) return null;
+                const meta = BoardProvider.getCurrentRecord(scope);
+                return meta?.branchId ?? null;
             },
             getBranchName() {
-                const activePage = document.querySelector('.page.active');
-                return activePage?.dataset?.branchName || null;
-            }
+                const scope = this.getScope();
+                if (!scope) return null;
+                const meta = BoardProvider.getCurrentRecord(scope);
+                return meta?.branchName ?? null;
+            },
+
+            // --- Data access APIs (v2.1) ---
+
+            getCurrentRecord() {
+                const scope = this.getScope();
+                if (!scope) return null;
+                return BoardProvider.getCurrentRecord(scope);
+            },
+            isVirtual() {
+                const record = this.getCurrentRecord();
+                return record?.isVirtual ?? false;
+            },
+            getAttachments() {
+                const scope = this.getScope();
+                if (!scope) return [];
+                return BoardProvider.getAttachments(scope);
+            },
+            async getAllRecords() {
+                const scope = this.getScope();
+                const meta = BoardProvider.getCurrentRecord(scope);
+                if (!meta) return [];
+                return BoardProvider.getAllRecords(scope, meta.branchId, meta.owner);
+            },
+            async getAllBranches() {
+                const scope = this.getScope();
+                const meta = BoardProvider.getCurrentRecord(scope);
+                if (!meta) return [];
+                return BoardProvider.getAllBranches(scope, meta.owner);
+            },
         },
 
         // ===================== UI =====================
@@ -238,6 +273,9 @@ export function createModContext(opts) {
             },
             playSound(filename) {
                 playAudio(filename);
+            },
+            registerFieldType(type, rendererFn) {
+                FieldRegistry.registerFieldType(type, rendererFn);
             }
         },
 
@@ -308,6 +346,12 @@ export function createModContext(opts) {
             },
             getDownloadUrl(hash) {
                 return FileService.downloadUrl(hash);
+            },
+            async readContent(hash) {
+                return BoardProvider.readFileContent(hash);
+            },
+            async readText(hash) {
+                return BoardProvider.readFileText(hash);
             }
         },
 

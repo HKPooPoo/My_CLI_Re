@@ -14,6 +14,7 @@ import { InfiniteList } from './blackboard-ui-list.js';
 import { BBMessage } from './blackboard-msg.js';
 import { playAudio } from './audio.js';
 import { t } from './i18n.js';
+import { registerFieldType, getRenderer } from './mod-field-registry.js';
 
 let infiniteList = null;
 let selectionTimer = null;
@@ -34,6 +35,14 @@ const elements = {
 
 // --- Initialise ---
 function init() {
+    // Register built-in config field type renderers
+    registerFieldType('select',  createSelectField);
+    registerFieldType('text',    createTextField);
+    registerFieldType('range',   createRangeField);
+    registerFieldType('toggle',  createToggleField);
+    registerFieldType('info',    createInfoField);
+    registerFieldType('action',  createActionField);
+
     bindEvents();
 
     // Select first instance and pass to renderListPage so InfiniteList
@@ -375,33 +384,15 @@ function createConfigField(instanceId, template, field) {
     label.textContent = t(field.labelKey) || field.key;
     wrapper.appendChild(label);
 
-    switch (field.type) {
-        case 'select':
-            wrapper.appendChild(createSelectField(instanceId, field));
-            break;
-        case 'text':
-            wrapper.appendChild(createTextField(instanceId, field));
-            break;
-        case 'range':
-            wrapper.appendChild(createRangeField(instanceId, field));
-            break;
-        case 'toggle':
-            wrapper.appendChild(createToggleField(instanceId, field));
-            break;
-        case 'info':
-            wrapper.appendChild(createInfoField(instanceId, template, field));
-            break;
-        case 'action':
-            wrapper.appendChild(createActionField(instanceId, template, field));
-            break;
-        default:
-            wrapper.appendChild(createTextField(instanceId, field));
+    const renderer = getRenderer(field.type);
+    if (renderer) {
+        wrapper.appendChild(renderer(instanceId, template, field));
     }
 
     return wrapper;
 }
 
-function createSelectField(instanceId, field) {
+function createSelectField(instanceId, template, field) {
     const currentValue = ModState.getConfig(instanceId, field.key) ?? field.default ?? '';
     const options = field.options || [];
     const currentOpt = options.find(o => o.value === currentValue);
@@ -464,7 +455,7 @@ function createSelectField(instanceId, field) {
     return container;
 }
 
-function createTextField(instanceId, field) {
+function createTextField(instanceId, template, field) {
     const input = document.createElement('input');
     input.className = 'mods-config-field-input';
     input.type = 'text';
@@ -476,7 +467,7 @@ function createTextField(instanceId, field) {
     return input;
 }
 
-function createRangeField(instanceId, field) {
+function createRangeField(instanceId, template, field) {
     const container = document.createElement('div');
     container.className = 'mods-config-range-group';
 
@@ -504,7 +495,7 @@ function createRangeField(instanceId, field) {
     return container;
 }
 
-function createToggleField(instanceId, field) {
+function createToggleField(instanceId, template, field) {
     const btn = document.createElement('button');
     const current = ModState.getConfig(instanceId, field.key) ?? field.default ?? false;
     btn.className = `mods-toggle-btn ${current ? 'enabled' : 'disabled'}`;

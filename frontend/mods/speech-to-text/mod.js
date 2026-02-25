@@ -59,7 +59,6 @@ export default {
         { id: 'google-speech', type: 'cloud', nameKey: 'mods.speechToText.provider.google' },
     ],
     configSchema: [],
-    sharedConfigGroup: null,
 
     // --- Lifecycle ---
     async init(ctx) {

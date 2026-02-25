@@ -23,6 +23,7 @@ import { playAudio } from "./audio.js";
 import { EditorAttachments } from "./editor-attachments.js";
 import { t } from './i18n.js';
 import * as Settings from './settings.js';
+import { registerMetadataProvider } from './mod-board-provider.js';
 
 // --- 全域狀態聲明 ---
 const state = {
@@ -36,6 +37,18 @@ const state = {
 
 let debounceTimer = null;
 let isInitializing = false;
+
+// Register metadata provider for MOD board data access
+registerMetadataProvider('bb', () => ({
+    branchId:   state.branchId,
+    branchName: state.branch,
+    timestamp:  null,  // current record timestamp resolved at read time
+    text:       BBUI.getTextareaValue() || '',
+    fileHash:   null,  // resolved by MOD via getAllRecords if needed
+    owner:      state.owner,
+    isVirtual:  state.isVirtual,
+    headIndex:  state.currentHead,
+}));
 
 // --- File Attachment Instance ---
 const bbAttach = EditorAttachments.create({

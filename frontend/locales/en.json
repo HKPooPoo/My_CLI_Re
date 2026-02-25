@@ -258,6 +258,7 @@
     "deleteInstance": "DELETE",
     "deleteConfirm": "CONFIRM?",
     "maxReached": "ADDED",
+    "validationFailed": "MOD '{id}' FAILED VALIDATION — CHECK CONSOLE",
     "status": {
       "unknown": "SCANNING...",
       "online": "ONLINE",

@@ -87,8 +87,6 @@ export default {
             showWhen: { key: 'provider', value: 'libretranslate' }
         },
     ],
-    sharedConfigGroup: null,
-
     // --- LLM Tools (v2) ---
     tools: [
         {
