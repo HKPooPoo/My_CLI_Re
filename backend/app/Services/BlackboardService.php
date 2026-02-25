@@ -5,6 +5,7 @@ namespace App\Services;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Cache;
 use App\Models\User;
+use App\Events\BlackboardUpdated;
 
 class BlackboardService
 {
@@ -15,9 +16,9 @@ class BlackboardService
         $this->fileService = $fileService;
     }
 
-    public function commit(User $user, string $branchId, string $branchName, array $records)
+    public function commit(User $user, string $branchId, string $branchName, array $records, ?string $deviceId = null)
     {
-        return DB::transaction(function () use ($user, $branchId, $branchName, $records) {
+        DB::transaction(function () use ($user, $branchId, $branchName, $records) {
             $incomingTimestamps = array_column($records, 'timestamp');
 
             DB::table('blackboards')
@@ -77,6 +78,10 @@ class BlackboardService
             Cache::forget("user:{$user->id}:branches");
             Cache::forget("bb:branch:{$user->id}:{$branchId}:details");
         });
+
+        if ($deviceId) {
+            broadcast(new BlackboardUpdated($user->uid, $branchId, $deviceId));
+        }
     }
 
 

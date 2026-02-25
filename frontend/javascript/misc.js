@@ -125,6 +125,7 @@ export const MISC = {
             maxFiles: createRangeControl(container, 'bb', 'maxFiles', 'config.maxFilesLabel', 1, 20, 1),
             autoClean: createToggleControl(container, 'bb', 'autoCleanBlanks', 'config.autoCleanBlanks'),
             updateTs: createToggleControl(container, 'bb', 'updateTimestamp', 'config.updateTimestamp'),
+            autoSync: createToggleControl(container, 'bb', 'autoSync', 'config.autoSync'),
         };
     },
 
@@ -148,6 +149,7 @@ export const MISC = {
             this.bbControls.maxFiles.valueSpan.textContent = Settings.get('bb', 'maxFiles');
             this.bbControls.autoClean.updateLabel();
             this.bbControls.updateTs.updateLabel();
+            this.bbControls.autoSync?.updateLabel();
         }
     },
 

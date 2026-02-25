@@ -1,4 +1,4 @@
-const CACHE_NAME = 'blackboard-v33-2026-02-26'; // Fix: LLM shelf CSS specificity
+const CACHE_NAME = 'blackboard-v34-2026-02-26'; // Feat: BB auto-sync multi-device
 const ASSETS = [
   '/',
   '/index.html',
@@ -6,6 +6,7 @@ const ASSETS = [
   '/stylesheets/editor-attachments.css',
   '/stylesheets/walkie-typie.css',
   '/javascript/blackboard.js',
+  '/javascript/blackboard-sync.js',
   '/javascript/editor-attachments.js',
   '/javascript/services/file-service.js',
   '/javascript/indexedDB.js',

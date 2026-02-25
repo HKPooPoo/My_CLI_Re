@@ -25,7 +25,8 @@ class BlackboardController extends Controller
             $user,
             $request->branch_id,
             $request->branch_name,
-            $request->records
+            $request->records,
+            $request->input('device_id')
         );
 
         return response()->json(['message' => 'Commit Successful']);

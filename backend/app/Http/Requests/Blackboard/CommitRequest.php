@@ -16,7 +16,8 @@ class CommitRequest extends FormRequest
         return [
             'branch_id' => 'required',
             'branch_name' => 'required',
-            'records' => 'required|array'
+            'records' => 'required|array',
+            'device_id' => 'nullable|string|max:64'
         ];
     }
 }

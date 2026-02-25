@@ -122,7 +122,8 @@
     "fileSyncFailed": "ERROR: FILE SYNC FAILED",
     "loginRequired": "ERROR: LOGIN REQUIRED",
     "uploadFailed": "ERROR: UPLOAD FAILED",
-    "searchPlaceholder": "SEARCH BRANCHES..."
+    "searchPlaceholder": "SEARCH BRANCHES...",
+    "autoSyncReceived": "SYNCED FROM DEVICE"
   },
   "walkieTypie": {
     "pageTitle": "WALKIE-TYPIE CONTROLLER",
@@ -227,6 +228,7 @@
     "maxFilesLabel": "MAX FILES",
     "autoCleanBlanks": "AUTO-CLEAN BLANKS",
     "updateTimestamp": "UPDATE TIMESTAMP",
+    "autoSync": "AUTO-SYNC (MULTI-DEVICE)",
     "boardSwap": "BOARD SWAP DEFAULT",
     "resetAll": "RESET ALL SETTINGS",
     "resetComplete": "SETTINGS RESET TO DEFAULTS"

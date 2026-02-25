@@ -105,7 +105,7 @@ export const BBVCS = {
     /**
      * Commit: 將指定分支的所有本地歷史上傳至 Server
      */
-    async commit(branchMeta) {
+    async commit(branchMeta, deviceId = null) {
         const { branchId, branch } = branchMeta;
 
         const loggedInUser = localStorage.getItem("currentUser");
@@ -170,11 +170,14 @@ export const BBVCS = {
                 return { ...r, file_hash: fh };
             });
 
-            await BlackboardService.commit({
+            const commitPayload = {
                 branch_id: branchId,
                 branch_name: branch,
                 records: payloadRecords
-            });
+            };
+            if (deviceId) commitPayload.device_id = deviceId;
+
+            await BlackboardService.commit(commitPayload);
 
             const syncedOwner = `local, online/${loggedInUser} [synced]`;
             await db.blackboard.where('owner').equals('local')

@@ -24,6 +24,7 @@ import { EditorAttachments } from "./editor-attachments.js";
 import { t } from './i18n.js';
 import * as Settings from './settings.js';
 import { registerMetadataProvider } from './mod-board-provider.js';
+import { BBSync } from './blackboard-sync.js';
 
 // --- 全域狀態聲明 ---
 const state = {
@@ -91,6 +92,7 @@ const bbAttach = EditorAttachments.create({
                 state.currentHead = 0;
             }
         }
+        BBSync.scheduleAutoCommit();
     },
     onDetach: async (hash) => {
         const entry = await BBCore.getRecord(state.owner, state.branchId, state.currentHead);
@@ -111,6 +113,7 @@ const bbAttach = EditorAttachments.create({
                 await db.blackboard.update([entry.owner, entry.branch_id, entry.timestamp], { file_hash: null });
             }
         }
+        BBSync.scheduleAutoCommit();
     },
 });
 
@@ -382,7 +385,7 @@ if (BBUI.elements.commitBtn) {
                     await BBVCS.save(state, BBUI.getTextareaValue());
                 }
 
-                await BBVCS.commit({ branchId: selected.id, branch: selected.name });
+                await BBVCS.commit({ branchId: selected.id, branch: selected.name }, BBSync.deviceId);
                 msg.update(t('blackboard.syncComplete'));
                 await updateBranchList();
             } catch (e) {
@@ -549,6 +552,8 @@ BBUI.elements.textarea?.addEventListener("input", () => {
         const headIndicator = state.isVirtual ? "NEW" : state.currentHead;
         BBUI.updateIndicators(state.branch || t('blackboard.branchNameFallback'), headIndicator, true);
     }, 200);
+
+    BBSync.scheduleAutoCommit();
 });
 
 // 監聽分支更名事件
@@ -560,13 +565,18 @@ window.addEventListener("blackboard:branchRename", async (e) => {
         BBUI.updateIndicators(state.branch || t('blackboard.branchNameFallback'), state.currentHead, true);
     }
     await updateBranchList();
+    BBSync.scheduleAutoCommit();
 });
 
 // 監聽授權變動 (登入/登出)
 window.addEventListener("auth:updated", async () => {
+    BBSync.stopListening();
     // [Fix]: Ensure we don't lose local state visibility on auth change
     // Force a re-init to ensure UI reflects current data
     await initBoard();
+    if (localStorage.getItem('currentUser') && Settings.get('bb', 'autoSync')) {
+        BBSync.startListening();
+    }
 });
 
 // 頁面切換時重繪指標 (無需讀 DB，使用記憶體中的狀態)
@@ -587,6 +597,14 @@ window.addEventListener('settings:changed', (e) => {
     if (d.scope === 'bb' && d.key === 'maxSlot' || d.scope === 'all') {
         state.maxSlot = Settings.get('bb', 'maxSlot');
     }
+    // React to autoSync toggle
+    if ((d.scope === 'bb' && d.key === 'autoSync') || d.scope === 'all') {
+        if (Settings.get('bb', 'autoSync') && localStorage.getItem('currentUser')) {
+            BBSync.startListening();
+        } else {
+            BBSync.stopListening();
+        }
+    }
 });
 
 // --- Branch Search ---
@@ -603,6 +621,17 @@ $vcsSearch?.addEventListener('input', () => {
 // --- 系統啟動 ---
 initBoard();
 
+// --- Auto-Sync 初始化 ---
+BBSync.init({
+    getState: () => state,
+    getTextareaValue: () => BBUI.getTextareaValue(),
+    onRemoteUpdate: () => syncView(),
+    onBranchListUpdate: () => updateBranchList(),
+});
+if (localStorage.getItem('currentUser') && Settings.get('bb', 'autoSync')) {
+    BBSync.startListening();
+}
+
 // --- 同步機制：處理多裝置更新 ---
 
 /**
@@ -613,6 +642,24 @@ window.addEventListener("focus", () => {
     if (!isInitializing && isBlackboardPageActive()) {
         updateBranchList();
     }
+});
+
+/**
+ * Auto-Sync: visibilitychange — flush on hide, recover on show
+ */
+document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') {
+        BBSync.flush();
+    } else {
+        BBSync.recover();
+    }
+});
+
+/**
+ * Auto-Sync: online — recover when network returns
+ */
+window.addEventListener('online', () => {
+    BBSync.recover();
 });
 
 /**

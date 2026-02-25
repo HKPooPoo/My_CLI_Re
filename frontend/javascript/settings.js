@@ -10,7 +10,7 @@
 const SCOPES = ['bb', 'wt', 'bc'];
 
 const SCOPE_DEFAULTS = {
-    bb: { maxSlot: 10, maxFiles: 10, autoCleanBlanks: true, updateTimestamp: true },
+    bb: { maxSlot: 10, maxFiles: 10, autoCleanBlanks: true, updateTimestamp: true, autoSync: false },
     wt: { maxSlot: 10, maxFiles: 10, autoCleanBlanks: true, updateTimestamp: true },
     bc: { maxSlot: 10, maxFiles: 10, autoCleanBlanks: false, updateTimestamp: false },
 };
