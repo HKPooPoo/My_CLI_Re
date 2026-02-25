@@ -105,6 +105,7 @@
     height: 100%;
     user-select: none;
     background-color: transparent;
+    flex-direction: column;
     justify-content: space-around;
     /* transition: transform 0.4s ease-in, */
     transition: transform var(--transition-slow) ease-in,

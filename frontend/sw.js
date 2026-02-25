@@ -1,4 +1,4 @@
-const CACHE_NAME = 'blackboard-v26-2026-02-25'; // Bump: boot cleanup, i18n fix, feature visibility
+const CACHE_NAME = 'blackboard-v27-2026-02-25'; // Bump: feature-btn layout, selection preservation
 const ASSETS = [
   '/',
   '/index.html',

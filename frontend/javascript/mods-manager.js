@@ -53,13 +53,19 @@ function init() {
 
 // ===================== List Page =====================
 
-function renderListPage() {
+function renderListPage(activeInstanceId) {
     const container = elements.listContainer;
     if (!container) return;
     container.innerHTML = '';
 
     renderTemplateCatalog(container);
     renderActiveInstances(container);
+
+    // Mark selected item BEFORE refresh so InfiniteList finds it via .active class
+    if (activeInstanceId) {
+        const target = container.querySelector(`.mods-list-item[data-instance-id="${activeInstanceId}"]`);
+        if (target) target.classList.add('active');
+    }
 
     if (infiniteList) {
         infiniteList.refresh();
@@ -174,9 +180,8 @@ function handleAddInstance(templateId) {
         return;
     }
     rebuildInstanceButtons();
-    renderListPage();
-
     selectedInstanceId = instance.instanceId;
+    renderListPage(selectedInstanceId);
     renderConfig(selectedInstanceId);
     renderInstanceActions(selectedInstanceId);
 }
@@ -209,7 +214,7 @@ function renderInstanceActions(instanceId) {
         playAudio('UIGeneralFocus.mp3');
         ModState.reorderInstance(instanceId, -1);
         rebuildInstanceButtons();
-        renderListPage();
+        renderListPage(instanceId);
         renderInstanceActions(instanceId);
     });
 
@@ -222,7 +227,7 @@ function renderInstanceActions(instanceId) {
         playAudio('UIGeneralFocus.mp3');
         ModState.reorderInstance(instanceId, 1);
         rebuildInstanceButtons();
-        renderListPage();
+        renderListPage(instanceId);
         renderInstanceActions(instanceId);
     });
 
@@ -239,16 +244,17 @@ function renderInstanceActions(instanceId) {
         action: () => {
             removeInstanceButton(instanceId);
             ModState.removeInstance(instanceId);
-            renderListPage();
 
             // Select another instance or clear
             const remaining = ModState.getInstances();
             if (remaining.length > 0) {
                 selectedInstanceId = remaining[0].instanceId;
+                renderListPage(selectedInstanceId);
                 renderConfig(selectedInstanceId);
                 renderInstanceActions(selectedInstanceId);
             } else {
                 selectedInstanceId = null;
+                renderListPage();
                 renderInstanceActions(null);
                 if (elements.configDefault) elements.configDefault.style.display = '';
                 if (elements.configTitle) elements.configTitle.textContent = '\u2014';
@@ -595,7 +601,7 @@ function bindEvents() {
         }
 
         if (detail.key === 'provider') {
-            renderListPage();
+            renderListPage(selectedInstanceId);
         }
 
         if (detail.instanceId === selectedInstanceId) {
@@ -612,22 +618,9 @@ function bindEvents() {
             }
 
             // Also update list page name display
-            renderListPage();
+            renderListPage(selectedInstanceId);
             renderInstanceActions(selectedInstanceId);
         }
-    });
-
-    // Instance add/remove → re-render
-    window.addEventListener('mods:instanceAdded', () => {
-        renderListPage();
-    });
-
-    window.addEventListener('mods:instanceRemoved', () => {
-        renderListPage();
-    });
-
-    window.addEventListener('mods:reordered', () => {
-        renderListPage();
     });
 
     // Refresh button on config page
