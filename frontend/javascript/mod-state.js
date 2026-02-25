@@ -5,7 +5,8 @@
  * server health, and per-instance config.
  * Instance existence = enabled. No separate ON/OFF toggle.
  * Persists instances to localStorage as a single ordered array.
- * Dismissed templates tracked to prevent auto-recreation on boot.
+ * No auto-instantiation: first boot starts with zero instances.
+ * User adds instances manually via the template catalog.
  * =================================================================
  */
 
@@ -14,14 +15,10 @@ import { ModHooks } from './mod-hooks.js';
 
 const INSTANCES_KEY = 'mod-instances';
 const SHARED_CONFIGS_KEY = 'mod-shared-configs';
-const DISMISSED_KEY = 'mod-dismissed';
 
 // Legacy keys for migration
 const LEGACY_STATES_KEY = 'mod-states';
 const LEGACY_CONFIGS_KEY = 'mod-configs';
-
-// Monotonic counter to prevent instanceId collision when Date.now() repeats
-let _idSeq = 0;
 
 // Old v1 MOD IDs that should be migrated
 const V1_TRANSLATE_IDS = [
@@ -36,7 +33,6 @@ export const ModState = {
     _instances: [],       // ordered array of instance objects
     _sharedConfigs: {},   // shared config (e.g. LLM group)
     _serverStatuses: {},  // instanceId → 'online'|'offline'|'unknown'
-    _dismissed: new Set(), // templateIds user explicitly removed (skip ensureDefault)
 
     init() {
         try {
@@ -49,36 +45,22 @@ export const ModState = {
         } catch {
             this._sharedConfigs = {};
         }
-        try {
-            const arr = JSON.parse(localStorage.getItem(DISMISSED_KEY) || '[]');
-            this._dismissed = new Set(arr);
-        } catch {
-            this._dismissed = new Set();
-        }
 
-        // Boot cleanup: remove legacy enabled:false instances → dismissed
-        const disabledTemplates = new Set();
+        // Clean up legacy dismissed key (no longer used)
+        localStorage.removeItem('mod-dismissed');
+
+        // Boot cleanup: remove legacy enabled:false instances, strip vestigial field
         const beforeCount = this._instances.length;
-
         this._instances = this._instances.filter(inst => {
             if (inst.enabled === false) {
-                disabledTemplates.add(inst.templateId);
                 delete this._serverStatuses[inst.instanceId];
                 return false;
             }
-            delete inst.enabled; // strip vestigial field
+            delete inst.enabled;
             return true;
         });
-
-        for (const tplId of disabledTemplates) {
-            if (this._instances.filter(i => i.templateId === tplId).length === 0) {
-                this._dismissed.add(tplId);
-            }
-        }
-
         if (beforeCount !== this._instances.length) {
             this._persistInstances();
-            this._persistDismissed();
         }
 
         // Initialise server statuses from instances
@@ -143,10 +125,6 @@ export const ModState = {
             return null;
         }
 
-        // Un-dismiss this template (user explicitly adding it back)
-        this._dismissed.delete(templateId);
-        this._persistDismissed();
-
         // Compute default config from schema
         const defaultConfig = {};
         for (const field of (template.configSchema || [])) {
@@ -159,7 +137,7 @@ export const ModState = {
         const maxOrder = this._instances.reduce((max, i) => Math.max(max, i.order), -1);
 
         const instance = {
-            instanceId: 'i_' + templateId + '_' + Date.now() + '_' + (_idSeq++),
+            instanceId: 'i_' + templateId + '_' + Date.now(),
             templateId,
             order: maxOrder + 1,
             config: { ...defaultConfig, ...(config || {}) }
@@ -190,36 +168,8 @@ export const ModState = {
 
         this._instances.splice(idx, 1);
         delete this._serverStatuses[instanceId];
-
-        // If no instances remain for this template, mark it dismissed
-        // so ensureDefaultInstances won't recreate it on next boot
-        if (this.getInstancesByTemplate(instance.templateId).length === 0) {
-            this._dismissed.add(instance.templateId);
-            this._persistDismissed();
-        }
-
         this._persistInstances();
         window.dispatchEvent(new CustomEvent('mods:instanceRemoved', { detail: { instanceId, templateId: instance.templateId } }));
-    },
-
-    /**
-     * Ensure default instances exist for a template (called during boot).
-     * Only creates if no instances exist yet for this template.
-     */
-    ensureDefaultInstances(templateId) {
-        const template = this._templates[templateId];
-        if (!template) return;
-
-        // Skip if user previously dismissed all instances of this template
-        if (this._dismissed.has(templateId)) return;
-
-        const existing = this.getInstancesByTemplate(templateId);
-        if (existing.length > 0) return;
-
-        const defaults = template.defaultInstances || [{ config: {} }];
-        for (const def of defaults) {
-            this.addInstance(templateId, def.config);
-        }
     },
 
     // ===================== Instance State =====================
@@ -355,7 +305,7 @@ export const ModState = {
 
     /**
      * Migrate from v2 (mod-states + mod-configs) to v3 (mod-instances).
-     * Called after all templates are registered and before ensureDefaultInstances.
+     * Called after all templates are registered. Preserves existing user data.
      */
     migrateV2ToV3() {
         // First handle v1 → v2 migration (in case we have v1 data)
@@ -494,14 +444,6 @@ export const ModState = {
             localStorage.setItem(INSTANCES_KEY, JSON.stringify(this._instances));
         } catch (e) {
             console.error('[mod-state] Failed to persist instances:', e);
-        }
-    },
-
-    _persistDismissed() {
-        try {
-            localStorage.setItem(DISMISSED_KEY, JSON.stringify([...this._dismissed]));
-        } catch (e) {
-            console.error('[mod-state] Failed to persist dismissed:', e);
         }
     }
 };

@@ -3,7 +3,7 @@
  * =================================================================
  * Responsibilities:
  * 1. Import all templates from mod-manifest.js
- * 2. Register templates in ModState, run migration, create default instances
+ * 2. Register templates in ModState, run migration (no auto-instantiation)
  * 3. For each template: fetch locale JSON, merge into i18n
  * 4. Create feature buttons FROM INSTANCES (not templates)
  * 5. Create shelf panels per template (shared across instances)
@@ -133,8 +133,7 @@ function createAllInstanceDOM() {
 
 /**
  * Create a feature button for an instance.
- * Sets initial visibility based on enabled state AND current page context
- * so buttons never flash as visible before updateFeatureButtons runs.
+ * Visibility is managed exclusively by feature-shelf.js updateFeatureButtons().
  */
 function createInstanceButton(instance, btnContainer, shelfContainer) {
     const template = _templates[instance.templateId];
@@ -142,26 +141,15 @@ function createInstanceButton(instance, btnContainer, shelfContainer) {
 
     const btnId = template.getButtonDataId(instance.config);
 
-    // Skip if button already exists with same instance ID
-    if (document.querySelector(`[data-instance-id="${instance.instanceId}"]`)) return;
+    // Skip if button already exists — scoped to .feature-container to avoid
+    // collision with .mods-list-item elements that also carry data-instance-id
+    if (btnContainer.querySelector(`[data-instance-id="${instance.instanceId}"]`)) return;
 
     const btn = document.createElement('button');
     btn.className = 'feature-btn';
     btn.dataset.featureBtn = btnId;
     btn.dataset.instanceId = instance.instanceId;
     // No textContent — icons are rendered via CSS ::after mask-image
-
-    // Set initial visibility: hidden if not relevant to current page
-    const activePage = document.querySelector('.page.active');
-    const currentPage = activePage?.dataset?.page;
-    const templatePages = template.pages;
-    const pageAllowed = !templatePages
-        || Object.keys(templatePages).length === 0
-        || (currentPage && templatePages[currentPage] !== undefined);
-
-    if (!pageAllowed) {
-        btn.style.display = 'none';
-    }
 
     // Insert before the shelf container
     if (!shelfContainer) shelfContainer = document.querySelector('.feature-shelf-container');
@@ -174,7 +162,8 @@ function createInstanceButton(instance, btnContainer, shelfContainer) {
  * Remove a feature button by instance ID.
  */
 export function removeInstanceButton(instanceId) {
-    const btn = document.querySelector(`[data-instance-id="${instanceId}"]`);
+    const btnContainer = document.querySelector('.feature-container');
+    const btn = btnContainer?.querySelector(`[data-instance-id="${instanceId}"]`);
     if (btn) btn.remove();
 }
 
@@ -208,7 +197,8 @@ export function updateInstanceButton(instanceId) {
     const template = _templates[inst.templateId];
     if (!template || typeof template.getButtonDataId !== 'function') return;
 
-    const btn = document.querySelector(`[data-instance-id="${instanceId}"]`);
+    const btnContainer = document.querySelector('.feature-container');
+    const btn = btnContainer?.querySelector(`[data-instance-id="${instanceId}"]`);
     if (btn) {
         btn.dataset.featureBtn = template.getButtonDataId(inst.config);
     }

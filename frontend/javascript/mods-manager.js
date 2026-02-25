@@ -11,7 +11,6 @@ import { getAllTemplates, getTemplate, getInstances, getInstancesByTemplate,
          rebuildInstanceButtons, removeInstanceButton, updateInstanceButton } from '../mods/mod-loader.js';
 import { ModState } from './mod-state.js';
 import { InfiniteList } from './blackboard-ui-list.js';
-import { MultiStepButton } from './multiStepButton.js';
 import { BBMessage } from './blackboard-msg.js';
 import { playAudio } from './audio.js';
 import { t } from './i18n.js';
@@ -237,39 +236,31 @@ function renderInstanceActions(instanceId) {
     container.appendChild(upBtn);
     container.appendChild(downBtn);
 
-    // DELETE — hidden when maxInstances === 1 (undeletable singleton)
-    const maxInst = template?.maxInstances || 0;
-    if (maxInst === 1) return;
-
+    // DELETE — any instance can be deleted (ADD/DELETE model)
     const deleteBtn = document.createElement('button');
     deleteBtn.className = 'mods-action-btn mods-action-delete crt-text-red';
     deleteBtn.textContent = t('mods.deleteInstance');
+    deleteBtn.addEventListener('click', () => {
+        playAudio('UIGeneralCancel.mp3');
+        removeInstanceButton(instanceId);
+        ModState.removeInstance(instanceId);
 
-    new MultiStepButton(deleteBtn, {
-        sound: 'UIGeneralCancel.mp3',
-        confirm: true,
-        confirmLabel: t('mods.deleteConfirm'),
-        action: () => {
-            removeInstanceButton(instanceId);
-            ModState.removeInstance(instanceId);
-
-            // Select another instance or clear
-            const remaining = ModState.getInstances();
-            if (remaining.length > 0) {
-                selectedInstanceId = remaining[0].instanceId;
-                renderListPage(selectedInstanceId);
-                renderConfig(selectedInstanceId);
-                renderInstanceActions(selectedInstanceId);
-            } else {
-                selectedInstanceId = null;
-                renderListPage();
-                renderInstanceActions(null);
-                if (elements.configDefault) elements.configDefault.style.display = '';
-                if (elements.configTitle) elements.configTitle.textContent = '\u2014';
-                if (elements.configDescription) elements.configDescription.textContent = '';
-                if (elements.configFields) elements.configFields.innerHTML = '';
-                if (elements.configStatus) elements.configStatus.style.display = 'none';
-            }
+        // Select another instance or clear
+        const remaining = ModState.getInstances();
+        if (remaining.length > 0) {
+            selectedInstanceId = remaining[0].instanceId;
+            renderListPage(selectedInstanceId);
+            renderConfig(selectedInstanceId);
+            renderInstanceActions(selectedInstanceId);
+        } else {
+            selectedInstanceId = null;
+            renderListPage();
+            renderInstanceActions(null);
+            if (elements.configDefault) elements.configDefault.style.display = '';
+            if (elements.configTitle) elements.configTitle.textContent = '\u2014';
+            if (elements.configDescription) elements.configDescription.textContent = '';
+            if (elements.configFields) elements.configFields.innerHTML = '';
+            if (elements.configStatus) elements.configStatus.style.display = 'none';
         }
     });
 
