@@ -1,4 +1,4 @@
-const CACHE_NAME = 'blackboard-v29-2026-02-25'; // Bump: MOD v2.1 extensibility overhaul
+const CACHE_NAME = 'blackboard-v30-2026-02-25'; // Bump: LLM MOD
 const ASSETS = [
   '/',
   '/index.html',
@@ -32,6 +32,14 @@ const ASSETS = [
   '/javascript/mods-manager.js',
   '/mods/mod-loader.js',
   '/mods/mod-manifest.js',
+  '/mods/llm/mod.js',
+  '/javascript/services/llm-service.js',
+  '/images/llm-translate.svg',
+  '/images/llm-summarize.svg',
+  '/images/llm-polish.svg',
+  '/images/llm-summarize-files.svg',
+  '/images/llm-summarize-branch.svg',
+  '/images/llm-summarize-all.svg',
   '/audio/Cassette.mp3',
   '/audio/Click.mp3',
   '/audio/Erase.mp3',

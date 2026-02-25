@@ -8,3 +8,4 @@
 export { default as translate } from './translate/mod.js';
 export { default as speechToText } from './speech-to-text/mod.js';
 export { default as markdownPreview } from './markdown-preview/mod.js';
+export { default as llm } from './llm/mod.js';

@@ -1,0 +1,51 @@
+{
+  "mods": {
+    "llm": {
+      "name": "LLM",
+      "desc": "AI TEXT PROCESSING SUITE — TRANSLATE, SUMMARIZE, POLISH VIA LOCAL OR CLOUD LLM.",
+      "task": {
+        "translate": "TRANSLATE",
+        "summarize": "SUMMARIZE",
+        "polish": "POLISH",
+        "summarizeFiles": "SUMMARIZE + FILES",
+        "summarizeBranch": "SUMMARIZE BRANCH",
+        "summarizeAll": "SUMMARIZE ALL"
+      },
+      "lang": {
+        "zhTW": "繁中",
+        "zhCN": "简中",
+        "en": "EN",
+        "ja": "日"
+      },
+      "config": {
+        "task": "TASK MODE",
+        "targetLang": "TARGET LANGUAGE",
+        "provider": "PROVIDER",
+        "model": "MODEL",
+        "apiKey": "API KEY",
+        "temperature": "TEMPERATURE",
+        "systemPrompt": "SYSTEM PROMPT (OPTIONAL)",
+        "status": "SERVER STATUS"
+      },
+      "provider": {
+        "ollama": "OLLAMA (LOCAL)",
+        "openai": "OPENAI",
+        "anthropic": "ANTHROPIC"
+      },
+      "processing": "PROCESSING... STANDBY.",
+      "complete": "PROCESSING COMPLETE.",
+      "empty": "PROTOCOL ERROR: BUFFER EMPTY. NO INPUT TEXT.",
+      "error": "CRITICAL BREACH: {error}",
+      "copyBtn": "COPY",
+      "copyDone": "COPIED",
+      "overwriteBtn": "OVERWRITE",
+      "overwriteConfirm": "SURE?",
+      "overwriteDone": "OVERWRITTEN",
+      "fileTooLarge": "FILE TOO LARGE (>1MB)",
+      "noRecords": "NO RECORDS FOUND.",
+      "noBranches": "NO BRANCHES FOUND.",
+      "tooMuchData": "DATA TRUNCATED — LIMIT REACHED",
+      "noTextFiles": "SKIPPED NON-TEXT FILE"
+    }
+  }
+}

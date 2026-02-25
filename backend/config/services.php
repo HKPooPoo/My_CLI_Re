@@ -45,4 +45,9 @@ return [
         'port' => env('LIBRETRANSLATE_PORT', '5000'),
     ],
 
+    'ollama' => [
+        'host' => env('OLLAMA_HOST', 'ollama'),
+        'port' => env('OLLAMA_PORT', '11434'),
+    ],
+
 ];

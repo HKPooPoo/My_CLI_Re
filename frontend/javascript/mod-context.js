@@ -62,6 +62,7 @@ const PAGE_SCOPE_MAP = {
     'blackboard-branch': 'bb',
     'blackboard-misc':   'bb',
     'walkie-typie':      'wt',
+    'walkie-typie-text': 'wt',
     'broadcast-list':    'bc',
     'broadcast-channel': 'bc',
 };

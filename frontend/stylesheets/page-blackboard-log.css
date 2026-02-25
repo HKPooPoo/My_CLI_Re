@@ -280,3 +280,45 @@
     border: var(--border-line);
     border-radius: 0 0 var(--border-radius) var(--border-radius);
 }
+
+/* --- LLM MOD shelf --- */
+
+.feature-shelf[data-feature-shelf="llm"] {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
+.llm-status {
+    font-size: calc(var(--font-size) * 0.85);
+    padding: 4px 0;
+    min-height: 1.4em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+#llm-output {
+    font-size: var(--textbox-font-size);
+    color: var(--text-green);
+    background-color: var(--bg-primary);
+    flex: 1;
+    border: var(--border-line);
+    border-radius: var(--border-radius);
+    min-height: 0;
+}
+
+.llm-actions {
+    display: flex;
+    padding-top: 6px;
+    gap: 8px;
+}
+
+.llm-actions button {
+    flex: 1;
+    padding: 6px 0;
+    font-size: calc(var(--font-size) * 0.9);
+    border: var(--border-line);
+    border-radius: var(--border-radius);
+    cursor: pointer;
+}

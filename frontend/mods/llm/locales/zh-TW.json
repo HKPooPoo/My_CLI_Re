@@ -1,0 +1,51 @@
+{
+  "mods": {
+    "llm": {
+      "name": "LLM",
+      "desc": "AI 文字處理套件 — 透過本機或雲端 LLM 進行翻譯、摘要、潤飾。",
+      "task": {
+        "translate": "翻譯",
+        "summarize": "摘要",
+        "polish": "潤飾",
+        "summarizeFiles": "摘要 + 檔案",
+        "summarizeBranch": "分支摘要",
+        "summarizeAll": "全部摘要"
+      },
+      "lang": {
+        "zhTW": "繁中",
+        "zhCN": "簡中",
+        "en": "EN",
+        "ja": "日"
+      },
+      "config": {
+        "task": "任務模式",
+        "targetLang": "目標語言",
+        "provider": "提供者",
+        "model": "模型",
+        "apiKey": "API 金鑰",
+        "temperature": "溫度",
+        "systemPrompt": "系統提示詞（選填）",
+        "status": "伺服器狀態"
+      },
+      "provider": {
+        "ollama": "Ollama（本機）",
+        "openai": "OpenAI",
+        "anthropic": "Anthropic"
+      },
+      "processing": "處理中... 請稍候。",
+      "complete": "處理完成。",
+      "empty": "協定錯誤：緩衝區為空，無輸入文字。",
+      "error": "嚴重錯誤：{error}",
+      "copyBtn": "複製",
+      "copyDone": "已複製",
+      "overwriteBtn": "覆寫",
+      "overwriteConfirm": "確定？",
+      "overwriteDone": "已覆寫",
+      "fileTooLarge": "檔案過大（>1MB）",
+      "noRecords": "找不到紀錄。",
+      "noBranches": "找不到分支。",
+      "tooMuchData": "資料截斷 — 已達上限",
+      "noTextFiles": "已跳過非文字檔案"
+    }
+  }
+}
