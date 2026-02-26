@@ -1,4 +1,4 @@
-const CACHE_NAME = 'blackboard-v48-2026-02-26'; // LLM context + prompt engineering for Qwen3-4B
+const CACHE_NAME = 'blackboard-v49-2026-02-26'; // LLM server: default to qwen3-vl:2b
 const ASSETS = [
   '/',
   '/index.html',

@@ -133,7 +133,7 @@ export default {
             { value: 'Qwen3-4B-q4f16_1-MLC',   labelKey: 'mods.llm.clientModel.qwen3_4b' },
         ]},
         { key: 'clientStatus', type: 'info', labelKey: 'mods.llm.config.clientStatus', showWhen: { key: 'provider', value: 'client' } },
-        { key: 'serverModel', type: 'text', labelKey: 'mods.llm.config.serverModel', default: 'qwen3:4b', showWhen: { key: 'provider', value: 'server' } },
+        { key: 'serverModel', type: 'text', labelKey: 'mods.llm.config.serverModel', default: 'qwen3-vl:2b', showWhen: { key: 'provider', value: 'server' } },
         { key: 'serverStatus', type: 'info', labelKey: 'mods.llm.config.serverStatus', showWhen: { key: 'provider', value: 'server' } },
         { key: 'apiProvider', type: 'select', labelKey: 'mods.llm.config.apiProvider', default: 'openai', showWhen: { key: 'provider', value: 'apikey' }, options: [
             { value: 'openai',    labelKey: 'mods.llm.apiProvider.openai' },
@@ -234,7 +234,7 @@ export default {
                 }
             } else {
                 const actualProvider = provider === 'server' ? 'ollama' : (config.apiProvider || 'openai');
-                const model = provider === 'server' ? (config.serverModel || 'qwen3:4b') : (config.apiModel || 'gpt-4o-mini');
+                const model = provider === 'server' ? (config.serverModel || 'qwen3-vl:2b') : (config.apiModel || 'gpt-4o-mini');
                 const result = await LlmService.chat({
                     provider: actualProvider, model, messages,
                     temperature: temp,
