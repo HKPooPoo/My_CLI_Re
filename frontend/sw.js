@@ -1,4 +1,4 @@
-const CACHE_NAME = 'blackboard-v52-2026-02-26'; // Fix: server LLM apiKey validation error
+const CACHE_NAME = 'blackboard-v55-2026-02-26'; // Per-target prompt presets
 const ASSETS = [
   '/',
   '/index.html',

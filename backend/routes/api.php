@@ -95,6 +95,7 @@ Route::middleware('throttle:30,1')->prefix('mods')->group(function () {
 // LLM chat — AI endpoint, strict throttle
 Route::middleware('throttle:10,1')->prefix('mods')->group(function () {
     Route::post('/llm/chat', [LlmController::class, 'chat']);
+    Route::post('/llm/chat/stream', [LlmController::class, 'chatStream']);
 });
 
 // File Download & Meta — throttled
@@ -103,5 +104,4 @@ Route::middleware('throttle:60,1')->prefix('files')->group(function () {
     Route::get('/{hash}/meta', [FileController::class, 'meta']);
     Route::get('/{hash}/exists', [FileController::class, 'exists']);
 });
-
 

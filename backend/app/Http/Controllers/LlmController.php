@@ -53,6 +53,81 @@ class LlmController extends Controller
     }
 
     /**
+     * POST /api/mods/llm/chat/stream
+     *
+     * SSE proxy: stream Ollama NDJSON → SSE data lines.
+     */
+    public function chatStream(Request $request)
+    {
+        $validated = $request->validate([
+            'provider'           => 'required|string|in:ollama',
+            'model'              => 'required|string|max:100',
+            'messages'           => 'required|array|min:1',
+            'messages.*.role'    => 'required|string|in:system,user,assistant',
+            'messages.*.content' => 'required|string',
+            'temperature'        => 'sometimes|numeric|min:0|max:2',
+        ]);
+
+        $url     = $this->ollamaUrl('/api/chat');
+        $payload = json_encode([
+            'model'      => $validated['model'],
+            'messages'   => $validated['messages'],
+            'stream'     => true,
+            'think'      => false,
+            'keep_alive' => '5m',
+            'options'    => [
+                'temperature' => $validated['temperature'] ?? 0.3,
+                'num_ctx'     => 2048,
+            ],
+        ]);
+
+        return response()->stream(function () use ($url, $payload) {
+            $ch = curl_init($url);
+            curl_setopt_array($ch, [
+                CURLOPT_POST          => true,
+                CURLOPT_POSTFIELDS    => $payload,
+                CURLOPT_HTTPHEADER    => ['Content-Type: application/json'],
+                CURLOPT_TIMEOUT       => 300,
+                CURLOPT_WRITEFUNCTION => function ($ch, $data) {
+                    foreach (explode("\n", $data) as $line) {
+                        $line = trim($line);
+                        if ($line === '') continue;
+                        $json = json_decode($line, true);
+                        if (!$json) continue;
+
+                        echo 'data: ' . json_encode([
+                            'delta' => $json['message']['content'] ?? '',
+                            'done'  => !empty($json['done']),
+                        ]) . "\n\n";
+
+                        if (ob_get_level()) ob_flush();
+                        flush();
+                    }
+                    return strlen($data);
+                },
+            ]);
+
+            curl_exec($ch);
+
+            if (curl_errno($ch)) {
+                echo 'data: ' . json_encode([
+                    'error' => curl_error($ch),
+                    'done'  => true,
+                ]) . "\n\n";
+                if (ob_get_level()) ob_flush();
+                flush();
+            }
+
+            curl_close($ch);
+        }, 200, [
+            'Content-Type'      => 'text/event-stream',
+            'Cache-Control'     => 'no-cache',
+            'Connection'        => 'keep-alive',
+            'X-Accel-Buffering' => 'no',
+        ]);
+    }
+
+    /**
      * GET /api/mods/llm/ollama/health
      *
      * Check Ollama connectivity and return available models.
@@ -62,9 +137,7 @@ class LlmController extends Controller
         $cacheKey = 'mod:llm:ollama:health';
 
         $result = Cache::remember($cacheKey, 30, function () {
-            $host = config('services.ollama.host');
-            $port = config('services.ollama.port');
-            $url = "http://{$host}:{$port}/api/tags";
+            $url = $this->ollamaUrl('/api/tags');
 
             try {
                 $response = Http::timeout(5)->get($url);
@@ -85,18 +158,29 @@ class LlmController extends Controller
         return response()->json($result, $statusCode);
     }
 
-    private function chatViaOllama(string $model, array $messages, float $temperature): string
+    // ── Private helpers ──────────────────────────────────────────
+
+    private function ollamaUrl(string $path): string
     {
         $host = config('services.ollama.host');
         $port = config('services.ollama.port');
-        $url = "http://{$host}:{$port}/api/chat";
+
+        return "http://{$host}:{$port}{$path}";
+    }
+
+    private function chatViaOllama(string $model, array $messages, float $temperature): string
+    {
+        $url = $this->ollamaUrl('/api/chat');
 
         $response = Http::timeout(120)->post($url, [
-            'model' => $model,
-            'messages' => $messages,
-            'stream' => false,
-            'options' => [
+            'model'      => $model,
+            'messages'   => $messages,
+            'stream'     => false,
+            'think'      => false,
+            'keep_alive' => '5m',
+            'options'    => [
                 'temperature' => $temperature,
+                'num_ctx'     => 2048,
             ],
         ]);
 

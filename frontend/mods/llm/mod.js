@@ -21,32 +21,57 @@ const TARGETS = {
 };
 
 /**
- * Prompt presets — quick-fill chips for the textarea field.
- * Output constraints help the model avoid adding commentary.
+ * Per-target prompt presets.
+ * Each target scope has its own set of quick-fill prompts.
+ * Output constraints are NOT baked in — SMALL_MODEL_CONSTRAINT handles that.
+ * Unbuilt targets (wt-*, bc-*) have no presets yet.
  */
-const PRESETS = [
-    { labelKey: 'mods.llm.preset.summarize', value: 'Summarize concisely. Output plain text only.' },
-    { labelKey: 'mods.llm.preset.translate', value: 'Translate to English. Output only the translation.' },
-    { labelKey: 'mods.llm.preset.polish',    value: 'Improve grammar and style. Keep the original meaning. Output only the improved text.' },
-    { labelKey: 'mods.llm.preset.explain',   value: 'Explain this text in simple terms.' },
-];
-
-/**
- * Scope hints — prepended to the user prompt so the model understands
- * the input structure before seeing the data.
- */
-const SCOPE_HINTS = {
-    head:     'You will receive a single text entry.',
-    text:     'You will receive a single text entry.',
-    branch:   'You will receive numbered entries from one timeline branch, ordered newest first.',
-    history:  'You will receive numbered entries from one channel, ordered newest first.',
-    all:      'You will receive entries from multiple branches. Each branch has a header with name and entry count.',
-    dialogue: 'You will receive a conversation between [ME] and [PARTNER].',
+const TARGET_PRESETS = {
+    'bb-head': [
+        { labelKey: 'mods.llm.preset.summarize', value: 'Summarize concisely.' },
+        { labelKey: 'mods.llm.preset.translate', value: 'Translate to English.' },
+        { labelKey: 'mods.llm.preset.polish',    value: 'Improve grammar and clarity. Keep the original meaning.' },
+        { labelKey: 'mods.llm.preset.explain',   value: 'Explain in simple terms.' },
+    ],
+    'bb-branch': [
+        { labelKey: 'mods.llm.preset.branchSummary',  value: 'Summarize the key themes across these entries.' },
+        { labelKey: 'mods.llm.preset.branchTimeline',  value: 'Describe how the topics evolved over time.' },
+        { labelKey: 'mods.llm.preset.branchExtract',   value: 'Extract the most important points from each entry.' },
+    ],
+    'bb-all': [
+        { labelKey: 'mods.llm.preset.allOverview', value: 'Summarize each branch and identify common themes.' },
+        { labelKey: 'mods.llm.preset.allCompare',  value: 'Compare the branches. What are the key differences?' },
+    ],
 };
 
-/** Char limits for truncation */
-const MAX_BRANCH_CHARS = 12000;  // ~3K tokens per branch
-const MAX_ALL_CHARS    = 20000;  // ~5K tokens total for all-branches
+/**
+ * Scope context — tells the model what the input data looks like.
+ * Empty for simple scopes (single text is self-evident).
+ * Descriptive for multi-entry scopes where structure matters.
+ */
+const SCOPE_CONTEXT = {
+    head:     '',
+    text:     '',
+    branch:   'Below are timestamped entries from one timeline, newest first.',
+    history:  'Below are messages from one channel, newest first.',
+    all:      'Below are entries from multiple named branches.',
+    dialogue: 'Below is a conversation. [ME] and [PARTNER] are the speakers.',
+};
+
+/** Small models add preamble ("Sure! Here's...") — this suppresses it. */
+const SMALL_MODEL_CONSTRAINT = 'Respond with the result only. No preamble.';
+
+/**
+ * Context budget by provider.
+ * Server (Qwen3 2B, num_ctx=2048) needs tight limits.
+ * Client (WebLLM, small models) gets moderate limits.
+ * API (GPT-4/Claude, 128K+ context) gets generous limits.
+ */
+function _getContextLimits(provider) {
+    if (provider === 'server') return { branch: 4000, all: 3000 };
+    if (provider === 'client') return { branch: 8000, all: 12000 };
+    return { branch: 12000, all: 20000 };
+}
 
 /** Framework defaults */
 const CLIENT_MODEL = 'Qwen3-0.6B-q4f16_1-MLC';
@@ -97,9 +122,9 @@ export default {
     },
 
     defaultInstances: [
-        { config: { prompt: 'Translate to English. Output only the translation.', icon: 'translate', target: 'bb-head', provider: 'client' } },
-        { config: { prompt: 'Summarize concisely. Output plain text only.', icon: 'summarize', target: 'bb-head', provider: 'client' } },
-        { config: { prompt: 'Improve grammar and style. Keep the original meaning. Output only the improved text.', icon: 'polish', target: 'bb-head', provider: 'client' } },
+        { config: { prompt: 'Translate to English.', icon: 'translate', target: 'bb-head', provider: 'client' } },
+        { config: { prompt: 'Summarize concisely.', icon: 'summarize', target: 'bb-head', provider: 'client' } },
+        { config: { prompt: 'Improve grammar and clarity. Keep the original meaning.', icon: 'polish', target: 'bb-head', provider: 'client' } },
     ],
 
     // pages is NOT used (getDeployPages handles per-instance visibility)
@@ -118,13 +143,27 @@ export default {
     ],
 
     configSchema: [
-        // --- What to do ---
-        { key: 'prompt', type: 'textarea', labelKey: 'mods.llm.config.prompt', default: '',
-          rows: 3, presets: PRESETS },
-        { key: 'icon', type: 'icon-picker', labelKey: 'mods.llm.config.icon', default: 'summarize',
-          icons: ICONS },
+        // --- What to process (target first — drives prompt presets) ---
         { key: 'target', type: 'select', labelKey: 'mods.llm.config.target', default: 'bb-head',
           options: Object.entries(TARGETS).map(([v, t]) => ({ value: v, labelKey: t.labelKey })) },
+        // --- Prompt (per-target presets, same config key) ---
+        { key: 'prompt', type: 'textarea', labelKey: 'mods.llm.config.prompt', default: '', rows: 3,
+          showWhen: { key: 'target', value: 'bb-head' },    presets: TARGET_PRESETS['bb-head'] },
+        { key: 'prompt', type: 'textarea', labelKey: 'mods.llm.config.prompt', default: '', rows: 3,
+          showWhen: { key: 'target', value: 'bb-branch' },  presets: TARGET_PRESETS['bb-branch'] },
+        { key: 'prompt', type: 'textarea', labelKey: 'mods.llm.config.prompt', default: '', rows: 3,
+          showWhen: { key: 'target', value: 'bb-all' },     presets: TARGET_PRESETS['bb-all'] },
+        { key: 'prompt', type: 'textarea', labelKey: 'mods.llm.config.prompt', default: '', rows: 3,
+          showWhen: { key: 'target', value: 'wt-text' } },
+        { key: 'prompt', type: 'textarea', labelKey: 'mods.llm.config.prompt', default: '', rows: 3,
+          showWhen: { key: 'target', value: 'wt-dialogue' } },
+        { key: 'prompt', type: 'textarea', labelKey: 'mods.llm.config.prompt', default: '', rows: 3,
+          showWhen: { key: 'target', value: 'bc-text' } },
+        { key: 'prompt', type: 'textarea', labelKey: 'mods.llm.config.prompt', default: '', rows: 3,
+          showWhen: { key: 'target', value: 'bc-history' } },
+        // --- Icon ---
+        { key: 'icon', type: 'icon-picker', labelKey: 'mods.llm.config.icon', default: 'summarize',
+          icons: ICONS },
         // --- Where to run ---
         { key: 'provider', type: 'select', labelKey: 'mods.llm.config.provider', default: 'client', options: [
             { value: 'client', labelKey: 'mods.llm.provider.client' },
@@ -212,47 +251,84 @@ export default {
 
         try {
             const targetDef = TARGETS[config.target] || TARGETS['bb-head'];
-            const inputText = await _collectInput(ctx, targetDef.scope, tFn);
+            const provider = config.provider || 'client';
+            const temp = parseFloat(config.temperature) || 0.3;
+            const limits = _getContextLimits(provider);
+            const inputText = await _collectInput(ctx, targetDef.scope, tFn, limits);
 
             if (!inputText) {
                 out.value = tFn('mods.llm.empty');
                 return;
             }
 
-            const provider = config.provider || 'client';
-            const temp = parseFloat(config.temperature) || 0.3;
             const messages = _buildMessages(prompt, inputText, targetDef.scope, provider);
 
             if (provider === 'client') {
-                const svc = await _getWebLlm();
-                const model = config.clientModel || CLIENT_MODEL;
-
-                out.value = tFn('mods.llm.loading');
-                await svc.ensureModel(model, (p) => { out.value = p; });
-
-                out.value = '';
-                for await (const chunk of svc.chat(messages, { temperature: temp })) {
-                    if (chunk.done) break;
-                    out.value += chunk.delta;
+                if (!navigator.gpu) {
+                    out.value = tFn('mods.llm.noWebGPU');
+                    return;
                 }
 
-                if (!out.value.trim()) {
-                    out.value = tFn('mods.llm.noOutput');
+                try {
+                    const svc = await _getWebLlm();
+                    const model = config.clientModel || CLIENT_MODEL;
+
+                    out.value = tFn('mods.llm.loading');
+                    await svc.ensureModel(model, (p) => { out.value = p; });
+
+                    out.value = '';
+                    for await (const chunk of svc.chat(messages, { temperature: temp })) {
+                        if (chunk.done) break;
+                        out.value += chunk.delta;
+                    }
+
+                    if (!out.value.trim()) out.value = tFn('mods.llm.noOutput');
+                } catch (e) {
+                    console.error('[llm-mod] client error:', e);
+                    out.value = tFn('mods.llm.clientError', { error: e.message || String(e) });
                 }
             } else if (provider === 'server') {
-                const result = await LlmService.chat({
-                    provider: 'ollama', model: SERVER_MODEL, messages,
-                    temperature: temp,
-                });
-                out.value = result.content || tFn('mods.llm.noOutput');
+                out.value = tFn('mods.llm.connecting');
+
+                try {
+                    let tokens = 0;
+                    for await (const chunk of LlmService.chatStream({
+                        provider: 'ollama', model: SERVER_MODEL, messages,
+                        temperature: temp,
+                    })) {
+                        if (chunk.error) throw new Error(chunk.error);
+                        if (chunk.done) break;
+                        const text = _cleanDelta(chunk.delta, tokens === 0);
+                        if (!text) continue;
+                        if (tokens === 0) out.value = '';
+                        out.value += text;
+                        tokens++;
+                    }
+
+                    if (!out.value.trim()) out.value = tFn('mods.llm.noOutput');
+                } catch (e) {
+                    console.error('[llm-mod] server error:', e);
+                    out.value = tFn('mods.llm.serverError', { error: e.message || String(e) });
+                }
             } else {
-                const result = await LlmService.chat({
-                    provider: config.apiProvider || 'openai',
-                    model: config.apiModel || 'gpt-4o-mini',
-                    messages, temperature: temp,
-                    apiKey: config.apiKey || '',
-                });
-                out.value = result.content || tFn('mods.llm.noOutput');
+                if (!config.apiKey) {
+                    out.value = tFn('mods.llm.noApiKey');
+                    return;
+                }
+
+                try {
+                    out.value = tFn('mods.llm.processing');
+                    const result = await LlmService.chat({
+                        provider: config.apiProvider || 'openai',
+                        model: config.apiModel || 'gpt-4o-mini',
+                        messages, temperature: temp,
+                        apiKey: config.apiKey,
+                    });
+                    out.value = result.content || tFn('mods.llm.noOutput');
+                } catch (e) {
+                    console.error('[llm-mod] api error:', e);
+                    out.value = tFn('mods.llm.apiError', { error: e.message || String(e) });
+                }
             }
         } catch (e) {
             console.error('[llm-mod] activate error:', e);
@@ -346,8 +422,9 @@ function _formatRecords(records, maxChars) {
 /**
  * Collect input text based on target scope.
  * Produces structured context that helps the model understand the data shape.
+ * @param {object} limits - { branch, all } char limits from _getContextLimits()
  */
-async function _collectInput(ctx, scope, tFn) {
+async function _collectInput(ctx, scope, tFn, limits) {
     switch (scope) {
         case 'head':
         case 'text':
@@ -358,7 +435,7 @@ async function _collectInput(ctx, scope, tFn) {
             const records = await ctx.board.getAllRecords();
             if (!records || records.length === 0) return '';
             const branchName = ctx.board.getBranchName() || ctx.board.getBranchId() || 'unnamed';
-            const { text, count, truncated } = _formatRecords(records, MAX_BRANCH_CHARS);
+            const { text, count, truncated } = _formatRecords(records, limits.branch);
             if (!text) return '';
             const header = `[Branch: ${branchName} | ${count} entries | newest first]`;
             const suffix = truncated ? `\n\n[... ${truncated} more entries truncated]` : '';
@@ -374,13 +451,13 @@ async function _collectInput(ctx, scope, tFn) {
             for (const branch of branches) {
                 const name = branch.name || branch.id;
                 const records = await ctx.board.getAllRecordsForBranch(branch.id);
-                const perBranchLimit = Math.floor(MAX_ALL_CHARS / branches.length);
+                const perBranchLimit = Math.floor(limits.all / branches.length);
                 const { text, count, truncated } = _formatRecords(records, perBranchLimit);
                 if (!text) continue;
                 const lastUpdate = _formatTimestamp(branch.lastUpdate);
                 let section = `## ${name} (${count} entries, last updated: ${lastUpdate})\n\n${text}`;
                 if (truncated) section += `\n\n[... ${truncated} more entries truncated]`;
-                if (totalChars + section.length > MAX_ALL_CHARS) break;
+                if (totalChars + section.length > limits.all) break;
                 sections.push(section);
                 totalChars += section.length;
             }
@@ -407,18 +484,50 @@ async function _collectInput(ctx, scope, tFn) {
 }
 
 /**
+ * Strip <think> tags from streaming delta (safety net for Qwen3 thinking mode).
+ * Keeps content between tags — small models sometimes put answers inside think blocks.
+ */
+function _cleanDelta(text, isFirst) {
+    const stripped = text.replace(/<\/?think>/g, '');
+    if (!stripped) return '';
+    return isFirst ? stripped.replace(/^\n+/, '') : stripped;
+}
+
+/**
  * Build the message array for LLM inference.
- * Wraps the user prompt with scope-aware hints for structured understanding.
+ *
+ * Prompt structure (3 layers):
+ *   1. Scope context — what the input data looks like (empty for single text)
+ *   2. User's task  — the prompt from config
+ *   3. Constraint   — "No preamble" for small models (client/server)
+ *
+ * Provider strategies:
+ *   Client: single user message (proven for small WebLLM models)
+ *   Server: system + user, /no_think prefix (Qwen3 on Ollama)
+ *   API:    system + user, no constraint (large models follow instructions well)
  */
 function _buildMessages(prompt, inputText, scope, provider) {
-    const hint = SCOPE_HINTS[scope] || '';
-    const system = hint ? `${hint}\n\nTask: ${prompt}` : prompt;
+    const context = SCOPE_CONTEXT[scope] || '';
+    const isSmall = provider === 'client' || provider === 'server';
+
+    // Assemble instruction: [context] + task + [constraint]
+    const parts = [];
+    if (context) parts.push(context);
+    parts.push(prompt);
+    if (isSmall) parts.push(SMALL_MODEL_CONSTRAINT);
+    const instruction = parts.join('\n');
 
     if (provider === 'client') {
-        // Single user message (proven pattern for small browser models)
-        return [{ role: 'user', content: system + '\n\n' + inputText }];
+        // Single user message — /no_think handled by webllm-service.js
+        return [{ role: 'user', content: `${instruction}\n\n---\n${inputText}` }];
     }
-    // Server/API: standard system + user split
+
+    // Server (Qwen3): /no_think at START disables thinking mode
+    // API (GPT-4/Claude): no prefix needed
+    const system = provider === 'server'
+        ? `/no_think\n${instruction}`
+        : instruction;
+
     return [
         { role: 'system', content: system },
         { role: 'user', content: inputText },
