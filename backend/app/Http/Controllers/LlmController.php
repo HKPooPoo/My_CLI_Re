@@ -23,7 +23,7 @@ class LlmController extends Controller
             'messages.*.role' => 'required|string|in:system,user,assistant',
             'messages.*.content' => 'required|string',
             'temperature' => 'sometimes|numeric|min:0|max:2',
-            'apiKey' => 'sometimes|string|max:200',
+            'apiKey' => 'sometimes|nullable|string|max:200',
         ]);
 
         $provider = $validated['provider'];

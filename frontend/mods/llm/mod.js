@@ -1,6 +1,7 @@
 import { LlmService } from '../../javascript/services/llm-service.js';
 import { ModState } from '../../javascript/mod-state.js';
 import { t } from '../../javascript/i18n.js';
+import { BBMessage } from '../../javascript/blackboard-msg.js';
 
 // ===================== Constants =====================
 
@@ -136,7 +137,9 @@ export default {
             { value: 'Qwen3-1.7B-q4f16_1-MLC', labelKey: 'mods.llm.clientModel.qwen3_17b' },
             { value: 'Qwen3-4B-q4f16_1-MLC',   labelKey: 'mods.llm.clientModel.qwen3_4b' },
         ]},
-        // --- Server: fixed qwen3-vl:2b, no config needed ---
+        // --- Server: fixed model, show info + test button ---
+        { key: 'serverModel', type: 'info', labelKey: 'mods.llm.config.serverModel', showWhen: { key: 'provider', value: 'server' } },
+        { key: 'serverTest', type: 'action', labelKey: 'mods.llm.config.serverTest', actionLabelKey: 'mods.llm.serverTestBtn', showWhen: { key: 'provider', value: 'server' } },
         // --- 3rd Party: API credentials ---
         { key: 'apiProvider', type: 'select', labelKey: 'mods.llm.config.apiProvider', default: 'openai', showWhen: { key: 'provider', value: 'apikey' }, options: [
             { value: 'openai',    labelKey: 'mods.llm.apiProvider.openai' },
@@ -239,7 +242,7 @@ export default {
             } else if (provider === 'server') {
                 const result = await LlmService.chat({
                     provider: 'ollama', model: SERVER_MODEL, messages,
-                    temperature: temp, apiKey: '',
+                    temperature: temp,
                 });
                 out.value = result.content || tFn('mods.llm.noOutput');
             } else {
@@ -269,7 +272,30 @@ export default {
         return 'online';
     },
 
-    getInfoValue() { return '\u2014'; },
+    getInfoValue(key) {
+        if (key === 'serverModel') return SERVER_MODEL;
+        return '\u2014';
+    },
+
+    async onAction(key) {
+        if (key === 'serverTest') {
+            const msg = BBMessage.info(t('mods.llm.serverTesting'));
+            try {
+                const res = await LlmService.ollamaHealth();
+                const models = res.models || [];
+                const hasModel = models.includes(SERVER_MODEL);
+                if (res.status === 'online' && hasModel) {
+                    msg.update(t('mods.llm.serverOnline', { model: SERVER_MODEL }), 3000);
+                } else if (res.status === 'online') {
+                    msg.update(t('mods.llm.serverNoModel', { model: SERVER_MODEL, available: models.join(', ') || '—' }), 5000);
+                } else {
+                    msg.update(t('mods.llm.serverOffline'), 3000);
+                }
+            } catch {
+                msg.update(t('mods.llm.serverOffline'), 3000);
+            }
+        }
+    },
 };
 
 // ===================== Private helpers =====================

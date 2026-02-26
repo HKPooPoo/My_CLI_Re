@@ -12,7 +12,9 @@
         "apiProvider": "API PROVIDER",
         "apiModel": "API MODEL",
         "apiKey": "API KEY",
-        "temperature": "TEMPERATURE"
+        "temperature": "TEMPERATURE",
+        "serverModel": "SERVER MODEL",
+        "serverTest": "CONNECTION"
       },
       "target": {
         "bbHead": "BB: CURRENT TEXT",
@@ -71,7 +73,12 @@
       "noRecords": "NO RECORDS FOUND.",
       "noBranches": "NO BRANCHES FOUND.",
       "tooMuchData": "DATA TRUNCATED — LIMIT REACHED",
-      "noTextFiles": "SKIPPED NON-TEXT FILE"
+      "noTextFiles": "SKIPPED NON-TEXT FILE",
+      "serverTestBtn": "CHECK CONNECTION",
+      "serverTesting": "CHECKING OLLAMA...",
+      "serverOnline": "ONLINE — {model} READY",
+      "serverOffline": "OFFLINE — OLLAMA NOT REACHABLE",
+      "serverNoModel": "ONLINE — BUT {model} NOT FOUND. AVAILABLE: {available}"
     }
   }
 }

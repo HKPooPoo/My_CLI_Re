@@ -1,4 +1,4 @@
-const CACHE_NAME = 'blackboard-v51-2026-02-26'; // LLM: per-provider config layout (client=model, server=fixed, api=credentials)
+const CACHE_NAME = 'blackboard-v52-2026-02-26'; // Fix: server LLM apiKey validation error
 const ASSETS = [
   '/',
   '/index.html',

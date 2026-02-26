@@ -12,7 +12,9 @@
         "apiProvider": "API 提供者",
         "apiModel": "API 模型",
         "apiKey": "API 金鑰",
-        "temperature": "溫度"
+        "temperature": "溫度",
+        "serverModel": "伺服器模型",
+        "serverTest": "連線狀態"
       },
       "target": {
         "bbHead": "BB：目前文字",
@@ -71,7 +73,12 @@
       "noRecords": "找不到紀錄。",
       "noBranches": "找不到分支。",
       "tooMuchData": "資料截斷 — 已達上限",
-      "noTextFiles": "已跳過非文字檔案"
+      "noTextFiles": "已跳過非文字檔案",
+      "serverTestBtn": "檢查連線",
+      "serverTesting": "正在檢查 Ollama...",
+      "serverOnline": "已連線 — {model} 就緒",
+      "serverOffline": "離線 — 無法連線 Ollama",
+      "serverNoModel": "已連線 — 但找不到 {model}。可用模型：{available}"
     }
   }
 }
