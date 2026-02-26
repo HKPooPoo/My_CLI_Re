@@ -216,6 +216,16 @@
     }
 }
 
+:root[data-theme="light"] .feature-btn:hover {
+    box-shadow: none;
+}
+
+:root[data-theme="light"] .feature-btn.active::after,
+:root[data-theme="light"] .feature-btn.recording::after,
+:root[data-theme="light"] .feature-btn.processing::after {
+    filter: none;
+}
+
 .feature-shelf-container {
     position: absolute;
     left: 100%;
@@ -273,51 +283,32 @@
 
 
 
-#feature-translator-output {
-    font-size: var(--textbox-font-size);
-    /* margin: 0 var(--scaffold-left-gap) 0 0; */
-    height: 100%;
-    border: var(--border-line);
-    border-radius: 0 0 var(--border-radius) var(--border-radius);
-}
+/* --- Shared shelf output textarea styling --- */
 
-/* --- LLM MOD shelf --- */
-
-.feature-shelf[data-feature-shelf="llm"] {
-    flex-direction: column;
-    gap: 0;
-}
-
-.llm-status {
-    font-size: calc(var(--font-size) * 0.85);
-    padding: 4px 0;
-    min-height: 1.4em;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
+#feature-translator-output,
 #llm-output {
     font-size: var(--textbox-font-size);
-    color: var(--text-green);
-    background-color: var(--bg-primary);
-    flex: 1;
+    height: clamp(192px, calc(var(--container-width) / 1.56), 56vh);
     border: var(--border-line);
-    border-radius: var(--border-radius);
-    min-height: 0;
+    border-radius: 0 0 var(--border-radius) var(--border-radius);
+    overflow-y: auto;
+    overflow-x: hidden;
+    scrollbar-width: thin;
+    scrollbar-color: var(--text-green) var(--bg-primary);
 }
 
-.llm-actions {
-    display: flex;
-    padding-top: 6px;
-    gap: 8px;
+#feature-translator-output::-webkit-scrollbar,
+#llm-output::-webkit-scrollbar {
+    width: 4px;
 }
 
-.llm-actions button {
-    flex: 1;
-    padding: 6px 0;
-    font-size: calc(var(--font-size) * 0.9);
-    border: var(--border-line);
-    border-radius: var(--border-radius);
-    cursor: pointer;
+#feature-translator-output::-webkit-scrollbar-track,
+#llm-output::-webkit-scrollbar-track {
+    background: var(--bg-primary);
+}
+
+#feature-translator-output::-webkit-scrollbar-thumb,
+#llm-output::-webkit-scrollbar-thumb {
+    background-color: var(--text-green);
+    border-radius: 2px;
 }

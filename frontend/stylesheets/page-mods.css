@@ -201,7 +201,24 @@
     display: flex;
     flex-direction: column;
     gap: var(--panel-gap);
-    min-height: clamp(192px, calc(var(--container-width) / 2), 56vh);
+    max-height: clamp(192px, calc(var(--container-width) / 1.56), 56vh);
+    overflow-y: auto;
+    overflow-x: hidden;
+    scrollbar-width: thin;
+    scrollbar-color: var(--text-green) var(--bg-primary);
+}
+
+.mods-config-content::-webkit-scrollbar {
+    width: 4px;
+}
+
+.mods-config-content::-webkit-scrollbar-track {
+    background: var(--bg-primary);
+}
+
+.mods-config-content::-webkit-scrollbar-thumb {
+    background-color: var(--text-green);
+    border-radius: 2px;
 }
 
 .mods-config-description {
@@ -296,6 +313,21 @@
     z-index: 10;
     max-height: 200px;
     overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--text-green) var(--bg-primary);
+}
+
+.mods-select-dropdown::-webkit-scrollbar {
+    width: 4px;
+}
+
+.mods-select-dropdown::-webkit-scrollbar-track {
+    background: var(--bg-primary);
+}
+
+.mods-select-dropdown::-webkit-scrollbar-thumb {
+    background-color: var(--text-green);
+    border-radius: 2px;
 }
 
 .mods-select.open .mods-select-dropdown {
@@ -536,29 +568,58 @@
 /* === textarea field type === */
 .mods-textarea-field { display: flex; flex-direction: column; gap: 6px; width: 100%; }
 .mods-config-field-textarea {
-    width: 100%; resize: vertical;
+    width: 100%; resize: none;
     font-family: inherit; font-size: inherit;
     color: var(--text-green); background: transparent;
     border: var(--border-line); border-radius: var(--border-radius);
     padding: 6px 8px;
+    max-height: 6em;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--text-green) var(--bg-primary);
 }
+.mods-config-field-textarea::-webkit-scrollbar { width: 4px; }
+.mods-config-field-textarea::-webkit-scrollbar-track { background: var(--bg-primary); }
+.mods-config-field-textarea::-webkit-scrollbar-thumb { background-color: var(--text-green); border-radius: 2px; }
 .mods-config-field-textarea:focus { border-color: var(--text-orange); outline: none; }
-.mods-textarea-presets { display: flex; flex-wrap: wrap; gap: 4px; }
+.mods-textarea-presets {
+    flex-direction: row;
+    flex-wrap: nowrap;
+    gap: 4px;
+    overflow-x: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--text-green) var(--bg-primary);
+}
+.mods-textarea-presets::-webkit-scrollbar { height: 4px; }
+.mods-textarea-presets::-webkit-scrollbar-track { background: var(--bg-primary); }
+.mods-textarea-presets::-webkit-scrollbar-thumb { background-color: var(--text-green); border-radius: 2px; }
 .mods-textarea-preset {
     font-size: 0.75em; padding: 2px 8px;
     border: 1px solid var(--text-green); border-radius: 12px;
     color: var(--text-green); background: transparent; cursor: pointer;
+    flex-shrink: 0;
+    white-space: nowrap;
 }
-@media (hover: hover) {
-    .mods-textarea-preset:hover { background: rgba(50, 255, 50, 0.1); }
+:root[data-theme="light"] .mods-textarea-preset:hover {
+    box-shadow: none;
 }
 
 /* === icon-picker field type === */
 .mods-icon-picker-grid {
-    display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; width: 100%;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    gap: 4px;
+    width: 100%;
+    overflow-x: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--text-green) var(--bg-primary);
 }
+.mods-icon-picker-grid::-webkit-scrollbar { height: 4px; }
+.mods-icon-picker-grid::-webkit-scrollbar-track { background: var(--bg-primary); }
+.mods-icon-picker-grid::-webkit-scrollbar-thumb { background-color: var(--text-green); border-radius: 2px; }
 .mods-icon-picker-item {
-    aspect-ratio: 1; border: var(--border-line); border-radius: var(--border-radius);
+    width: 36px; height: 36px; flex-shrink: 0;
+    border: var(--border-line); border-radius: var(--border-radius);
     background: transparent; cursor: pointer; position: relative;
     display: flex; align-items: center; justify-content: center;
 }
@@ -569,6 +630,15 @@
     -webkit-mask-size: contain; mask-size: contain;
     -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
     -webkit-mask-position: center; mask-position: center;
+}
+@media (hover: hover) {
+    .mods-icon-picker-item:hover {
+        background: transparent;
+        box-shadow: 0 0 6px var(--text-green);
+    }
+    .mods-icon-picker-item:hover::after {
+        background-color: var(--text-green);
+    }
 }
 .mods-icon-picker-item.selected {
     border-color: var(--text-orange); box-shadow: 0 0 6px var(--text-orange);
@@ -589,8 +659,9 @@
 }
 
 /* === Light mode overrides for new field types === */
-[data-theme="light"] .mods-icon-picker-item.selected {
+:root[data-theme="light"] .mods-icon-picker-item.selected {
     box-shadow: none; border-color: #555; background: rgba(0, 0, 0, 0.05);
 }
-[data-theme="light"] .mods-config-field-textarea { color: var(--text-green); }
-[data-theme="light"] .mods-textarea-preset:hover { background: rgba(0, 0, 0, 0.05); }
+:root[data-theme="light"] .mods-icon-picker-item:hover {
+    box-shadow: none;
+}

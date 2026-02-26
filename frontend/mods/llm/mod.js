@@ -181,12 +181,10 @@ export default {
             return;
         }
 
-        const target = TARGETS[config.target] || TARGETS['bb-head'];
         out.value = tFn('mods.llm.processing');
 
         try {
-            // Collect input data based on target scope
-            const inputText = await _collectInput(ctx, target.scope, tFn);
+            const inputText = ctx.board.getText().trim();
 
             if (!inputText) {
                 out.value = tFn('mods.llm.empty');
