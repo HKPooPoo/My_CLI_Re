@@ -1,4 +1,4 @@
-const CACHE_NAME = 'blackboard-v45-2026-02-26'; // LLM MOD: wire _collectInput for scope-based data + translate preset rename
+const CACHE_NAME = 'blackboard-v46-2026-02-26'; // Fix bb-all: fetch records per branch via getAllRecordsForBranch API
 const ASSETS = [
   '/',
   '/index.html',

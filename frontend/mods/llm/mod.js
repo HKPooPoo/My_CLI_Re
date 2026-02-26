@@ -295,13 +295,12 @@ async function _collectInput(ctx, scope, tFn) {
             if (!branches || branches.length === 0) return '';
             const parts = [];
             for (const branch of branches) {
-                const name = branch.branch_name || branch.name || branch.id;
+                const name = branch.name || branch.id;
                 parts.push(`=== ${name} ===`);
-                if (Array.isArray(branch.records)) {
-                    for (const r of branch.records) {
-                        const ts = r.timestamp ? new Date(Number(r.timestamp)).toLocaleString() : '';
-                        parts.push(`[${ts}] ${r.text || ''}`);
-                    }
+                const records = await ctx.board.getAllRecordsForBranch(branch.id);
+                for (const r of records) {
+                    const ts = r.timestamp ? new Date(Number(r.timestamp)).toLocaleString() : '';
+                    parts.push(`[${ts}] ${r.text || ''}`);
                 }
             }
             return parts.join('\n');

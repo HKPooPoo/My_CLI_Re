@@ -229,6 +229,12 @@ export function createModContext(opts) {
                 if (!meta) return [];
                 return BoardProvider.getAllRecords(scope, meta.branchId, meta.owner);
             },
+            async getAllRecordsForBranch(branchId) {
+                const scope = this.getScope();
+                const meta = BoardProvider.getCurrentRecord(scope);
+                if (!meta) return [];
+                return BoardProvider.getAllRecords(scope, branchId, meta.owner);
+            },
             async getAllBranches() {
                 const scope = this.getScope();
                 const meta = BoardProvider.getCurrentRecord(scope);
