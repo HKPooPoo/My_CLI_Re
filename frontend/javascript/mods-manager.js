@@ -419,7 +419,7 @@ function createSelectField(instanceId, template, field) {
 
     // Dropdown panel
     const dropdown = document.createElement('div');
-    dropdown.className = 'mods-select-dropdown';
+    dropdown.className = 'mods-select-dropdown mod-scrollbar';
 
     for (const opt of options) {
         const item = document.createElement('div');
@@ -483,7 +483,7 @@ function createTextareaField(instanceId, template, field) {
     container.className = 'mods-textarea-field';
 
     const textarea = document.createElement('textarea');
-    textarea.className = 'mods-config-field-textarea';
+    textarea.className = 'mods-config-field-textarea mod-scrollbar';
     textarea.rows = field.rows || 3;
     textarea.value = ModState.getConfig(instanceId, field.key) ?? field.default ?? '';
     textarea.placeholder = field.placeholder || '';
@@ -496,7 +496,7 @@ function createTextareaField(instanceId, template, field) {
     // Optional preset chips
     if (Array.isArray(field.presets) && field.presets.length > 0) {
         const presetContainer = document.createElement('div');
-        presetContainer.className = 'mods-textarea-presets';
+        presetContainer.className = 'mods-textarea-presets mod-scrollbar-x';
 
         for (const preset of field.presets) {
             const chip = document.createElement('button');
@@ -520,7 +520,7 @@ function createIconPickerField(instanceId, template, field) {
     const icons = field.icons || [];
 
     const grid = document.createElement('div');
-    grid.className = 'mods-icon-picker-grid';
+    grid.className = 'mods-icon-picker-grid mod-scrollbar-x';
 
     for (const icon of icons) {
         const btn = document.createElement('button');

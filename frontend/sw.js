@@ -1,4 +1,4 @@
-const CACHE_NAME = 'blackboard-v38-2026-02-26'; // Fix: presets/icons horizontal scroll, dropdown scrollbar
+const CACHE_NAME = 'blackboard-v39-2026-02-26'; // Add mod-shared.css: unified MOD utility classes
 const ASSETS = [
   '/',
   '/index.html',

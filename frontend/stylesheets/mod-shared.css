@@ -1,0 +1,347 @@
+/*
+ * MOD Shared CSS — Reusable utility classes for MOD shelf content
+ * ================================================================
+ * Official utility classes for MOD template developers.
+ * Use these instead of hardcoding styles in individual MODs.
+ *
+ * Scrollbar:    .mod-scrollbar, .mod-scrollbar-x
+ * Shelf:        .mod-shelf-output, .mod-shelf-content
+ * Buttons:      .mod-btn, .mod-btn-danger
+ * Containers:   .mod-btn-row, .mod-btn-list, .mod-btn-grid
+ * Square btns:  .mod-btn-square
+ * Chips:        .mod-chip, .mod-chip-row
+ * ================================================================
+ */
+
+/* ==================== Scrollbar ==================== */
+
+/* Vertical CRT scrollbar — apply to any overflow-y container */
+.mod-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: var(--text-green) var(--bg-primary);
+}
+
+.mod-scrollbar::-webkit-scrollbar {
+    width: 4px;
+}
+
+.mod-scrollbar::-webkit-scrollbar-track {
+    background: var(--bg-primary);
+}
+
+.mod-scrollbar::-webkit-scrollbar-thumb {
+    background-color: var(--text-green);
+    border-radius: 2px;
+}
+
+/* Horizontal CRT scrollbar — apply to any overflow-x container */
+.mod-scrollbar-x {
+    scrollbar-width: thin;
+    scrollbar-color: var(--text-green) var(--bg-primary);
+}
+
+.mod-scrollbar-x::-webkit-scrollbar {
+    height: 4px;
+}
+
+.mod-scrollbar-x::-webkit-scrollbar-track {
+    background: var(--bg-primary);
+}
+
+.mod-scrollbar-x::-webkit-scrollbar-thumb {
+    background-color: var(--text-green);
+    border-radius: 2px;
+}
+
+
+/* ==================== Shelf Output ==================== */
+
+/* Textarea output panel (translate, LLM, etc.) */
+.mod-shelf-output {
+    font-size: var(--textbox-font-size);
+    height: clamp(192px, calc(var(--container-width) / 1.56), 56vh);
+    border: var(--border-line);
+    border-radius: 0 0 var(--border-radius) var(--border-radius);
+    overflow-y: auto;
+    overflow-x: hidden;
+    scrollbar-width: thin;
+    scrollbar-color: var(--text-green) var(--bg-primary);
+}
+
+.mod-shelf-output::-webkit-scrollbar {
+    width: 4px;
+}
+
+.mod-shelf-output::-webkit-scrollbar-track {
+    background: var(--bg-primary);
+}
+
+.mod-shelf-output::-webkit-scrollbar-thumb {
+    background-color: var(--text-green);
+    border-radius: 2px;
+}
+
+/* Div output panel (markdown, rich content, etc.) */
+.mod-shelf-content {
+    width: 100%;
+    height: 100%;
+    overflow-y: auto;
+    padding: var(--panel-padding);
+    color: var(--text-green);
+    font-size: var(--font-size);
+    line-height: 1.6;
+    scrollbar-width: thin;
+    scrollbar-color: var(--text-green) var(--bg-primary);
+}
+
+.mod-shelf-content::-webkit-scrollbar {
+    width: 4px;
+}
+
+.mod-shelf-content::-webkit-scrollbar-track {
+    background: var(--bg-primary);
+}
+
+.mod-shelf-content::-webkit-scrollbar-thumb {
+    background-color: var(--text-green);
+    border-radius: 2px;
+}
+
+
+/* ==================== Buttons ==================== */
+
+/* Long CRT button — full-width, bordered, green hover glow */
+.mod-btn {
+    border: var(--border-line);
+    padding: 6px 10px;
+    cursor: pointer;
+    font-size: 0.85em;
+    letter-spacing: 0.05em;
+    text-align: center;
+}
+
+@media (hover: hover) {
+    .mod-btn:hover {
+        background: var(--text-green);
+        color: var(--bg-primary);
+        box-shadow: 0 0 10px var(--text-green);
+    }
+}
+
+.mod-btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+
+@media (hover: hover) {
+    .mod-btn:disabled:hover {
+        background: transparent;
+        color: var(--text-green);
+        box-shadow: none;
+    }
+}
+
+/* Danger variant — red border + red hover */
+.mod-btn-danger {
+    border-color: var(--text-red);
+    color: var(--text-red);
+}
+
+@media (hover: hover) {
+    .mod-btn-danger:hover {
+        background: var(--text-red);
+        color: var(--bg-primary);
+        box-shadow: 0 0 10px var(--text-red);
+    }
+}
+
+/* Armed/confirm state (used with MultiStepButton) */
+.mod-btn.btn-armed {
+    background: var(--text-red);
+    color: var(--bg-primary);
+    border-color: var(--text-red);
+}
+
+
+/* ==================== Button Containers ==================== */
+
+/* Horizontal row of buttons — flex, equal width */
+.mod-btn-row {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: calc(var(--panel-gap) / 2);
+}
+
+.mod-btn-row:empty {
+    display: none;
+}
+
+.mod-btn-row > .mod-btn {
+    flex: 1 1 0;
+}
+
+/* Vertical scrollable list of buttons — flex column, max-height, overflow-y */
+.mod-btn-list {
+    display: flex;
+    flex-direction: column;
+    gap: calc(var(--panel-gap) / 2);
+    max-height: clamp(128px, 30vh, 256px);
+    overflow-y: auto;
+    padding: calc(var(--panel-gap) / 4);
+    scrollbar-width: thin;
+    scrollbar-color: var(--text-green) var(--bg-primary);
+}
+
+.mod-btn-list::-webkit-scrollbar {
+    width: 4px;
+}
+
+.mod-btn-list::-webkit-scrollbar-track {
+    background: var(--bg-primary);
+}
+
+.mod-btn-list::-webkit-scrollbar-thumb {
+    background-color: var(--text-green);
+    border-radius: 2px;
+}
+
+/* Horizontal scroll grid of square buttons — overflow-x */
+.mod-btn-grid {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    gap: 4px;
+    width: 100%;
+    overflow-x: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--text-green) var(--bg-primary);
+}
+
+.mod-btn-grid::-webkit-scrollbar {
+    height: 4px;
+}
+
+.mod-btn-grid::-webkit-scrollbar-track {
+    background: var(--bg-primary);
+}
+
+.mod-btn-grid::-webkit-scrollbar-thumb {
+    background-color: var(--text-green);
+    border-radius: 2px;
+}
+
+
+/* ==================== Square Button ==================== */
+
+/* Square icon button — for use inside .mod-btn-grid */
+.mod-btn-square {
+    width: 36px;
+    height: 36px;
+    flex-shrink: 0;
+    border: var(--border-line);
+    border-radius: var(--border-radius);
+    background: transparent;
+    cursor: pointer;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Icon slot — set --mod-btn-icon via inline style */
+.mod-btn-square::after {
+    content: "";
+    display: block;
+    width: 60%;
+    height: 60%;
+    background-color: var(--text-green);
+    -webkit-mask-image: var(--mod-btn-icon);
+    mask-image: var(--mod-btn-icon);
+    -webkit-mask-size: contain;
+    mask-size: contain;
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+    -webkit-mask-position: center;
+    mask-position: center;
+}
+
+@media (hover: hover) {
+    .mod-btn-square:hover {
+        box-shadow: 0 0 6px var(--text-green);
+    }
+}
+
+.mod-btn-square.selected {
+    border-color: var(--text-orange);
+    box-shadow: 0 0 6px var(--text-orange);
+}
+
+
+/* ==================== Chips ==================== */
+
+/* Small pill/chip button — for tags, presets, filters */
+.mod-chip {
+    font-size: 0.75em;
+    padding: 2px 8px;
+    border: 1px solid var(--text-green);
+    border-radius: 12px;
+    color: var(--text-green);
+    background: transparent;
+    cursor: pointer;
+    flex-shrink: 0;
+    white-space: nowrap;
+}
+
+@media (hover: hover) {
+    .mod-chip:hover {
+        background: var(--text-green);
+        color: var(--bg-primary);
+        box-shadow: 0 0 6px var(--text-green);
+    }
+}
+
+.mod-chip.selected {
+    background: var(--text-green);
+    color: var(--bg-primary);
+}
+
+/* Horizontal scroll row of chips */
+.mod-chip-row {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    gap: 4px;
+    overflow-x: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--text-green) var(--bg-primary);
+}
+
+.mod-chip-row::-webkit-scrollbar {
+    height: 4px;
+}
+
+.mod-chip-row::-webkit-scrollbar-track {
+    background: var(--bg-primary);
+}
+
+.mod-chip-row::-webkit-scrollbar-thumb {
+    background-color: var(--text-green);
+    border-radius: 2px;
+}
+
+
+/* ==================== Light Mode ==================== */
+
+:root[data-theme="light"] .mod-btn:hover,
+:root[data-theme="light"] .mod-btn-danger:hover,
+:root[data-theme="light"] .mod-btn-square:hover,
+:root[data-theme="light"] .mod-chip:hover {
+    box-shadow: none;
+}
+
+:root[data-theme="light"] .mod-btn-square.selected {
+    box-shadow: none;
+    border-color: #555;
+    background: rgba(0, 0, 0, 0.05);
+}

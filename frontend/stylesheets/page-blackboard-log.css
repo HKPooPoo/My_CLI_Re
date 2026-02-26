@@ -283,32 +283,4 @@
 
 
 
-/* --- Shared shelf output textarea styling --- */
-
-#feature-translator-output,
-#llm-output {
-    font-size: var(--textbox-font-size);
-    height: clamp(192px, calc(var(--container-width) / 1.56), 56vh);
-    border: var(--border-line);
-    border-radius: 0 0 var(--border-radius) var(--border-radius);
-    overflow-y: auto;
-    overflow-x: hidden;
-    scrollbar-width: thin;
-    scrollbar-color: var(--text-green) var(--bg-primary);
-}
-
-#feature-translator-output::-webkit-scrollbar,
-#llm-output::-webkit-scrollbar {
-    width: 4px;
-}
-
-#feature-translator-output::-webkit-scrollbar-track,
-#llm-output::-webkit-scrollbar-track {
-    background: var(--bg-primary);
-}
-
-#feature-translator-output::-webkit-scrollbar-thumb,
-#llm-output::-webkit-scrollbar-thumb {
-    background-color: var(--text-green);
-    border-radius: 2px;
-}
+/* Shelf output textarea styling → moved to mod-shared.css (.mod-shelf-output) */

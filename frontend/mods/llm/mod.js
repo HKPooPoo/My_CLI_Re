@@ -140,6 +140,7 @@ export default {
         if (shelf) {
             const el = document.createElement('textarea');
             el.id = 'llm-output';
+            el.className = 'mod-shelf-output';
             el.readOnly = true;
             shelf.appendChild(el);
             this._outputEl = el;
@@ -159,6 +160,7 @@ export default {
             } else {
                 const el = document.createElement('textarea');
                 el.id = 'llm-output';
+                el.className = 'mod-shelf-output';
                 el.readOnly = true;
                 shelf.appendChild(el);
                 this._outputEl = el;

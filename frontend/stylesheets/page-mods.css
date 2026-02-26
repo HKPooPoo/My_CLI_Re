@@ -22,26 +22,12 @@
 }
 
 /* === mods-list page — scrollable list with InfiniteList cursor === */
+/* Scrollbar → .mod-scrollbar class (mod-shared.css) */
 .mods-list-container {
     border-bottom: var(--border-line);
     height: clamp(192px, calc(var(--container-width) / 1.56), 56vh);
     overflow-y: auto;
     overflow-x: hidden;
-    scrollbar-width: thin;
-    scrollbar-color: var(--text-green) var(--bg-primary);
-}
-
-.mods-list-container::-webkit-scrollbar {
-    width: 4px;
-}
-
-.mods-list-container::-webkit-scrollbar-track {
-    background: var(--bg-primary);
-}
-
-.mods-list-container::-webkit-scrollbar-thumb {
-    background-color: var(--text-green);
-    border-radius: 2px;
 }
 
 /* Group divider — orange section header */
@@ -146,7 +132,7 @@
 
 @media (hover: hover) {
     .mods-list-item:not(.active):hover {
-        background: rgba(50, 255, 50, 0.05);
+        background: var(--text-green-10);
     }
 
     .mods-toggle-btn:hover {
@@ -196,6 +182,7 @@
 }
 
 /* === mods-config page === */
+/* Scrollbar → .mod-scrollbar class (mod-shared.css) */
 .mods-config-content {
     padding: calc(var(--panel-gap) / 2) 0;
     display: flex;
@@ -204,21 +191,6 @@
     max-height: clamp(192px, calc(var(--container-width) / 1.56), 56vh);
     overflow-y: auto;
     overflow-x: hidden;
-    scrollbar-width: thin;
-    scrollbar-color: var(--text-green) var(--bg-primary);
-}
-
-.mods-config-content::-webkit-scrollbar {
-    width: 4px;
-}
-
-.mods-config-content::-webkit-scrollbar-track {
-    background: var(--bg-primary);
-}
-
-.mods-config-content::-webkit-scrollbar-thumb {
-    background-color: var(--text-green);
-    border-radius: 2px;
 }
 
 .mods-config-description {
@@ -313,21 +285,7 @@
     z-index: 10;
     max-height: 200px;
     overflow-y: auto;
-    scrollbar-width: thin;
-    scrollbar-color: var(--text-green) var(--bg-primary);
-}
-
-.mods-select-dropdown::-webkit-scrollbar {
-    width: 4px;
-}
-
-.mods-select-dropdown::-webkit-scrollbar-track {
-    background: var(--bg-primary);
-}
-
-.mods-select-dropdown::-webkit-scrollbar-thumb {
-    background-color: var(--text-green);
-    border-radius: 2px;
+    /* Scrollbar → .mod-scrollbar class (mod-shared.css) */
 }
 
 .mods-select.open .mods-select-dropdown {
@@ -575,24 +533,16 @@
     padding: 6px 8px;
     max-height: 6em;
     overflow-y: auto;
-    scrollbar-width: thin;
-    scrollbar-color: var(--text-green) var(--bg-primary);
+    /* Scrollbar → .mod-scrollbar class (mod-shared.css) */
 }
-.mods-config-field-textarea::-webkit-scrollbar { width: 4px; }
-.mods-config-field-textarea::-webkit-scrollbar-track { background: var(--bg-primary); }
-.mods-config-field-textarea::-webkit-scrollbar-thumb { background-color: var(--text-green); border-radius: 2px; }
 .mods-config-field-textarea:focus { border-color: var(--text-orange); outline: none; }
+/* Scrollbar → .mod-scrollbar-x class (mod-shared.css) */
 .mods-textarea-presets {
     flex-direction: row;
     flex-wrap: nowrap;
     gap: 4px;
     overflow-x: auto;
-    scrollbar-width: thin;
-    scrollbar-color: var(--text-green) var(--bg-primary);
 }
-.mods-textarea-presets::-webkit-scrollbar { height: 4px; }
-.mods-textarea-presets::-webkit-scrollbar-track { background: var(--bg-primary); }
-.mods-textarea-presets::-webkit-scrollbar-thumb { background-color: var(--text-green); border-radius: 2px; }
 .mods-textarea-preset {
     font-size: 0.75em; padding: 2px 8px;
     border: 1px solid var(--text-green); border-radius: 12px;
@@ -605,18 +555,14 @@
 }
 
 /* === icon-picker field type === */
+/* Scrollbar → .mod-scrollbar-x class (mod-shared.css) */
 .mods-icon-picker-grid {
     flex-direction: row;
     flex-wrap: nowrap;
     gap: 4px;
     width: 100%;
     overflow-x: auto;
-    scrollbar-width: thin;
-    scrollbar-color: var(--text-green) var(--bg-primary);
 }
-.mods-icon-picker-grid::-webkit-scrollbar { height: 4px; }
-.mods-icon-picker-grid::-webkit-scrollbar-track { background: var(--bg-primary); }
-.mods-icon-picker-grid::-webkit-scrollbar-thumb { background-color: var(--text-green); border-radius: 2px; }
 .mods-icon-picker-item {
     width: 36px; height: 36px; flex-shrink: 0;
     border: var(--border-line); border-radius: var(--border-radius);

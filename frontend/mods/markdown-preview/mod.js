@@ -60,7 +60,7 @@ export default {
         if (shelf) {
             const output = document.createElement('div');
             output.id = 'feature-markdown-output';
-            output.className = 'markdown-rendered';
+            output.className = 'markdown-rendered mod-shelf-content';
             shelf.appendChild(output);
             _outputEl = output;
         }

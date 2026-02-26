@@ -121,6 +121,7 @@ export default {
         if (shelf) {
             const output = document.createElement('textarea');
             output.id = 'feature-translator-output';
+            output.className = 'mod-shelf-output';
             output.readOnly = true;
             shelf.appendChild(output);
             this._outputEl = output;

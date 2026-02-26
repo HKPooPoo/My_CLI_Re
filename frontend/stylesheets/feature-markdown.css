@@ -1,26 +1,6 @@
+/* Base layout + scrollbar → inherited from .mod-shelf-content (mod-shared.css) */
 .markdown-rendered {
-    width: 100%;
-    height: 100%;
-    overflow-y: auto;
-    padding: var(--panel-padding);
-    color: var(--text-green);
-    font-size: var(--font-size);
     line-height: 1.6;
-    scrollbar-width: thin;
-    scrollbar-color: var(--text-green) var(--bg-primary);
-}
-
-.markdown-rendered::-webkit-scrollbar {
-    width: 4px;
-}
-
-.markdown-rendered::-webkit-scrollbar-track {
-    background: var(--bg-primary);
-}
-
-.markdown-rendered::-webkit-scrollbar-thumb {
-    background-color: var(--text-green);
-    border-radius: 2px;
 }
 
 .markdown-rendered h1,
@@ -55,16 +35,16 @@
 }
 
 .markdown-rendered code {
-    background: rgba(50, 255, 50, 0.1);
-    border: 1px solid rgba(50, 255, 50, 0.3);
+    background: var(--text-green-10);
+    border: 1px solid var(--text-green-10);
     padding: 0.1em 0.3em;
     border-radius: 2px;
     font-size: 0.9em;
 }
 
 .markdown-rendered pre {
-    background: rgba(50, 255, 50, 0.05);
-    border: 1px solid rgba(50, 255, 50, 0.2);
+    background: var(--text-green-10);
+    border: 1px solid var(--text-green-10);
     padding: 0.8em;
     overflow-x: auto;
     margin: 0.6em 0;
@@ -113,14 +93,14 @@
 
 .markdown-rendered th,
 .markdown-rendered td {
-    border: 1px solid rgba(50, 255, 50, 0.3);
+    border: 1px solid var(--text-green-10);
     padding: 0.3em 0.6em;
     text-align: left;
 }
 
 .markdown-rendered th {
     color: var(--text-orange);
-    background: rgba(50, 255, 50, 0.05);
+    background: var(--text-green-10);
 }
 
 .markdown-rendered img {

@@ -17,6 +17,20 @@
  *    OR implement getIconUrl() for runtime icons (no CSS editing needed)
  * 9. Bump CACHE_NAME in sw.js
  *
+ * Shared CSS classes (mod-shared.css):
+ *   .mod-scrollbar      — CRT vertical scrollbar (add to overflow-y containers)
+ *   .mod-scrollbar-x    — CRT horizontal scrollbar (add to overflow-x containers)
+ *   .mod-shelf-output   — shelf textarea panel (translate, LLM style)
+ *   .mod-shelf-content  — shelf div panel (markdown, rich content)
+ *   .mod-btn            — long CRT button (green border + hover glow)
+ *   .mod-btn-danger     — red variant of .mod-btn
+ *   .mod-btn-row        — horizontal flex row of buttons (equal width)
+ *   .mod-btn-list       — vertical scrollable list of buttons
+ *   .mod-btn-grid       — horizontal scroll grid for square buttons
+ *   .mod-btn-square     — square icon button (set --mod-btn-icon for mask)
+ *   .mod-chip           — small pill/chip button
+ *   .mod-chip-row       — horizontal scroll row of chips
+ *
  * Version guidelines:
  * - Set `version` to SemVer (displayed in mods-manager UI)
  * - Set `minApiVersion` to the minimum MOD_API_VERSION required
