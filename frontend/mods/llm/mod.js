@@ -24,7 +24,7 @@ const TARGETS = {
  */
 const PRESETS = [
     { labelKey: 'mods.llm.preset.summarize', value: 'Summarize concisely.' },
-    { labelKey: 'mods.llm.preset.translate', value: 'Translate to 繁體中文.' },
+    { labelKey: 'mods.llm.preset.translate', value: 'Translate to English.' },
     { labelKey: 'mods.llm.preset.polish',    value: 'Improve grammar and style. Keep the original meaning.' },
     { labelKey: 'mods.llm.preset.explain',   value: 'Explain this text in simple terms.' },
 ];
@@ -74,7 +74,7 @@ export default {
     },
 
     defaultInstances: [
-        { config: { prompt: 'Translate to 繁體中文.', icon: 'translate', target: 'bb-head', provider: 'client', clientModel: 'Qwen3-0.6B-q4f16_1-MLC' } },
+        { config: { prompt: 'Translate to English.', icon: 'translate', target: 'bb-head', provider: 'client', clientModel: 'Qwen3-0.6B-q4f16_1-MLC' } },
         { config: { prompt: 'Summarize concisely.', icon: 'summarize', target: 'bb-head', provider: 'client', clientModel: 'Qwen3-0.6B-q4f16_1-MLC' } },
         { config: { prompt: 'Improve grammar and style. Keep the original meaning.', icon: 'polish', target: 'bb-head', provider: 'client', clientModel: 'Qwen3-0.6B-q4f16_1-MLC' } },
     ],
@@ -186,7 +186,8 @@ export default {
         out.value = tFn('mods.llm.processing');
 
         try {
-            const inputText = ctx.board.getText().trim();
+            const targetDef = TARGETS[config.target] || TARGETS['bb-head'];
+            const inputText = await _collectInput(ctx, targetDef.scope, tFn);
 
             if (!inputText) {
                 out.value = tFn('mods.llm.empty');

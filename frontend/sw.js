@@ -1,4 +1,4 @@
-const CACHE_NAME = 'blackboard-v44-2026-02-26'; // Fix WebLLM: keep think content, only strip tags
+const CACHE_NAME = 'blackboard-v45-2026-02-26'; // LLM MOD: wire _collectInput for scope-based data + translate preset rename
 const ASSETS = [
   '/',
   '/index.html',

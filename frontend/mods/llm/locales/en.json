@@ -28,7 +28,7 @@
       },
       "preset": {
         "summarize": "SUMMARIZE",
-        "translate": "TRANSLATE 繁中",
+        "translate": "TRANSLATE",
         "polish": "POLISH",
         "explain": "EXPLAIN"
       },
