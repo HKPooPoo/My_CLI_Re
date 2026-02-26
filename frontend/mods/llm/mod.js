@@ -21,13 +21,31 @@ const TARGETS = {
 
 /**
  * Prompt presets — quick-fill chips for the textarea field.
+ * Output constraints help the model avoid adding commentary.
  */
 const PRESETS = [
-    { labelKey: 'mods.llm.preset.summarize', value: 'Summarize concisely.' },
-    { labelKey: 'mods.llm.preset.translate', value: 'Translate to English.' },
-    { labelKey: 'mods.llm.preset.polish',    value: 'Improve grammar and style. Keep the original meaning.' },
+    { labelKey: 'mods.llm.preset.summarize', value: 'Summarize concisely. Output plain text only.' },
+    { labelKey: 'mods.llm.preset.translate', value: 'Translate to English. Output only the translation.' },
+    { labelKey: 'mods.llm.preset.polish',    value: 'Improve grammar and style. Keep the original meaning. Output only the improved text.' },
     { labelKey: 'mods.llm.preset.explain',   value: 'Explain this text in simple terms.' },
 ];
+
+/**
+ * Scope hints — prepended to the user prompt so the model understands
+ * the input structure before seeing the data.
+ */
+const SCOPE_HINTS = {
+    head:     'You will receive a single text entry.',
+    text:     'You will receive a single text entry.',
+    branch:   'You will receive numbered entries from one timeline branch, ordered newest first.',
+    history:  'You will receive numbered entries from one channel, ordered newest first.',
+    all:      'You will receive entries from multiple branches. Each branch has a header with name and entry count.',
+    dialogue: 'You will receive a conversation between [ME] and [PARTNER].',
+};
+
+/** Char limits for truncation */
+const MAX_BRANCH_CHARS = 12000;  // ~3K tokens per branch
+const MAX_ALL_CHARS    = 20000;  // ~5K tokens total for all-branches
 
 /**
  * Icon choices for the icon-picker field.
@@ -196,6 +214,7 @@ export default {
 
             const provider = config.provider || 'client';
             const temp = parseFloat(config.temperature) || 0.3;
+            const messages = _buildMessages(prompt, inputText, targetDef.scope, provider);
 
             if (provider === 'client') {
                 const svc = await _getWebLlm();
@@ -203,10 +222,6 @@ export default {
 
                 out.value = tFn('mods.llm.loading');
                 await svc.ensureModel(model, (p) => { out.value = p; });
-
-                // Single user message with embedded instruction
-                // (proven pattern — better for small models)
-                const messages = [{ role: 'user', content: prompt + '\n\n' + inputText }];
 
                 out.value = '';
                 for await (const chunk of svc.chat(messages, { temperature: temp })) {
@@ -218,11 +233,6 @@ export default {
                     out.value = tFn('mods.llm.noOutput');
                 }
             } else {
-                // Server/API: system + user messages (standard for capable models)
-                const messages = [
-                    { role: 'system', content: prompt },
-                    { role: 'user', content: inputText },
-                ];
                 const actualProvider = provider === 'server' ? 'ollama' : (config.apiProvider || 'openai');
                 const model = provider === 'server' ? (config.serverModel || 'qwen3:4b') : (config.apiModel || 'gpt-4o-mini');
                 const result = await LlmService.chat({
@@ -272,7 +282,42 @@ async function _getWebLlm() {
 }
 
 /**
+ * Format a timestamp as ISO-style "YYYY-MM-DD HH:mm".
+ */
+function _formatTimestamp(ts) {
+    if (!ts) return '';
+    const d = new Date(Number(ts));
+    return d.toISOString().slice(0, 16).replace('T', ' ');
+}
+
+/**
+ * Format a list of records as numbered entries.
+ * Returns { text, count, truncated }.
+ */
+function _formatRecords(records, maxChars) {
+    const entries = [];
+    let total = 0;
+    let truncated = 0;
+
+    for (let i = 0; i < records.length; i++) {
+        const r = records[i];
+        const text = (r.text || '').trim();
+        if (!text) continue;
+        const entry = `[${entries.length + 1}] ${_formatTimestamp(r.timestamp)}\n${text}`;
+        if (maxChars && total + entry.length > maxChars) {
+            truncated = records.length - i;
+            break;
+        }
+        entries.push(entry);
+        total += entry.length;
+    }
+
+    return { text: entries.join('\n\n'), count: entries.length + truncated, truncated };
+}
+
+/**
  * Collect input text based on target scope.
+ * Produces structured context that helps the model understand the data shape.
  */
 async function _collectInput(ctx, scope, tFn) {
     switch (scope) {
@@ -284,26 +329,37 @@ async function _collectInput(ctx, scope, tFn) {
         case 'history': {
             const records = await ctx.board.getAllRecords();
             if (!records || records.length === 0) return '';
-            return records.map(r => {
-                const ts = r.timestamp ? new Date(Number(r.timestamp)).toLocaleString() : '';
-                return `[${ts}] ${r.text || ''}`;
-            }).join('\n\n');
+            const branchName = ctx.board.getBranchName() || ctx.board.getBranchId() || 'unnamed';
+            const { text, count, truncated } = _formatRecords(records, MAX_BRANCH_CHARS);
+            if (!text) return '';
+            const header = `[Branch: ${branchName} | ${count} entries | newest first]`;
+            const suffix = truncated ? `\n\n[... ${truncated} more entries truncated]` : '';
+            return header + '\n\n' + text + suffix;
         }
 
         case 'all': {
             const branches = await ctx.board.getAllBranches();
             if (!branches || branches.length === 0) return '';
-            const parts = [];
+            const sections = [];
+            let totalChars = 0;
+
             for (const branch of branches) {
                 const name = branch.name || branch.id;
-                parts.push(`=== ${name} ===`);
                 const records = await ctx.board.getAllRecordsForBranch(branch.id);
-                for (const r of records) {
-                    const ts = r.timestamp ? new Date(Number(r.timestamp)).toLocaleString() : '';
-                    parts.push(`[${ts}] ${r.text || ''}`);
-                }
+                const perBranchLimit = Math.floor(MAX_ALL_CHARS / branches.length);
+                const { text, count, truncated } = _formatRecords(records, perBranchLimit);
+                if (!text) continue;
+                const lastUpdate = _formatTimestamp(branch.lastUpdate);
+                let section = `## ${name} (${count} entries, last updated: ${lastUpdate})\n\n${text}`;
+                if (truncated) section += `\n\n[... ${truncated} more entries truncated]`;
+                if (totalChars + section.length > MAX_ALL_CHARS) break;
+                sections.push(section);
+                totalChars += section.length;
             }
-            return parts.join('\n');
+
+            if (sections.length === 0) return '';
+            const header = `[All Branches: ${branches.length} total]`;
+            return header + '\n\n' + sections.join('\n\n');
         }
 
         case 'dialogue': {
@@ -320,6 +376,25 @@ async function _collectInput(ctx, scope, tFn) {
         default:
             return ctx.board.getText().trim();
     }
+}
+
+/**
+ * Build the message array for LLM inference.
+ * Wraps the user prompt with scope-aware hints for structured understanding.
+ */
+function _buildMessages(prompt, inputText, scope, provider) {
+    const hint = SCOPE_HINTS[scope] || '';
+    const system = hint ? `${hint}\n\nTask: ${prompt}` : prompt;
+
+    if (provider === 'client') {
+        // Single user message (proven pattern for small browser models)
+        return [{ role: 'user', content: system + '\n\n' + inputText }];
+    }
+    // Server/API: standard system + user split
+    return [
+        { role: 'system', content: system },
+        { role: 'user', content: inputText },
+    ];
 }
 
 /**

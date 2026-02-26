@@ -1,4 +1,4 @@
-const CACHE_NAME = 'blackboard-v47-2026-02-26'; // Theme MOD framework: extract light theme into MOD
+const CACHE_NAME = 'blackboard-v48-2026-02-26'; // LLM context + prompt engineering for Qwen3-4B
 const ASSETS = [
   '/',
   '/index.html',
