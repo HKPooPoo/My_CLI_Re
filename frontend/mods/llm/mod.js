@@ -47,6 +47,12 @@ const SCOPE_HINTS = {
 const MAX_BRANCH_CHARS = 12000;  // ~3K tokens per branch
 const MAX_ALL_CHARS    = 20000;  // ~5K tokens total for all-branches
 
+/** Framework-decided models — NOT configurable per-instance */
+const CLIENT_MODEL  = 'Qwen3-0.6B-q4f16_1-MLC';
+const SERVER_MODEL  = 'qwen3-vl:2b';
+const API_PROVIDER  = 'openai';
+const API_MODEL     = 'gpt-4o-mini';
+
 /**
  * Icon choices for the icon-picker field.
  */
@@ -92,9 +98,9 @@ export default {
     },
 
     defaultInstances: [
-        { config: { prompt: 'Translate to English.', icon: 'translate', target: 'bb-head', provider: 'client', clientModel: 'Qwen3-0.6B-q4f16_1-MLC' } },
-        { config: { prompt: 'Summarize concisely.', icon: 'summarize', target: 'bb-head', provider: 'client', clientModel: 'Qwen3-0.6B-q4f16_1-MLC' } },
-        { config: { prompt: 'Improve grammar and style. Keep the original meaning.', icon: 'polish', target: 'bb-head', provider: 'client', clientModel: 'Qwen3-0.6B-q4f16_1-MLC' } },
+        { config: { prompt: 'Translate to English. Output only the translation.', icon: 'translate', target: 'bb-head', provider: 'client' } },
+        { config: { prompt: 'Summarize concisely. Output plain text only.', icon: 'summarize', target: 'bb-head', provider: 'client' } },
+        { config: { prompt: 'Improve grammar and style. Keep the original meaning. Output only the improved text.', icon: 'polish', target: 'bb-head', provider: 'client' } },
     ],
 
     // pages is NOT used (getDeployPages handles per-instance visibility)
@@ -113,34 +119,21 @@ export default {
     ],
 
     configSchema: [
-        // --- Identity ---
+        // --- What to do ---
         { key: 'prompt', type: 'textarea', labelKey: 'mods.llm.config.prompt', default: '',
           rows: 3, presets: PRESETS },
         { key: 'icon', type: 'icon-picker', labelKey: 'mods.llm.config.icon', default: 'summarize',
           icons: ICONS },
-        // --- Target ---
         { key: 'target', type: 'select', labelKey: 'mods.llm.config.target', default: 'bb-head',
           options: Object.entries(TARGETS).map(([v, t]) => ({ value: v, labelKey: t.labelKey })) },
-        // --- Engine ---
+        // --- Where to run ---
         { key: 'provider', type: 'select', labelKey: 'mods.llm.config.provider', default: 'client', options: [
             { value: 'client', labelKey: 'mods.llm.provider.client' },
             { value: 'server', labelKey: 'mods.llm.provider.server' },
             { value: 'apikey', labelKey: 'mods.llm.provider.apikey' },
         ]},
-        { key: 'clientModel', type: 'select', labelKey: 'mods.llm.config.clientModel', default: 'Qwen3-0.6B-q4f16_1-MLC', showWhen: { key: 'provider', value: 'client' }, options: [
-            { value: 'Qwen3-0.6B-q4f16_1-MLC', labelKey: 'mods.llm.clientModel.qwen3_06b' },
-            { value: 'Qwen3-1.7B-q4f16_1-MLC', labelKey: 'mods.llm.clientModel.qwen3_17b' },
-            { value: 'Qwen3-4B-q4f16_1-MLC',   labelKey: 'mods.llm.clientModel.qwen3_4b' },
-        ]},
-        { key: 'clientStatus', type: 'info', labelKey: 'mods.llm.config.clientStatus', showWhen: { key: 'provider', value: 'client' } },
-        { key: 'serverModel', type: 'text', labelKey: 'mods.llm.config.serverModel', default: 'qwen3-vl:2b', showWhen: { key: 'provider', value: 'server' } },
-        { key: 'serverStatus', type: 'info', labelKey: 'mods.llm.config.serverStatus', showWhen: { key: 'provider', value: 'server' } },
-        { key: 'apiProvider', type: 'select', labelKey: 'mods.llm.config.apiProvider', default: 'openai', showWhen: { key: 'provider', value: 'apikey' }, options: [
-            { value: 'openai',    labelKey: 'mods.llm.apiProvider.openai' },
-            { value: 'anthropic', labelKey: 'mods.llm.apiProvider.anthropic' },
-        ]},
-        { key: 'apiModel', type: 'text', labelKey: 'mods.llm.config.apiModel', default: 'gpt-4o-mini', showWhen: { key: 'provider', value: 'apikey' } },
-        { key: 'apiKey', type: 'text', labelKey: 'mods.llm.config.apiKey', default: '', showWhen: { key: 'provider', value: 'apikey' } },
+        // Model selection is a framework concern — not configurable per-instance.
+        // client → Qwen3-0.6B (WebGPU), server → qwen3-vl:2b (Ollama), api → gpt-4o-mini
         { key: 'temperature', type: 'range', labelKey: 'mods.llm.config.temperature', min: 0, max: 1, step: 0.1, default: 0.3 },
     ],
 
@@ -218,10 +211,9 @@ export default {
 
             if (provider === 'client') {
                 const svc = await _getWebLlm();
-                const model = config.clientModel || 'Qwen3-0.6B-q4f16_1-MLC';
 
                 out.value = tFn('mods.llm.loading');
-                await svc.ensureModel(model, (p) => { out.value = p; });
+                await svc.ensureModel(CLIENT_MODEL, (p) => { out.value = p; });
 
                 out.value = '';
                 for await (const chunk of svc.chat(messages, { temperature: temp })) {
@@ -233,12 +225,10 @@ export default {
                     out.value = tFn('mods.llm.noOutput');
                 }
             } else {
-                const actualProvider = provider === 'server' ? 'ollama' : (config.apiProvider || 'openai');
-                const model = provider === 'server' ? (config.serverModel || 'qwen3-vl:2b') : (config.apiModel || 'gpt-4o-mini');
+                const { provider: llmProvider, model, apiKey } = _getProviderConfig(provider);
                 const result = await LlmService.chat({
-                    provider: actualProvider, model, messages,
-                    temperature: temp,
-                    apiKey: config.apiKey || '',
+                    provider: llmProvider, model, messages,
+                    temperature: temp, apiKey,
                 });
                 out.value = result.content || tFn('mods.llm.noOutput');
             }
@@ -260,14 +250,7 @@ export default {
         return 'online';
     },
 
-    getInfoValue(key) {
-        if (key === 'clientStatus') {
-            if (!navigator.gpu) return t('mods.llm.noWebGPU');
-            return t('mods.llm.notLoaded');
-        }
-        if (key === 'serverStatus') return '\u2014';
-        return '\u2014';
-    },
+    getInfoValue() { return '\u2014'; },
 };
 
 // ===================== Private helpers =====================
@@ -279,6 +262,17 @@ async function _getWebLlm() {
         _webLlmSvc = m.WebLlmService;
     }
     return _webLlmSvc;
+}
+
+/**
+ * Resolve provider config from framework constants.
+ * Model selection is a framework concern, not a MOD concern.
+ */
+function _getProviderConfig(provider) {
+    if (provider === 'server') {
+        return { provider: 'ollama', model: SERVER_MODEL, apiKey: '' };
+    }
+    return { provider: API_PROVIDER, model: API_MODEL, apiKey: '' };
 }
 
 /**
@@ -424,32 +418,32 @@ function _migrateOldConfig() {
                 break;
             }
             case 'summarize':
-                if (!prompt) prompt = 'Summarize concisely.';
+                if (!prompt) prompt = 'Summarize concisely. Output plain text only.';
                 icon = 'summarize';
                 target = 'bb-head';
                 break;
             case 'polish':
-                if (!prompt) prompt = 'Improve grammar and style. Keep the original meaning.';
+                if (!prompt) prompt = 'Improve grammar and style. Keep the original meaning. Output only the improved text.';
                 icon = 'polish';
                 target = 'bb-head';
                 break;
             case 'summarize-files':
-                if (!prompt) prompt = 'Summarize the text and file contents.';
+                if (!prompt) prompt = 'Summarize the text and file contents. Output plain text only.';
                 icon = 'summarize-files';
                 target = 'bb-head';
                 break;
             case 'summarize-branch':
-                if (!prompt) prompt = 'Summarize these entries. Identify key themes.';
+                if (!prompt) prompt = 'Summarize these entries. Identify key themes. Output plain text only.';
                 icon = 'summarize-branch';
                 target = 'bb-branch';
                 break;
             case 'summarize-all':
-                if (!prompt) prompt = 'Summarize across all branches. Identify patterns.';
+                if (!prompt) prompt = 'Summarize across all branches. Identify patterns. Output plain text only.';
                 icon = 'summarize-all';
                 target = 'bb-all';
                 break;
             default:
-                if (!prompt) prompt = 'Summarize concisely.';
+                if (!prompt) prompt = 'Summarize concisely. Output plain text only.';
                 break;
         }
 

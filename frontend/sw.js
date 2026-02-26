@@ -1,4 +1,4 @@
-const CACHE_NAME = 'blackboard-v49-2026-02-26'; // LLM server: default to qwen3-vl:2b
+const CACHE_NAME = 'blackboard-v50-2026-02-26'; // LLM: model selection is framework concern, not MOD config
 const ASSETS = [
   '/',
   '/index.html',
