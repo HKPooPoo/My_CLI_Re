@@ -214,7 +214,7 @@ export default {
                 }
 
                 if (!out.value.trim()) {
-                    out.value = tFn('mods.llm.empty');
+                    out.value = tFn('mods.llm.noOutput');
                 }
             } else {
                 // Server/API: system + user messages (standard for capable models)
@@ -229,7 +229,7 @@ export default {
                     temperature: temp,
                     apiKey: config.apiKey || '',
                 });
-                out.value = result.content || tFn('mods.llm.empty');
+                out.value = result.content || tFn('mods.llm.noOutput');
             }
         } catch (e) {
             console.error('[llm-mod] activate error:', e);

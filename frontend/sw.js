@@ -1,4 +1,4 @@
-const CACHE_NAME = 'blackboard-v39-2026-02-26'; // Add mod-shared.css: unified MOD utility classes
+const CACHE_NAME = 'blackboard-v44-2026-02-26'; // Fix WebLLM: keep think content, only strip tags
 const ASSETS = [
   '/',
   '/index.html',

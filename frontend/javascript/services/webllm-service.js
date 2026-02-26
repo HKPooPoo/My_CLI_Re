@@ -115,21 +115,20 @@ export const WebLlmService = {
 
         const t0 = performance.now();
         let answerTokens = 0;
-        let inThink = false;
 
         for await (const chunk of chunks) {
             if (signal?.aborted) break;
 
-            const delta = chunk.choices[0]?.delta?.content || '';
-            if (!delta) continue;
+            const rawDelta = chunk.choices[0]?.delta?.content || '';
+            if (!rawDelta) continue;
 
-            // Strip <think>...</think> blocks from Qwen3 output
-            if (delta.includes('<think>')) { inThink = true; continue; }
-            if (delta.includes('</think>')) { inThink = false; continue; }
-            if (inThink) continue;
+            // Strip <think> / </think> tags but KEEP content between them.
+            // Small models (0.6B) put the answer inside think blocks.
+            const text = rawDelta.replace(/<\/?think>/g, '');
+            if (!text) continue;
 
-            // Skip leading newlines after think block
-            const cleaned = answerTokens === 0 ? delta.replace(/^\n+/, '') : delta;
+            // Skip leading newlines (common after think tags)
+            const cleaned = answerTokens === 0 ? text.replace(/^\n+/, '') : text;
             if (!cleaned) continue;
 
             answerTokens++;
