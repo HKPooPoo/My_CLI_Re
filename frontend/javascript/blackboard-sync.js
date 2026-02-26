@@ -116,6 +116,7 @@ export const BBSync = {
 
     /**
      * Recovery: flush pending + checkout current branch (for tab-switch / online recovery).
+     * Uses 'remote' owner so checkout fetches fresh data from server.
      */
     async recover() {
         if (!_isAutoSyncEnabled() || !_isLoggedIn()) return;
@@ -125,7 +126,7 @@ export const BBSync = {
         if (!state) return;
 
         try {
-            await BBVCS.checkout(state, state.branchId, 'local');
+            await BBVCS.checkout(state, state.branchId, 'remote');
             _onRemoteUpdate?.();
         } catch (err) {
             console.warn('[BBSync] Recovery checkout failed:', err);
@@ -176,8 +177,8 @@ export const BBSync = {
         const incomingBranchId = parseInt(branch_id) || branch_id;
 
         if (state.branchId === incomingBranchId) {
-            // Current branch updated by another device — auto-checkout
-            BBVCS.checkout(state, state.branchId, 'local').then(() => {
+            // Current branch updated by another device — fetch from server
+            BBVCS.checkout(state, state.branchId, 'remote').then(() => {
                 _onRemoteUpdate?.();
                 BBMessage.info(t('blackboard.autoSyncReceived'));
             }).catch(err => {
