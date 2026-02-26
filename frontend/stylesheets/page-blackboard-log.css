@@ -216,13 +216,13 @@
     }
 }
 
-:root[data-theme="light"] .feature-btn:hover {
+:root.theme-light .feature-btn:hover {
     box-shadow: none;
 }
 
-:root[data-theme="light"] .feature-btn.active::after,
-:root[data-theme="light"] .feature-btn.recording::after,
-:root[data-theme="light"] .feature-btn.processing::after {
+:root.theme-light .feature-btn.active::after,
+:root.theme-light .feature-btn.recording::after,
+:root.theme-light .feature-btn.processing::after {
     filter: none;
 }
 

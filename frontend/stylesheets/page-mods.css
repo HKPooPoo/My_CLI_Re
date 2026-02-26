@@ -310,7 +310,7 @@
     opacity: 0.7;
 }
 
-:root[data-theme="light"] .mods-select-display {
+:root.theme-light .mods-select-display {
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23000000'/%3E%3C/svg%3E");
 }
 
@@ -396,16 +396,16 @@
 }
 
 /* === Light mode overrides === */
-:root[data-theme="light"] .mods-select-display:hover,
-:root[data-theme="light"] .mods-toggle-btn:hover,
-:root[data-theme="light"] .mods-config-field-action:hover,
-:root[data-theme="light"] .mods-config-field-range::-webkit-slider-thumb,
-:root[data-theme="light"] .mods-config-field-range::-moz-range-thumb {
+:root.theme-light .mods-select-display:hover,
+:root.theme-light .mods-toggle-btn:hover,
+:root.theme-light .mods-config-field-action:hover,
+:root.theme-light .mods-config-field-range::-webkit-slider-thumb,
+:root.theme-light .mods-config-field-range::-moz-range-thumb {
     box-shadow: none;
 }
 
-:root[data-theme="light"] .mods-server-status.online,
-:root[data-theme="light"] .mods-server-status.offline {
+:root.theme-light .mods-server-status.online,
+:root.theme-light .mods-server-status.offline {
     text-shadow: none;
 }
 
@@ -511,8 +511,8 @@
     }
 }
 
-:root[data-theme="light"] .mods-catalog-add-btn:hover,
-:root[data-theme="light"] .mods-action-btn:not(:disabled):hover {
+:root.theme-light .mods-catalog-add-btn:hover,
+:root.theme-light .mods-action-btn:not(:disabled):hover {
     box-shadow: none;
 }
 
@@ -550,7 +550,7 @@
     flex-shrink: 0;
     white-space: nowrap;
 }
-:root[data-theme="light"] .mods-textarea-preset:hover {
+:root.theme-light .mods-textarea-preset:hover {
     box-shadow: none;
 }
 
@@ -605,9 +605,9 @@
 }
 
 /* === Light mode overrides for new field types === */
-:root[data-theme="light"] .mods-icon-picker-item.selected {
+:root.theme-light .mods-icon-picker-item.selected {
     box-shadow: none; border-color: #555; background: rgba(0, 0, 0, 0.05);
 }
-:root[data-theme="light"] .mods-icon-picker-item:hover {
+:root.theme-light .mods-icon-picker-item:hover {
     box-shadow: none;
 }

@@ -69,7 +69,7 @@
     --transition-normal: 0.16s;
 }
 
-:root[data-theme="light"] {
+:root.theme-light {
     --text-green: black;
     --text-orange: black;
     --text-red: black;
@@ -105,7 +105,7 @@
     --caret-color: black;
 }
 
-:root[data-theme="light"] .header,
+:root.theme-light .header,
 .footer {
     font-weight: bold;
 }

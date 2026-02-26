@@ -207,7 +207,7 @@
 }
 
 /* Light theme adaptation */
-:root[data-theme="light"] .attachment-chips.has-items {
+:root.theme-light .attachment-chips.has-items {
     border-bottom-color: var(--text-green);
 }
 

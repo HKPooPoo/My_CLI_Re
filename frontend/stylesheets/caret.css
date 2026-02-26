@@ -15,9 +15,9 @@ input[type="password"] {
     user-select: text; /* override * { user-select: none } so Firefox shows caret */
 }
 
-:root[data-theme="light"] textarea,
-:root[data-theme="light"] input[type="text"],
-:root[data-theme="light"] input[type="password"] {
+:root.theme-light textarea,
+:root.theme-light input[type="text"],
+:root.theme-light input[type="password"] {
     caret-color: black;
 }
 
@@ -36,15 +36,15 @@ input[type="password"] {
     caret-color: black;
 }
 
-:root[data-theme="light"] .vcs-list-item.active input[type="text"],
-:root[data-theme="light"] .vcs-list-item.active input[type="password"],
-:root[data-theme="light"] .vcs-list-item.active textarea,
-:root[data-theme="light"] .walkie-typie-list-list-item.active input[type="text"],
-:root[data-theme="light"] .walkie-typie-list-list-item.active textarea,
-:root[data-theme="light"] .broadcast-list-list-item.active input[type="text"],
-:root[data-theme="light"] .broadcast-list-list-item.active textarea,
-:root[data-theme="light"] .mods-list-item.active input[type="text"],
-:root[data-theme="light"] .mods-list-item.active textarea {
+:root.theme-light .vcs-list-item.active input[type="text"],
+:root.theme-light .vcs-list-item.active input[type="password"],
+:root.theme-light .vcs-list-item.active textarea,
+:root.theme-light .walkie-typie-list-list-item.active input[type="text"],
+:root.theme-light .walkie-typie-list-list-item.active textarea,
+:root.theme-light .broadcast-list-list-item.active input[type="text"],
+:root.theme-light .broadcast-list-list-item.active textarea,
+:root.theme-light .mods-list-item.active input[type="text"],
+:root.theme-light .mods-list-item.active textarea {
     caret-color: white;
 }
 
@@ -55,9 +55,9 @@ input[type="password"] {
     color: white;
 }
 
-:root[data-theme="light"] .vcs-list-item.active ::selection,
-:root[data-theme="light"] .walkie-typie-list-list-item.active ::selection,
-:root[data-theme="light"] .broadcast-list-list-item.active ::selection {
+:root.theme-light .vcs-list-item.active ::selection,
+:root.theme-light .walkie-typie-list-list-item.active ::selection,
+:root.theme-light .broadcast-list-list-item.active ::selection {
     background: white;
     color: black;
 }

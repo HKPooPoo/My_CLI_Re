@@ -1,4 +1,4 @@
-const CACHE_NAME = 'blackboard-v46-2026-02-26'; // Fix bb-all: fetch records per branch via getAllRecordsForBranch API
+const CACHE_NAME = 'blackboard-v47-2026-02-26'; // Theme MOD framework: extract light theme into MOD
 const ASSETS = [
   '/',
   '/index.html',
@@ -32,9 +32,11 @@ const ASSETS = [
   '/javascript/mod-field-registry.js',
   '/javascript/mods-manager.js',
   '/javascript/version.js',
+  '/javascript/theme-engine.js',
   '/mods/mod-loader.js',
   '/mods/mod-manifest.js',
   '/mods/llm/mod.js',
+  '/mods/light-theme/mod.js',
   '/javascript/services/llm-service.js',
   '/javascript/services/webllm-service.js',
   '/images/llm-translate.svg',

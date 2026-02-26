@@ -1,4 +1,4 @@
-:root[data-theme="light"] .page-container {
+:root.theme-light .page-container {
     background-image: none;
 }
 
@@ -54,7 +54,7 @@
 }
 
 /* Light theme: --text-orange becomes black, so armed buttons need a distinct color */
-:root[data-theme="light"] .btn-armed {
+:root.theme-light .btn-armed {
     color: var(--text-orange-accent) !important;
     border-color: var(--text-orange-accent) !important;
 }
@@ -66,7 +66,7 @@
         box-shadow: 0 0 10px var(--text-orange) !important;
     }
 
-    :root[data-theme="light"] .btn-armed:hover {
+    :root.theme-light .btn-armed:hover {
         background: var(--text-orange-accent) !important;
         color: var(--bg-primary) !important;
         box-shadow: 0 0 10px var(--text-orange-accent) !important;

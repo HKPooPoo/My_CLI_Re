@@ -38,6 +38,16 @@
     <link rel="stylesheet" href="stylesheets/@media.css">
     <link rel="stylesheet" href="stylesheets/layer.css">
     <link rel="stylesheet" href="stylesheets/caret.css">
+    <!-- Anti-FOUC: restore theme class before first paint -->
+    <script>
+        (function() {
+            var s = localStorage.getItem('theme-engine-state');
+            var l = localStorage.getItem('data-theme');
+            if (s === 'active' || l === 'light') {
+                document.documentElement.classList.add('theme-light');
+            }
+        })();
+    </script>
 </head>
 
 <body>
@@ -418,6 +428,7 @@
             <script type="module">
                 import { ModState } from './javascript/mod-state.js';
                 import { loadAllMods } from './mods/mod-loader.js';
+                import { ThemeEngine } from './javascript/theme-engine.js';
                 ModState.init();
 
                 let _modsLoaded = false;
@@ -429,6 +440,8 @@
                 window.addEventListener('i18n:ready', bootMods);
                 // Fallback: if i18n:ready already fired, boot after a tick
                 setTimeout(bootMods, 0);
+                // Theme engine: init after all MODs are loaded and registered
+                window.addEventListener('mods:loaded', () => ThemeEngine.init());
             </script>
             <script type="module" src="./javascript/mods-manager.js"></script>
             <div id="toast-container"></div>

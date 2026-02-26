@@ -1,16 +1,15 @@
 /**
  * HUD Controller (Heads-Up Display)
  * =================================================================
- * 介紹：負責管理頁面上實時狀態指示器 (HUD)，如伺服器連線狀態、登入用戶名與主題切換。
+ * 介紹：負責管理頁面上實時狀態指示器 (HUD)，如伺服器連線狀態與登入用戶名。
  * 職責：
  * 1. 實時監測伺服器連線 (Heartbeat)：定時對 API 進行 Ping 操作並同步更新亮燈狀態。
  * 2. 登入狀態同步：監聽 auth.js 的事件快照，實時更新顯示的 UID。
- * 3. 視覺風格 (Theme) 切換：管理 CRT/明亮模式 切換邏輯與持久化存儲。
- * 依賴：audio.js, crt-vfx.css
+ * 依賴：crt-vfx.css
+ * 注意：主題切換邏輯已遷移至 theme-engine.js (MOD 框架)
  * =================================================================
  */
 
-import { playAudio } from "./audio.js";
 import { StatusService } from "./services/status-service.js";
 import { t } from './i18n.js';
 
@@ -77,26 +76,6 @@ function isStatusHasNoChange(nextStatus) {
     previousStatus = nextStatus;
     return false;
 }
-
-// --- 主題切換邏輯 (Theme Manager) ---
-let localStorageSavedTheme = localStorage.getItem("data-theme");
-let crtMode = localStorageSavedTheme === "dark" ? true : false;
-
-// 頁面加載時恢復上次的主題（默認 light）
-if (!crtMode) document.documentElement.setAttribute("data-theme", "light");
-
-document.getElementById("theme-change-btn").addEventListener("click", () => {
-    playAudio("UIPipboyOKPress.mp3");
-    if (crtMode) {
-        document.documentElement.setAttribute("data-theme", "light");
-        crtMode = false;
-        localStorage.setItem("data-theme", "light");
-    } else {
-        document.documentElement.removeAttribute("data-theme");
-        crtMode = true;
-        localStorage.setItem("data-theme", "dark");
-    }
-});
 
 // --- 初始化啟動 ---
 updateLoginStatus();

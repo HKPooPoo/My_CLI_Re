@@ -26,8 +26,9 @@
     text-overflow: ellipsis;
 }
 
-/* Theme Change Button */
+/* Theme Change Button — hidden by default, shown by theme-engine.js when MODs need it */
 #theme-change-btn {
+    display: none;
     position: absolute;
     justify-self: center;
     top: 0px;
