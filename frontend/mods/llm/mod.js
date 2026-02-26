@@ -47,11 +47,9 @@ const SCOPE_HINTS = {
 const MAX_BRANCH_CHARS = 12000;  // ~3K tokens per branch
 const MAX_ALL_CHARS    = 20000;  // ~5K tokens total for all-branches
 
-/** Framework-decided models — NOT configurable per-instance */
-const CLIENT_MODEL  = 'Qwen3-0.6B-q4f16_1-MLC';
-const SERVER_MODEL  = 'qwen3-vl:2b';
-const API_PROVIDER  = 'openai';
-const API_MODEL     = 'gpt-4o-mini';
+/** Framework defaults */
+const CLIENT_MODEL = 'Qwen3-0.6B-q4f16_1-MLC';
+const SERVER_MODEL = 'qwen3-vl:2b';  // Fixed — not configurable per-instance
 
 /**
  * Icon choices for the icon-picker field.
@@ -132,8 +130,21 @@ export default {
             { value: 'server', labelKey: 'mods.llm.provider.server' },
             { value: 'apikey', labelKey: 'mods.llm.provider.apikey' },
         ]},
-        // Model selection is a framework concern — not configurable per-instance.
-        // client → Qwen3-0.6B (WebGPU), server → qwen3-vl:2b (Ollama), api → gpt-4o-mini
+        // --- Client: pick browser model ---
+        { key: 'clientModel', type: 'select', labelKey: 'mods.llm.config.clientModel', default: 'Qwen3-0.6B-q4f16_1-MLC', showWhen: { key: 'provider', value: 'client' }, options: [
+            { value: 'Qwen3-0.6B-q4f16_1-MLC', labelKey: 'mods.llm.clientModel.qwen3_06b' },
+            { value: 'Qwen3-1.7B-q4f16_1-MLC', labelKey: 'mods.llm.clientModel.qwen3_17b' },
+            { value: 'Qwen3-4B-q4f16_1-MLC',   labelKey: 'mods.llm.clientModel.qwen3_4b' },
+        ]},
+        // --- Server: fixed qwen3-vl:2b, no config needed ---
+        // --- 3rd Party: API credentials ---
+        { key: 'apiProvider', type: 'select', labelKey: 'mods.llm.config.apiProvider', default: 'openai', showWhen: { key: 'provider', value: 'apikey' }, options: [
+            { value: 'openai',    labelKey: 'mods.llm.apiProvider.openai' },
+            { value: 'anthropic', labelKey: 'mods.llm.apiProvider.anthropic' },
+        ]},
+        { key: 'apiModel', type: 'text', labelKey: 'mods.llm.config.apiModel', default: 'gpt-4o-mini', showWhen: { key: 'provider', value: 'apikey' } },
+        { key: 'apiKey', type: 'text', labelKey: 'mods.llm.config.apiKey', default: '', showWhen: { key: 'provider', value: 'apikey' } },
+        // --- Tuning ---
         { key: 'temperature', type: 'range', labelKey: 'mods.llm.config.temperature', min: 0, max: 1, step: 0.1, default: 0.3 },
     ],
 
@@ -211,9 +222,10 @@ export default {
 
             if (provider === 'client') {
                 const svc = await _getWebLlm();
+                const model = config.clientModel || CLIENT_MODEL;
 
                 out.value = tFn('mods.llm.loading');
-                await svc.ensureModel(CLIENT_MODEL, (p) => { out.value = p; });
+                await svc.ensureModel(model, (p) => { out.value = p; });
 
                 out.value = '';
                 for await (const chunk of svc.chat(messages, { temperature: temp })) {
@@ -224,11 +236,18 @@ export default {
                 if (!out.value.trim()) {
                     out.value = tFn('mods.llm.noOutput');
                 }
-            } else {
-                const { provider: llmProvider, model, apiKey } = _getProviderConfig(provider);
+            } else if (provider === 'server') {
                 const result = await LlmService.chat({
-                    provider: llmProvider, model, messages,
-                    temperature: temp, apiKey,
+                    provider: 'ollama', model: SERVER_MODEL, messages,
+                    temperature: temp, apiKey: '',
+                });
+                out.value = result.content || tFn('mods.llm.noOutput');
+            } else {
+                const result = await LlmService.chat({
+                    provider: config.apiProvider || 'openai',
+                    model: config.apiModel || 'gpt-4o-mini',
+                    messages, temperature: temp,
+                    apiKey: config.apiKey || '',
                 });
                 out.value = result.content || tFn('mods.llm.noOutput');
             }
@@ -262,17 +281,6 @@ async function _getWebLlm() {
         _webLlmSvc = m.WebLlmService;
     }
     return _webLlmSvc;
-}
-
-/**
- * Resolve provider config from framework constants.
- * Model selection is a framework concern, not a MOD concern.
- */
-function _getProviderConfig(provider) {
-    if (provider === 'server') {
-        return { provider: 'ollama', model: SERVER_MODEL, apiKey: '' };
-    }
-    return { provider: API_PROVIDER, model: API_MODEL, apiKey: '' };
 }
 
 /**

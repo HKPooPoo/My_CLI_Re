@@ -8,6 +8,10 @@
         "icon": "圖示",
         "target": "目標",
         "provider": "提供者",
+        "clientModel": "瀏覽器模型",
+        "apiProvider": "API 提供者",
+        "apiModel": "API 模型",
+        "apiKey": "API 金鑰",
         "temperature": "溫度"
       },
       "target": {
@@ -37,6 +41,15 @@
         "client": "用戶端（瀏覽器）",
         "server": "伺服器（Ollama）",
         "apikey": "API 金鑰（雲端）"
+      },
+      "clientModel": {
+        "qwen3_06b": "Qwen3 0.6B（快速，約 400MB）",
+        "qwen3_17b": "Qwen3 1.7B（均衡，約 1.2GB）",
+        "qwen3_4b": "Qwen3 4B（高品質，約 2.8GB）"
+      },
+      "apiProvider": {
+        "openai": "OpenAI",
+        "anthropic": "Anthropic"
       },
       "processing": "處理中... 請稍候。",
       "loading": "載入模型中...",

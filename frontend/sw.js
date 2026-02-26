@@ -1,4 +1,4 @@
-const CACHE_NAME = 'blackboard-v50-2026-02-26'; // LLM: model selection is framework concern, not MOD config
+const CACHE_NAME = 'blackboard-v51-2026-02-26'; // LLM: per-provider config layout (client=model, server=fixed, api=credentials)
 const ASSETS = [
   '/',
   '/index.html',

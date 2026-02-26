@@ -8,6 +8,10 @@
         "icon": "ICON",
         "target": "TARGET",
         "provider": "PROVIDER",
+        "clientModel": "BROWSER MODEL",
+        "apiProvider": "API PROVIDER",
+        "apiModel": "API MODEL",
+        "apiKey": "API KEY",
         "temperature": "TEMPERATURE"
       },
       "target": {
@@ -37,6 +41,15 @@
         "client": "CLIENT (BROWSER)",
         "server": "SERVER (OLLAMA)",
         "apikey": "API KEY (CLOUD)"
+      },
+      "clientModel": {
+        "qwen3_06b": "QWEN3 0.6B (FAST, ~400MB)",
+        "qwen3_17b": "QWEN3 1.7B (BALANCED, ~1.2GB)",
+        "qwen3_4b": "QWEN3 4B (QUALITY, ~2.8GB)"
+      },
+      "apiProvider": {
+        "openai": "OPENAI",
+        "anthropic": "ANTHROPIC"
       },
       "processing": "PROCESSING... STANDBY.",
       "loading": "LOADING MODEL...",
