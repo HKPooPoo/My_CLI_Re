@@ -1,4 +1,4 @@
-const CACHE_NAME = 'blackboard-v55-2026-02-26'; // Per-target prompt presets
+const CACHE_NAME = 'blackboard-v56-2026-02-26'; // System-user message coordination
 const ASSETS = [
   '/',
   '/index.html',

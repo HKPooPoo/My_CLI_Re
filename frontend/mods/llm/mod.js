@@ -23,7 +23,7 @@ const TARGETS = {
 /**
  * Per-target prompt presets.
  * Each target scope has its own set of quick-fill prompts.
- * Output constraints are NOT baked in — SMALL_MODEL_CONSTRAINT handles that.
+ * Output constraints are added by _buildSystemPrompt() for small models.
  * Unbuilt targets (wt-*, bc-*) have no presets yet.
  */
 const TARGET_PRESETS = {
@@ -43,23 +43,6 @@ const TARGET_PRESETS = {
         { labelKey: 'mods.llm.preset.allCompare',  value: 'Compare the branches. What are the key differences?' },
     ],
 };
-
-/**
- * Scope context — tells the model what the input data looks like.
- * Empty for simple scopes (single text is self-evident).
- * Descriptive for multi-entry scopes where structure matters.
- */
-const SCOPE_CONTEXT = {
-    head:     '',
-    text:     '',
-    branch:   'Below are timestamped entries from one timeline, newest first.',
-    history:  'Below are messages from one channel, newest first.',
-    all:      'Below are entries from multiple named branches.',
-    dialogue: 'Below is a conversation. [ME] and [PARTNER] are the speakers.',
-};
-
-/** Small models add preamble ("Sure! Here's...") — this suppresses it. */
-const SMALL_MODEL_CONSTRAINT = 'Respond with the result only. No preamble.';
 
 /**
  * Context budget by provider.
@@ -407,7 +390,7 @@ function _formatRecords(records, maxChars) {
         const r = records[i];
         const text = (r.text || '').trim();
         if (!text) continue;
-        const entry = `[${entries.length + 1}] ${_formatTimestamp(r.timestamp)}\n${text}`;
+        const entry = `#${entries.length + 1} [${_formatTimestamp(r.timestamp)}]\n${text}`;
         if (maxChars && total + entry.length > maxChars) {
             truncated = records.length - i;
             break;
@@ -435,11 +418,10 @@ async function _collectInput(ctx, scope, tFn, limits) {
             const records = await ctx.board.getAllRecords();
             if (!records || records.length === 0) return '';
             const branchName = ctx.board.getBranchName() || ctx.board.getBranchId() || 'unnamed';
-            const { text, count, truncated } = _formatRecords(records, limits.branch);
+            const { text, truncated } = _formatRecords(records, limits.branch);
             if (!text) return '';
-            const header = `[Branch: ${branchName} | ${count} entries | newest first]`;
             const suffix = truncated ? `\n\n[... ${truncated} more entries truncated]` : '';
-            return header + '\n\n' + text + suffix;
+            return `Branch: ${branchName}\n\n${text}${suffix}`;
         }
 
         case 'all': {
@@ -452,10 +434,9 @@ async function _collectInput(ctx, scope, tFn, limits) {
                 const name = branch.name || branch.id;
                 const records = await ctx.board.getAllRecordsForBranch(branch.id);
                 const perBranchLimit = Math.floor(limits.all / branches.length);
-                const { text, count, truncated } = _formatRecords(records, perBranchLimit);
+                const { text, truncated } = _formatRecords(records, perBranchLimit);
                 if (!text) continue;
-                const lastUpdate = _formatTimestamp(branch.lastUpdate);
-                let section = `## ${name} (${count} entries, last updated: ${lastUpdate})\n\n${text}`;
+                let section = `=== ${name} ===\n\n${text}`;
                 if (truncated) section += `\n\n[... ${truncated} more entries truncated]`;
                 if (totalChars + section.length > limits.all) break;
                 sections.push(section);
@@ -463,8 +444,7 @@ async function _collectInput(ctx, scope, tFn, limits) {
             }
 
             if (sections.length === 0) return '';
-            const header = `[All Branches: ${branches.length} total]`;
-            return header + '\n\n' + sections.join('\n\n');
+            return sections.join('\n\n');
         }
 
         case 'dialogue': {
@@ -494,42 +474,62 @@ function _cleanDelta(text, isFirst) {
 }
 
 /**
+ * Build a system prompt that describes the EXACT format of the user message.
+ * System and user message are designed as coordinated pairs:
+ *   - System tells the model what format to expect
+ *   - User message follows that format exactly
+ *
+ * For simple scopes (head, text), no format description is needed.
+ */
+function _buildSystemPrompt(scope, task, isSmall) {
+    const constraint = isSmall ? '\nRespond with the result only. No preamble.' : '';
+
+    switch (scope) {
+        case 'branch':
+        case 'history':
+            return [
+                'Below are entries from a timeline, newest first.',
+                'Format: branch name on first line, then #N [timestamp] + text.',
+                task + constraint,
+            ].join('\n');
+
+        case 'all':
+            return [
+                'Below are entries from multiple branches.',
+                'Format: each branch starts with === name ===, entries as #N [timestamp] + text.',
+                task + constraint,
+            ].join('\n');
+
+        case 'dialogue':
+            return [
+                'Below is a two-person conversation.',
+                'Speakers are marked [ME] and [PARTNER].',
+                task + constraint,
+            ].join('\n');
+
+        default: // head, text
+            return task + constraint;
+    }
+}
+
+/**
  * Build the message array for LLM inference.
  *
- * Prompt structure (3 layers):
- *   1. Scope context — what the input data looks like (empty for single text)
- *   2. User's task  — the prompt from config
- *   3. Constraint   — "No preamble" for small models (client/server)
- *
  * Provider strategies:
- *   Client: single user message (proven for small WebLLM models)
+ *   Client: single user message (small WebLLM models)
  *   Server: system + user, /no_think prefix (Qwen3 on Ollama)
  *   API:    system + user, no constraint (large models follow instructions well)
  */
 function _buildMessages(prompt, inputText, scope, provider) {
-    const context = SCOPE_CONTEXT[scope] || '';
     const isSmall = provider === 'client' || provider === 'server';
-
-    // Assemble instruction: [context] + task + [constraint]
-    const parts = [];
-    if (context) parts.push(context);
-    parts.push(prompt);
-    if (isSmall) parts.push(SMALL_MODEL_CONSTRAINT);
-    const instruction = parts.join('\n');
+    const system = _buildSystemPrompt(scope, prompt, isSmall);
 
     if (provider === 'client') {
-        // Single user message — /no_think handled by webllm-service.js
-        return [{ role: 'user', content: `${instruction}\n\n---\n${inputText}` }];
+        return [{ role: 'user', content: `${system}\n\n---\n${inputText}` }];
     }
 
-    // Server (Qwen3): /no_think at START disables thinking mode
-    // API (GPT-4/Claude): no prefix needed
-    const system = provider === 'server'
-        ? `/no_think\n${instruction}`
-        : instruction;
-
     return [
-        { role: 'system', content: system },
+        { role: 'system', content: provider === 'server' ? `/no_think\n${system}` : system },
         { role: 'user', content: inputText },
     ];
 }
