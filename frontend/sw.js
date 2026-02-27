@@ -1,4 +1,4 @@
-const CACHE_NAME = 'blackboard-v75-2026-02-27'; // Security fixes: markdown XSS sanitization
+const CACHE_NAME = 'blackboard-v76-2026-02-27'; // API request timeout (15s default)
 
 // Core framework only — MOD files (mods/*, vendor libs, MOD assets) are NOT listed here.
 // They are cached lazily via the stale-while-revalidate fetch handler on first page load.

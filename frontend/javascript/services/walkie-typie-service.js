@@ -36,7 +36,8 @@ export const WalkieTypieService = {
     commitBoard(data) {
         return apiRequest('/walkie-typie/boards/commit', {
             method: 'POST',
-            body: JSON.stringify(data)
+            body: JSON.stringify(data),
+            timeout: 30000,
         });
     },
     fetchBoardRecords(branchId) {

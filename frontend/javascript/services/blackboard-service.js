@@ -18,7 +18,8 @@ export const BlackboardService = {
     commit(data) {
         return apiRequest('/blackboard/commit', {
             method: 'POST',
-            body: JSON.stringify(data)
+            body: JSON.stringify(data),
+            timeout: 30000,
         });
     }
 };

@@ -1,31 +1,44 @@
 
 const BASE_URL = '/api';
+const DEFAULT_TIMEOUT = 15000; // 15 seconds
 
 /**
  * Common API request handler
  * @param {string} endpoint - e.g. '/login' or '/walkie-typie/connections'
- * @param {object} options - fetch options
+ * @param {object} options - fetch options + optional `timeout` (ms)
  * @returns {Promise<any>}
  */
 export async function apiRequest(endpoint, options = {}) {
     const url = `${BASE_URL}${endpoint}`;
+    const timeout = options.timeout ?? DEFAULT_TIMEOUT;
 
     const defaultHeaders = {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
     };
 
+    // Timeout via AbortController — skip if caller already provides a signal
+    let controller = null;
+    let timeoutId = null;
+    if (!options.signal && timeout > 0) {
+        controller = new AbortController();
+        timeoutId = setTimeout(() => controller.abort(), timeout);
+    }
+
+    const { timeout: _omit, ...fetchOptions } = options;
+
     const config = {
-        ...options,
+        ...fetchOptions,
         headers: {
             ...defaultHeaders,
-            ...options.headers,
+            ...fetchOptions.headers,
         },
+        signal: options.signal || controller?.signal,
     };
 
     // Ensure we send cookies for session-based auth
     if (!config.credentials) {
-        config.credentials = 'same-origin'; // or 'include'
+        config.credentials = 'same-origin';
     }
 
     try {
@@ -52,11 +65,21 @@ export async function apiRequest(endpoint, options = {}) {
         if (error.status) {
             throw error;
         }
+        // AbortError from timeout
+        if (error.name === 'AbortError') {
+            throw {
+                status: 0,
+                message: controller ? 'Request timed out' : 'Request aborted',
+                errors: null,
+            };
+        }
         // Network errors or JSON parsing errors
         throw {
             status: 0,
             message: error.message || 'Network Error',
             errors: null,
         };
+    } finally {
+        if (timeoutId) clearTimeout(timeoutId);
     }
 }

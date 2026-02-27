@@ -46,22 +46,33 @@ export const FileService = {
         formData.append('file', file);
 
         const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
-        const headers = {};
+        const headers = { 'Accept': 'application/json' };
         if (csrfToken) {
             headers['X-CSRF-TOKEN'] = csrfToken;
         }
 
-        const response = await fetch('/api/files', {
-            method: 'POST',
-            body: formData,
-            headers: headers
-        });
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 60000); // 60s for large files
 
-        if (!response.ok) {
-            throw new Error(`Upload failed: ${response.statusText}`);
+        try {
+            const response = await fetch('/api/files', {
+                method: 'POST',
+                body: formData,
+                headers,
+                signal: controller.signal,
+            });
+
+            if (!response.ok) {
+                throw new Error(`Upload failed: ${response.statusText}`);
+            }
+
+            return await response.json();
+        } catch (e) {
+            if (e.name === 'AbortError') throw new Error('Upload timed out');
+            throw e;
+        } finally {
+            clearTimeout(timeoutId);
         }
-
-        return await response.json();
     },
 
     /**
