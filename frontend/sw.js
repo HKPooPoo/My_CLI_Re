@@ -1,4 +1,4 @@
-const CACHE_NAME = 'blackboard-v73-2026-02-27'; // Matrix rain: remove interaction, resize handling, transparent cells; screensaver bg
+const CACHE_NAME = 'blackboard-v74-2026-02-27'; // textmode.js: remove loading screen message & watermark, add credit
 
 // Core framework only — MOD files (mods/*, vendor libs, MOD assets) are NOT listed here.
 // They are cached lazily via the stale-while-revalidate fetch handler on first page load.
