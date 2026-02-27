@@ -265,9 +265,12 @@ class WalkieTypieController extends Controller
             return response()->json(['message' => 'Unauthorized'], 401);
 
         $request->validate([
-            'branch_id' => 'required',
-            'branch_name' => 'required',
-            'records' => 'required|array'
+            'branch_id'           => 'required',
+            'branch_name'         => 'required',
+            'records'             => 'required|array|max:1000',
+            'records.*.text'      => 'nullable|string|max:65535',
+            'records.*.timestamp' => 'required|integer',
+            'records.*.file_hash' => 'nullable|string|max:65535',
         ]);
 
         $this->boardService->commit(

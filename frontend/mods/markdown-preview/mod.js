@@ -100,6 +100,32 @@ export default {
     }
 };
 
+/**
+ * Sanitize HTML output from marked to prevent XSS.
+ * Strips <script>, <iframe>, <object>, <embed>, <form>, event attributes,
+ * and javascript: URLs.
+ */
+function _sanitizeHtml(html) {
+    const div = document.createElement('div');
+    div.innerHTML = html;
+
+    // Remove dangerous elements
+    div.querySelectorAll('script, iframe, object, embed, form, style, link, meta, base')
+        .forEach(el => el.remove());
+
+    // Remove event attributes and javascript: hrefs from all elements
+    for (const el of div.querySelectorAll('*')) {
+        for (const attr of [...el.attributes]) {
+            if (attr.name.startsWith('on') || (attr.name === 'href' || attr.name === 'src' || attr.name === 'action') &&
+                attr.value.replace(/\s/g, '').toLowerCase().startsWith('javascript:')) {
+                el.removeAttribute(attr.name);
+            }
+        }
+    }
+
+    return div.innerHTML;
+}
+
 function _renderMarkdownImpl(text) {
     if (!_outputEl) return;
     if (!text || !text.trim()) {
@@ -108,7 +134,7 @@ function _renderMarkdownImpl(text) {
     }
     try {
         if (typeof marked !== 'undefined') {
-            _outputEl.innerHTML = marked.parse(text, { breaks: true, gfm: true });
+            _outputEl.innerHTML = _sanitizeHtml(marked.parse(text, { breaks: true, gfm: true }));
         } else {
             _outputEl.textContent = text;
         }

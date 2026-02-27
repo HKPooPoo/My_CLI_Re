@@ -16,8 +16,8 @@ use Illuminate\Support\Facades\Broadcast;
 
 Broadcast::routes(['prefix' => 'api', 'middleware' => ['web', 'auth']]);
 
-// Translation & Speech — expensive AI routes, strict throttle
-Route::middleware('throttle:10,1')->group(function () {
+// Translation & Speech — expensive AI routes, auth + strict throttle
+Route::middleware(['auth:sanctum', 'throttle:10,1'])->group(function () {
     Route::post('/translate', [TranslationController::class, 'translate']);
     Route::post('/speech', [SpeechController::class, 'recognize']);
 });
@@ -29,14 +29,24 @@ Route::middleware('throttle:120,1')->group(function () {
     Route::get('/broadcast/channels/{channelId}/boards', [BroadcastChannelController::class, 'fetchBoards']);
 });
 
-// Write/auth operations — 30 req/min per user or IP
+// Auth operations — 30 req/min, no login required
 Route::middleware('throttle:30,1')->group(function () {
     Route::post('/login', [AuthController::class, 'login']);
     Route::post('/register', [AuthController::class, 'register']);
+});
+
+// Write operations — 30 req/min, auth required (defense-in-depth)
+Route::middleware(['auth:sanctum', 'throttle:30,1'])->group(function () {
     Route::post('/broadcast/channels/cast', [BroadcastChannelController::class, 'cast']);
     Route::patch('/broadcast/channels/{channelId}', [BroadcastChannelController::class, 'rename']);
     Route::delete('/broadcast/channels/{channelId}', [BroadcastChannelController::class, 'destroy']);
     Route::post('/blackboard/commit', [BlackboardController::class, 'commit']);
+});
+
+// File upload — 30 req/min, allows guest uploads (no auth)
+// Design decision: anonymous uploads support paste-to-share before login.
+// The SHA-256 hash acts as an unguessable access token for retrieval.
+Route::middleware('throttle:30,1')->group(function () {
     Route::post('/files', [FileController::class, 'upload']);
 });
 
@@ -92,8 +102,8 @@ Route::middleware('throttle:30,1')->prefix('mods')->group(function () {
     Route::get('/llm/ollama/health', [LlmController::class, 'ollamaHealth']);
 });
 
-// LLM chat — AI endpoint, strict throttle
-Route::middleware('throttle:10,1')->prefix('mods')->group(function () {
+// LLM chat — AI endpoint, auth + strict throttle
+Route::middleware(['auth:sanctum', 'throttle:10,1'])->prefix('mods')->group(function () {
     Route::post('/llm/chat', [LlmController::class, 'chat']);
     Route::post('/llm/chat/stream', [LlmController::class, 'chatStream']);
 });

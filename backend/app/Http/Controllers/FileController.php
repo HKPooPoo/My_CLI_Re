@@ -23,7 +23,18 @@ class FileController extends Controller
     public function upload(Request $request)
     {
         $request->validate([
-            'file' => 'required|file|max:1048576',  // 1 GB in kilobytes
+            'file' => [
+                'required',
+                'file',
+                'max:1048576',  // 1 GB in kilobytes
+                function ($attribute, $value, $fail) {
+                    $blocked = ['php', 'phtml', 'phar', 'exe', 'bat', 'cmd', 'sh', 'html', 'htm', 'xhtml', 'cgi', 'pl'];
+                    $ext = strtolower($value->getClientOriginalExtension());
+                    if (in_array($ext, $blocked)) {
+                        $fail("File type .{$ext} is not allowed.");
+                    }
+                },
+            ],
         ]);
 
         $user = Auth::user();

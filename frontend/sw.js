@@ -1,4 +1,4 @@
-const CACHE_NAME = 'blackboard-v74-2026-02-27'; // textmode.js: remove loading screen message & watermark, add credit
+const CACHE_NAME = 'blackboard-v75-2026-02-27'; // Security fixes: markdown XSS sanitization
 
 // Core framework only — MOD files (mods/*, vendor libs, MOD assets) are NOT listed here.
 // They are cached lazily via the stale-while-revalidate fetch handler on first page load.

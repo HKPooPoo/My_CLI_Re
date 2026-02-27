@@ -36,8 +36,11 @@ class BroadcastChannelController extends Controller
         }
 
         $request->validate([
-            'channel_name' => 'required|string|max:255',
-            'records'      => 'required|array',
+            'channel_name'       => 'required|string|max:255',
+            'records'            => 'required|array|max:1000',
+            'records.*.text'     => 'nullable|string|max:65535',
+            'records.*.timestamp' => 'required|integer',
+            'records.*.file_hash' => 'nullable|string|max:65535',
         ]);
 
         $channel = $this->service->cast(

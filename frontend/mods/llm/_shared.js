@@ -126,8 +126,8 @@ export function buildMessages(prompt, inputText, provider) {
 
     if (provider === 'server') {
         return [
-            { role: 'system', content: '/no_think\nRespond with the result only. No preamble.' },
-            { role: 'user', content: userContent },
+            { role: 'system', content: 'Respond with the result only. No preamble.' },
+            { role: 'user', content: '/no_think\n' + userContent },
         ];
     }
 

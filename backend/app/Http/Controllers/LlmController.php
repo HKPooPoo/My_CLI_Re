@@ -47,7 +47,7 @@ class LlmController extends Controller
         } catch (\Exception $e) {
             Log::error("LLM chat error ({$provider}): " . $e->getMessage());
             return response()->json([
-                'error' => $e->getMessage(),
+                'error' => 'LLM provider request failed',
             ], 502);
         }
     }
@@ -76,8 +76,9 @@ class LlmController extends Controller
             'think'      => false,
             'keep_alive' => '5m',
             'options'    => [
-                'temperature' => $validated['temperature'] ?? 0.3,
-                'num_ctx'     => 2048,
+                'temperature'  => $validated['temperature'] ?? 0.3,
+                'num_ctx'      => 2048,
+                'num_predict'  => 2048,
             ],
         ]);
 
@@ -101,26 +102,11 @@ class LlmController extends Controller
                         $json = json_decode($line, true);
                         if (!$json) continue;
 
-                        // DEBUG: log raw Ollama response to diagnose VL streaming issues
-                        $content  = $json['message']['content'] ?? '';
-                        $thinking = $json['message']['thinking'] ?? null;
-                        $done     = !empty($json['done']);
+                        $content = $json['message']['content'] ?? '';
+                        $done    = !empty($json['done']);
 
-                        if ($thinking !== null && $thinking !== '') {
-                            Log::debug('[LLM-STREAM] thinking token received', [
-                                'thinking' => mb_substr($thinking, 0, 200),
-                                'content'  => $content,
-                                'done'     => $done,
-                            ]);
-                        }
-
-                        if ($done) {
-                            Log::debug('[LLM-STREAM] generation complete', [
-                                'total_duration'      => $json['total_duration'] ?? null,
-                                'eval_count'          => $json['eval_count'] ?? null,
-                                'prompt_eval_count'   => $json['prompt_eval_count'] ?? null,
-                            ]);
-                        }
+                        // Skip empty-content chunks (thinking phase)
+                        if (!$done && $content === '') continue;
 
                         echo 'data: ' . json_encode([
                             'delta' => $content,
@@ -137,8 +123,9 @@ class LlmController extends Controller
             curl_exec($ch);
 
             if (curl_errno($ch)) {
+                Log::error('LLM stream curl error: ' . curl_error($ch));
                 echo 'data: ' . json_encode([
-                    'error' => curl_error($ch),
+                    'error' => 'LLM provider stream failed',
                     'done'  => true,
                 ]) . "\n\n";
                 if (ob_get_level()) ob_flush();
@@ -206,8 +193,9 @@ class LlmController extends Controller
             'think'      => false,
             'keep_alive' => '5m',
             'options'    => [
-                'temperature' => $temperature,
-                'num_ctx'     => 2048,
+                'temperature'  => $temperature,
+                'num_ctx'      => 2048,
+                'num_predict'  => 2048,
             ],
         ]);
 

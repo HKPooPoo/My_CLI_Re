@@ -29,6 +29,25 @@ function getActiveTextarea() {
 }
 
 /**
+ * Sanitize HTML output from marked to prevent XSS.
+ */
+function sanitizeHtml(html) {
+    const div = document.createElement('div');
+    div.innerHTML = html;
+    div.querySelectorAll('script, iframe, object, embed, form, style, link, meta, base')
+        .forEach(el => el.remove());
+    for (const el of div.querySelectorAll('*')) {
+        for (const attr of [...el.attributes]) {
+            if (attr.name.startsWith('on') || (attr.name === 'href' || attr.name === 'src' || attr.name === 'action') &&
+                attr.value.replace(/\s/g, '').toLowerCase().startsWith('javascript:')) {
+                el.removeAttribute(attr.name);
+            }
+        }
+    }
+    return div.innerHTML;
+}
+
+/**
  * Render markdown text into the output div.
  */
 function renderMarkdown(text) {
@@ -41,7 +60,7 @@ function renderMarkdown(text) {
     try {
         // marked is loaded globally via vendor script
         if (typeof marked !== 'undefined') {
-            $mdOutput.innerHTML = marked.parse(text, { breaks: true, gfm: true });
+            $mdOutput.innerHTML = sanitizeHtml(marked.parse(text, { breaks: true, gfm: true }));
         } else {
             $mdOutput.textContent = text;
         }

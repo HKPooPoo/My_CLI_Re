@@ -65,8 +65,8 @@ class AuthService
             $token = $matches[1];
             $newPass = $matches[2];
 
-            if (!preg_match('/^[a-zA-Z0-9!@#$%^&*]{8,32}$/', $newPass)) {
-                throw new \Exception('PASSWORD FORMAT INVALID. MUST BE 8-32 CHARS, NO SPACES.');
+            if (!preg_match('/^[a-zA-Z0-9!@#$%^&*]{4,32}$/', $newPass)) {
+                throw new \Exception('PASSWORD FORMAT INVALID. MUST BE 4-32 CHARS, NO SPACES.');
             }
 
             // Try all users to find the matching scoped cache key
