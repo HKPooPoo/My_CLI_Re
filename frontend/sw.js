@@ -1,4 +1,8 @@
-const CACHE_NAME = 'blackboard-v61-2026-02-27'; // Info Screensaver + ASCII Animator MODs
+const CACHE_NAME = 'blackboard-v61-2026-02-27'; // Remove MOD files from ASSETS
+
+// Core framework only — MOD files (mods/*, vendor libs, MOD assets) are NOT listed here.
+// They are cached lazily via the stale-while-revalidate fetch handler on first page load.
+// mod-manifest.js triggers static imports of all MOD modules during evaluation.
 const ASSETS = [
   '/',
   '/index.html',
@@ -11,7 +15,6 @@ const ASSETS = [
   '/javascript/services/file-service.js',
   '/javascript/indexedDB.js',
   '/javascript/vendor/dexie.js',
-  '/javascript/vendor/textmode.js',
   '/javascript/walkie-typie-core.js',
   '/javascript/walkie-typie-list.js',
   '/javascript/walkie-typie-text.js',
@@ -36,25 +39,6 @@ const ASSETS = [
   '/javascript/theme-engine.js',
   '/mods/mod-loader.js',
   '/mods/mod-manifest.js',
-  '/mods/llm/mod.js',
-  '/mods/light-theme/mod.js',
-  '/mods/light-theme/theme.css',
-  '/mods/info-screensaver/mod.js',
-  '/mods/info-screensaver/screensaver.css',
-  '/mods/ascii-animator/mod.js',
-  '/mods/ascii-animator/layers/matrix-rain.js',
-  '/mods/ascii-animator/layers/perlin-bg.js',
-  '/mods/ascii-animator/layers/mouse-light.js',
-  '/mods/ascii-animator/layers/toast-spinner.js',
-  '/mods/ascii-animator/ascii-animator.css',
-  '/javascript/services/llm-service.js',
-  '/javascript/services/webllm-service.js',
-  '/images/llm-translate.svg',
-  '/images/llm-summarize.svg',
-  '/images/llm-polish.svg',
-  '/images/llm-summarize-files.svg',
-  '/images/llm-summarize-branch.svg',
-  '/images/llm-summarize-all.svg',
   '/audio/Cassette.mp3',
   '/audio/Click.mp3',
   '/audio/Erase.mp3',

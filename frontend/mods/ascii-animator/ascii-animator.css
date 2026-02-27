@@ -45,13 +45,4 @@
     mix-blend-mode: multiply;
 }
 
-/* Toast spinner */
-.aa-spinner {
-    margin-right: 0.4em;
-    display: inline;
-    color: var(--text-cyan, #00ffff);
-}
-
-.aa-toast-text {
-    display: inline;
-}
+/* Toast spinner: pure textContent manipulation, no CSS needed */

@@ -2,8 +2,12 @@
  * Toast Spinner Layer — Braille loading animation on toasts
  *
  * Watches #toast-container for new loading toasts (data-loading="true")
- * and injects an animated braille spinner. The spinner is naturally
- * destroyed when .update() sets textContent on the toast.
+ * and prepends an animated braille spinner character to textContent.
+ * No child elements injected — pure textContent manipulation avoids
+ * flex-column layout issues (all div/span are flex-column in this project).
+ *
+ * When .update() sets textContent + removes data-loading, the spinner
+ * interval is cleaned up via MutationObserver.
  *
  * Spinner frames (braille pattern — great in monospace):
  *   ⠋ ⠙ ⠹ ⠸ ⠼ ⠴ ⠦ ⠧ ⠇ ⠏
@@ -19,40 +23,30 @@ export function createToastSpinner() {
     const container = document.getElementById('toast-container');
     if (!container) return { destroy() {} };
 
-    // Track active spinners: Map<Element, { interval, frame }>
+    // Track active spinners: Map<Element, { interval, baseText }>
     const active = new Map();
 
     function attachSpinner(toast) {
         if (active.has(toast)) return;
 
-        // Capture original text and restructure DOM
-        const originalText = toast.textContent;
-        toast.textContent = '';
-
-        const spinnerSpan = document.createElement('span');
-        spinnerSpan.className = 'aa-spinner';
-        spinnerSpan.textContent = SPINNER_FRAMES[0];
-
-        const textSpan = document.createElement('span');
-        textSpan.className = 'aa-toast-text';
-        textSpan.textContent = originalText;
-
-        toast.appendChild(spinnerSpan);
-        toast.appendChild(textSpan);
+        // Capture the original text and prepend spinner into textContent
+        const baseText = toast.textContent;
+        toast.textContent = SPINNER_FRAMES[0] + ' ' + baseText;
 
         let frame = 0;
         const interval = setInterval(() => {
             frame = (frame + 1) % SPINNER_FRAMES.length;
-            // Guard: spinner may have been destroyed by textContent override
-            if (spinnerSpan.isConnected) {
-                spinnerSpan.textContent = SPINNER_FRAMES[frame];
-            } else {
+            // Guard: if toast was removed or textContent was overwritten by .update()
+            const entry = active.get(toast);
+            if (!entry || !toast.isConnected) {
                 clearInterval(interval);
                 active.delete(toast);
+                return;
             }
+            toast.textContent = SPINNER_FRAMES[frame] + ' ' + entry.baseText;
         }, FRAME_INTERVAL);
 
-        active.set(toast, { interval });
+        active.set(toast, { interval, baseText });
     }
 
     function detachSpinner(toast) {
@@ -102,8 +96,10 @@ export function createToastSpinner() {
     return {
         destroy() {
             observer.disconnect();
-            for (const [_toast, entry] of active) {
+            // Restore original text for any active spinners
+            for (const [toast, entry] of active) {
                 clearInterval(entry.interval);
+                if (toast.isConnected) toast.textContent = entry.baseText;
             }
             active.clear();
         },

@@ -217,7 +217,8 @@ Two-level hierarchy: main navi (`data-navi-item`: blackboard, walkie-typie, broa
 
 - Stale-while-revalidate for static assets; `/api/` bypasses SW
 - Update: `updatefound` → toast → `SKIP_WAITING` → silent takeover (no forced reload)
-- **Always bump `CACHE_NAME` in `sw.js`** when modifying `index.html` or adding files
+- **Always bump `CACHE_NAME` in `sw.js`** when modifying `index.html` or core framework files
+- **Do NOT add MOD files to `sw.js` ASSETS.** MOD files (mods/*, vendor libs, MOD-specific assets) are cached lazily by the SWR fetch handler on first page load. Only core framework files belong in ASSETS.
 
 ## MOD System v2.1 (Instance-Based, ADD/DELETE Model)
 
@@ -270,7 +271,7 @@ Instance data model (persisted in `localStorage['mod-instances']`):
 6. Add icon: CSS `.feature-btn[data-feature-btn="{btn-id}"]::after { mask-image: url(...) }` OR implement `getIconUrl(config)` in template
 7. Implement `init(ctx)` and `activate(ctx)` using ModContext API
 8. Optionally add `tools[]` and `hooks[]`
-9. **Bump `CACHE_NAME` in `sw.js`**
+9. MOD files are cached automatically by SW's stale-while-revalidate — **do NOT add MOD files to `sw.js` ASSETS**
 
 ### MOD Development Principles
 
