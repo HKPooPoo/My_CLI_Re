@@ -257,6 +257,7 @@
     "listTab": "BROWSE",
     "configTab": "SETTINGS",
     "configDefault": "Select an extension from the list.",
+    "catalogPreview": "Add this extension to start configuring.",
     "enabled": "ON",
     "disabled": "OFF",
     "refreshBtn": "Refresh",

@@ -184,6 +184,7 @@
     text-shadow: none;
 }
 
+:root.theme-light .mods-catalog-item.active,
 :root.theme-light .mods-catalog-add-btn:hover,
 :root.theme-light .mods-action-btn:not(:disabled):hover {
     box-shadow: none;

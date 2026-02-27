@@ -257,6 +257,7 @@
     "listTab": "LIST",
     "configTab": "CONFIG",
     "configDefault": "SELECT A MOD FROM THE LIST.",
+    "catalogPreview": "ADD THIS MOD TO START CONFIGURING.",
     "enabled": "ON",
     "disabled": "OFF",
     "refreshBtn": "REFRESH",

@@ -19,6 +19,7 @@ import { registerFieldType, getRenderer } from './mod-field-registry.js';
 let infiniteList = null;
 let selectionTimer = null;
 let selectedInstanceId = null;
+let selectedTemplateId = null;
 let _selectAbort = null;  // AbortController for custom select close-handlers
 
 const elements = {
@@ -47,8 +48,9 @@ function init() {
 
     bindEvents();
 
-    // Select first instance and pass to renderListPage so InfiniteList
-    // finds the .active class without dispatching a redundant event.
+    // Select first instance (or first catalog item if none) and pass to
+    // renderListPage so InfiniteList finds the .active class without
+    // dispatching a redundant event.
     const instances = ModState.getInstances();
     if (instances.length > 0) {
         selectedInstanceId = instances[0].instanceId;
@@ -56,7 +58,10 @@ function init() {
         renderConfig(selectedInstanceId);
         renderInstanceActions(selectedInstanceId);
     } else {
-        renderListPage();
+        const templates = getAllTemplates();
+        if (templates.length > 0) selectedTemplateId = templates[0].id;
+        renderListPage(null, selectedTemplateId);
+        if (selectedTemplateId) renderCatalogPreview(selectedTemplateId);
     }
 
     ModState.refreshAllServerStatuses().then(() => {
@@ -66,7 +71,7 @@ function init() {
 
 // ===================== List Page =====================
 
-function renderListPage(activeInstanceId) {
+function renderListPage(activeInstanceId, activeTemplateId) {
     const container = elements.listContainer;
     if (!container) return;
     container.innerHTML = '';
@@ -78,12 +83,15 @@ function renderListPage(activeInstanceId) {
     if (activeInstanceId) {
         const target = container.querySelector(`.mods-list-item[data-instance-id="${activeInstanceId}"]`);
         if (target) target.classList.add('active');
+    } else if (activeTemplateId) {
+        const target = container.querySelector(`.mods-catalog-item[data-template-id="${activeTemplateId}"]`);
+        if (target) target.classList.add('active');
     }
 
     if (infiniteList) {
         infiniteList.refresh();
     } else {
-        infiniteList = new InfiniteList(container, '.mods-list-item');
+        infiniteList = new InfiniteList(container, '.mods-navigable');
     }
 }
 
@@ -103,7 +111,7 @@ function renderTemplateCatalog(container) {
         const atLimit = maxInst > 0 && instances.length >= maxInst;
 
         const item = document.createElement('div');
-        item.className = 'mods-catalog-item';
+        item.className = 'mods-catalog-item mods-navigable';
         item.dataset.templateId = tpl.id;
 
         const nameEl = document.createElement('div');
@@ -151,7 +159,7 @@ function renderActiveInstances(container) {
         const serverStatus = ModState.getServerStatus(inst.instanceId);
 
         const item = document.createElement('div');
-        item.className = 'mods-list-item';
+        item.className = 'mods-list-item mods-navigable';
         item.dataset.instanceId = inst.instanceId;
 
         const info = document.createElement('div');
@@ -201,6 +209,7 @@ function handleAddInstance(templateId) {
     }
     rebuildInstanceButtons();
     selectedInstanceId = instance.instanceId;
+    selectedTemplateId = null;
     renderListPage(selectedInstanceId);
     renderConfig(selectedInstanceId);
     renderInstanceActions(selectedInstanceId);
@@ -263,26 +272,52 @@ function renderInstanceActions(instanceId) {
         removeInstanceButton(instanceId);
         ModState.removeInstance(instanceId);
 
-        // Select another instance or clear
+        // Select another instance, or fall back to first catalog item
         const remaining = ModState.getInstances();
         if (remaining.length > 0) {
             selectedInstanceId = remaining[0].instanceId;
+            selectedTemplateId = null;
             renderListPage(selectedInstanceId);
             renderConfig(selectedInstanceId);
             renderInstanceActions(selectedInstanceId);
         } else {
             selectedInstanceId = null;
-            renderListPage();
+            const templates = getAllTemplates();
+            selectedTemplateId = templates.length > 0 ? templates[0].id : null;
+            renderListPage(null, selectedTemplateId);
             renderInstanceActions(null);
-            if (elements.configDefault) elements.configDefault.style.display = '';
-            if (elements.configTitle) elements.configTitle.textContent = '\u2014';
-            if (elements.configDescription) elements.configDescription.textContent = '';
-            if (elements.configFields) elements.configFields.innerHTML = '';
-            if (elements.configStatus) elements.configStatus.style.display = 'none';
+            if (selectedTemplateId) {
+                renderCatalogPreview(selectedTemplateId);
+            } else {
+                if (elements.configDefault) elements.configDefault.style.display = '';
+                if (elements.configTitle) elements.configTitle.textContent = '\u2014';
+                if (elements.configDescription) elements.configDescription.textContent = '';
+                if (elements.configFields) elements.configFields.innerHTML = '';
+                if (elements.configStatus) elements.configStatus.style.display = 'none';
+            }
         }
     });
 
     container.appendChild(deleteBtn);
+}
+
+/**
+ * Show template preview in config page when a catalog item is selected.
+ * Displays name + description + placeholder — no fields, no actions.
+ */
+function renderCatalogPreview(templateId) {
+    const tpl = getTemplate(templateId);
+    if (!tpl) return;
+
+    if (elements.configTitle) elements.configTitle.textContent = t(tpl.nameKey);
+    if (elements.configDescription) elements.configDescription.textContent = t(tpl.descriptionKey);
+    if (elements.configFields) elements.configFields.innerHTML = '';
+    if (elements.configStatus) elements.configStatus.style.display = 'none';
+    if (elements.configRefreshBtn) elements.configRefreshBtn.style.display = 'none';
+    if (elements.configDefault) {
+        elements.configDefault.textContent = t('mods.catalogPreview');
+        elements.configDefault.style.display = '';
+    }
 }
 
 // --- Update server status indicators ---
@@ -630,22 +665,32 @@ function evaluateShowWhen(instanceId, field) {
 // ===================== Events =====================
 
 function bindEvents() {
-    // InfiniteList selection → set ID immediately, debounce rendering
+    // InfiniteList selection → bifurcate: instance vs catalog item
     window.addEventListener('list:selectionChanged', ({ detail }) => {
         if (!elements.listContainer?.contains(detail.item)) return;
 
-        // Set selectedInstanceId immediately so navi:pageChanged → renderConfig
-        // always uses the latest selection (no stale ID during debounce window).
         const instanceId = detail.item?.dataset?.instanceId;
-        if (instanceId) selectedInstanceId = instanceId;
+        const templateId = detail.item?.dataset?.templateId;
 
         clearTimeout(selectionTimer);
-        selectionTimer = setTimeout(() => {
-            if (instanceId) {
+
+        if (instanceId) {
+            // INSTANCE path — existing behavior
+            selectedInstanceId = instanceId;
+            selectedTemplateId = null;
+            selectionTimer = setTimeout(() => {
                 renderInstanceActions(instanceId);
                 window.dispatchEvent(new CustomEvent('mods:selected', { detail: { instanceId } }));
-            }
-        }, 500);
+            }, 500);
+        } else if (templateId) {
+            // CATALOG path — show preview, clear actions
+            selectedInstanceId = null;
+            selectedTemplateId = templateId;
+            selectionTimer = setTimeout(() => {
+                renderCatalogPreview(templateId);
+                renderInstanceActions(null);
+            }, 500);
+        }
     });
 
     // Config page responds to selection
@@ -664,10 +709,11 @@ function bindEvents() {
         msg.update(t('mods.refreshComplete'));
     });
 
-    // When navigating to config page, ensure selected instance is rendered
+    // When navigating to config page, ensure selected item is rendered
     window.addEventListener('navi:pageChanged', ({ detail }) => {
-        if (detail.page === 'mods-config' && selectedInstanceId) {
-            renderConfig(selectedInstanceId);
+        if (detail.page === 'mods-config') {
+            if (selectedInstanceId) renderConfig(selectedInstanceId);
+            else if (selectedTemplateId) renderCatalogPreview(selectedTemplateId);
         }
     });
 
@@ -692,7 +738,7 @@ function bindEvents() {
         }
 
         // Re-render list once (covers provider change + name display update)
-        renderListPage(selectedInstanceId);
+        renderListPage(selectedInstanceId, selectedTemplateId);
         renderInstanceActions(selectedInstanceId);
     });
 

@@ -257,6 +257,7 @@
     "listTab": "列表",
     "configTab": "配置",
     "configDefault": "請從列表中選擇模組。",
+    "catalogPreview": "新增此模組以開始設定。",
     "enabled": "開啟",
     "disabled": "關閉",
     "refreshBtn": "重新掃描",
