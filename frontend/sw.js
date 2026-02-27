@@ -1,4 +1,4 @@
-const CACHE_NAME = 'blackboard-v62-2026-02-27'; // Hover hint panel + screensaver config
+const CACHE_NAME = 'blackboard-v63-2026-02-27'; // UI text de-git rewrite
 
 // Core framework only — MOD files (mods/*, vendor libs, MOD assets) are NOT listed here.
 // They are cached lazily via the stale-while-revalidate fetch handler on first page load.
