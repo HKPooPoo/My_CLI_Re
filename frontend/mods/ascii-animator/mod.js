@@ -9,6 +9,10 @@
  *
  * No feature button. No shelf panel. Pure background decoration.
  * Engine: textmode.js (zero-dependency, framework-agnostic, WebGL2)
+ *
+ * CONTAINERIZATION: init() only loads CSS. All functional logic is
+ * gated behind instance existence — nothing runs until a user adds
+ * an instance via the MOD catalog.
  * =================================================================
  */
 
@@ -38,9 +42,13 @@ async function _ensureTextmode() {
     }
 }
 
+function _getInstance() {
+    return getInstances().find(i => i.templateId === 'ascii-animator') || null;
+}
+
 function _getConfig() {
-    const inst = getInstances().find(i => i.templateId === 'ascii-animator');
-    return inst ? inst.config : {};
+    const inst = _getInstance();
+    return inst ? inst.config : null;
 }
 
 export default {
@@ -106,8 +114,12 @@ export default {
     ],
 
     // ===================== Lifecycle =====================
+
+    /**
+     * init() is called once per template at boot — regardless of instances.
+     * Only load CSS here. All functional logic waits for instance existence.
+     */
     async init(_ctx) {
-        // Load CSS
         if (!document.getElementById('ascii-animator-css')) {
             const link = document.createElement('link');
             link.rel = 'stylesheet';
@@ -116,31 +128,51 @@ export default {
             document.head.appendChild(link);
         }
 
-        const config = _getConfig();
+        // Listen for instance add/remove to start/stop all layers
+        this._onInstanceAdded = ({ detail }) => {
+            if (detail.instance.templateId === 'ascii-animator') this._startAll();
+        };
+        this._onInstanceRemoved = ({ detail }) => {
+            if (detail.templateId === 'ascii-animator') this._stopAll();
+        };
+        window.addEventListener('mods:instanceAdded', this._onInstanceAdded);
+        window.addEventListener('mods:instanceRemoved', this._onInstanceRemoved);
 
-        // Toast spinner (DOM-only, no textmode.js needed)
-        if (config.toastAnim !== false) {
+        // If instance already exists at boot (persisted from previous session), start
+        if (_getInstance()) this._startAll();
+    },
+
+    /** Start all layers based on current config. Called when instance is added. */
+    async _startAll() {
+        if (this._running) return;
+        this._running = true;
+
+        const config = _getConfig();
+        if (!config) return;
+
+        // Toast spinner
+        if (config.toastAnim !== false && !this._toastSpinner) {
             this._toastSpinner = createToastSpinner();
         }
 
-        // Mouse light (CSS-only)
-        if (config.mouseLight) {
+        // Mouse light
+        if (config.mouseLight && !this._mouseLight) {
             this._mouseLight = createMouseLight(config);
         }
 
-        // Load textmode.js vendor if any WebGL layer is needed
+        // Load textmode.js if any WebGL layer is needed
         const needsTextmode = config.matrixRain !== false || config.perlinBg;
         if (needsTextmode) await _ensureTextmode();
 
-        // Perlin background (always running if enabled)
-        if (config.perlinBg && _textmodeLoaded) {
+        // Perlin background
+        if (config.perlinBg && _textmodeLoaded && !this._perlinBg) {
             this._perlinBg = createPerlinBg(config);
         }
 
-        // Matrix rain — screensaver only
+        // Matrix rain — screensaver events
         this._onActivated = async () => {
             const c = _getConfig();
-            if (c.matrixRain === false || this._matrixRain) return;
+            if (!c || c.matrixRain === false || this._matrixRain) return;
             if (!_textmodeLoaded) await _ensureTextmode();
             if (!_textmodeLoaded) return;
             const overlay = document.getElementById('press-start-overlay');
@@ -157,18 +189,35 @@ export default {
         window.addEventListener('screensaver:activated', this._onActivated);
         window.addEventListener('screensaver:deactivated', this._onDeactivated);
 
-        // If screensaver already visible (initial page load), start rain
+        // If screensaver already visible, start rain now
         const overlay = document.getElementById('press-start-overlay');
         if (overlay && overlay.style.display !== 'none' && config.matrixRain !== false && _textmodeLoaded) {
             this._matrixRain = createMatrixRain(overlay, config);
         }
     },
 
+    /** Stop all layers. Called when instance is removed. */
+    _stopAll() {
+        this._running = false;
+
+        if (this._matrixRain) { this._matrixRain.destroy(); this._matrixRain = null; }
+        if (this._perlinBg) { this._perlinBg.destroy(); this._perlinBg = null; }
+        if (this._mouseLight) { this._mouseLight.destroy(); this._mouseLight = null; }
+        if (this._toastSpinner) { this._toastSpinner.destroy(); this._toastSpinner = null; }
+
+        if (this._onActivated) window.removeEventListener('screensaver:activated', this._onActivated);
+        if (this._onDeactivated) window.removeEventListener('screensaver:deactivated', this._onDeactivated);
+        this._onActivated = null;
+        this._onDeactivated = null;
+    },
+
     async activate(_ctx) {},
     async deactivate(_ctx) {},
 
     onConfigChange(_ctx, key, value) {
+        if (!this._running) return;
         const config = _getConfig();
+        if (!config) return;
 
         // --- Matrix Rain toggle ---
         if (key === 'matrixRain') {
@@ -230,15 +279,11 @@ export default {
     async checkHealth(_instanceConfig) { return 'online'; },
 
     destroy(_ctx) {
-        if (this._matrixRain) { this._matrixRain.destroy(); this._matrixRain = null; }
-        if (this._perlinBg) { this._perlinBg.destroy(); this._perlinBg = null; }
-        if (this._mouseLight) { this._mouseLight.destroy(); this._mouseLight = null; }
-        if (this._toastSpinner) { this._toastSpinner.destroy(); this._toastSpinner = null; }
-
-        if (this._onActivated) window.removeEventListener('screensaver:activated', this._onActivated);
-        if (this._onDeactivated) window.removeEventListener('screensaver:deactivated', this._onDeactivated);
-        this._onActivated = null;
-        this._onDeactivated = null;
+        this._stopAll();
+        if (this._onInstanceAdded) window.removeEventListener('mods:instanceAdded', this._onInstanceAdded);
+        if (this._onInstanceRemoved) window.removeEventListener('mods:instanceRemoved', this._onInstanceRemoved);
+        this._onInstanceAdded = null;
+        this._onInstanceRemoved = null;
     },
 
     // ===================== Tools / Hooks =====================

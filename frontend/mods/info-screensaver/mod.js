@@ -10,6 +10,10 @@
  *   - MOD count: mod-loader getInstances()
  *   - Version: PLATFORM_VERSION
  *   - Clock: Date
+ *
+ * CONTAINERIZATION: init() only loads CSS. All functional logic is
+ * gated behind instance existence — nothing runs until a user adds
+ * an instance via the MOD catalog.
  * =================================================================
  */
 
@@ -19,17 +23,24 @@ import { t } from '../../javascript/i18n.js';
 
 let _clockInterval = null;
 let _layer = null;
+let _onActivated = null;
+let _onDeactivated = null;
+let _running = false;
+
+function _getInstance() {
+    return getInstances().find(i => i.templateId === 'info-screensaver') || null;
+}
 
 function _buildDashboard(config) {
     const layer = document.createElement('div');
     layer.id = 'info-screensaver-layer';
 
     // Gather data
-    const user = localStorage.getItem('currentUser') || '—';
+    const user = localStorage.getItem('currentUser') || '\u2014';
     const title = localStorage.getItem('currentTitle') || '';
     // BYPASS: reading DOM for DB status — no framework API for this
     const dbEl = document.getElementById('db-status-display');
-    const dbText = dbEl ? dbEl.textContent.trim() : '—';
+    const dbText = dbEl ? dbEl.textContent.trim() : '\u2014';
     const dbOnline = dbText.toLowerCase().includes('online') || dbText.toLowerCase().includes('connected');
     const modCount = getInstances().length;
 
@@ -145,9 +156,39 @@ function _hide() {
     if (label) label.style.display = '';
 }
 
-// Event handlers (stored for cleanup)
-let _onActivated = null;
-let _onDeactivated = null;
+function _startListening() {
+    if (_running) return;
+    _running = true;
+
+    const getConfig = () => {
+        const inst = _getInstance();
+        return inst ? inst.config : {};
+    };
+
+    _onActivated = () => {
+        if (!_getInstance()) return; // Guard: instance may have been removed
+        _show(getConfig());
+    };
+    _onDeactivated = () => { _hide(); };
+
+    window.addEventListener('screensaver:activated', _onActivated);
+    window.addEventListener('screensaver:deactivated', _onDeactivated);
+
+    // If screensaver is already visible, show immediately
+    const overlay = document.getElementById('press-start-overlay');
+    if (overlay && overlay.style.display !== 'none') {
+        _show(getConfig());
+    }
+}
+
+function _stopListening() {
+    _running = false;
+    _hide();
+    if (_onActivated) window.removeEventListener('screensaver:activated', _onActivated);
+    if (_onDeactivated) window.removeEventListener('screensaver:deactivated', _onDeactivated);
+    _onActivated = null;
+    _onDeactivated = null;
+}
 
 export default {
     // ===================== Identity =====================
@@ -194,8 +235,12 @@ export default {
     ],
 
     // ===================== Lifecycle =====================
-    async init(ctx) {
-        // Load screensaver CSS
+
+    /**
+     * init() is called once per template at boot — regardless of instances.
+     * Only load CSS here. All functional logic waits for instance existence.
+     */
+    async init(_ctx) {
         if (!document.getElementById('info-screensaver-css')) {
             const link = document.createElement('link');
             link.rel = 'stylesheet';
@@ -204,44 +249,40 @@ export default {
             document.head.appendChild(link);
         }
 
-        const getConfig = () => {
-            const inst = getInstances().find(i => i.templateId === 'info-screensaver');
-            return inst ? inst.config : {};
+        // Listen for instance add/remove
+        this._onInstanceAdded = ({ detail }) => {
+            if (detail.instance.templateId === 'info-screensaver') _startListening();
         };
+        this._onInstanceRemoved = ({ detail }) => {
+            if (detail.templateId === 'info-screensaver') _stopListening();
+        };
+        window.addEventListener('mods:instanceAdded', this._onInstanceAdded);
+        window.addEventListener('mods:instanceRemoved', this._onInstanceRemoved);
 
-        _onActivated = () => { _show(getConfig()); };
-        _onDeactivated = () => { _hide(); };
-
-        window.addEventListener('screensaver:activated', _onActivated);
-        window.addEventListener('screensaver:deactivated', _onDeactivated);
-
-        // If screensaver is already visible (e.g. initial page load), show immediately
-        const overlay = document.getElementById('press-start-overlay');
-        if (overlay && overlay.style.display !== 'none') {
-            _show(getConfig());
-        }
+        // If instance already exists at boot (persisted), start
+        if (_getInstance()) _startListening();
     },
 
     async activate(_ctx) {},
     async deactivate(_ctx) {},
 
     onConfigChange(_ctx, _key, _value) {
+        if (!_running) return;
         // Re-render dashboard if currently visible
         if (_layer) {
-            const inst = getInstances().find(i => i.templateId === 'info-screensaver');
-            const config = inst ? inst.config : {};
-            _show(config);
+            const inst = _getInstance();
+            if (inst) _show(inst.config);
         }
     },
 
     async checkHealth(_instanceConfig) { return 'online'; },
 
     destroy(_ctx) {
-        _hide();
-        if (_onActivated) window.removeEventListener('screensaver:activated', _onActivated);
-        if (_onDeactivated) window.removeEventListener('screensaver:deactivated', _onDeactivated);
-        _onActivated = null;
-        _onDeactivated = null;
+        _stopListening();
+        if (this._onInstanceAdded) window.removeEventListener('mods:instanceAdded', this._onInstanceAdded);
+        if (this._onInstanceRemoved) window.removeEventListener('mods:instanceRemoved', this._onInstanceRemoved);
+        this._onInstanceAdded = null;
+        this._onInstanceRemoved = null;
     },
 
     // ===================== Tools / Hooks =====================
