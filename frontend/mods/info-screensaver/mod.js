@@ -77,16 +77,16 @@ function _row(id, text, status) {
     row.className = 'is-row';
     row.dataset.isRow = id;
 
-    const left = document.createElement('span');
+    const left = document.createElement('div');
     left.className = 'is-pipe';
     left.textContent = '\u2551  ';
 
-    const content = document.createElement('span');
+    const content = document.createElement('div');
     content.className = 'is-content';
     if (status) content.classList.add(`is-${status}`);
     content.textContent = text;
 
-    const right = document.createElement('span');
+    const right = document.createElement('div');
     right.className = 'is-pipe is-pipe-right';
     right.textContent = '\u2551';
 
