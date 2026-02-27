@@ -103,7 +103,7 @@ async function startRecording() {
         playAudio("UISelectOn.mp3"); // 開始錄音音效
 
         // 全域提示
-        window.voiceMsg = BBMessage.info(t('speech.listening'));
+        window.voiceMsg = BBMessage.loading(t('speech.listening'));
 
     } catch (err) {
         console.error("Mic Access Error:", err);

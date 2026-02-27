@@ -12,3 +12,5 @@ export { default as llm } from './llm/mod.js';
 export { default as llmBb } from './llm-bb/mod.js';
 export { default as llmBc } from './llm-bc/mod.js';
 export { default as lightTheme } from './light-theme/mod.js';
+export { default as infoScreensaver } from './info-screensaver/mod.js';
+export { default as asciiAnimator } from './ascii-animator/mod.js';

@@ -49,6 +49,14 @@ export const BBMessage = {
     },
 
     /**
+     * Loading state (spinner-compatible via data-loading attribute)
+     */
+    loading(text) {
+        const prefix = "SYSTEM > ";
+        return wrapHandler(toast.addMessage(`${prefix}${text}`, 5000, 'info', true), prefix);
+    },
+
+    /**
      * Auth requirement
      */
     requireLogin() {

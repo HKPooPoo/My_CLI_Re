@@ -614,7 +614,16 @@ function createActionField(instanceId, template, field) {
 
 function evaluateShowWhen(instanceId, field) {
     if (!field.showWhen) return true;
-    const currentValue = ModState.getConfig(instanceId, field.showWhen.key);
+    let currentValue = ModState.getConfig(instanceId, field.showWhen.key);
+    // Resolve default from configSchema when config key hasn't been set
+    if (currentValue === null) {
+        const inst = ModState.getInstance(instanceId);
+        if (inst) {
+            const tmpl = getTemplate(inst.templateId);
+            const ref = tmpl?.configSchema?.find(f => f.key === field.showWhen.key);
+            if (ref && ref.default !== undefined) currentValue = ref.default;
+        }
+    }
     return currentValue === field.showWhen.value;
 }
 
@@ -647,7 +656,7 @@ function bindEvents() {
     // Refresh button on list page
     elements.refreshBtn?.addEventListener('click', async () => {
         playAudio('UIGeneralFocus.mp3');
-        const msg = BBMessage.info(t('mods.refreshing'));
+        const msg = BBMessage.loading(t('mods.refreshing'));
 
         await ModState.refreshAllServerStatuses();
         updateServerIndicators();

@@ -1,0 +1,57 @@
+/* ASCII Animator — Layer positioning & toast spinner */
+
+/* Matrix Rain canvas — fills overlay behind other content */
+#aa-matrix-rain {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+}
+
+/* Re-enable pointer events for mouse interaction on the overlay */
+#press-start-overlay #aa-matrix-rain {
+    pointer-events: auto;
+}
+
+/* Perlin Noise background — behind page content */
+#aa-perlin-bg {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+}
+
+/* Mouse Light — CSS radial gradient flashlight */
+#aa-mouse-light {
+    position: fixed;
+    inset: 0;
+    z-index: 9998;
+    pointer-events: none;
+    background: radial-gradient(
+        circle var(--aa-lr, 160px) at var(--aa-mx, -200px) var(--aa-my, -200px),
+        rgba(51, 255, 51, 0.06),
+        transparent
+    );
+    mix-blend-mode: screen;
+}
+
+/* Light theme: different color, multiply blend */
+:root.theme-light #aa-mouse-light {
+    background: radial-gradient(
+        circle var(--aa-lr, 160px) at var(--aa-mx, -200px) var(--aa-my, -200px),
+        rgba(0, 0, 0, 0.04),
+        transparent
+    );
+    mix-blend-mode: multiply;
+}
+
+/* Toast spinner */
+.aa-spinner {
+    margin-right: 0.4em;
+    display: inline;
+    color: var(--text-cyan, #00ffff);
+}
+
+.aa-toast-text {
+    display: inline;
+}

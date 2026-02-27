@@ -157,6 +157,9 @@ Two-level hierarchy: main navi (`data-navi-item`: blackboard, walkie-typie, broa
 | `mods:reordered` | mod-state.js | `{ instanceId, direction }` | Instance order changed |
 | `mods:selected` | mods-manager.js | `{ instanceId }` | Instance selected in list (500ms debounce) |
 | `mods:buttonsRebuilt` | mod-loader.js | — | Instance buttons DOM rebuilt |
+| `screensaver:activated` | pressStart.js | `{ initial }` | Overlay shown (idle timeout or page load) |
+| `screensaver:deactivated` | pressStart.js | — | Overlay dismissed by click |
+| `theme:changed` | theme-engine.js | `{ themeId }` | Active theme MOD changed |
 
 **Gotcha:** `list:selectionChanged` fires from ALL InfiniteList instances — listeners MUST check `container.contains(detail.item)` to filter.
 
@@ -185,11 +188,13 @@ Two-level hierarchy: main navi (`data-navi-item`: blackboard, walkie-typie, broa
 
 ### CSS Architecture (`stylesheets/`)
 
-**Theme:** CSS custom properties on `:root`. Dark (CRT) is default; `data-theme="light"` switches to light. Key vars: `--text-green`, `--text-orange`, `--text-red`, `--text-cyan`, `--text-yellow`, `--bg-primary`, `--bg-secondary`. Light mode disables all glow/shadow/scanlines.
+**Theme:** CSS custom properties on `:root`. Dark (CRT) is default; `.theme-light` class on `<html>` switches to light. Key vars: `--text-green`, `--text-orange`, `--text-red`, `--text-cyan`, `--text-yellow`, `--bg-primary`, `--bg-secondary`. Light mode disables all glow/shadow/scanlines. Theme switching is handled by `theme-engine.js` + Light Theme MOD.
 
 **CRT effects** (`crt-vfx.css`): `.crt-scanner` scanlines, `.crt-noise-layer` + `.glitchEffect` animation on sub-navi change. Atomic color classes: `.crt-text-orange`, `.crt-text-green`, etc.
 
 **Layout:** `--container-width: clamp(300px, 86vw, 512px)`, `--font-size: clamp(0.875rem, ...)`, fixed `--navi-height: 64px`, `--sub-navi-height: 48px`
+
+**Global flex-column default:** `style.css` lines 113-124 set all `body`, `nav`, `div`, `span`, `.header`, `.body`, `.footer` to `display: flex; flex-direction: column; position: relative`. This means every div/span defaults to vertical flex layout. `justify-content` acts on the vertical axis, `align-items` on horizontal. For horizontal layout, explicitly set `flex-direction: row`. All elements have `position: relative` by default.
 
 ### Real-Time (WebSocket)
 
@@ -315,7 +320,7 @@ when built-in types genuinely don't cover the use case.
 
 **Template version** — `template.version` (SemVer string). Displayed in mods-manager list and config pages.
 
-### Current Templates (4)
+### Current Templates (7)
 
 | ID | Group | maxInstances | Providers | Tools |
 |----|-------|-------------|-----------|-------|
@@ -323,6 +328,9 @@ when built-in types genuinely don't cover the use case.
 | `speech-to-text` | linguistics | 1 | google-speech | — |
 | `markdown-preview` | utilities | 1 | marked (client) | — |
 | `llm` | llm | unlimited | client (WebLLM), server (Ollama), apikey (cloud) | — |
+| `light-theme` | theme | 1 | — | — |
+| `info-screensaver` | screensaver | 1 | — | — |
+| `ascii-animator` | decoration | 1 | textmode.js (WebGL2) | — |
 
 ### Future Framework Roadmap
 

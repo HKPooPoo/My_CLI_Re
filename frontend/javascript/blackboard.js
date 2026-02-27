@@ -337,7 +337,7 @@ if (BBUI.elements.branchBtn) {
             const selected = getSelectedBranchInfo();
             if (!selected) return;
 
-            const msg = BBMessage.info(t('blackboard.forking'));
+            const msg = BBMessage.loading(t('blackboard.forking'));
             try {
                 // 如果 Fork 的是對象是當前編輯的分支，先存檔
                 if (selected.id === state.branchId) {
@@ -378,7 +378,7 @@ if (BBUI.elements.commitBtn) {
                 return;
             }
 
-            const msg = BBMessage.info(t('blackboard.syncing'));
+            const msg = BBMessage.loading(t('blackboard.syncing'));
             try {
                 // 如果 Commit 的是對象是當前編輯的分支，先存檔
                 if (selected.id === state.branchId) {
@@ -405,7 +405,7 @@ if (BBUI.elements.checkoutBtn) {
             const selected = getSelectedBranchInfo();
             if (!selected) return;
 
-            const msg = BBMessage.info(t('blackboard.loading'));
+            const msg = BBMessage.loading(t('blackboard.loading'));
             try {
                 // [Fix]: 如果本地已存在，優先使用本地 (不強制同步)；僅在純雲端分支時才下載
                 const targetOwner = selected.isLocal ? "local" : "remote";

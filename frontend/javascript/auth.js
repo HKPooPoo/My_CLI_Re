@@ -103,7 +103,7 @@ export const AuthManager = {
                         return;
                     }
 
-                    const msg = BBMessage.info(t('auth.authenticating'));
+                    const msg = BBMessage.loading(t('auth.authenticating'));
                     try {
                         const data = await AuthService.login({ uid, passcode });
                         msg.update(t('auth.welcome', { uid: data.user.uid.toUpperCase() }), 2000);
@@ -144,7 +144,7 @@ export const AuthManager = {
                             return;
                         }
 
-                        const msg = BBMessage.info(t('auth.registering'));
+                        const msg = BBMessage.loading(t('auth.registering'));
                         try {
                             const data = await AuthService.register({ uid, passcode });
                             msg.update(t('auth.registerComplete'), 2000);
@@ -191,7 +191,7 @@ export const AuthManager = {
                     const isCommand = input.startsWith("/passwd");
 
                     if (isCommand) {
-                        const msg = BBMessage.info(t('auth.executing'));
+                        const msg = BBMessage.loading(t('auth.executing'));
                         try {
                             const data = await AuthService.executeCommand({ command: input });
                             msg.update(data.message, 3000);
@@ -209,7 +209,7 @@ export const AuthManager = {
                         if (!uid) {
                             return BBMessage.error(t('auth.uidRequired'));
                         }
-                        const msg = BBMessage.info(t('auth.requesting'));
+                        const msg = BBMessage.loading(t('auth.requesting'));
                         try {
                             const data = await AuthService.requestPasswordReset({ uid });
                             msg.update(data.message, 3000);
@@ -255,7 +255,7 @@ export const AuthManager = {
                         }
                     }
 
-                    const msg = BBMessage.info(t('auth.processing'));
+                    const msg = BBMessage.loading(t('auth.processing'));
 
                     try {
                         let data;

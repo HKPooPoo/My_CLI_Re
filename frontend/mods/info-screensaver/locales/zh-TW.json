@@ -1,0 +1,13 @@
+{
+    "mods": {
+        "infoScreensaver": {
+            "name": "資訊螢幕保護",
+            "desc": "在螢幕保護畫面顯示即時系統儀表板",
+            "active": "啟用中",
+            "showUser": "顯示使用者",
+            "showDb": "顯示資料庫狀態",
+            "showMods": "顯示 MOD 數量",
+            "showClock": "顯示時鐘"
+        }
+    }
+}

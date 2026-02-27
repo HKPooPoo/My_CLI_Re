@@ -7,6 +7,7 @@
  * 2. 指標恢復：在第一次點擊後，自動從 LocalStorage 恢復上次導航到的頁面。
  * 3. CRT 開關機動畫：實作 `crt-switch-on` 與 `crt-switch-off` 的視覺效果。
  * 4. 休眠邏輯：當頁面失去焦點 (Blur) 長時間後，自動進入螢幕保護狀態。
+ * 5. 螢幕保護事件：發射 screensaver:activated / deactivated 供 MOD 掛載。
  * 依賴：navi.js, crt-vfx.css
  * =================================================================
  */
@@ -19,6 +20,13 @@ const overlay = document.getElementById("press-start-overlay");
 let justGainedFocus = false;
 let focusTimer;
 let firstTriggered = false;
+
+/**
+ * 查詢螢幕保護是否啟動中
+ */
+export function isScreensaverActive() {
+    return overlay.style.display !== 'none';
+}
 
 /**
  * 焦點安全鎖：防止在切換視窗時意外觸發點擊事件
@@ -35,6 +43,8 @@ window.addEventListener("focus", () => {
  */
 overlay.addEventListener("click", () => {
     if (!overlay.style.display === "flex" || justGainedFocus) return;
+
+    window.dispatchEvent(new CustomEvent('screensaver:deactivated'));
 
     overlay.classList.add("crt-switch-off");
 
@@ -77,5 +87,13 @@ window.addEventListener("blur", () => {
     focusTimer = setTimeout(() => {
         overlay.classList.add("crt-switch-on");
         overlay.style.display = "flex";
+        window.dispatchEvent(new CustomEvent('screensaver:activated', {
+            detail: { initial: false }
+        }));
     }, 60000); // 預設 60 秒
 });
+
+// 初始頁面載入：overlay 一開始是可見的（開機畫面）
+window.dispatchEvent(new CustomEvent('screensaver:activated', {
+    detail: { initial: true }
+}));

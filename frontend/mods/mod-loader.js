@@ -158,8 +158,8 @@ function createInstanceButton(instance, btnContainer, shelfContainer) {
     const template = _templates[instance.templateId];
     if (!template || typeof template.getButtonDataId !== 'function') return;
 
-    // Theme MODs use the header button, not sidebar feature buttons
-    if (template.group === 'theme') return;
+    // Theme/screensaver/decoration MODs operate via events and config, not feature buttons
+    if (['theme', 'screensaver', 'decoration'].includes(template.group)) return;
 
     const btnId = template.getButtonDataId(instance.config);
 

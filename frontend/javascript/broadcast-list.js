@@ -187,7 +187,7 @@ export const BCList = {
                     if (!this.isOwnerOf(this.selectedChannel)) return BBMessage.error(t('broadcast.notOwner'));
 
                     const ch = this.selectedChannel;
-                    const msg = BBMessage.info(t('broadcast.casting'));
+                    const msg = BBMessage.loading(t('broadcast.casting'));
 
                     try {
                         // Gather local board records
@@ -233,7 +233,7 @@ export const BCList = {
                     if (!this.hasTitle()) return BBMessage.error(t('broadcast.titleRequired'));
 
                     const autoName = `BC_${Date.now()}`;
-                    const msg = BBMessage.info(t('broadcast.creating'));
+                    const msg = BBMessage.loading(t('broadcast.creating'));
 
                     let localId;
                     try {
@@ -275,7 +275,7 @@ export const BCList = {
                     if (!this.isOwnerOf(this.selectedChannel)) return BBMessage.error(t('broadcast.notOwner'));
 
                     const ch = this.selectedChannel;
-                    const msg = BBMessage.info(t('broadcast.deleting'));
+                    const msg = BBMessage.loading(t('broadcast.deleting'));
 
                     try {
                         // Delete from server if cast

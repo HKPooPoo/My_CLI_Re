@@ -1,0 +1,97 @@
+/* Info Screensaver — Dashboard overlay */
+
+#info-screensaver-layer {
+    position: absolute;
+    inset: 0;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+}
+
+/* Box frame */
+.is-box {
+    font-family: var(--font-family, 'IBM Plex Mono', monospace);
+    font-size: clamp(0.7rem, 2.2vw, 0.95rem);
+    color: var(--text-green, #33ff33);
+    text-shadow: 0 0 4px var(--text-green, #33ff33);
+    align-items: stretch;
+    gap: 0;
+    line-height: 1.5;
+    white-space: pre;
+}
+
+.is-border {
+    opacity: 0.6;
+}
+
+.is-row {
+    flex-direction: row;
+    align-items: baseline;
+}
+
+.is-pipe {
+    opacity: 0.6;
+    flex-shrink: 0;
+}
+
+.is-pipe-right {
+    margin-left: auto;
+}
+
+.is-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.is-content.is-online {
+    color: var(--text-green, #33ff33);
+}
+
+.is-content.is-offline {
+    color: var(--text-red, #ff4444);
+    text-shadow: 0 0 4px var(--text-red, #ff4444);
+}
+
+/* Row-specific styles */
+[data-is-row="title"] .is-content {
+    color: var(--text-cyan, #00ffff);
+    text-shadow: 0 0 6px var(--text-cyan, #00ffff);
+}
+
+[data-is-row="clock"] .is-content {
+    color: var(--text-yellow, #ffff00);
+    text-shadow: 0 0 4px var(--text-yellow, #ffff00);
+    text-align: center;
+}
+
+/* Light theme adaptation */
+:root.theme-light #info-screensaver-layer {
+    color: #222;
+}
+
+:root.theme-light .is-box {
+    color: #333;
+    text-shadow: none;
+}
+
+:root.theme-light [data-is-row="title"] .is-content {
+    color: #0066cc;
+    text-shadow: none;
+}
+
+:root.theme-light .is-content.is-online {
+    color: #008800;
+    text-shadow: none;
+}
+
+:root.theme-light .is-content.is-offline {
+    color: #cc0000;
+    text-shadow: none;
+}
+
+:root.theme-light [data-is-row="clock"] .is-content {
+    color: #886600;
+    text-shadow: none;
+}

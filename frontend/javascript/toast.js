@@ -22,9 +22,10 @@ export class ToastMessager {
      * @param {string} text 訊息內容
      * @param {number} duration 顯示時長 (預設 5 秒)
      * @param {string} type 訊息類型 ('info'|'error'|'success')
+     * @param {boolean} loading 是否為載入狀態 (標記 data-loading 供 MOD 識別)
      * @returns {Object} 訊息控制對象 { update, close }
      */
-    addMessage(text, duration = 5000, type = 'info') {
+    addMessage(text, duration = 5000, type = 'info', loading = false) {
         if (!this.container) {
             console.warn('Toast container not found');
             return { update: () => { }, close: () => { } };
@@ -36,6 +37,7 @@ export class ToastMessager {
         if (type) {
             toast.classList.add(`toast-${type}`);
         }
+        if (loading) toast.dataset.loading = 'true';
         toast.textContent = text;
 
         this.container.appendChild(toast);
@@ -66,6 +68,7 @@ export class ToastMessager {
              * @param {number} newDuration 新時長 (默認 5 秒)
              */
             update: (newText, newDuration = 5000) => {
+                delete toast.dataset.loading;
                 toast.textContent = newText;
                 scheduleRemove(newDuration);
             },

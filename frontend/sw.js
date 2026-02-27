@@ -1,4 +1,4 @@
-const CACHE_NAME = 'blackboard-v60-2026-02-27'; // LLM abort + replace queue
+const CACHE_NAME = 'blackboard-v61-2026-02-27'; // Info Screensaver + ASCII Animator MODs
 const ASSETS = [
   '/',
   '/index.html',
@@ -11,6 +11,7 @@ const ASSETS = [
   '/javascript/services/file-service.js',
   '/javascript/indexedDB.js',
   '/javascript/vendor/dexie.js',
+  '/javascript/vendor/textmode.js',
   '/javascript/walkie-typie-core.js',
   '/javascript/walkie-typie-list.js',
   '/javascript/walkie-typie-text.js',
@@ -38,6 +39,14 @@ const ASSETS = [
   '/mods/llm/mod.js',
   '/mods/light-theme/mod.js',
   '/mods/light-theme/theme.css',
+  '/mods/info-screensaver/mod.js',
+  '/mods/info-screensaver/screensaver.css',
+  '/mods/ascii-animator/mod.js',
+  '/mods/ascii-animator/layers/matrix-rain.js',
+  '/mods/ascii-animator/layers/perlin-bg.js',
+  '/mods/ascii-animator/layers/mouse-light.js',
+  '/mods/ascii-animator/layers/toast-spinner.js',
+  '/mods/ascii-animator/ascii-animator.css',
   '/javascript/services/llm-service.js',
   '/javascript/services/webllm-service.js',
   '/images/llm-translate.svg',

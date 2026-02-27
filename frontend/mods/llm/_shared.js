@@ -328,7 +328,7 @@ export function getInfoValue(key) {
 
 export async function onAction(key) {
     if (key === 'serverTest') {
-        const msg = BBMessage.info(t('mods.llm.serverTesting'));
+        const msg = BBMessage.loading(t('mods.llm.serverTesting'));
         try {
             const res = await LlmService.ollamaHealth();
             const models = res.models || [];
