@@ -1,4 +1,4 @@
-const CACHE_NAME = 'blackboard-v66-2026-02-27'; // MOD list unified wheel navigation
+const CACHE_NAME = 'blackboard-v67-2026-02-27'; // CRT blend mode toggle
 
 // Core framework only — MOD files (mods/*, vendor libs, MOD assets) are NOT listed here.
 // They are cached lazily via the stale-while-revalidate fetch handler on first page load.

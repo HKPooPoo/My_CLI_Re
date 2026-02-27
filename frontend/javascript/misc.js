@@ -131,6 +131,7 @@ export const MISC = {
             autoSync: createToggleControl(container, 'bb', 'autoSync', 'config.autoSync'),
             showHints: createToggleControl(container, 'global', 'showHints', 'config.showHints'),
             screensaverTimeout: createRangeControl(container, 'global', 'screensaverTimeout', 'config.screensaverTimeout', 10, 300, 10),
+            crtBlendMode: createToggleControl(container, 'global', 'crtBlendMode', 'config.crtBlendModeLabel'),
         };
     },
 
@@ -211,6 +212,17 @@ export const MISC = {
 };
 
 MISC.init();
+
+// --- CRT Blend Mode Effect ---
+function applyCrtBlendMode(enabled) {
+    const scanner = document.querySelector('.crt-scanner');
+    if (scanner) scanner.style.mixBlendMode = enabled ? 'overlay' : '';
+}
+applyCrtBlendMode(Settings.getGlobal('crtBlendMode'));
+window.addEventListener('settings:changed', ({ detail }) => {
+    if (detail.key === 'crtBlendMode') applyCrtBlendMode(detail.value);
+});
+
 window.addEventListener('i18n:ready', () => {
     MISC.renderBBConfig();
     MISC.updateUI();

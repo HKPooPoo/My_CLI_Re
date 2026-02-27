@@ -242,6 +242,7 @@
     "boardSwap": "BOARD SWAP DEFAULT",
     "showHints": "BUTTON HINTS",
     "screensaverTimeout": "SCREENSAVER DELAY (SEC)",
+    "crtBlendModeLabel": "SOFTEN CRT LINES",
     "resetAll": "RESET ALL SETTINGS",
     "resetComplete": "SETTINGS RESET TO DEFAULTS"
   },
