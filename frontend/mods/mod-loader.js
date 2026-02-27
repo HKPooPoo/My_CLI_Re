@@ -1,18 +1,19 @@
 /**
- * MOD Loader - Instance-Based Architecture
+ * MOD Loader - Dynamic Folder-Based Discovery
  * =================================================================
  * Responsibilities:
- * 1. Import all templates from mod-manifest.js
- * 2. Register templates in ModState, run migration (no auto-instantiation)
- * 3. For each template: fetch locale JSON, merge into i18n
- * 4. Create feature buttons FROM INSTANCES (not templates)
- * 5. Create shelf panels per template (shared across instances)
- * 6. Call template.init() once per template
- * 7. Export query API: getTemplate(), getAllTemplates(), getInstances(), etc.
+ * 1. Discover MOD folders via Nginx autoindex JSON (/mods/)
+ * 2. For each folder: fetch manifest.json (data) + import() mod.js (code)
+ * 3. Merge into a single template object with identical shape to v2
+ * 4. Register templates in ModState, run migration (no auto-instantiation)
+ * 5. For each template: fetch locale JSON, merge into i18n
+ * 6. Create feature buttons FROM INSTANCES (not templates)
+ * 7. Create shelf panels per template (shared across instances)
+ * 8. Call template.init() once per template
+ * 9. Export query API: getTemplate(), getAllTemplates(), getInstances(), etc.
  * =================================================================
  */
 
-import * as manifest from './mod-manifest.js';
 import { mergeStrings, getActiveLocale, t } from '../javascript/i18n.js';
 import { ModState, setContextFactory } from '../javascript/mod-state.js';
 import { createInitContext, createModContext, setQueryProvider } from '../javascript/mod-context.js';
@@ -23,8 +24,66 @@ import { MOD_API_VERSION } from '../javascript/version.js';
 
 const _templates = {};
 
+// ===================== Discovery =====================
+
 /**
- * Load all MODs from the manifest.
+ * Discover MOD folders via Nginx autoindex JSON.
+ * Returns array of folder names (excluding _ prefixed and files).
+ */
+async function discoverModFolders() {
+    const res = await fetch('/mods/');
+    if (!res.ok) throw new Error(`MOD discovery failed: autoindex ${res.status}`);
+    const entries = await res.json();
+    return entries
+        .filter(e => e.type === 'directory' && !e.name.startsWith('_'))
+        .map(e => e.name);
+}
+
+/**
+ * Load a single MOD from its folder.
+ * Fetches manifest.json (data) + imports mod.js (code), merges into one object.
+ * Returns null on failure (logged, not thrown).
+ */
+async function loadSingleMod(folderName) {
+    // 1. Fetch manifest.json (required)
+    const manifestRes = await fetch(`/mods/${folderName}/manifest.json`);
+    if (!manifestRes.ok) {
+        console.warn(`[mod-loader] ${folderName}/manifest.json not found (${manifestRes.status}), skipping`);
+        return null;
+    }
+
+    let manifestData;
+    try {
+        manifestData = await manifestRes.json();
+    } catch (e) {
+        console.warn(`[mod-loader] ${folderName}/manifest.json invalid JSON, skipping:`, e);
+        return null;
+    }
+
+    // Validate: manifest.id must match folder name
+    if (manifestData.id !== folderName) {
+        console.warn(`[mod-loader] ${folderName}/manifest.json id "${manifestData.id}" does not match folder name, skipping`);
+        return null;
+    }
+
+    // 2. Dynamic import mod.js (required)
+    let modCode;
+    try {
+        const module = await import(`/mods/${folderName}/mod.js`);
+        modCode = module.default || module;
+    } catch (e) {
+        console.warn(`[mod-loader] ${folderName}/mod.js import failed, skipping:`, e);
+        return null;
+    }
+
+    // 3. Merge: data (base) + code (override), id pinned from manifest
+    return { ...manifestData, ...modCode, id: manifestData.id };
+}
+
+// ===================== Boot =====================
+
+/**
+ * Load all MODs via dynamic discovery.
  * Called once on i18n:ready.
  */
 export async function loadAllMods() {
@@ -32,7 +91,18 @@ export async function loadAllMods() {
     setQueryProvider({ getTemplate, getAllTemplates, getInstances, getInstancesByTemplate });
 
     try {
-        let templateDefs = Object.values(manifest);
+        const folders = await discoverModFolders();
+        const results = await Promise.allSettled(folders.map(loadSingleMod));
+        let templateDefs = results
+            .filter(r => r.status === 'fulfilled' && r.value)
+            .map(r => r.value);
+
+        // Log any rejected promises
+        results.forEach((r, i) => {
+            if (r.status === 'rejected') {
+                console.warn(`[mod-loader] Failed to load "${folders[i]}":`, r.reason);
+            }
+        });
 
         // 1. Validate and register all templates in ModState
         const validatedDefs = [];

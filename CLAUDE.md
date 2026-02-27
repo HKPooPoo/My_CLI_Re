@@ -247,14 +247,13 @@ Instance data model (persisted in `localStorage['mod-instances']`):
 
 ### Boot Sequence
 
-`i18n:ready` → `loadAllMods()` → validate templates → register in ModState → wire context factory → run migration (v1→v2→v3, legacy data only) → fetch MOD-local locales → create DOM (buttons from instances + shelves from templates) → register declarative hooks + tools → call `template.init(ctx)` → dispatch `mods:loaded`
+`i18n:ready` → `loadAllMods()` → discover folders via Nginx autoindex → fetch manifest.json + import() mod.js per folder → merge data+code → validate templates → register in ModState → wire context factory → run migration (v1→v2→v3, legacy data only) → fetch MOD-local locales → create DOM (buttons from instances + shelves from templates) → register declarative hooks + tools → call `template.init(ctx)` → dispatch `mods:loaded`
 
 **No auto-instantiation:** First boot starts with zero instances. Users add instances manually from the template catalog. `defaultInstances` in templates are used only by v2→v3 migration for legacy data.
 
 ### Architecture
 
-- **`mod-manifest.js`** — static export list (single source of truth)
-- **`mod-loader.js`** — imports, validates, registers, creates DOM, calls init(). Exports: `getTemplate()`, `getAllTemplates()`, `getInstances()`, `getInstancesByTemplate()`, `rebuildInstanceButtons()`, `updateInstanceButton()`, `removeInstanceButton()`
+- **`mod-loader.js`** — discovers MOD folders via Nginx autoindex, fetches `manifest.json` (data) + `import()` `mod.js` (code) per folder, merges, validates, registers, creates DOM, calls init(). Exports: `getTemplate()`, `getAllTemplates()`, `getInstances()`, `getInstancesByTemplate()`, `rebuildInstanceButtons()`, `updateInstanceButton()`, `removeInstanceButton()`
 - **`mod-state.js`** — instance CRUD + template registry. `addInstance()` respects `maxInstances` cap. `removeInstance()` always allowed (no guard on maxInstances). Dispatches `mods:instanceAdded/Removed`, `mods:configChanged`, `mods:reordered`
 - **`mod-context.js`** — `createModContext()` builds sandboxed API: `ctx.instance.*`, `ctx.board.*`, `ctx.ui.*`, `ctx.i18n.*`, `ctx.storage.*`, `ctx.net.*`, `ctx.file.*`, `ctx.events.*`, `ctx.hooks.*`, `ctx.query.*`. Read the file for full API reference.
 - **`mod-board-provider.js`** — board data access (metadata providers, history, file cache)
@@ -275,15 +274,16 @@ Instance data model (persisted in `localStorage['mod-instances']`):
 
 ### Adding a New Template
 
-1. Copy `mods/_template/` → `mods/{id}/` (full skeleton with docs)
-2. Edit `mod.js`: set `id`, `group`, `nameKey`, `descriptionKey`, `configSchema`, `defaultInstances`, `providers`
-3. Set `pages` keys for button visibility (e.g. `{ 'blackboard-log': { textareaSelector: '#log-textarea' } }`)
-4. Create `mods/{id}/locales/{en,zh-TW,default}.json`
-5. Add `export { default as myMod } from './{id}/mod.js'` to `mod-manifest.js`
-6. Add icon: CSS `.feature-btn[data-feature-btn="{btn-id}"]::after { mask-image: url(...) }` OR implement `getIconUrl(config)` in template
-7. Implement `init(ctx)` and `activate(ctx)` using ModContext API
-8. Optionally add `tools[]` and `hooks[]`
-9. MOD files are cached automatically by SW's stale-while-revalidate — **do NOT add MOD files to `sw.js` ASSETS**
+1. Copy `mods/_template/` → `mods/{your-id}/` (full skeleton with docs)
+2. Edit `manifest.json`: set `id` (MUST match folder name), `group`, `nameKey`, `descriptionKey`, `configSchema`, `defaultInstances`, `providers`, `pages`
+3. Edit `mod.js`: implement `getButtonDataId()`, `getInstanceName()`, `init(ctx)`, `activate(ctx)`, and any other lifecycle methods
+4. Create `mods/{your-id}/locales/{en,zh-TW,default}.json`
+5. Add icon: CSS `.feature-btn[data-feature-btn="{btn-id}"]::after { mask-image: url(...) }` OR implement `getIconUrl(config)` in mod.js
+6. Optionally add `tools[]` and `hooks[]` in mod.js
+7. Refresh browser — MOD appears automatically in catalog (no manifest file to edit!)
+8. MOD files are cached automatically by SW's stale-while-revalidate — **do NOT add MOD files to `sw.js` ASSETS**
+
+**Data/Code separation:** Each MOD folder contains `manifest.json` (pure data: id, configSchema, pages, etc.) and `mod.js` (pure code: functions, lifecycle methods). At boot, mod-loader merges `{ ...manifestData, ...modCode }` into a single template object. The `manifest.json.id` MUST match the folder name.
 
 ### MOD Development Principles
 
@@ -392,6 +392,7 @@ const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
 `audio.js` skips playback on mobile (autoplay restrictions).
 
 ## Nginx Routing
+- `/mods/` (exact) — autoindex JSON for MOD folder discovery (`autoindex_format json`)
 - `/api/files` — upload streaming, request buffering disabled, 3600s timeout
 - `/app` — proxied to Reverb WebSocket
 - `/api/*` — PHP-FPM FastCGI

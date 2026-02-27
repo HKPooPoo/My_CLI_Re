@@ -4,16 +4,31 @@
 
 # Dependencies
 /backend/vendor
+node_modules/
 
 # Storage & Logs
 /backend/storage/logs
-*.txt
+*.log
 
-# Prototypes & Docs (local only)
+# Laravel caches
+/backend/bootstrap/cache/packages.php
+/backend/bootstrap/cache/services.php
+
+# Legacy root-level duplicates (served from frontend/ via Docker)
+/audio
+/images
+/Dockerfile
+
+# Debug & test files
+/backend/check_*.php
+/frontend/test-*.html
+
+# Prototypes & Docs (local only, force-add exceptions as needed)
 /prototypes
 /documents
 
 # AI Agent configs (local only)
+GEMINI.md
 .agent/
 .gemini/
 .claude/
@@ -23,6 +38,20 @@ mcp/
 /obsolete
 docker-compose.old.yml
 
-# OS Files
+# Debug output files (from docker/artisan commands)
+*_logs.txt
+*_stderr.txt
+*_output.txt
+*_tail.txt
+*_diff.txt
+
+# OS files
 .DS_Store
 Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
