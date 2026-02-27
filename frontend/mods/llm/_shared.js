@@ -269,6 +269,10 @@ export async function runLlm(config, prompt, inputText, out, tFn) {
                 provider: 'ollama', model: SERVER_MODEL, messages,
                 temperature: temp,
             }, { signal: controller.signal })) {
+                if (chunk.status === 'connected') {
+                    out.value = tFn('mods.llm.thinking');
+                    continue;
+                }
                 if (chunk.error) throw new Error(chunk.error);
                 if (chunk.done) break;
                 const text = cleanDelta(chunk.delta, tokens === 0);
