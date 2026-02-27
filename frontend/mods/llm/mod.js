@@ -244,7 +244,7 @@ export default {
                 return;
             }
 
-            const messages = _buildMessages(prompt, inputText, targetDef.scope, provider);
+            const messages = _buildMessages(prompt, inputText, provider);
 
             if (provider === 'client') {
                 if (!navigator.gpu) {
@@ -474,64 +474,35 @@ function _cleanDelta(text, isFirst) {
 }
 
 /**
- * Build a system prompt that describes the EXACT format of the user message.
- * System and user message are designed as coordinated pairs:
- *   - System tells the model what format to expect
- *   - User message follows that format exactly
- *
- * For simple scopes (head, text), no format description is needed.
- */
-function _buildSystemPrompt(scope, task, isSmall) {
-    const constraint = isSmall ? '\nRespond with the result only. No preamble.' : '';
-
-    switch (scope) {
-        case 'branch':
-        case 'history':
-            return [
-                'Below are entries from a timeline, newest first.',
-                'Format: branch name on first line, then #N [timestamp] + text.',
-                task + constraint,
-            ].join('\n');
-
-        case 'all':
-            return [
-                'Below are entries from multiple branches.',
-                'Format: each branch starts with === name ===, entries as #N [timestamp] + text.',
-                task + constraint,
-            ].join('\n');
-
-        case 'dialogue':
-            return [
-                'Below is a two-person conversation.',
-                'Speakers are marked [ME] and [PARTNER].',
-                task + constraint,
-            ].join('\n');
-
-        default: // head, text
-            return task + constraint;
-    }
-}
-
-/**
  * Build the message array for LLM inference.
  *
+ * Follows Qwen's standard message pattern (confirmed by Qwen/Ollama/WebLLM docs):
+ *   System = behavioral constraints only (output rules, /no_think)
+ *   User   = task + data
+ *
  * Provider strategies:
- *   Client: single user message (small WebLLM models)
- *   Server: system + user, /no_think prefix (Qwen3 on Ollama)
- *   API:    system + user, no constraint (large models follow instructions well)
+ *   Client (WebLLM): single user message — constraint + task + data
+ *   Server (Ollama): system (/no_think + constraint) + user (task + data)
+ *   API (cloud):     user only — large models need no constraints
  */
-function _buildMessages(prompt, inputText, scope, provider) {
-    const isSmall = provider === 'client' || provider === 'server';
-    const system = _buildSystemPrompt(scope, prompt, isSmall);
-
+function _buildMessages(prompt, inputText, provider) {
     if (provider === 'client') {
-        return [{ role: 'user', content: `${system}\n\n---\n${inputText}` }];
+        return [{ role: 'user', content:
+            `Respond with the result only. No preamble.\n${prompt}\n\n---\n${inputText}`,
+        }];
     }
 
-    return [
-        { role: 'system', content: provider === 'server' ? `/no_think\n${system}` : system },
-        { role: 'user', content: inputText },
-    ];
+    const userContent = `${prompt}\n\n${inputText}`;
+
+    if (provider === 'server') {
+        return [
+            { role: 'system', content: '/no_think\nRespond with the result only. No preamble.' },
+            { role: 'user', content: userContent },
+        ];
+    }
+
+    // API — large models follow instructions well, no constraints needed
+    return [{ role: 'user', content: userContent }];
 }
 
 /**

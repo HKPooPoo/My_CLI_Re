@@ -1,4 +1,4 @@
-const CACHE_NAME = 'blackboard-v56-2026-02-26'; // System-user message coordination
+const CACHE_NAME = 'blackboard-v57-2026-02-27'; // Qwen-standard message pattern
 const ASSETS = [
   '/',
   '/index.html',
