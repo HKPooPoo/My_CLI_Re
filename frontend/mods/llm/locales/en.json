@@ -6,7 +6,6 @@
       "config": {
         "prompt": "PROMPT",
         "icon": "ICON",
-        "target": "TARGET",
         "provider": "PROVIDER",
         "temperature": "TEMPERATURE",
         "clientModel": "BROWSER MODEL",
@@ -15,15 +14,6 @@
         "apiProvider": "API PROVIDER",
         "apiModel": "API MODEL",
         "apiKey": "API KEY"
-      },
-      "target": {
-        "bbHead": "BB: CURRENT TEXT",
-        "bbBranch": "BB: FULL BRANCH",
-        "bbAll": "BB: ALL BRANCHES",
-        "wtText": "WT: CURRENT TEXT",
-        "wtDialogue": "WT: DIALOGUE",
-        "bcText": "BC: CURRENT TEXT",
-        "bcHistory": "BC: CHANNEL HISTORY"
       },
       "preset": {
         "summarize": "SUMMARIZE",

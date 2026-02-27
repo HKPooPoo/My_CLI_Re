@@ -6,7 +6,6 @@
       "config": {
         "prompt": "提示詞",
         "icon": "圖示",
-        "target": "目標",
         "provider": "提供者",
         "temperature": "溫度",
         "clientModel": "瀏覽器模型",
@@ -15,15 +14,6 @@
         "apiProvider": "API 提供者",
         "apiModel": "API 模型",
         "apiKey": "API 金鑰"
-      },
-      "target": {
-        "bbHead": "BB：目前文字",
-        "bbBranch": "BB：整條分支",
-        "bbAll": "BB：所有分支",
-        "wtText": "WT：目前文字",
-        "wtDialogue": "WT：對話",
-        "bcText": "BC：目前文字",
-        "bcHistory": "BC：頻道歷史"
       },
       "preset": {
         "summarize": "摘要",

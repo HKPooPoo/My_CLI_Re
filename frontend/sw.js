@@ -1,4 +1,4 @@
-const CACHE_NAME = 'blackboard-v57-2026-02-27'; // Qwen-standard message pattern
+const CACHE_NAME = 'blackboard-v58-2026-02-27'; // Split LLM into 3 templates
 const ASSETS = [
   '/',
   '/index.html',
