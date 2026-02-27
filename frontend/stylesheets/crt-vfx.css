@@ -1,13 +1,3 @@
-:root.theme-light .crt-scanner,
-:root.theme-light .crt-noise-layer,
-:root.theme-light .header-img {
-    display: none;
-}
-
-:root.theme-light #press-start-overlay {
-    font-weight: bold;
-}
-
 .crt-scanner {
     position: fixed;
     width: 100%;

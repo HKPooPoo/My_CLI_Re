@@ -216,16 +216,6 @@
     }
 }
 
-:root.theme-light .feature-btn:hover {
-    box-shadow: none;
-}
-
-:root.theme-light .feature-btn.active::after,
-:root.theme-light .feature-btn.recording::after,
-:root.theme-light .feature-btn.processing::after {
-    filter: none;
-}
-
 .feature-shelf-container {
     position: absolute;
     left: 100%;

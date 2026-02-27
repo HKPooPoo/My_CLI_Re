@@ -1,9 +1,9 @@
 /**
- * Light Theme MOD — Built-in light/white theme
+ * Light Theme MOD — Self-contained light/white theme
  * =================================================================
  * Switches the CRT dark default to a clean light appearance.
- * All CSS overrides live in the existing :root.theme-light rules
- * across the stylesheet files — this MOD simply activates the class.
+ * ALL theme CSS overrides live in this MOD's own theme.css file,
+ * NOT in the framework CSS. The MOD loads its CSS in init().
  *
  * Theme MOD contract:
  *   group: 'theme'
@@ -57,8 +57,7 @@ export default {
 
     /**
      * CSS custom property overrides.
-     * Returns empty — all overrides are handled by the :root.theme-light
-     * CSS class rules already defined across the stylesheet files.
+     * Returns empty — all overrides are in theme.css loaded by init().
      */
     getThemeVars(_config) {
         return {};
@@ -71,8 +70,17 @@ export default {
         return ['theme-light'];
     },
 
-    // ===================== Lifecycle (no-ops) =====================
-    async init(_ctx) {},
+    // ===================== Lifecycle =====================
+    async init(_ctx) {
+        // Load self-contained theme CSS (skip if anti-FOUC already loaded it)
+        if (!document.getElementById('light-theme-css')) {
+            const link = document.createElement('link');
+            link.rel = 'stylesheet';
+            link.id = 'light-theme-css';
+            link.href = '/mods/light-theme/theme.css';
+            document.head.appendChild(link);
+        }
+    },
     async activate(_ctx) {},
     async deactivate(_ctx) {},
     onConfigChange(_ctx, _key, _value) {},

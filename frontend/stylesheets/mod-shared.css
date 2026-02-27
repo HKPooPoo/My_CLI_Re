@@ -331,17 +331,3 @@
 }
 
 
-/* ==================== Light Mode ==================== */
-
-:root.theme-light .mod-btn:hover,
-:root.theme-light .mod-btn-danger:hover,
-:root.theme-light .mod-btn-square:hover,
-:root.theme-light .mod-chip:hover {
-    box-shadow: none;
-}
-
-:root.theme-light .mod-btn-square.selected {
-    box-shadow: none;
-    border-color: #555;
-    background: rgba(0, 0, 0, 0.05);
-}

@@ -15,12 +15,6 @@ input[type="password"] {
     user-select: text; /* override * { user-select: none } so Firefox shows caret */
 }
 
-:root.theme-light textarea,
-:root.theme-light input[type="text"],
-:root.theme-light input[type="password"] {
-    caret-color: black;
-}
-
 /* Active list items — must scope to specific list-item classes,
    NOT bare `.active` (which also matches `.page.active` and breaks main textareas) */
 
@@ -36,28 +30,9 @@ input[type="password"] {
     caret-color: black;
 }
 
-:root.theme-light .vcs-list-item.active input[type="text"],
-:root.theme-light .vcs-list-item.active input[type="password"],
-:root.theme-light .vcs-list-item.active textarea,
-:root.theme-light .walkie-typie-list-list-item.active input[type="text"],
-:root.theme-light .walkie-typie-list-list-item.active textarea,
-:root.theme-light .broadcast-list-list-item.active input[type="text"],
-:root.theme-light .broadcast-list-list-item.active textarea,
-:root.theme-light .mods-list-item.active input[type="text"],
-:root.theme-light .mods-list-item.active textarea {
-    caret-color: white;
-}
-
 .vcs-list-item.active ::selection,
 .walkie-typie-list-list-item.active ::selection,
 .broadcast-list-list-item.active ::selection {
     background: black;
     color: white;
-}
-
-:root.theme-light .vcs-list-item.active ::selection,
-:root.theme-light .walkie-typie-list-list-item.active ::selection,
-:root.theme-light .broadcast-list-list-item.active ::selection {
-    background: white;
-    color: black;
 }

@@ -37,10 +37,6 @@
     text-shadow: var(--text-shadow-green);
 }
 
-:root.theme-light .toast {
-    font-weight: bold;
-}
-
 /* Animation Stages */
 .toast.showing {
     opacity: 1;

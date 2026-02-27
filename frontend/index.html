@@ -38,13 +38,18 @@
     <link rel="stylesheet" href="stylesheets/@media.css">
     <link rel="stylesheet" href="stylesheets/layer.css">
     <link rel="stylesheet" href="stylesheets/caret.css">
-    <!-- Anti-FOUC: restore theme class before first paint -->
+    <!-- Anti-FOUC: restore theme class + load MOD CSS before first paint -->
     <script>
         (function() {
             var s = localStorage.getItem('theme-engine-state');
             var l = localStorage.getItem('data-theme');
             if (s === 'active' || l === 'light') {
                 document.documentElement.classList.add('theme-light');
+                var link = document.createElement('link');
+                link.rel = 'stylesheet';
+                link.id = 'light-theme-css';
+                link.href = '/mods/light-theme/theme.css';
+                document.head.appendChild(link);
             }
         })();
     </script>

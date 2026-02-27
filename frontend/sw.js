@@ -37,6 +37,7 @@ const ASSETS = [
   '/mods/mod-manifest.js',
   '/mods/llm/mod.js',
   '/mods/light-theme/mod.js',
+  '/mods/light-theme/theme.css',
   '/javascript/services/llm-service.js',
   '/javascript/services/webllm-service.js',
   '/images/llm-translate.svg',

@@ -206,11 +206,6 @@
     visibility: visible;
 }
 
-/* Light theme adaptation */
-:root.theme-light .attachment-chips.has-items {
-    border-bottom-color: var(--text-green);
-}
-
 /* --- BB Context Specifics --- */
 
 /* In BB, the editor-wrapper is inside .page[data-page="blackboard-log"],

@@ -69,43 +69,6 @@
     --transition-normal: 0.16s;
 }
 
-:root.theme-light {
-    --text-green: black;
-    --text-orange: black;
-    --text-red: black;
-    --text-cyan: black;
-    --text-yellow: black;
-    --bg-primary: white;
-    --bg-secondary: white;
-    --border-line: 2px solid black;
-    --box-shadow: 0 0 0 2px black;
-    --box-shadow-up: 0 -2px 0 0 black;
-    --box-shadow-down: 0 2px 0 0 black;
-    --text-shadow-green: none;
-    --text-shadow-orange: none;
-    --text-shadow-red: none;
-    --text-shadow-cyan: none;
-    --text-shadow-yellow: none;
-
-    /* Feature Shelf Light Mode */
-    --frosted-glass-bg: rgba(0, 0, 0, 0.1);
-    --frosted-glass-border: 1px solid rgba(0, 0, 0, 0.2);
-    --frosted-glass-shadow: 0 4px 30px rgba(0, 0, 0, 0.05);
-    --feature-shelf-btn-bg: var(--frosted-glass-bg);
-    --feature-shelf-btn-color: black;
-
-    /* Toast */
-    --toast-bg: rgba(255, 255, 255, 0.85);
-
-    /* Transparency variants */
-    --text-green-10: rgba(0, 0, 0, 0.05);
-    --text-orange-10: rgba(0, 0, 0, 0.05);
-    --overlay-bg: rgba(255, 255, 255, 0.9);
-    --text-orange-accent: black;
-    --caret-color: black;
-}
-
-:root.theme-light .header,
 .footer {
     font-weight: bold;
 }
