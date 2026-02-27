@@ -17,7 +17,7 @@ use Illuminate\Support\Facades\Broadcast;
 Broadcast::routes(['prefix' => 'api', 'middleware' => ['web', 'auth']]);
 
 // Translation & Speech — expensive AI routes, auth + strict throttle
-Route::middleware(['auth', 'throttle:10,1'])->group(function () {
+Route::middleware(['auth:sanctum', 'throttle:10,1'])->group(function () {
     Route::post('/translate', [TranslationController::class, 'translate']);
     Route::post('/speech', [SpeechController::class, 'recognize']);
 });
@@ -36,7 +36,7 @@ Route::middleware('throttle:30,1')->group(function () {
 });
 
 // Write operations — 30 req/min, auth required (defense-in-depth)
-Route::middleware(['auth', 'throttle:30,1'])->group(function () {
+Route::middleware(['auth:sanctum', 'throttle:30,1'])->group(function () {
     Route::post('/broadcast/channels/cast', [BroadcastChannelController::class, 'cast']);
     Route::patch('/broadcast/channels/{channelId}', [BroadcastChannelController::class, 'rename']);
     Route::delete('/broadcast/channels/{channelId}', [BroadcastChannelController::class, 'destroy']);
@@ -62,13 +62,13 @@ Route::middleware('throttle:10,1')->group(function () {
 });
 
 // Settings — auth required, rate limited
-Route::middleware(['auth', 'throttle:30,1'])->prefix('settings')->group(function () {
+Route::middleware(['auth:sanctum', 'throttle:30,1'])->prefix('settings')->group(function () {
     Route::get('/', [SettingsController::class, 'show']);
     Route::post('/', [SettingsController::class, 'store']);
 });
 
 // Blackboard Sync — auth required
-Route::middleware('auth')->prefix('blackboard')->group(function () {
+Route::middleware('auth:sanctum')->prefix('blackboard')->group(function () {
     Route::get('/branches', [BlackboardController::class, 'fetchBranches']);
     Route::get('/branches/{branchId}', [BlackboardController::class, 'fetchBranchDetails']);
     Route::delete('/branches/{branchId}', [BlackboardController::class, 'destroyBranch']);
@@ -78,7 +78,7 @@ Route::middleware('auth')->prefix('blackboard')->group(function () {
 Route::get('/walkie-typie/config', [WalkieTypieController::class, 'config']);
 
 // Walkie-Typie — auth required
-Route::middleware('auth')->prefix('walkie-typie')->group(function () {
+Route::middleware('auth:sanctum')->prefix('walkie-typie')->group(function () {
     Route::get('/connections', [WalkieTypieController::class, 'index']);
     Route::post('/connections', [WalkieTypieController::class, 'store']);
     Route::post('/signal', [WalkieTypieController::class, 'signal']);
@@ -91,7 +91,7 @@ Route::middleware('auth')->prefix('walkie-typie')->group(function () {
 });
 
 // Broadcast Channels (pin/unpin — auth required)
-Route::middleware('auth')->prefix('broadcast')->group(function () {
+Route::middleware('auth:sanctum')->prefix('broadcast')->group(function () {
     Route::post('/channels/{channelId}/pin', [BroadcastChannelController::class, 'pin']);
     Route::delete('/channels/{channelId}/pin', [BroadcastChannelController::class, 'unpin']);
 });
@@ -103,7 +103,7 @@ Route::middleware('throttle:30,1')->prefix('mods')->group(function () {
 });
 
 // LLM chat — AI endpoint, auth + strict throttle
-Route::middleware(['auth', 'throttle:10,1'])->prefix('mods')->group(function () {
+Route::middleware(['auth:sanctum', 'throttle:10,1'])->prefix('mods')->group(function () {
     Route::post('/llm/chat', [LlmController::class, 'chat']);
     Route::post('/llm/chat/stream', [LlmController::class, 'chatStream']);
 });
