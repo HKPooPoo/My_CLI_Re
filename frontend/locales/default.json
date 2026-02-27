@@ -333,6 +333,8 @@
     "deleteInstance": "Delete",
     "deleteConfirm": "Confirm?",
     "maxReached": "Added",
+    "sharedConfig": "ENGINE",
+    "instanceConfig": "INSTANCE",
     "status": {
       "unknown": "Checking...",
       "online": "Available",

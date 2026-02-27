@@ -9,6 +9,7 @@ import {
     ensureOutputEl, initShelf, activateShelfPrompt, runLlm,
     checkHealth, getInfoValue, onAction,
     getInstanceName, getIconUrl,
+    migrateToSharedConfig, initPrewarm, onSharedConfigChange,
 } from './_shared.js';
 
 export default {
@@ -28,7 +29,9 @@ export default {
 
     async init(ctx) {
         _migrateOldConfig();
+        migrateToSharedConfig();
         initShelf(this, ctx);
+        initPrewarm();
     },
 
     async activate(ctx) {
@@ -57,6 +60,7 @@ export default {
     checkHealth,
     getInfoValue,
     onAction,
+    onSharedConfigChange,
 };
 
 // ===================== Migration =====================
@@ -113,3 +117,4 @@ function _migrateOldConfig() {
         console.log(`[llm] migrated instance ${inst.instanceId}: task="${task}" \u2192 prompt/icon`);
     }
 }
+

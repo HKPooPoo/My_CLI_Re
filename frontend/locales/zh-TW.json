@@ -333,6 +333,8 @@
     "deleteInstance": "刪除",
     "deleteConfirm": "確定？",
     "maxReached": "已達上限",
+    "sharedConfig": "引擎",
+    "instanceConfig": "實例",
     "validationFailed": "模組 '{id}' 驗證失敗 — 請檢查主控台",
     "status": {
       "unknown": "掃描中...",

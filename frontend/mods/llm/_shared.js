@@ -6,6 +6,7 @@
  */
 
 import { LlmService } from '../../javascript/services/llm-service.js';
+import { ModState } from '../../javascript/mod-state.js';
 import { t } from '../../javascript/i18n.js';
 import { BBMessage } from '../../javascript/blackboard-msg.js';
 
@@ -332,4 +333,81 @@ export function getInstanceName(config, tFn, fallbackKey) {
 export function getIconUrl(config) {
     const icon = ICONS.find(i => i.value === config.icon);
     return icon ? icon.url : '/images/llm-summarize.svg';
+}
+
+// ===================== Shared Config Migration =====================
+
+let _sharedMigrationDone = false;
+
+/**
+ * One-time migration: move per-instance provider fields to shared config.
+ * Safe to call from any LLM template's init() — runs once via guard.
+ */
+export function migrateToSharedConfig() {
+    if (_sharedMigrationDone) return;
+    _sharedMigrationDone = true;
+
+    // Already migrated if shared config has a provider
+    if (ModState.getSharedConfig('llm', 'provider')) return;
+
+    // Gather all LLM group instances
+    const allInstances = ModState.getInstances();
+    const llmInsts = allInstances.filter(i => ['llm', 'llm-bb', 'llm-bc'].includes(i.templateId));
+    if (!llmInsts.length) return;
+
+    const donor = llmInsts.find(i => i.config?.provider) || llmInsts[0];
+    if (!donor.config?.provider) return;
+
+    const sharedKeys = ['provider', 'clientModel', 'temperature', 'apiProvider', 'apiModel', 'apiKey'];
+
+    // Promote donor values to shared config
+    for (const k of sharedKeys) {
+        if (donor.config?.[k] !== undefined) {
+            ModState.setSharedConfig('llm', k, donor.config[k]);
+        }
+    }
+
+    // Clean shared keys from all instance configs
+    for (const inst of llmInsts) {
+        if (!inst.config) continue;
+        for (const k of sharedKeys) delete inst.config[k];
+    }
+    ModState._persistInstances();
+
+    console.info('[llm] Migrated per-instance provider config to shared config');
+}
+
+// ===================== Prewarm =====================
+
+let _prewarmInitDone = false;
+
+/**
+ * Called from any LLM template's init(). Runs prewarm once regardless of
+ * which template (llm, llm-bb, llm-bc) loads first.
+ */
+export function initPrewarm() {
+    if (_prewarmInitDone) return;
+    _prewarmInitDone = true;
+    tryPrewarm();
+}
+
+/**
+ * Prewarm the WebLLM model if prewarm is enabled and provider is client.
+ */
+export async function tryPrewarm() {
+    const shared = ModState.getSharedConfigAll('llm');
+    if (shared.provider !== 'client' || !shared.prewarm || !navigator.gpu) return;
+    const svc = await _getWebLlm();
+    const model = shared.clientModel || CLIENT_MODEL;
+    if (svc.getLoadedModel() === model) return;
+    console.info(`[llm] Prewarming: ${model}`);
+    try { await svc.ensureModel(model); }
+    catch (e) { console.warn('[llm] Prewarm failed:', e); }
+}
+
+/**
+ * Shared handler for shared config changes. Re-evaluates prewarm.
+ */
+export function onSharedConfigChange(key, value) {
+    if (['prewarm', 'provider', 'clientModel'].includes(key)) tryPrewarm();
 }

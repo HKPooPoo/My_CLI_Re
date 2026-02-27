@@ -3,7 +3,7 @@
     "group": "llm",
     "nameKey": "mods.llmBc.name",
     "descriptionKey": "mods.llmBc.desc",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "minApiVersion": 1,
     "buttonHintKey": "hints.llmBc.button",
     "shelfPanelId": "llm",
@@ -46,28 +46,9 @@
               { "value": "summarize-branch", "url": "/images/llm-summarize-branch.svg", "labelKey": "mods.llm.icon.summarizeBranch" },
               { "value": "summarize-all",    "url": "/images/llm-summarize-all.svg",    "labelKey": "mods.llm.icon.summarizeAll" }
           ]
-        },
-        { "key": "provider", "type": "select", "labelKey": "mods.llm.config.provider", "hintKey": "hints.llm.provider", "default": "client", "options": [
-            { "value": "client", "labelKey": "mods.llm.provider.client" },
-            { "value": "server", "labelKey": "mods.llm.provider.server" },
-            { "value": "apikey", "labelKey": "mods.llm.provider.apikey" }
-        ]},
-        { "key": "clientModel", "type": "select", "labelKey": "mods.llm.config.clientModel", "hintKey": "hints.llm.clientModel", "default": "Qwen3-0.6B-q4f16_1-MLC", "showWhen": { "key": "provider", "value": "client" }, "options": [
-            { "value": "Qwen3-0.6B-q4f16_1-MLC", "labelKey": "mods.llm.clientModel.qwen3_06b" },
-            { "value": "Qwen3-1.7B-q4f16_1-MLC", "labelKey": "mods.llm.clientModel.qwen3_17b" },
-            { "value": "Qwen3-4B-q4f16_1-MLC",   "labelKey": "mods.llm.clientModel.qwen3_4b" }
-        ]},
-        { "key": "serverModel", "type": "info", "labelKey": "mods.llm.config.serverModel", "showWhen": { "key": "provider", "value": "server" } },
-        { "key": "serverTest", "type": "action", "labelKey": "mods.llm.config.serverTest", "actionLabelKey": "mods.llm.serverTestBtn", "showWhen": { "key": "provider", "value": "server" } },
-        { "key": "apiProvider", "type": "select", "labelKey": "mods.llm.config.apiProvider", "hintKey": "hints.llm.apiProvider", "default": "openai", "showWhen": { "key": "provider", "value": "apikey" }, "options": [
-            { "value": "openai",    "labelKey": "mods.llm.apiProvider.openai" },
-            { "value": "anthropic", "labelKey": "mods.llm.apiProvider.anthropic" }
-        ]},
-        { "key": "apiModel", "type": "text", "labelKey": "mods.llm.config.apiModel", "hintKey": "hints.llm.apiModel", "default": "gpt-4o-mini", "showWhen": { "key": "provider", "value": "apikey" } },
-        { "key": "apiKey", "type": "text", "labelKey": "mods.llm.config.apiKey", "hintKey": "hints.llm.apiKey", "default": "", "showWhen": { "key": "provider", "value": "apikey" } },
-        { "key": "temperature", "type": "range", "labelKey": "mods.llm.config.temperature", "hintKey": "hints.llm.temperature", "min": 0, "max": 1, "step": 0.1, "default": 0.3 }
+        }
     ],
     "defaultInstances": [
-        { "config": { "prompt": "Summarize the key themes in this channel.", "icon": "summarize", "target": "history", "provider": "client" } }
+        { "config": { "prompt": "Summarize the key themes in this channel.", "icon": "summarize", "target": "history" } }
     ]
 }

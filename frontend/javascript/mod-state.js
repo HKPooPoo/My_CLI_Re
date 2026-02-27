@@ -28,6 +28,7 @@ export function setContextFactory(factory) {
 }
 
 const INSTANCES_KEY = 'mod-instances';
+const SHARED_CONFIG_KEY = 'mod-shared-config';
 
 // Legacy keys for migration
 const LEGACY_STATES_KEY = 'mod-states';
@@ -45,12 +46,18 @@ export const ModState = {
     _templates: {},       // registered template definitions
     _instances: [],       // ordered array of instance objects
     _serverStatuses: {},  // instanceId → 'online'|'offline'|'unknown'
+    _sharedConfig: {},    // group → { key: value } shared config across group
 
     init() {
         try {
             this._instances = JSON.parse(localStorage.getItem(INSTANCES_KEY) || '[]');
         } catch {
             this._instances = [];
+        }
+        try {
+            this._sharedConfig = JSON.parse(localStorage.getItem(SHARED_CONFIG_KEY) || '{}');
+        } catch {
+            this._sharedConfig = {};
         }
         // Clean up legacy dismissed key (no longer used)
         localStorage.removeItem('mod-dismissed');
@@ -252,10 +259,90 @@ export const ModState = {
         }));
     },
 
+    // ===================== Shared Config (group-level) =====================
+
+    getSharedConfig(group, key) {
+        return this._sharedConfig[group]?.[key] ?? null;
+    },
+
+    setSharedConfig(group, key, value) {
+        if (!this._sharedConfig[group]) this._sharedConfig[group] = {};
+        this._sharedConfig[group][key] = value;
+        this._persistSharedConfig();
+
+        // Notify all templates in this group via onSharedConfigChange
+        for (const tpl of Object.values(this._templates)) {
+            if (tpl.group === group && typeof tpl.onSharedConfigChange === 'function') {
+                try { tpl.onSharedConfigChange(key, value); } catch (e) {
+                    console.error(`[mod-state] onSharedConfigChange failed for ${tpl.id}:`, e);
+                }
+            }
+        }
+
+        // Re-evaluate server statuses for instances in this group when provider changes
+        if (key === 'provider') {
+            for (const inst of this._instances) {
+                const tpl = this._templates[inst.templateId];
+                if (tpl?.group === group) this._updateInstanceServerStatus(inst);
+            }
+        }
+
+        window.dispatchEvent(new CustomEvent('mods:sharedConfigChanged', {
+            detail: { group, key, value }
+        }));
+    },
+
+    getSharedConfigAll(group) {
+        return { ...(this._sharedConfig[group] || {}) };
+    },
+
+    /**
+     * Find the sharedConfigSchema for a group.
+     * Scans templates in the group; returns the first one found (or null).
+     */
+    getSharedConfigSchema(group) {
+        for (const tpl of Object.values(this._templates)) {
+            if (tpl.group === group && Array.isArray(tpl.sharedConfigSchema)) {
+                return tpl.sharedConfigSchema;
+            }
+        }
+        return null;
+    },
+
+    /**
+     * Initialize shared config defaults for a group from its schema.
+     * Only sets keys that are not yet configured.
+     */
+    initSharedDefaults(group, schema) {
+        if (!this._sharedConfig[group]) this._sharedConfig[group] = {};
+        let changed = false;
+        for (const field of schema) {
+            if (field.default !== undefined && this._sharedConfig[group][field.key] === undefined) {
+                this._sharedConfig[group][field.key] = field.default;
+                changed = true;
+            }
+        }
+        if (changed) this._persistSharedConfig();
+    },
+
     // ===================== Server Status =====================
 
     getServerStatus(instanceId) {
         return this._serverStatuses[instanceId] ?? 'unknown';
+    },
+
+    /**
+     * Resolve the active provider key for an instance.
+     * Uses shared config if the group has a shared provider field.
+     */
+    _resolveProvider(inst) {
+        const template = this._templates[inst.templateId];
+        if (!template) return inst.config?.provider;
+        const schema = this.getSharedConfigSchema(template.group);
+        if (schema?.some(f => f.key === 'provider')) {
+            return this.getSharedConfig(template.group, 'provider') ?? inst.config?.provider;
+        }
+        return inst.config?.provider;
     },
 
     async refreshServerStatus(instanceId) {
@@ -265,7 +352,7 @@ export const ModState = {
         const template = this._templates[inst.templateId];
         if (!template) return 'unknown';
 
-        const providerKey = inst.config?.provider;
+        const providerKey = this._resolveProvider(inst);
         const provider = template.providers?.find(p => p.id === providerKey);
         if (!provider?.healthEndpoint) {
             this._serverStatuses[instanceId] = 'online';
@@ -289,7 +376,7 @@ export const ModState = {
             const template = this._templates[inst.templateId];
             if (!template) continue;
 
-            const providerKey = inst.config?.provider;
+            const providerKey = this._resolveProvider(inst);
             const provider = template.providers?.find(p => p.id === providerKey);
             if (provider?.healthEndpoint) {
                 if (!endpointMap[provider.healthEndpoint]) {
@@ -442,7 +529,7 @@ export const ModState = {
         const template = this._templates[instance.templateId];
         if (!template) return;
 
-        const providerKey = instance.config?.provider;
+        const providerKey = this._resolveProvider(instance);
         const provider = template.providers?.find(p => p.id === providerKey);
         if (!provider || provider.type === 'client' || provider.type === 'cloud') {
             this._serverStatuses[instance.instanceId] = 'online';
@@ -454,6 +541,14 @@ export const ModState = {
             localStorage.setItem(INSTANCES_KEY, JSON.stringify(this._instances));
         } catch (e) {
             console.error('[mod-state] Failed to persist instances:', e);
+        }
+    },
+
+    _persistSharedConfig() {
+        try {
+            localStorage.setItem(SHARED_CONFIG_KEY, JSON.stringify(this._sharedConfig));
+        } catch (e) {
+            console.error('[mod-state] Failed to persist shared config:', e);
         }
     }
 };

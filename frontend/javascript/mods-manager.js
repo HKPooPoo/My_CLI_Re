@@ -3,7 +3,7 @@
  * =================================================================
  * List page: Two-container layout — template catalog + active instances
  *            + instance actions (UP/DOWN/DELETE) below the list.
- * Config page: Instance config fields only.
+ * Config page: Two-section layout — shared group config + instance config.
  * =================================================================
  */
 
@@ -33,6 +33,34 @@ const elements = {
     configDefault: document.getElementById('mods-config-default'),
     configRefreshBtn: document.getElementById('mods-config-refresh-btn')
 };
+
+// ===================== Accessor Factories =====================
+
+function makeInstanceAccessor(instanceId) {
+    return {
+        get: (key) => ModState.getConfig(instanceId, key),
+        set: (key, val) => ModState.setConfig(instanceId, key, val),
+    };
+}
+
+function makeSharedAccessor(group) {
+    return {
+        get: (key) => ModState.getSharedConfig(group, key),
+        set: (key, val) => ModState.setSharedConfig(group, key, val),
+    };
+}
+
+/**
+ * Resolve the active provider for an instance — checks shared config first.
+ */
+function resolveProvider(inst, template) {
+    if (!template) return inst.config?.provider;
+    const schema = ModState.getSharedConfigSchema(template.group);
+    if (schema?.some(f => f.key === 'provider')) {
+        return ModState.getSharedConfig(template.group, 'provider') ?? inst.config?.provider;
+    }
+    return inst.config?.provider;
+}
 
 // --- Initialise ---
 function init() {
@@ -182,7 +210,7 @@ function renderActiveInstances(container) {
         meta.className = 'mods-list-item-meta';
 
         // Show server status only when active provider is server-type
-        const activeProviderId = inst.config?.provider;
+        const activeProviderId = resolveProvider(inst, template);
         const activeProvider = template.providers?.find(p => p.id === activeProviderId);
         if (activeProvider?.type === 'server') {
             const statusEl = document.createElement('span');
@@ -361,7 +389,7 @@ function renderConfig(instanceId) {
     renderConfigFields(instanceId);
 
     // Show refresh button only when active provider is server-type
-    const activeProviderId = inst.config?.provider;
+    const activeProviderId = resolveProvider(inst, template);
     const activeProvider = template.providers?.find(p => p.id === activeProviderId);
     if (elements.configRefreshBtn) {
         elements.configRefreshBtn.style.display = activeProvider?.type === 'server' ? '' : 'none';
@@ -373,7 +401,7 @@ function renderConfigStatus(instanceId) {
     if (!elements.configStatus || !inst) return;
 
     const template = getTemplate(inst.templateId);
-    const activeProviderId = inst.config?.provider;
+    const activeProviderId = resolveProvider(inst, template);
     const activeProvider = template?.providers?.find(p => p.id === activeProviderId);
 
     if (activeProvider?.type === 'server') {
@@ -406,9 +434,35 @@ function renderConfigFields(instanceId) {
     const template = getTemplate(inst.templateId);
     elements.configFields.innerHTML = '';
 
+    // --- Shared config section (group-level) ---
+    const sharedSchema = template?.group ? ModState.getSharedConfigSchema(template.group) : null;
+    if (sharedSchema && sharedSchema.length > 0) {
+        const sharedAccessor = makeSharedAccessor(template.group);
+
+        const header = document.createElement('div');
+        header.className = 'mods-config-section-header crt-text-orange';
+        header.textContent = `\u2500\u2500 ${t('mods.sharedConfig')} \u2500\u2500`;
+        elements.configFields.appendChild(header);
+
+        for (const field of sharedSchema) {
+            const fieldEl = createConfigField(sharedAccessor, template, field, sharedSchema);
+            if (fieldEl) elements.configFields.appendChild(fieldEl);
+        }
+    }
+
+    // --- Instance config section (per-instance) ---
     if (template?.configSchema && template.configSchema.length > 0) {
+        const instanceAccessor = makeInstanceAccessor(instanceId);
+
+        if (sharedSchema && sharedSchema.length > 0) {
+            const header = document.createElement('div');
+            header.className = 'mods-config-section-header crt-text-orange';
+            header.textContent = `\u2500\u2500 ${t('mods.instanceConfig')} \u2500\u2500`;
+            elements.configFields.appendChild(header);
+        }
+
         for (const field of template.configSchema) {
-            const fieldEl = createConfigField(instanceId, template, field);
+            const fieldEl = createConfigField(instanceAccessor, template, field, template.configSchema);
             if (fieldEl) elements.configFields.appendChild(fieldEl);
         }
     }
@@ -416,8 +470,8 @@ function renderConfigFields(instanceId) {
 
 // ===================== Config Field Creators =====================
 
-function createConfigField(instanceId, template, field) {
-    if (!evaluateShowWhen(instanceId, field)) return null;
+function createConfigField(accessor, template, field, schema) {
+    if (!evaluateShowWhen(accessor, field, schema)) return null;
 
     const isStacked = field.type === 'textarea' || field.type === 'icon-picker';
 
@@ -433,14 +487,14 @@ function createConfigField(instanceId, template, field) {
 
     const renderer = getRenderer(field.type);
     if (renderer) {
-        wrapper.appendChild(renderer(instanceId, template, field));
+        wrapper.appendChild(renderer(accessor, template, field));
     }
 
     return wrapper;
 }
 
-function createSelectField(instanceId, template, field) {
-    const currentValue = ModState.getConfig(instanceId, field.key) ?? field.default ?? '';
+function createSelectField(accessor, template, field) {
+    const currentValue = accessor.get(field.key) ?? field.default ?? '';
     const options = field.options || [];
     const currentOpt = options.find(o => o.value === currentValue);
 
@@ -467,7 +521,7 @@ function createSelectField(instanceId, template, field) {
         item.addEventListener('click', (e) => {
             e.stopPropagation();
             // Update state
-            ModState.setConfig(instanceId, field.key, opt.value);
+            accessor.set(field.key, opt.value);
             // Update display
             display.textContent = t(opt.labelKey) || opt.value;
             // Update selected class
@@ -502,29 +556,29 @@ function createSelectField(instanceId, template, field) {
     return container;
 }
 
-function createTextField(instanceId, template, field) {
+function createTextField(accessor, template, field) {
     const input = document.createElement('input');
     input.className = 'mods-config-field-input';
     input.type = 'text';
-    input.value = ModState.getConfig(instanceId, field.key) ?? '';
+    input.value = accessor.get(field.key) ?? '';
     input.placeholder = field.placeholder || field.default || '';
     input.addEventListener('change', () => {
-        ModState.setConfig(instanceId, field.key, input.value);
+        accessor.set(field.key, input.value);
     });
     return input;
 }
 
-function createTextareaField(instanceId, template, field) {
+function createTextareaField(accessor, template, field) {
     const container = document.createElement('div');
     container.className = 'mods-textarea-field';
 
     const textarea = document.createElement('textarea');
     textarea.className = 'mods-config-field-textarea mod-scrollbar';
     textarea.rows = field.rows || 3;
-    textarea.value = ModState.getConfig(instanceId, field.key) ?? field.default ?? '';
+    textarea.value = accessor.get(field.key) ?? field.default ?? '';
     textarea.placeholder = field.placeholder || '';
     textarea.addEventListener('change', () => {
-        ModState.setConfig(instanceId, field.key, textarea.value);
+        accessor.set(field.key, textarea.value);
     });
 
     container.appendChild(textarea);
@@ -551,8 +605,8 @@ function createTextareaField(instanceId, template, field) {
     return container;
 }
 
-function createIconPickerField(instanceId, template, field) {
-    const currentValue = ModState.getConfig(instanceId, field.key) ?? field.default ?? '';
+function createIconPickerField(accessor, template, field) {
+    const currentValue = accessor.get(field.key) ?? field.default ?? '';
     const icons = field.icons || [];
 
     const grid = document.createElement('div');
@@ -569,7 +623,7 @@ function createIconPickerField(instanceId, template, field) {
         btn.addEventListener('click', () => {
             grid.querySelectorAll('.mods-icon-picker-item').forEach(el => el.classList.remove('selected'));
             btn.classList.add('selected');
-            ModState.setConfig(instanceId, field.key, icon.value);
+            accessor.set(field.key, icon.value);
         });
 
         grid.appendChild(btn);
@@ -578,7 +632,7 @@ function createIconPickerField(instanceId, template, field) {
     return grid;
 }
 
-function createRangeField(instanceId, template, field) {
+function createRangeField(accessor, template, field) {
     const container = document.createElement('div');
     container.className = 'mods-config-range-group';
 
@@ -588,7 +642,7 @@ function createRangeField(instanceId, template, field) {
     input.min = field.min ?? 0;
     input.max = field.max ?? 100;
     input.step = field.step ?? 1;
-    input.value = ModState.getConfig(instanceId, field.key) ?? field.default ?? input.min;
+    input.value = accessor.get(field.key) ?? field.default ?? input.min;
 
     const valueDisplay = document.createElement('span');
     valueDisplay.className = 'mods-config-range-value crt-text-green';
@@ -598,7 +652,7 @@ function createRangeField(instanceId, template, field) {
         valueDisplay.textContent = input.value;
     });
     input.addEventListener('change', () => {
-        ModState.setConfig(instanceId, field.key, Number(input.value));
+        accessor.set(field.key, Number(input.value));
     });
 
     container.appendChild(input);
@@ -606,32 +660,32 @@ function createRangeField(instanceId, template, field) {
     return container;
 }
 
-function createToggleField(instanceId, template, field) {
+function createToggleField(accessor, template, field) {
     const btn = document.createElement('button');
-    const current = ModState.getConfig(instanceId, field.key) ?? field.default ?? false;
+    const current = accessor.get(field.key) ?? field.default ?? false;
     btn.className = `mods-toggle-btn ${current ? 'enabled' : 'disabled'}`;
     btn.textContent = current ? t('mods.enabled') : t('mods.disabled');
     btn.addEventListener('click', () => {
-        const newVal = !ModState.getConfig(instanceId, field.key);
-        ModState.setConfig(instanceId, field.key, newVal);
+        const newVal = !accessor.get(field.key);
+        accessor.set(field.key, newVal);
         btn.className = `mods-toggle-btn ${newVal ? 'enabled' : 'disabled'}`;
         btn.textContent = newVal ? t('mods.enabled') : t('mods.disabled');
     });
     return btn;
 }
 
-function createInfoField(instanceId, template, field) {
+function createInfoField(accessor, template, field) {
     const span = document.createElement('span');
     span.className = 'mods-config-field-info crt-text-green';
     if (typeof template.getInfoValue === 'function') {
-        span.textContent = template.getInfoValue(field.key, instanceId);
+        span.textContent = template.getInfoValue(field.key);
     } else {
-        span.textContent = ModState.getConfig(instanceId, field.key) ?? '\u2014';
+        span.textContent = accessor.get(field.key) ?? '\u2014';
     }
     return span;
 }
 
-function createActionField(instanceId, template, field) {
+function createActionField(accessor, template, field) {
     const btn = document.createElement('button');
     btn.className = 'mods-config-field-action crt-text-green';
     btn.textContent = t(field.actionLabelKey) || field.key;
@@ -639,7 +693,7 @@ function createActionField(instanceId, template, field) {
         if (typeof template.onAction === 'function') {
             btn.disabled = true;
             try {
-                await template.onAction(field.key, instanceId);
+                await template.onAction(field.key);
             } finally {
                 btn.disabled = false;
             }
@@ -648,17 +702,13 @@ function createActionField(instanceId, template, field) {
     return btn;
 }
 
-function evaluateShowWhen(instanceId, field) {
+function evaluateShowWhen(accessor, field, schema) {
     if (!field.showWhen) return true;
-    let currentValue = ModState.getConfig(instanceId, field.showWhen.key);
-    // Resolve default from configSchema when config key hasn't been set
-    if (currentValue === null) {
-        const inst = ModState.getInstance(instanceId);
-        if (inst) {
-            const tmpl = getTemplate(inst.templateId);
-            const ref = tmpl?.configSchema?.find(f => f.key === field.showWhen.key);
-            if (ref && ref.default !== undefined) currentValue = ref.default;
-        }
+    let currentValue = accessor.get(field.showWhen.key);
+    // Resolve default from schema when config key hasn't been set
+    if (currentValue === null && schema) {
+        const ref = schema.find(f => f.key === field.showWhen.key);
+        if (ref && ref.default !== undefined) currentValue = ref.default;
     }
     return currentValue === field.showWhen.value;
 }
@@ -739,6 +789,16 @@ function bindEvents() {
         }
 
         // Re-render list once (covers provider change + name display update)
+        renderListPage(selectedInstanceId, selectedTemplateId);
+        renderInstanceActions(selectedInstanceId);
+    });
+
+    // Re-render when shared config changes (affects all instances in the group)
+    window.addEventListener('mods:sharedConfigChanged', () => {
+        if (selectedInstanceId) {
+            renderConfigFields(selectedInstanceId);
+            renderConfigStatus(selectedInstanceId);
+        }
         renderListPage(selectedInstanceId, selectedTemplateId);
         renderInstanceActions(selectedInstanceId);
     });

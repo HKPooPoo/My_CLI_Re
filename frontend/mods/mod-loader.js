@@ -127,6 +127,15 @@ export async function loadAllMods() {
         // Wire context factory for onConfigChange lifecycle
         setContextFactory(createModContext);
 
+        // Initialize shared config defaults for groups with sharedConfigSchema
+        const seenGroups = new Set();
+        for (const tpl of validatedDefs) {
+            if (tpl.sharedConfigSchema && !seenGroups.has(tpl.group)) {
+                seenGroups.add(tpl.group);
+                ModState.initSharedDefaults(tpl.group, tpl.sharedConfigSchema);
+            }
+        }
+
         // 2. Run migration (v1 → v2 → v3) only — no auto-creation.
         //    Users ADD mods manually from the catalog; localStorage remembers.
         ModState.migrateV2ToV3();

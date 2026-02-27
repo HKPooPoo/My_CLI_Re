@@ -9,6 +9,7 @@ import {
     ensureOutputEl, initShelf, activateShelfPrompt, runLlm,
     checkHealth, getInfoValue, onAction,
     getInstanceName, getIconUrl,
+    migrateToSharedConfig, initPrewarm, onSharedConfigChange,
 } from '../llm/_shared.js';
 
 // ===================== Runtime Constants =====================
@@ -42,7 +43,9 @@ export default {
     _outputEl: null,
 
     async init(ctx) {
+        migrateToSharedConfig();
         initShelf(this, ctx);
+        initPrewarm();
     },
 
     async activate(ctx) {
@@ -77,6 +80,7 @@ export default {
     checkHealth,
     getInfoValue,
     onAction,
+    onSharedConfigChange,
 };
 
 // ===================== Private =====================

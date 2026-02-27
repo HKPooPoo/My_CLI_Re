@@ -215,6 +215,15 @@
     gap: 0;
 }
 
+/* Section header — shared/instance divider */
+.mods-config-section-header {
+    font-size: var(--font-size-sm, 0.75rem);
+    text-align: center;
+    padding: 8px 0 4px;
+    letter-spacing: 0.1em;
+    user-select: none;
+}
+
 /* Config field row — mirrors .misc-list-item layout */
 .mods-config-field {
     display: flex;

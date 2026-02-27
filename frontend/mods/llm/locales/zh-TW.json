@@ -9,6 +9,7 @@
         "provider": "提供者",
         "temperature": "溫度",
         "clientModel": "瀏覽器模型",
+        "prewarm": "預熱模型",
         "serverModel": "伺服器模型",
         "serverTest": "連線狀態",
         "apiProvider": "API 提供者",
@@ -42,7 +43,8 @@
       "clientModel": {
         "qwen3_06b": "Qwen3 0.6B（快速，約 400MB）",
         "qwen3_17b": "Qwen3 1.7B（均衡，約 1.2GB）",
-        "qwen3_4b": "Qwen3 4B（高品質，約 2.8GB）"
+        "qwen3_4b": "Qwen3 4B（高品質，約 2.8GB）",
+        "qwen3_8b": "Qwen3 8B（最佳，約 5.3GB）"
       },
       "apiProvider": {
         "openai": "OpenAI",

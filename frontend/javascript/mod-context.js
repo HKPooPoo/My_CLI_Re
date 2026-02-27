@@ -90,7 +90,19 @@ export function createModContext(opts) {
         template = null,
     } = opts;
 
-    const frozenConfig = Object.freeze({ ...config });
+    // Merge shared group config — shared keys override instance config
+    const mergedConfig = { ...config };
+    if (template?.group) {
+        const sharedSchema = ModState.getSharedConfigSchema(template.group);
+        if (sharedSchema) {
+            const shared = ModState.getSharedConfigAll(template.group);
+            const sharedKeys = new Set(sharedSchema.map(f => f.key));
+            for (const key of sharedKeys) {
+                if (shared[key] !== undefined) mergedConfig[key] = shared[key];
+            }
+        }
+    }
+    const frozenConfig = Object.freeze(mergedConfig);
 
     // Resolve textarea selector from template pages or defaults
     const textareaSelector = (() => {
@@ -141,6 +153,12 @@ export function createModContext(opts) {
                 if (!templateId) return [];
                 return ModState.getInstancesByTemplate(templateId)
                     .filter(i => i.instanceId !== instanceId);
+            },
+            getSharedConfig(key) {
+                return template?.group ? ModState.getSharedConfig(template.group, key) : null;
+            },
+            setSharedConfig(key, val) {
+                if (template?.group) ModState.setSharedConfig(template.group, key, val);
             }
         },
 

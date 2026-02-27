@@ -9,6 +9,7 @@
         "provider": "PROVIDER",
         "temperature": "TEMPERATURE",
         "clientModel": "BROWSER MODEL",
+        "prewarm": "PREWARM MODEL",
         "serverModel": "SERVER MODEL",
         "serverTest": "CONNECTION",
         "apiProvider": "API PROVIDER",
@@ -42,7 +43,8 @@
       "clientModel": {
         "qwen3_06b": "QWEN3 0.6B (FAST, ~400MB)",
         "qwen3_17b": "QWEN3 1.7B (BALANCED, ~1.2GB)",
-        "qwen3_4b": "QWEN3 4B (QUALITY, ~2.8GB)"
+        "qwen3_4b": "QWEN3 4B (QUALITY, ~2.8GB)",
+        "qwen3_8b": "QWEN3 8B (BEST, ~5.3GB)"
       },
       "apiProvider": {
         "openai": "OPENAI",
