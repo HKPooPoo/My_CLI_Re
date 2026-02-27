@@ -1,0 +1,19 @@
+{
+    "id": "info-screensaver",
+    "group": "screensaver",
+    "nameKey": "mods.infoScreensaver.name",
+    "descriptionKey": "mods.infoScreensaver.desc",
+    "version": "1.0.0",
+    "minApiVersion": 1,
+    "maxInstances": 1,
+    "shelfPanelId": null,
+    "pages": {},
+    "providers": [],
+    "configSchema": [
+        { "key": "showUser",  "type": "toggle", "labelKey": "mods.infoScreensaver.showUser",  "default": true },
+        { "key": "showDb",    "type": "toggle", "labelKey": "mods.infoScreensaver.showDb",    "default": true },
+        { "key": "showMods",  "type": "toggle", "labelKey": "mods.infoScreensaver.showMods",  "default": true },
+        { "key": "showClock", "type": "toggle", "labelKey": "mods.infoScreensaver.showClock", "default": true }
+    ],
+    "defaultInstances": []
+}

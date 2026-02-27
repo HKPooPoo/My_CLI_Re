@@ -1,11 +1,5 @@
 /**
- * Speech-to-Text MOD Template - Voice input to text conversion
- * =================================================================
- * Single-instance template. Records audio via MediaRecorder, sends to
- * Google Speech API, inserts transcribed text at cursor position.
- *
- * v2.0.0: Uses ModContext API (ctx.board.insertAtCursor, ctx.ui.toast)
- * =================================================================
+ * Speech-to-Text MOD — Code module (data in manifest.json)
  */
 
 import { playAudio } from '../../javascript/audio.js';
@@ -24,19 +18,6 @@ let _t = null;
 let _ui = null;
 
 export default {
-    // --- Identity ---
-    id: 'speech-to-text',
-    group: 'linguistics',
-    nameKey: 'mods.speechToText.name',
-    descriptionKey: 'mods.speechToText.desc',
-
-    // --- Metadata (v2) ---
-    version: '2.0.0',
-    buttonHintKey: 'hints.stt.button',
-
-    // --- Instance architecture ---
-    maxInstances: 1,
-
     getButtonDataId(config) {
         return 'voice-to-textbox';
     },
@@ -45,25 +26,7 @@ export default {
         return tFn('mods.speechToText.name');
     },
 
-    defaultInstances: [{ config: {} }],
-
-    // --- Feature integration ---
-    shelfPanelId: null,
-
-    // --- Page awareness ---
-    pages: {
-        'blackboard-log': { textareaSelector: '#log-textarea' },
-    },
-
-    // --- Provider & Config ---
-    providers: [
-        { id: 'google-speech', type: 'cloud', nameKey: 'mods.speechToText.provider.google' },
-    ],
-    configSchema: [],
-
-    // --- Lifecycle ---
     async init(ctx) {
-        // Cache i18n for use in async callbacks
         _t = ctx.i18n.t;
         _ui = ctx.ui;
 
@@ -77,7 +40,6 @@ export default {
     },
 
     async activate(ctx) {
-        // Update refs from latest ctx
         _t = ctx.i18n.t;
         _ui = ctx.ui;
 

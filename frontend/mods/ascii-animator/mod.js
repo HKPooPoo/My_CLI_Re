@@ -1,19 +1,9 @@
 /**
- * ASCII Animator MOD — textmode.js WebGL2 Visual Decoration
- * =================================================================
- * Four togglable visual features controlled entirely via config:
- *   1. Matrix Rain  — interactive WebGL2 rain in screensaver overlay
- *   2. Perlin Bg    — animated noise field behind page content
- *   3. Mouse Light  — cursor flashlight glow effect (CSS-based)
- *   4. Toast Spinner — braille loading animation on toasts (DOM-based)
- *
- * No feature button. No shelf panel. Pure background decoration.
- * Engine: textmode.js (zero-dependency, framework-agnostic, WebGL2)
+ * ASCII Animator MOD — Code module (data in manifest.json)
  *
  * CONTAINERIZATION: init() only loads CSS. All functional logic is
  * gated behind instance existence — nothing runs until a user adds
  * an instance via the MOD catalog.
- * =================================================================
  */
 
 import { createMatrixRain } from './layers/matrix-rain.js';
@@ -56,21 +46,6 @@ function _isLightTheme() {
 }
 
 export default {
-    // ===================== Identity =====================
-    id: 'ascii-animator',
-    group: 'decoration',
-    nameKey: 'mods.asciiAnimator.name',
-    descriptionKey: 'mods.asciiAnimator.desc',
-
-    // ===================== Metadata =====================
-    version: '1.0.0',
-    minApiVersion: 1,
-    author: '',
-    warnWith: ['light-theme'],
-
-    // ===================== Instance Architecture =====================
-    maxInstances: 1,
-
     getButtonDataId(_config) {
         return 'ascii-animator';
     },
@@ -79,50 +54,12 @@ export default {
         return tFn('mods.asciiAnimator.name');
     },
 
-    defaultInstances: [],
-
-    // ===================== Feature Integration =====================
-    shelfPanelId: null,
-    pages: {},
-
     getDeployPages(_config) {
         return [];
     },
 
-    // ===================== Providers =====================
-    providers: [],
+    // --- Lifecycle ---
 
-    // ===================== Config Schema =====================
-    configSchema: [
-        // --- Matrix Rain ---
-        { key: 'matrixRain', type: 'toggle', labelKey: 'mods.asciiAnimator.matrixRain', hintKey: 'hints.aa.matrixRain', default: true },
-        { key: 'rainSpeed', type: 'range', labelKey: 'mods.asciiAnimator.rainSpeed',
-          min: 1, max: 10, step: 1, default: 5, showWhen: { key: 'matrixRain', value: true } },
-        { key: 'rainDensity', type: 'range', labelKey: 'mods.asciiAnimator.rainDensity',
-          min: 1, max: 10, step: 1, default: 5, showWhen: { key: 'matrixRain', value: true } },
-
-        // --- Perlin Noise Background ---
-        { key: 'perlinBg', type: 'toggle', labelKey: 'mods.asciiAnimator.perlinBg', hintKey: 'hints.aa.perlinBg', default: false },
-        { key: 'perlinOpacity', type: 'range', labelKey: 'mods.asciiAnimator.perlinOpacity',
-          min: 3, max: 30, step: 1, default: 8, showWhen: { key: 'perlinBg', value: true } },
-        { key: 'perlinSpeed', type: 'range', labelKey: 'mods.asciiAnimator.perlinSpeed',
-          min: 1, max: 10, step: 1, default: 3, showWhen: { key: 'perlinBg', value: true } },
-
-        // --- Mouse Light ---
-        { key: 'mouseLight', type: 'toggle', labelKey: 'mods.asciiAnimator.mouseLight', hintKey: 'hints.aa.mouseLight', default: false },
-        { key: 'lightRadius', type: 'range', labelKey: 'mods.asciiAnimator.lightRadius',
-          min: 3, max: 15, step: 1, default: 8, showWhen: { key: 'mouseLight', value: true } },
-
-        // --- Toast Spinner ---
-        { key: 'toastAnim', type: 'toggle', labelKey: 'mods.asciiAnimator.toastAnim', hintKey: 'hints.aa.toastAnim', default: true },
-    ],
-
-    // ===================== Lifecycle =====================
-
-    /**
-     * init() is called once per template at boot — regardless of instances.
-     * Only load CSS here. All functional logic waits for instance existence.
-     */
     async init(_ctx) {
         if (!document.getElementById('ascii-animator-css')) {
             const link = document.createElement('link');
@@ -305,8 +242,4 @@ export default {
         this._onInstanceAdded = null;
         this._onInstanceRemoved = null;
     },
-
-    // ===================== Tools / Hooks =====================
-    tools: [],
-    hooks: [],
 };

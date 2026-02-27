@@ -1,20 +1,9 @@
 /**
- * Info Screensaver MOD — System Info Dashboard
- * =================================================================
- * Replaces the "PRESS START" text with a live system dashboard
- * when the screensaver activates (60s idle or initial page load).
- *
- * Data sources (read-only, yellow-zone):
- *   - User/title: localStorage
- *   - DB status: #db-status-display DOM
- *   - MOD count: mod-loader getInstances()
- *   - Version: PLATFORM_VERSION
- *   - Clock: Date
+ * Info Screensaver MOD — Code module (data in manifest.json)
  *
  * CONTAINERIZATION: init() only loads CSS. All functional logic is
  * gated behind instance existence — nothing runs until a user adds
  * an instance via the MOD catalog.
- * =================================================================
  */
 
 import { PLATFORM_VERSION } from '../../javascript/version.js';
@@ -191,20 +180,6 @@ function _stopListening() {
 }
 
 export default {
-    // ===================== Identity =====================
-    id: 'info-screensaver',
-    group: 'screensaver',
-    nameKey: 'mods.infoScreensaver.name',
-    descriptionKey: 'mods.infoScreensaver.desc',
-
-    // ===================== Metadata =====================
-    version: '1.0.0',
-    minApiVersion: 1,
-    author: '',
-
-    // ===================== Instance Architecture =====================
-    maxInstances: 1,
-
     getButtonDataId(_config) {
         return 'info-screensaver';
     },
@@ -213,33 +188,12 @@ export default {
         return tFn('mods.infoScreensaver.name');
     },
 
-    defaultInstances: [],
-
-    // ===================== Feature Integration =====================
-    shelfPanelId: null,
-    pages: {},
-
     getDeployPages(_config) {
         return [];
     },
 
-    // ===================== Providers =====================
-    providers: [],
+    // --- Lifecycle ---
 
-    // ===================== Config Schema =====================
-    configSchema: [
-        { key: 'showUser',  type: 'toggle', labelKey: 'mods.infoScreensaver.showUser',  default: true },
-        { key: 'showDb',    type: 'toggle', labelKey: 'mods.infoScreensaver.showDb',    default: true },
-        { key: 'showMods',  type: 'toggle', labelKey: 'mods.infoScreensaver.showMods',  default: true },
-        { key: 'showClock', type: 'toggle', labelKey: 'mods.infoScreensaver.showClock', default: true },
-    ],
-
-    // ===================== Lifecycle =====================
-
-    /**
-     * init() is called once per template at boot — regardless of instances.
-     * Only load CSS here. All functional logic waits for instance existence.
-     */
     async init(_ctx) {
         if (!document.getElementById('info-screensaver-css')) {
             const link = document.createElement('link');
@@ -284,8 +238,4 @@ export default {
         this._onInstanceAdded = null;
         this._onInstanceRemoved = null;
     },
-
-    // ===================== Tools / Hooks =====================
-    tools: [],
-    hooks: [],
 };

@@ -1,0 +1,20 @@
+{
+    "id": "my-mod",
+    "group": "utilities",
+    "nameKey": "mods.myMod.name",
+    "descriptionKey": "mods.myMod.desc",
+    "version": "1.0.0",
+    "minApiVersion": 1,
+    "shelfPanelId": "my-mod",
+    "pages": {
+        "blackboard-log":    { "textareaSelector": "#log-textarea" },
+        "broadcast-channel": { "textareaSelector": "#channel-textarea" }
+    },
+    "providers": [
+        { "id": "default", "type": "client", "nameKey": "mods.myMod.provider.default" }
+    ],
+    "configSchema": [],
+    "defaultInstances": [
+        { "config": {} }
+    ]
+}

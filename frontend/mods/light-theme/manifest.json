@@ -1,0 +1,14 @@
+{
+    "id": "light-theme",
+    "group": "theme",
+    "nameKey": "mods.lightTheme.name",
+    "descriptionKey": "mods.lightTheme.desc",
+    "version": "1.0.0",
+    "minApiVersion": 1,
+    "maxInstances": 1,
+    "shelfPanelId": null,
+    "pages": {},
+    "providers": [],
+    "configSchema": [],
+    "defaultInstances": [{ "config": {} }]
+}

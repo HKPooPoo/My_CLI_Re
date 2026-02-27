@@ -1,37 +1,17 @@
 /**
- * LLM — Generic textarea LLM processing.
- * Reads the focused textarea on any page. Simple prompt → response.
+ * LLM — Code module (data in manifest.json)
+ * Generic textarea LLM processing.
+ * Reads the focused textarea on any page. Simple prompt -> response.
  */
 
 import { ModState } from '../../javascript/mod-state.js';
 import {
-    ICONS, PROVIDERS, PROVIDER_CONFIG_SCHEMA,
     ensureOutputEl, initShelf, activateShelfPrompt, runLlm,
     checkHealth, getInfoValue, onAction,
     getInstanceName, getIconUrl,
 } from './_shared.js';
 
-// ===================== Constants =====================
-
-const PRESETS = [
-    { labelKey: 'mods.llm.preset.summarize', value: 'Summarize concisely.' },
-    { labelKey: 'mods.llm.preset.translate', value: 'Translate to English.' },
-    { labelKey: 'mods.llm.preset.polish',    value: 'Improve grammar and clarity. Keep the original meaning.' },
-    { labelKey: 'mods.llm.preset.explain',   value: 'Explain in simple terms.' },
-];
-
-// ===================== Template =====================
-
 export default {
-    id: 'llm',
-    group: 'llm',
-    nameKey: 'mods.llm.name',
-    descriptionKey: 'mods.llm.desc',
-    version: '4.0.0',
-    minApiVersion: 1,
-    shelfPanelId: 'llm',
-    buttonHintKey: 'hints.llm.button',
-
     getButtonDataId(config) {
         return 'llm-' + (config.icon || 'summarize');
     },
@@ -43,27 +23,6 @@ export default {
     getIconUrl(config) {
         return getIconUrl(config);
     },
-
-    defaultInstances: [
-        { config: { prompt: 'Translate to English.', icon: 'translate', provider: 'client' } },
-        { config: { prompt: 'Summarize concisely.', icon: 'summarize', provider: 'client' } },
-        { config: { prompt: 'Improve grammar and clarity. Keep the original meaning.', icon: 'polish', provider: 'client' } },
-    ],
-
-    pages: {
-        'blackboard-log':    { textareaSelector: '#log-textarea' },
-        'broadcast-channel': { textareaSelector: '#channel-textarea' },
-    },
-
-    providers: PROVIDERS,
-
-    configSchema: [
-        { key: 'prompt', type: 'textarea', labelKey: 'mods.llm.config.prompt', default: '', rows: 3,
-          presets: PRESETS },
-        { key: 'icon', type: 'icon-picker', labelKey: 'mods.llm.config.icon', default: 'summarize',
-          icons: ICONS },
-        ...PROVIDER_CONFIG_SCHEMA,
-    ],
 
     _outputEl: null,
 
@@ -117,11 +76,11 @@ function _migrateOldConfig() {
         let prompt = config.systemPrompt || '';
         let icon = 'summarize';
 
-        const LANG_NAMES = { 'zh-TW': '繁體中文', 'zh-CN': '简体中文', 'en': 'English', 'ja': '日本語' };
+        const LANG_NAMES = { 'zh-TW': '\u7E41\u9AD4\u4E2D\u6587', 'zh-CN': '\u7B80\u4F53\u4E2D\u6587', 'en': 'English', 'ja': '\u65E5\u672C\u8A9E' };
 
         switch (task) {
             case 'translate': {
-                const lang = LANG_NAMES[config.targetLang] || config.targetLang || '繁體中文';
+                const lang = LANG_NAMES[config.targetLang] || config.targetLang || '\u7E41\u9AD4\u4E2D\u6587';
                 if (!prompt) prompt = `Translate to ${lang}.`;
                 icon = 'translate';
                 break;
@@ -152,6 +111,6 @@ function _migrateOldConfig() {
 
         ModState.setConfig(inst.instanceId, 'prompt', prompt);
         ModState.setConfig(inst.instanceId, 'icon', icon);
-        console.log(`[llm] migrated instance ${inst.instanceId}: task="${task}" → prompt/icon`);
+        console.log(`[llm] migrated instance ${inst.instanceId}: task="${task}" \u2192 prompt/icon`);
     }
 }

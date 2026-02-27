@@ -140,7 +140,7 @@ export function createMatrixRain(overlay, config) {
     tm.draw(() => {
         if (destroyed) return;
 
-        tm.background(light ? 255 : 0);
+        tm.background(0, 0, 0, 0);
 
         // Update shockwaves
         for (let i = shockwaves.length - 1; i >= 0; i--) {

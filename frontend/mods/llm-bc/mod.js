@@ -1,47 +1,26 @@
 /**
- * LLM BC — Broadcast-scoped LLM processing.
+ * LLM BC — Code module (data in manifest.json)
+ * Broadcast-scoped LLM processing.
  * Processes channel text or full channel history.
  */
 
 import {
-    ICONS, PROVIDERS, PROVIDER_CONFIG_SCHEMA,
     getContextLimits, formatRecords,
     ensureOutputEl, initShelf, activateShelfPrompt, runLlm,
     checkHealth, getInfoValue, onAction,
     getInstanceName, getIconUrl,
 } from '../llm/_shared.js';
 
-// ===================== Constants =====================
+// ===================== Runtime Constants =====================
 
 const TARGETS = {
-    'text':    { page: 'broadcast-channel', scope: 'text',    labelKey: 'mods.llmBc.target.text' },
-    'history': { page: 'broadcast-channel', scope: 'history', labelKey: 'mods.llmBc.target.history' },
-};
-
-const TARGET_PRESETS = {
-    'text': [
-        { labelKey: 'mods.llm.preset.summarize', value: 'Summarize concisely.' },
-        { labelKey: 'mods.llm.preset.translate',  value: 'Translate to English.' },
-        { labelKey: 'mods.llm.preset.explain',    value: 'Explain in simple terms.' },
-    ],
-    'history': [
-        { labelKey: 'mods.llmBc.preset.channelSummary', value: 'Summarize the key themes in this channel.' },
-        { labelKey: 'mods.llmBc.preset.channelExtract',  value: 'Extract the most important points from the messages.' },
-    ],
+    'text':    { page: 'broadcast-channel', scope: 'text' },
+    'history': { page: 'broadcast-channel', scope: 'history' },
 };
 
 // ===================== Template =====================
 
 export default {
-    id: 'llm-bc',
-    group: 'llm',
-    nameKey: 'mods.llmBc.name',
-    descriptionKey: 'mods.llmBc.desc',
-    version: '1.0.0',
-    minApiVersion: 1,
-    shelfPanelId: 'llm',
-    buttonHintKey: 'hints.llmBc.button',
-
     getButtonDataId(config) {
         return 'llm-' + (config.icon || 'summarize');
     },
@@ -57,28 +36,6 @@ export default {
     getDeployPages(config) {
         return ['broadcast-channel'];
     },
-
-    defaultInstances: [
-        { config: { prompt: 'Summarize the key themes in this channel.', icon: 'summarize', target: 'history', provider: 'client' } },
-    ],
-
-    pages: {
-        'broadcast-channel': { textareaSelector: '#channel-textarea' },
-    },
-
-    providers: PROVIDERS,
-
-    configSchema: [
-        { key: 'target', type: 'select', labelKey: 'mods.llmBc.config.target', hintKey: 'hints.llmBc.target', default: 'text',
-          options: Object.entries(TARGETS).map(([v, t]) => ({ value: v, labelKey: t.labelKey })) },
-        { key: 'prompt', type: 'textarea', labelKey: 'mods.llm.config.prompt', default: '', rows: 3,
-          showWhen: { key: 'target', value: 'text' },     presets: TARGET_PRESETS['text'] },
-        { key: 'prompt', type: 'textarea', labelKey: 'mods.llm.config.prompt', default: '', rows: 3,
-          showWhen: { key: 'target', value: 'history' },   presets: TARGET_PRESETS['history'] },
-        { key: 'icon', type: 'icon-picker', labelKey: 'mods.llm.config.icon', default: 'summarize',
-          icons: ICONS },
-        ...PROVIDER_CONFIG_SCHEMA,
-    ],
 
     _outputEl: null,
 

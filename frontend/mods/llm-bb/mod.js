@@ -1,53 +1,27 @@
 /**
- * LLM BB — Blackboard-scoped LLM processing.
+ * LLM BB — Code module (data in manifest.json)
+ * Blackboard-scoped LLM processing.
  * Processes branch records and cross-branch analysis.
  */
 
 import {
-    ICONS, PROVIDERS, PROVIDER_CONFIG_SCHEMA,
     getContextLimits, formatRecords,
     ensureOutputEl, initShelf, activateShelfPrompt, runLlm,
     checkHealth, getInfoValue, onAction,
     getInstanceName, getIconUrl,
 } from '../llm/_shared.js';
 
-// ===================== Constants =====================
+// ===================== Runtime Constants =====================
 
 const TARGETS = {
-    'branch-log':      { page: 'blackboard-log',    scope: 'branch',  labelKey: 'mods.llmBb.target.branchLog' },
-    'branch-overview': { page: 'blackboard-branch',  scope: 'branch',  labelKey: 'mods.llmBb.target.branchOverview' },
-    'all':             { page: 'blackboard-branch',  scope: 'all',     labelKey: 'mods.llmBb.target.all' },
-};
-
-const TARGET_PRESETS = {
-    'branch-log': [
-        { labelKey: 'mods.llm.preset.branchSummary',  value: 'Summarize the key themes across these entries.' },
-        { labelKey: 'mods.llm.preset.branchTimeline',  value: 'Describe how the topics evolved over time.' },
-        { labelKey: 'mods.llm.preset.branchExtract',   value: 'Extract the most important points from each entry.' },
-    ],
-    'branch-overview': [
-        { labelKey: 'mods.llm.preset.branchSummary',  value: 'Summarize the key themes across these entries.' },
-        { labelKey: 'mods.llm.preset.branchTimeline',  value: 'Describe how the topics evolved over time.' },
-        { labelKey: 'mods.llm.preset.branchExtract',   value: 'Extract the most important points from each entry.' },
-    ],
-    'all': [
-        { labelKey: 'mods.llm.preset.allOverview', value: 'Summarize each branch and identify common themes.' },
-        { labelKey: 'mods.llm.preset.allCompare',  value: 'Compare the branches. What are the key differences?' },
-    ],
+    'branch-log':      { page: 'blackboard-log',    scope: 'branch' },
+    'branch-overview': { page: 'blackboard-branch',  scope: 'branch' },
+    'all':             { page: 'blackboard-branch',  scope: 'all' },
 };
 
 // ===================== Template =====================
 
 export default {
-    id: 'llm-bb',
-    group: 'llm',
-    nameKey: 'mods.llmBb.name',
-    descriptionKey: 'mods.llmBb.desc',
-    version: '1.0.0',
-    minApiVersion: 1,
-    shelfPanelId: 'llm',
-    buttonHintKey: 'hints.llmBb.button',
-
     getButtonDataId(config) {
         return 'llm-' + (config.icon || 'summarize-branch');
     },
@@ -64,31 +38,6 @@ export default {
         const target = TARGETS[config.target];
         return target ? [target.page] : [];
     },
-
-    defaultInstances: [
-        { config: { prompt: 'Summarize the key themes across these entries.', icon: 'summarize-branch', target: 'branch-log', provider: 'client' } },
-    ],
-
-    pages: {
-        'blackboard-log':    { textareaSelector: '#log-textarea' },
-        'blackboard-branch': {},
-    },
-
-    providers: PROVIDERS,
-
-    configSchema: [
-        { key: 'target', type: 'select', labelKey: 'mods.llmBb.config.target', hintKey: 'hints.llmBb.target', default: 'branch-log',
-          options: Object.entries(TARGETS).map(([v, t]) => ({ value: v, labelKey: t.labelKey })) },
-        { key: 'prompt', type: 'textarea', labelKey: 'mods.llm.config.prompt', default: '', rows: 3,
-          showWhen: { key: 'target', value: 'branch-log' },      presets: TARGET_PRESETS['branch-log'] },
-        { key: 'prompt', type: 'textarea', labelKey: 'mods.llm.config.prompt', default: '', rows: 3,
-          showWhen: { key: 'target', value: 'branch-overview' },  presets: TARGET_PRESETS['branch-overview'] },
-        { key: 'prompt', type: 'textarea', labelKey: 'mods.llm.config.prompt', default: '', rows: 3,
-          showWhen: { key: 'target', value: 'all' },              presets: TARGET_PRESETS['all'] },
-        { key: 'icon', type: 'icon-picker', labelKey: 'mods.llm.config.icon', default: 'summarize-branch',
-          icons: ICONS },
-        ...PROVIDER_CONFIG_SCHEMA,
-    ],
 
     _outputEl: null,
 

@@ -1,0 +1,19 @@
+{
+    "id": "markdown-preview",
+    "group": "utilities",
+    "nameKey": "mods.markdownPreview.name",
+    "descriptionKey": "mods.markdownPreview.desc",
+    "version": "2.0.0",
+    "buttonHintKey": "hints.markdownPreview.button",
+    "maxInstances": 1,
+    "shelfPanelId": "markdown-preview",
+    "pages": {
+        "blackboard-log":    { "textareaSelector": "#log-textarea" },
+        "broadcast-channel": { "textareaSelector": "#channel-textarea" }
+    },
+    "providers": [
+        { "id": "marked", "type": "client", "nameKey": "mods.markdownPreview.provider.marked" }
+    ],
+    "configSchema": [],
+    "defaultInstances": [{ "config": {} }]
+}

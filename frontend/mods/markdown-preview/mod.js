@@ -1,12 +1,5 @@
 /**
- * Markdown Preview MOD Template - Renders Markdown in feature shelf
- * =================================================================
- * Single-instance template. Uses the global `marked` library.
- * Page-aware: binds to the active textarea and renders on input.
- *
- * v2.0.0: Uses ModContext API (ctx.events.on for auto-cleanup,
- * ctx.instance.isEnabled, ctx.i18n.t)
- * =================================================================
+ * Markdown Preview MOD — Code module (data in manifest.json)
  */
 
 import { t } from '../../javascript/i18n.js';
@@ -17,19 +10,6 @@ let _outputEl = null;
 let _currentInstanceId = null;
 
 export default {
-    // --- Identity ---
-    id: 'markdown-preview',
-    group: 'utilities',
-    nameKey: 'mods.markdownPreview.name',
-    descriptionKey: 'mods.markdownPreview.desc',
-
-    // --- Metadata (v2) ---
-    version: '2.0.0',
-    buttonHintKey: 'hints.markdownPreview.button',
-
-    // --- Instance architecture ---
-    maxInstances: 1,
-
     getButtonDataId(config) {
         return 'markdown-preview';
     },
@@ -38,24 +18,6 @@ export default {
         return tFn('mods.markdownPreview.name');
     },
 
-    defaultInstances: [{ config: {} }],
-
-    // --- Feature integration ---
-    shelfPanelId: 'markdown-preview',
-
-    // --- Page awareness ---
-    pages: {
-        'blackboard-log':    { textareaSelector: '#log-textarea' },
-        'broadcast-channel': { textareaSelector: '#channel-textarea' },
-    },
-
-    // --- Provider & Config ---
-    providers: [
-        { id: 'marked', type: 'client', nameKey: 'mods.markdownPreview.provider.marked' },
-    ],
-    configSchema: [],
-
-    // --- Lifecycle ---
     async init(ctx) {
         const shelf = ctx.ui.getShelfElement();
         if (shelf) {
@@ -66,7 +28,6 @@ export default {
             _outputEl = output;
         }
 
-        // Use ctx.events.on for managed subscriptions
         ctx.events.on('navi:pageChanged', () => {
             this._bindTextarea();
         });
