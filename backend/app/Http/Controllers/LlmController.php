@@ -78,7 +78,6 @@ class LlmController extends Controller
             'options'    => [
                 'temperature'  => $validated['temperature'] ?? 0.3,
                 'num_ctx'      => 2048,
-                'num_predict'  => 2048,
             ],
         ]);
 
@@ -92,6 +91,7 @@ class LlmController extends Controller
             if (ob_get_level()) ob_flush();
             flush();
 
+            $thinkCount = 0;
             $ch = curl_init($url);
             curl_setopt_array($ch, [
                 CURLOPT_POST           => true,
@@ -99,7 +99,7 @@ class LlmController extends Controller
                 CURLOPT_HTTPHEADER     => ['Content-Type: application/json'],
                 CURLOPT_CONNECTTIMEOUT => 10,
                 CURLOPT_TIMEOUT        => 300,
-                CURLOPT_WRITEFUNCTION => function ($ch, $data) {
+                CURLOPT_WRITEFUNCTION => function ($ch, $data) use (&$thinkCount) {
                     if (connection_aborted()) {
                         return 0; // Abort cURL transfer → frees worker + GPU
                     }
@@ -113,8 +113,17 @@ class LlmController extends Controller
                         $content = $json['message']['content'] ?? '';
                         $done    = !empty($json['done']);
 
-                        // Skip empty-content chunks (thinking phase)
-                        if (!$done && $content === '') continue;
+                        // Thinking phase: send periodic heartbeats so frontend
+                        // knows the connection is alive and can update elapsed time.
+                        if (!$done && $content === '') {
+                            $thinkCount++;
+                            if ($thinkCount % 50 === 0) {
+                                echo 'data: ' . json_encode(['status' => 'thinking']) . "\n\n";
+                                if (ob_get_level()) ob_flush();
+                                flush();
+                            }
+                            continue;
+                        }
 
                         echo 'data: ' . json_encode([
                             'delta' => $content,
@@ -203,7 +212,6 @@ class LlmController extends Controller
             'options'    => [
                 'temperature'  => $temperature,
                 'num_ctx'      => 2048,
-                'num_predict'  => 2048,
             ],
         ]);
 

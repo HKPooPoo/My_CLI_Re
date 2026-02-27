@@ -51,7 +51,7 @@
       "processing": "處理中... 請稍候。",
       "loading": "載入模型中...",
       "connecting": "正在連線伺服器...",
-      "thinking": "已連線 — 模型生成中...",
+      "thinking": "思考中... ({seconds}s)",
       "streaming": "串流中... {tokens} 個 token",
       "complete": "處理完成。",
       "empty": "無輸入文字。",

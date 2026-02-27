@@ -51,7 +51,7 @@
       "processing": "PROCESSING... STANDBY.",
       "loading": "LOADING MODEL...",
       "connecting": "CONNECTING TO SERVER...",
-      "thinking": "CONNECTED — GENERATING RESPONSE...",
+      "thinking": "THINKING... ({seconds}s)",
       "streaming": "STREAMING... {tokens} TOKENS",
       "complete": "PROCESSING COMPLETE.",
       "empty": "NO INPUT TEXT.",

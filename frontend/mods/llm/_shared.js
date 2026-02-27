@@ -12,7 +12,7 @@ import { BBMessage } from '../../javascript/blackboard-msg.js';
 // ===================== Constants =====================
 
 export const CLIENT_MODEL = 'Qwen3-0.6B-q4f16_1-MLC';
-export const SERVER_MODEL = 'qwen3-vl:2b';
+export const SERVER_MODEL = 'qwen3-vl:2b-instruct';
 
 export const ICONS = [
     { value: 'summarize',        url: '/images/llm-summarize.svg',        labelKey: 'mods.llm.icon.summarize' },
@@ -127,7 +127,7 @@ export function buildMessages(prompt, inputText, provider) {
     if (provider === 'server') {
         return [
             { role: 'system', content: 'Respond with the result only. No preamble.' },
-            { role: 'user', content: '/no_think\n' + userContent },
+            { role: 'user', content: userContent },
         ];
     }
 
@@ -264,13 +264,15 @@ export async function runLlm(config, prompt, inputText, out, tFn) {
         } else if (provider === 'server') {
             out.value = tFn('mods.llm.connecting');
 
+            const t0 = Date.now();
             let tokens = 0;
             for await (const chunk of LlmService.chatStream({
                 provider: 'ollama', model: SERVER_MODEL, messages,
                 temperature: temp,
             }, { signal: controller.signal })) {
-                if (chunk.status === 'connected') {
-                    out.value = tFn('mods.llm.thinking');
+                if (chunk.status) {
+                    const sec = Math.floor((Date.now() - t0) / 1000);
+                    out.value = tFn('mods.llm.thinking', { seconds: sec });
                     continue;
                 }
                 if (chunk.error) throw new Error(chunk.error);
