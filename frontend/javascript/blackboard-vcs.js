@@ -19,10 +19,22 @@ export const BBVCS = {
         }
 
         await this.save(state, currentText);
+
+        const entryBefore = await BBCore.getRecord(state.owner, state.branchId, state.currentHead);
         if (Settings.get('bb', 'autoCleanBlanks')) {
             await BBCore.scrubBranch(state.owner, state.branchId, state.maxSlot);
         } else {
             await BBCore.cleanupOldRecords(state.owner, state.branchId, state.maxSlot);
+        }
+
+        // [Fix]: Revalidate head after cleanup — scrub may have removed the current record,
+        // shifting a different record into this position. Detect and force UI refresh.
+        const count = await BBCore.countRecords(state.owner, state.branchId);
+        if (count === 0) { state.currentHead = 0; state.isVirtual = true; return true; }
+        if (state.currentHead >= count) { state.currentHead = count - 1; return true; }
+        const entryAfter = await BBCore.getRecord(state.owner, state.branchId, state.currentHead);
+        if (!entryBefore || !entryAfter || entryBefore.timestamp !== entryAfter.timestamp) {
+            return true;
         }
 
         if (state.currentHead > 0) {
@@ -48,6 +60,8 @@ export const BBVCS = {
         }
 
         await this.save(state, currentText);
+
+        const entryBefore = await BBCore.getRecord(state.owner, state.branchId, state.currentHead);
         if (Settings.get('bb', 'autoCleanBlanks')) {
             await BBCore.scrubBranch(state.owner, state.branchId, state.maxSlot);
         } else {
@@ -55,6 +69,15 @@ export const BBVCS = {
         }
 
         const count = await BBCore.countRecords(state.owner, state.branchId);
+
+        // [Fix]: Revalidate head after cleanup — scrub may have removed the current record,
+        // shifting a different record into this position. Detect and force UI refresh.
+        if (count === 0) { state.currentHead = 0; state.isVirtual = true; return true; }
+        if (state.currentHead >= count) { state.currentHead = count - 1; return true; }
+        const entryAfter = await BBCore.getRecord(state.owner, state.branchId, state.currentHead);
+        if (!entryBefore || !entryAfter || entryBefore.timestamp !== entryAfter.timestamp) {
+            return true;
+        }
 
         if (state.currentHead < count - 1) {
             state.currentHead++;
