@@ -1,4 +1,4 @@
-const CACHE_NAME = 'blackboard-v58-2026-02-27'; // Split LLM into 3 templates
+const CACHE_NAME = 'blackboard-v59-2026-02-27'; // Add editable prompt to LLM shelf
 const ASSETS = [
   '/',
   '/index.html',

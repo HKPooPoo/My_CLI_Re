@@ -6,7 +6,7 @@
 import { ModState } from '../../javascript/mod-state.js';
 import {
     ICONS, PROVIDERS, PROVIDER_CONFIG_SCHEMA,
-    ensureOutputEl, initShelf, runLlm,
+    ensureOutputEl, initShelf, activateShelfPrompt, runLlm,
     checkHealth, getInfoValue, onAction,
     getInstanceName, getIconUrl,
 } from './_shared.js';
@@ -75,6 +75,7 @@ export default {
         if (!ctx) return;
         const out = ensureOutputEl(this);
         if (!out) return;
+        activateShelfPrompt(ctx);
 
         const tFn = ctx.i18n.t;
         const prompt = ctx.config.prompt;

@@ -81,6 +81,38 @@
     border-radius: 2px;
 }
 
+/* Editable prompt input above output (LLM shelf) */
+.mod-shelf-prompt {
+    font-size: var(--textbox-font-size);
+    border: var(--border-line);
+    border-bottom: none;
+    border-radius: var(--border-radius) var(--border-radius) 0 0;
+    resize: none;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--text-green) var(--bg-primary);
+}
+
+.mod-shelf-prompt::-webkit-scrollbar {
+    width: 4px;
+}
+
+.mod-shelf-prompt::-webkit-scrollbar-track {
+    background: var(--bg-primary);
+}
+
+.mod-shelf-prompt::-webkit-scrollbar-thumb {
+    background-color: var(--text-green);
+    border-radius: 2px;
+}
+
+/* LLM shelf: output fills remaining space after prompt */
+[data-feature-shelf="llm"] .mod-shelf-output {
+    flex: 1 1 0;
+    height: auto;
+    min-height: 0;
+}
+
 /* Div output panel (markdown, rich content, etc.) */
 .mod-shelf-content {
     width: 100%;

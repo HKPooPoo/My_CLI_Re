@@ -134,6 +134,10 @@ export function buildMessages(prompt, inputText, provider) {
 
 // ===================== Shelf =====================
 
+let _activeInstanceId = null;
+let _promptHandler = null;
+let _configListenerBound = false;
+
 /**
  * Get or create the shared #llm-output textarea in the shelf.
  * All LLM templates share one shelf panel via shelfPanelId: 'llm'.
@@ -155,22 +159,65 @@ export function ensureOutputEl(templateObj) {
     return templateObj._outputEl;
 }
 
-/** Shared init — set up the output element from the shelf context. */
+/** Shared init — set up prompt + output elements from the shelf context. */
 export function initShelf(templateObj, ctx) {
     const shelf = ctx.ui.getShelfElement();
-    if (shelf) {
-        const existing = shelf.querySelector('#llm-output');
-        if (existing) {
-            templateObj._outputEl = existing;
-        } else {
-            const el = document.createElement('textarea');
-            el.id = 'llm-output';
-            el.className = 'mod-shelf-output';
-            el.readOnly = true;
-            shelf.appendChild(el);
-            templateObj._outputEl = el;
-        }
+    if (!shelf) return;
+
+    // Prompt textarea (editable, shared across LLM templates)
+    if (!shelf.querySelector('#llm-prompt')) {
+        const prompt = document.createElement('textarea');
+        prompt.id = 'llm-prompt';
+        prompt.className = 'mod-shelf-prompt';
+        prompt.rows = 2;
+        prompt.placeholder = t('mods.llm.config.prompt');
+        shelf.prepend(prompt);
     }
+
+    // Output textarea (read-only)
+    const existing = shelf.querySelector('#llm-output');
+    if (existing) {
+        templateObj._outputEl = existing;
+    } else {
+        const el = document.createElement('textarea');
+        el.id = 'llm-output';
+        el.className = 'mod-shelf-output';
+        el.readOnly = true;
+        shelf.appendChild(el);
+        templateObj._outputEl = el;
+    }
+
+    // Config → shelf sync (one-time listener)
+    if (!_configListenerBound) {
+        _configListenerBound = true;
+        window.addEventListener('mods:configChanged', ({ detail }) => {
+            if (detail.key === 'prompt' && detail.instanceId === _activeInstanceId) {
+                const el = document.getElementById('llm-prompt');
+                if (el && el.value !== detail.value) el.value = detail.value || '';
+            }
+        });
+    }
+}
+
+/**
+ * Sync shelf prompt textarea with the current instance.
+ * Called at the start of every activate() across all LLM templates.
+ */
+export function activateShelfPrompt(ctx) {
+    const el = document.getElementById('llm-prompt');
+    if (!el) return;
+
+    // Remove previous change handler
+    if (_promptHandler) el.removeEventListener('change', _promptHandler);
+
+    _activeInstanceId = ctx.instanceId;
+    el.value = ctx.config.prompt || '';
+
+    // Shelf → config sync on blur
+    _promptHandler = () => {
+        ctx.instance.setConfig('prompt', el.value);
+    };
+    el.addEventListener('change', _promptHandler);
 }
 
 // ===================== Provider execution =====================
