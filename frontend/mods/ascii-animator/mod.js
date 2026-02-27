@@ -51,6 +51,10 @@ function _getConfig() {
     return inst ? inst.config : null;
 }
 
+function _isLightTheme() {
+    return document.documentElement.classList.contains('theme-light');
+}
+
 export default {
     // ===================== Identity =====================
     id: 'ascii-animator',
@@ -170,8 +174,9 @@ export default {
             this._perlinBg = createPerlinBg(config);
         }
 
-        // Matrix rain — screensaver events
+        // Matrix rain — screensaver events (dark theme only)
         this._onActivated = async () => {
+            if (_isLightTheme()) return;
             const c = _getConfig();
             if (!c || c.matrixRain === false || this._matrixRain) return;
             if (!_textmodeLoaded) await _ensureTextmode();
@@ -190,11 +195,22 @@ export default {
         window.addEventListener('screensaver:activated', this._onActivated);
         window.addEventListener('screensaver:deactivated', this._onDeactivated);
 
-        // If screensaver already visible, start rain now
-        const overlay = document.getElementById('press-start-overlay');
-        if (overlay && overlay.style.display !== 'none' && config.matrixRain !== false && _textmodeLoaded) {
-            this._matrixRain = createMatrixRain(overlay, config);
+        // If screensaver already visible, start rain now (dark theme only)
+        if (!_isLightTheme()) {
+            const overlay = document.getElementById('press-start-overlay');
+            if (overlay && overlay.style.display !== 'none' && config.matrixRain !== false && _textmodeLoaded) {
+                this._matrixRain = createMatrixRain(overlay, config);
+            }
         }
+
+        // Destroy rain if user switches to light theme while screensaver is active
+        this._onThemeChanged = () => {
+            if (_isLightTheme() && this._matrixRain) {
+                this._matrixRain.destroy();
+                this._matrixRain = null;
+            }
+        };
+        window.addEventListener('theme:changed', this._onThemeChanged);
     },
 
     /** Stop all layers. Called when instance is removed. */
@@ -209,8 +225,10 @@ export default {
 
         if (this._onActivated) window.removeEventListener('screensaver:activated', this._onActivated);
         if (this._onDeactivated) window.removeEventListener('screensaver:deactivated', this._onDeactivated);
+        if (this._onThemeChanged) window.removeEventListener('theme:changed', this._onThemeChanged);
         this._onActivated = null;
         this._onDeactivated = null;
+        this._onThemeChanged = null;
     },
 
     async activate(_ctx) {},
@@ -221,9 +239,9 @@ export default {
         const config = _getConfig();
         if (!config) return;
 
-        // --- Matrix Rain toggle ---
+        // --- Matrix Rain toggle (dark theme only) ---
         if (key === 'matrixRain') {
-            if (value && !this._matrixRain) {
+            if (value && !this._matrixRain && !_isLightTheme()) {
                 const overlay = document.getElementById('press-start-overlay');
                 if (overlay && overlay.style.display !== 'none') {
                     _ensureTextmode().then(() => {

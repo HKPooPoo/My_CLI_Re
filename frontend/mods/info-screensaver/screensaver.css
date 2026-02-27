@@ -66,32 +66,28 @@
     text-align: center;
 }
 
-/* Light theme adaptation */
-:root.theme-light #info-screensaver-layer {
-    color: #222;
-}
-
+/* Light theme adaptation — delegate to CSS custom properties */
 :root.theme-light .is-box {
-    color: #333;
+    color: var(--text-green);
     text-shadow: none;
 }
 
 :root.theme-light [data-is-row="title"] .is-content {
-    color: #0066cc;
+    color: var(--text-cyan);
     text-shadow: none;
 }
 
 :root.theme-light .is-content.is-online {
-    color: #008800;
+    color: var(--text-green);
     text-shadow: none;
 }
 
 :root.theme-light .is-content.is-offline {
-    color: #cc0000;
+    color: var(--text-red);
     text-shadow: none;
 }
 
 :root.theme-light [data-is-row="clock"] .is-content {
-    color: #886600;
+    color: var(--text-yellow);
     text-shadow: none;
 }
