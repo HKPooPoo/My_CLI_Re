@@ -10,7 +10,7 @@ export const LlmService = {
         });
     },
 
-    async *chatStream(data, { signal, connectTimeout = 15000 } = {}) {
+    async *chatStream(data, { signal, connectTimeout = 30000 } = {}) {
         // Connection-phase timeout: abort if server doesn't respond within connectTimeout.
         // Once first chunk arrives, cancel the timer (stream can run as long as needed).
         const connectController = new AbortController();

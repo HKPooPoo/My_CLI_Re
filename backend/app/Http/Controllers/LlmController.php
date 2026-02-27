@@ -85,12 +85,20 @@ class LlmController extends Controller
         return response()->stream(function () use ($url, $payload) {
             ignore_user_abort(false);
 
+            // Heartbeat: flush headers + signal connection alive to frontend.
+            // Without this, PHP output buffering holds headers until first cURL
+            // chunk, causing frontend connect-timeout during model loading.
+            echo 'data: ' . json_encode(['status' => 'connected']) . "\n\n";
+            if (ob_get_level()) ob_flush();
+            flush();
+
             $ch = curl_init($url);
             curl_setopt_array($ch, [
-                CURLOPT_POST          => true,
-                CURLOPT_POSTFIELDS    => $payload,
-                CURLOPT_HTTPHEADER    => ['Content-Type: application/json'],
-                CURLOPT_TIMEOUT       => 300,
+                CURLOPT_POST           => true,
+                CURLOPT_POSTFIELDS     => $payload,
+                CURLOPT_HTTPHEADER     => ['Content-Type: application/json'],
+                CURLOPT_CONNECTTIMEOUT => 10,
+                CURLOPT_TIMEOUT        => 300,
                 CURLOPT_WRITEFUNCTION => function ($ch, $data) {
                     if (connection_aborted()) {
                         return 0; // Abort cURL transfer → frees worker + GPU
