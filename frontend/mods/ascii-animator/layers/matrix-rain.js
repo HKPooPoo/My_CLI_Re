@@ -21,6 +21,7 @@ export function createMatrixRain(overlay, config) {
 
     let rainSpeed = config.rainSpeed ?? 5;
     let rainDensity = config.rainDensity ?? 5;
+    const light = !!config.light;
     let destroyed = false;
     let tm = null;
 
@@ -139,7 +140,7 @@ export function createMatrixRain(overlay, config) {
     tm.draw(() => {
         if (destroyed) return;
 
-        tm.background(0);
+        tm.background(light ? 255 : 0);
 
         // Update shockwaves
         for (let i = shockwaves.length - 1; i >= 0; i--) {
@@ -199,13 +200,21 @@ export function createMatrixRain(overlay, config) {
                 if (t === 0) {
                     // Head: brightest
                     tm.char(randomChar());
-                    tm.charColor(180, 255, 180);
+                    if (light) tm.charColor(30, 30, 30);
+                    else tm.charColor(180, 255, 180);
                 } else {
-                    // Trail: fade from green to dark
+                    // Trail: fade out
                     const fade = 1 - (t / drop.trailLen);
-                    const g = Math.floor(30 + 200 * fade);
                     tm.char(randomChar());
-                    tm.charColor(0, g, 0);
+                    if (light) {
+                        // Dark chars fading to white
+                        const v = Math.floor(230 - 180 * fade);
+                        tm.charColor(v, v, v);
+                    } else {
+                        // Green chars fading to black
+                        const g = Math.floor(30 + 200 * fade);
+                        tm.charColor(0, g, 0);
+                    }
                 }
                 tm.point();
                 tm.pop();

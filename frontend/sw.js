@@ -1,4 +1,4 @@
-const CACHE_NAME = 'blackboard-v70-2026-02-27'; // Expanded hint system
+const CACHE_NAME = 'blackboard-v71-2026-02-27'; // MOD finetune: screensaver light colors + rain theme-aware palette
 
 // Core framework only — MOD files (mods/*, vendor libs, MOD assets) are NOT listed here.
 // They are cached lazily via the stale-while-revalidate fetch handler on first page load.
