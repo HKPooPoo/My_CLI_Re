@@ -1,8 +1,8 @@
-const CACHE_NAME = 'blackboard-v71-2026-02-27'; // MOD finetune: screensaver light colors + rain theme-aware palette
+const CACHE_NAME = 'blackboard-v73-2026-02-27'; // Matrix rain: remove interaction, resize handling, transparent cells; screensaver bg
 
 // Core framework only — MOD files (mods/*, vendor libs, MOD assets) are NOT listed here.
 // They are cached lazily via the stale-while-revalidate fetch handler on first page load.
-// mod-manifest.js triggers static imports of all MOD modules during evaluation.
+// mod-loader.js discovers MOD folders at runtime via Nginx autoindex JSON.
 const ASSETS = [
   '/',
   '/index.html',
@@ -38,7 +38,6 @@ const ASSETS = [
   '/javascript/version.js',
   '/javascript/theme-engine.js',
   '/mods/mod-loader.js',
-  '/mods/mod-manifest.js',
   '/audio/Cassette.mp3',
   '/audio/Click.mp3',
   '/audio/Erase.mp3',

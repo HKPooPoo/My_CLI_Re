@@ -16,6 +16,8 @@
     font-size: clamp(0.7rem, 2.2vw, 0.95rem);
     color: var(--text-green, #33ff33);
     text-shadow: 0 0 4px var(--text-green, #33ff33);
+    background: var(--bg-primary, #0a0a0a);
+    padding: 0.5em 0;
     align-items: stretch;
     gap: 0;
     line-height: 1.5;

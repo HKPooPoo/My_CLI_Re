@@ -1,22 +1,20 @@
 /**
- * Matrix Rain Layer — Interactive WebGL2 ASCII rain (textmode.js)
+ * Matrix Rain Layer — WebGL2 ASCII rain (textmode.js)
  *
  * Renders in the screensaver overlay. Drops fall with trailing chars.
- * Mouse creates a repulsion field; click/touch spawns a shockwave.
+ * Adapts color scheme to light/dark theme.
  */
 
 const CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%&';
 
 /**
  * @param {HTMLElement} overlay - #press-start-overlay
- * @param {Object} config - { rainSpeed, rainDensity }
+ * @param {Object} config - { rainSpeed, rainDensity, light }
  * @returns {{ destroy(), updateConfig(key, val) }}
  */
 export function createMatrixRain(overlay, config) {
     const canvas = document.createElement('canvas');
     canvas.id = 'aa-matrix-rain';
-    canvas.width = overlay.clientWidth || window.innerWidth;
-    canvas.height = overlay.clientHeight || window.innerHeight;
     overlay.insertBefore(canvas, overlay.firstChild);
 
     let rainSpeed = config.rainSpeed ?? 5;
@@ -24,13 +22,6 @@ export function createMatrixRain(overlay, config) {
     const light = !!config.light;
     let destroyed = false;
     let tm = null;
-
-    // Mouse state
-    let mouseX = -9999, mouseY = -9999;
-    let mouseGridX = 0, mouseGridY = 0;
-
-    // Shockwaves
-    const shockwaves = []; // { x, y, radius, maxRadius, strength }
 
     // Drops
     let drops = [];
@@ -55,172 +46,124 @@ export function createMatrixRain(overlay, config) {
         }
     }
 
-    function pixelToGrid(px, py) {
-        if (!cols || !rows) return [0, 0];
-        const gx = (px / canvas.width) * cols - halfCols;
-        const gy = (py / canvas.height) * rows - halfRows;
-        return [gx, gy];
+    // --- Resize handling ---
+    function sizeCanvas() {
+        canvas.width = overlay.clientWidth || window.innerWidth;
+        canvas.height = overlay.clientHeight || window.innerHeight;
     }
+    sizeCanvas();
 
-    // Event handlers
-    function onMouseMove(e) {
-        const rect = canvas.getBoundingClientRect();
-        mouseX = e.clientX - rect.left;
-        mouseY = e.clientY - rect.top;
-        [mouseGridX, mouseGridY] = pixelToGrid(mouseX, mouseY);
+    let resizeTimer = null;
+    function onResize() {
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(() => {
+            if (destroyed) return;
+            sizeCanvas();
+            if (tm) {
+                try { tm.noLoop(); } catch (_) {}
+            }
+            // Recreate textmode instance with new size
+            tm = _createTm();
+            if (tm) _wireDrawLoop(tm);
+        }, 200);
     }
+    window.addEventListener('resize', onResize);
 
-    function onTouchMove(e) {
-        if (e.touches.length > 0) {
-            const rect = canvas.getBoundingClientRect();
-            mouseX = e.touches[0].clientX - rect.left;
-            mouseY = e.touches[0].clientY - rect.top;
-            [mouseGridX, mouseGridY] = pixelToGrid(mouseX, mouseY);
-        }
-    }
-
-    function onPointerDown(e) {
-        const rect = canvas.getBoundingClientRect();
-        const px = (e.clientX ?? e.touches?.[0]?.clientX ?? 0) - rect.left;
-        const py = (e.clientY ?? e.touches?.[0]?.clientY ?? 0) - rect.top;
-        const [gx, gy] = pixelToGrid(px, py);
-        shockwaves.push({
-            x: gx, y: gy,
-            radius: 0, maxRadius: 15,
-            strength: 3,
-        });
-    }
-
-    overlay.addEventListener('mousemove', onMouseMove);
-    overlay.addEventListener('touchmove', onTouchMove, { passive: true });
-    overlay.addEventListener('mousedown', onPointerDown);
-    overlay.addEventListener('touchstart', onPointerDown, { passive: true });
-
-    // Create textmode.js instance
-    try {
-        tm = window.textmode.create({
-            canvas,
-            width: canvas.width,
-            height: canvas.height,
-            fontSize: 14,
-            frameRate: 30,
-        });
-    } catch (e) {
-        console.error('[matrix-rain] textmode.create failed:', e);
-        // Fallback: try without canvas option
+    // --- textmode.js creation ---
+    function _createTm() {
         try {
-            tm = window.textmode.create({
+            return window.textmode.create({
+                canvas,
                 width: canvas.width,
                 height: canvas.height,
                 fontSize: 14,
                 frameRate: 30,
             });
-            // Move the created canvas into our overlay
-            const createdCanvas = document.querySelector('canvas:not(#aa-matrix-rain):not(#aa-perlin-bg)');
-            if (createdCanvas) {
-                canvas.remove();
-                createdCanvas.id = 'aa-matrix-rain';
-                overlay.insertBefore(createdCanvas, overlay.firstChild);
+        } catch (e) {
+            console.error('[matrix-rain] textmode.create failed:', e);
+            try {
+                const inst = window.textmode.create({
+                    width: canvas.width,
+                    height: canvas.height,
+                    fontSize: 14,
+                    frameRate: 30,
+                });
+                const createdCanvas = document.querySelector('canvas:not(#aa-matrix-rain):not(#aa-perlin-bg)');
+                if (createdCanvas) {
+                    canvas.remove();
+                    createdCanvas.id = 'aa-matrix-rain';
+                    overlay.insertBefore(createdCanvas, overlay.firstChild);
+                }
+                return inst;
+            } catch (e2) {
+                console.error('[matrix-rain] textmode.create fallback failed:', e2);
+                return null;
             }
-        } catch (e2) {
-            console.error('[matrix-rain] textmode.create fallback failed:', e2);
-            canvas.remove();
-            return { destroy() {}, updateConfig() {} };
         }
     }
 
-    tm.setup(() => {
-        cols = tm.grid.cols;
-        rows = tm.grid.rows;
-        halfCols = Math.floor(cols / 2);
-        halfRows = Math.floor(rows / 2);
-        initDrops();
-    });
+    function _wireDrawLoop(instance) {
+        instance.setup(() => {
+            cols = instance.grid.cols;
+            rows = instance.grid.rows;
+            halfCols = Math.floor(cols / 2);
+            halfRows = Math.floor(rows / 2);
+            initDrops();
+        });
 
-    tm.draw(() => {
-        if (destroyed) return;
+        instance.draw(() => {
+            if (destroyed) return;
 
-        tm.background(0, 0, 0, 0);
+            instance.background(0, 0, 0, 0);
 
-        // Update shockwaves
-        for (let i = shockwaves.length - 1; i >= 0; i--) {
-            shockwaves[i].radius += 0.5;
-            shockwaves[i].strength *= 0.97;
-            if (shockwaves[i].radius > shockwaves[i].maxRadius) {
-                shockwaves.splice(i, 1);
-            }
-        }
+            for (const drop of drops) {
+                drop.y += drop.speed;
 
-        // Render drops
-        for (const drop of drops) {
-            drop.y += drop.speed;
-
-            // Reset when fully off screen
-            if (drop.y - drop.trailLen > halfRows) {
-                if (Math.random() < 0.02 * rainSpeed) {
-                    drop.y = -halfRows - Math.random() * 10;
-                    drop.speed = (0.2 + Math.random() * 0.3) * (rainSpeed / 5);
-                }
-                continue;
-            }
-
-            // Mouse repulsion
-            const dx = drop.col - mouseGridX;
-            const dy = drop.y - mouseGridY;
-            const dist = Math.sqrt(dx * dx + dy * dy);
-            const repelRadius = 6;
-            let offsetX = 0;
-            if (dist < repelRadius && dist > 0) {
-                offsetX = (dx / dist) * (repelRadius - dist) * 0.5;
-            }
-
-            // Shockwave push
-            for (const sw of shockwaves) {
-                const swDx = drop.col - sw.x;
-                const swDy = drop.y - sw.y;
-                const swDist = Math.sqrt(swDx * swDx + swDy * swDy);
-                const ringDist = Math.abs(swDist - sw.radius);
-                if (ringDist < 3 && swDist > 0) {
-                    const push = sw.strength * (1 - ringDist / 3);
-                    offsetX += (swDx / swDist) * push;
-                    drop.y += (swDy / swDist) * push * 0.3;
-                }
-            }
-
-            // Draw trail
-            for (let t = 0; t < drop.trailLen; t++) {
-                const ty = Math.floor(drop.y - t);
-                if (ty < -halfRows || ty >= halfRows) continue;
-
-                const renderX = Math.round(drop.col + offsetX * (1 - t / drop.trailLen));
-
-                tm.push();
-                tm.translate(renderX, ty, 0);
-
-                if (t === 0) {
-                    // Head: brightest
-                    tm.char(randomChar());
-                    if (light) tm.charColor(30, 30, 30);
-                    else tm.charColor(180, 255, 180);
-                } else {
-                    // Trail: fade out
-                    const fade = 1 - (t / drop.trailLen);
-                    tm.char(randomChar());
-                    if (light) {
-                        // Dark chars fading to white
-                        const v = Math.floor(230 - 180 * fade);
-                        tm.charColor(v, v, v);
-                    } else {
-                        // Green chars fading to black
-                        const g = Math.floor(30 + 200 * fade);
-                        tm.charColor(0, g, 0);
+                if (drop.y - drop.trailLen > halfRows) {
+                    if (Math.random() < 0.02 * rainSpeed) {
+                        drop.y = -halfRows - Math.random() * 10;
+                        drop.speed = (0.2 + Math.random() * 0.3) * (rainSpeed / 5);
                     }
+                    continue;
                 }
-                tm.point();
-                tm.pop();
+
+                for (let t = 0; t < drop.trailLen; t++) {
+                    const ty = Math.floor(drop.y - t);
+                    if (ty < -halfRows || ty >= halfRows) continue;
+
+                    instance.push();
+                    instance.translate(drop.col, ty, 0);
+
+                    if (t === 0) {
+                        instance.char(randomChar());
+                        if (light) instance.charColor(30, 30, 30);
+                        else instance.charColor(180, 255, 180);
+                    } else {
+                        const fade = 1 - (t / drop.trailLen);
+                        instance.char(randomChar());
+                        if (light) {
+                            const v = Math.floor(230 - 180 * fade);
+                            instance.charColor(v, v, v);
+                        } else {
+                            const g = Math.floor(30 + 200 * fade);
+                            instance.charColor(0, g, 0);
+                        }
+                    }
+                    instance.point();
+                    instance.pop();
+                }
             }
-        }
-    });
+        });
+    }
+
+    // Initial creation
+    tm = _createTm();
+    if (!tm) {
+        canvas.remove();
+        window.removeEventListener('resize', onResize);
+        return { destroy() {}, updateConfig() {} };
+    }
+    _wireDrawLoop(tm);
 
     return {
         updateConfig(key, val) {
@@ -238,10 +181,8 @@ export function createMatrixRain(overlay, config) {
 
         destroy() {
             destroyed = true;
-            overlay.removeEventListener('mousemove', onMouseMove);
-            overlay.removeEventListener('touchmove', onTouchMove);
-            overlay.removeEventListener('mousedown', onPointerDown);
-            overlay.removeEventListener('touchstart', onPointerDown);
+            clearTimeout(resizeTimer);
+            window.removeEventListener('resize', onResize);
             try { tm.noLoop(); } catch (_) {}
             const el = document.getElementById('aa-matrix-rain');
             if (el) el.remove();
