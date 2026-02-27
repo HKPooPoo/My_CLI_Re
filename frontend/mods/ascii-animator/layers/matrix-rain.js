@@ -115,6 +115,7 @@ export function createMatrixRain(overlay, config) {
             if (destroyed) return;
 
             instance.background(0, 0, 0, 0);
+            instance.cellColor(0, 0, 0, 0);
 
             for (const drop of drops) {
                 drop.y += drop.speed;

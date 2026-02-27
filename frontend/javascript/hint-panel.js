@@ -26,6 +26,7 @@ window.addEventListener('settings:changed', (e) => {
 });
 
 document.addEventListener('mouseenter', (e) => {
+    if (!e.target.closest) return;
     const target = e.target.closest('[data-hint]');
     if (!target || !enabled) return;
     panel.textContent = t(target.dataset.hint);
@@ -33,6 +34,7 @@ document.addEventListener('mouseenter', (e) => {
 }, true);
 
 document.addEventListener('mouseleave', (e) => {
+    if (!e.target.closest) return;
     const target = e.target.closest('[data-hint]');
     if (!target) return;
     panel.classList.remove('active');
