@@ -34,6 +34,7 @@
     <link rel="stylesheet" href="stylesheets/mod-shared.css">
     <link rel="stylesheet" href="stylesheets/page-mods.css">
     <link rel="stylesheet" href="stylesheets/feature-markdown.css">
+    <link rel="stylesheet" href="stylesheets/hint-panel.css">
     <!--注意@media放在尾！！！-->
     <link rel="stylesheet" href="stylesheets/@media.css">
     <link rel="stylesheet" href="stylesheets/layer.css">
@@ -165,8 +166,8 @@
                     <button class="feature-shelf-back-btn">>></button>
                 </div>
             </div>
-            <button class="push-btn" data-i18n="common.push">PUSH</button>
-            <button class="pull-btn" data-i18n="common.pull">PULL</button>
+            <button class="push-btn" data-hint="hints.push" data-i18n="common.push">PUSH</button>
+            <button class="pull-btn" data-hint="hints.pull" data-i18n="common.pull">PULL</button>
             <div class="head-indicator">
                 <div class="branch-is-saved">&#36;{is_saved}</div>:
                 <div class="branch-name">&#36;{branch_name}</div>:
@@ -221,12 +222,12 @@
                     </div>
                     <div class="vcs-button-container-container">
                         <div class="vcs-button-container">
-                            <button class="vcs-btn" id="commit-btn" data-i18n="blackboard.commitBtn">COMMIT</button>
-                            <button class="vcs-btn" id="checkout-btn" data-i18n="blackboard.checkoutBtn">CHECKOUT</button>
+                            <button class="vcs-btn" id="commit-btn" data-hint="hints.commit" data-i18n="blackboard.commitBtn">COMMIT</button>
+                            <button class="vcs-btn" id="checkout-btn" data-hint="hints.checkout" data-i18n="blackboard.checkoutBtn">CHECKOUT</button>
                         </div>
                         <div class="vcs-button-container">
-                            <button class="vcs-btn" id="branch-btn" data-i18n="blackboard.forkBtn">FORK</button>
-                            <button class="vcs-btn" id="drop-btn" data-i18n="blackboard.dropBtn">DROP</button>
+                            <button class="vcs-btn" id="branch-btn" data-hint="hints.fork" data-i18n="blackboard.forkBtn">FORK</button>
+                            <button class="vcs-btn" id="drop-btn" data-hint="hints.dropClean" data-i18n="blackboard.dropBtn">DROP</button>
                         </div>
                     </div>
                 </div>
@@ -291,6 +292,8 @@
                     <div class="misc-platform-version" id="platform-version"></div>
                 </div>
             </div>
+            <!--hint-panel.js-->
+            <script type="module" src="javascript/hint-panel.js"></script>
             <!--blackboard.js-->
             <script type="module" src="javascript/blackboard.js"></script>
             <script type="module" src="javascript/feature-shelf.js"></script>

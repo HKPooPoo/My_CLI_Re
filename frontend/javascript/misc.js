@@ -35,7 +35,7 @@ export function createRangeControl(container, scope, key, labelKey, min, max, st
     range.min = min;
     range.max = max;
     range.step = step;
-    range.value = Settings.get(scope, key);
+    range.value = scope === 'global' ? Settings.getGlobal(key) : Settings.get(scope, key);
 
     const valueSpan = document.createElement('span');
     valueSpan.className = 'misc-range-value crt-text-green';
@@ -43,7 +43,8 @@ export function createRangeControl(container, scope, key, labelKey, min, max, st
 
     range.addEventListener('input', () => {
         valueSpan.textContent = range.value;
-        Settings.set(scope, key, parseInt(range.value));
+        if (scope === 'global') Settings.setGlobal(key, parseInt(range.value));
+        else Settings.set(scope, key, parseInt(range.value));
     });
     range.addEventListener('change', () => {
         playAudio('UIGeneralFocus.mp3');
@@ -71,15 +72,16 @@ export function createToggleControl(container, scope, key, labelKey) {
     btn.className = 'misc-toggle-btn crt-text-green';
 
     function updateLabel() {
-        const val = Settings.get(scope, key);
+        const val = scope === 'global' ? Settings.getGlobal(key) : Settings.get(scope, key);
         btn.textContent = val ? t('mods.enabled') : t('mods.disabled');
     }
     updateLabel();
 
     btn.addEventListener('click', () => {
         playAudio('UISelectOn.mp3');
-        const current = Settings.get(scope, key);
-        Settings.set(scope, key, !current);
+        const current = scope === 'global' ? Settings.getGlobal(key) : Settings.get(scope, key);
+        if (scope === 'global') Settings.setGlobal(key, !current);
+        else Settings.set(scope, key, !current);
         updateLabel();
     });
 
@@ -127,6 +129,8 @@ export const MISC = {
             autoClean: createToggleControl(container, 'bb', 'autoCleanBlanks', 'config.autoCleanBlanks'),
             updateTs: createToggleControl(container, 'bb', 'updateTimestamp', 'config.updateTimestamp'),
             autoSync: createToggleControl(container, 'bb', 'autoSync', 'config.autoSync'),
+            showHints: createToggleControl(container, 'global', 'showHints', 'config.showHints'),
+            screensaverTimeout: createRangeControl(container, 'global', 'screensaverTimeout', 'config.screensaverTimeout', 10, 300, 10),
         };
     },
 
@@ -151,6 +155,11 @@ export const MISC = {
             this.bbControls.autoClean.updateLabel();
             this.bbControls.updateTs.updateLabel();
             this.bbControls.autoSync?.updateLabel();
+            this.bbControls.showHints?.updateLabel();
+            if (this.bbControls.screensaverTimeout) {
+                this.bbControls.screensaverTimeout.range.value = Settings.getGlobal('screensaverTimeout');
+                this.bbControls.screensaverTimeout.valueSpan.textContent = Settings.getGlobal('screensaverTimeout');
+            }
         }
     },
 

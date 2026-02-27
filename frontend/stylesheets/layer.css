@@ -14,6 +14,11 @@
     /* display: none; */
 }
 
+/* hint-panel.css */
+.hint-panel {
+    z-index: 1002;
+}
+
 /* navi.css */
 .navi-item-text,
 .sub-navi-track {

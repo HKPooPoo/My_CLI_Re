@@ -13,6 +13,7 @@
  */
 
 import { setActiveNaviItem, updateNaviPosition } from "./navi.js";
+import * as Settings from './settings.js';
 
 const overlay = document.getElementById("press-start-overlay");
 
@@ -84,13 +85,14 @@ window.addEventListener("blur", () => {
     if (overlay.style.display === "flex") return;
 
     // 當離開頁面時間超過設定值時，恢復 Press Start 螢幕
+    const timeout = (parseInt(Settings.getGlobal('screensaverTimeout')) || 60) * 1000;
     focusTimer = setTimeout(() => {
         overlay.classList.add("crt-switch-on");
         overlay.style.display = "flex";
         window.dispatchEvent(new CustomEvent('screensaver:activated', {
             detail: { initial: false }
         }));
-    }, 60000); // 預設 60 秒
+    }, timeout);
 });
 
 // 初始頁面載入：overlay 一開始是可見的（開機畫面）

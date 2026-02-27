@@ -223,6 +223,16 @@
   "system": {
     "loginRequired": "此操作需要登入。"
   },
+  "hints": {
+    "push": "推動 — 瀏覽較新的紀錄。在最前面建立空白頁。",
+    "pull": "拉取 — 瀏覽此分支中較舊的紀錄。",
+    "commit": "上傳 — 將所選分支的所有本機紀錄上傳至伺服器。",
+    "checkout": "取出 — 切換至所選分支，或從伺服器下載。",
+    "fork": "分支副本 — 將所選分支的所有紀錄複製為獨立的新分支。",
+    "dropClean": "清除 — 清空此分支所有紀錄，保留一個空白佔位。",
+    "dropDrop": "捨棄 — 刪除此分支的伺服器端副本。",
+    "dropDelete": "刪除 — 從本機永久移除此空分支。"
+  },
   "config": {
     "maxSlotLabel": "最大紀錄數",
     "maxFilesLabel": "最大附件數",
@@ -230,6 +240,8 @@
     "updateTimestamp": "更新時間戳",
     "autoSync": "自動同步（多裝置）",
     "boardSwap": "預設交換面板",
+    "showHints": "按鈕提示",
+    "screensaverTimeout": "螢幕保護延遲（秒）",
     "resetAll": "重設所有設定",
     "resetComplete": "已重設為預設值"
   },

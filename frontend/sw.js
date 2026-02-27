@@ -1,4 +1,4 @@
-const CACHE_NAME = 'blackboard-v61-2026-02-27'; // Remove MOD files from ASSETS
+const CACHE_NAME = 'blackboard-v62-2026-02-27'; // Hover hint panel + screensaver config
 
 // Core framework only — MOD files (mods/*, vendor libs, MOD assets) are NOT listed here.
 // They are cached lazily via the stale-while-revalidate fetch handler on first page load.

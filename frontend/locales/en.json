@@ -223,6 +223,16 @@
   "system": {
     "loginRequired": "LOGIN REQUIRED FOR THIS OPERATION."
   },
+  "hints": {
+    "push": "PUSH — Navigate toward NEWER records. Creates a new blank page at the top.",
+    "pull": "PULL — Navigate toward OLDER records in this branch.",
+    "commit": "COMMIT — Upload ALL local records of the selected branch to server.",
+    "checkout": "CHECKOUT — Switch to the selected branch, or download it from server.",
+    "fork": "FORK — Duplicate all records of the selected branch into a new independent branch.",
+    "dropClean": "CLEAN — Wipe all records in this branch, leaving one empty placeholder.",
+    "dropDrop": "DROP — Delete the server-side copy of this branch.",
+    "dropDelete": "DELETE — Permanently remove this empty branch from local storage."
+  },
   "config": {
     "maxSlotLabel": "MAX ENTRIES",
     "maxFilesLabel": "MAX FILES",
@@ -230,6 +240,8 @@
     "updateTimestamp": "UPDATE TIMESTAMP",
     "autoSync": "AUTO-SYNC (MULTI-DEVICE)",
     "boardSwap": "BOARD SWAP DEFAULT",
+    "showHints": "BUTTON HINTS",
+    "screensaverTimeout": "SCREENSAVER DELAY (SEC)",
     "resetAll": "RESET ALL SETTINGS",
     "resetComplete": "SETTINGS RESET TO DEFAULTS"
   },

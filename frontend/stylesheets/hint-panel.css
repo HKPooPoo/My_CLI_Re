@@ -1,0 +1,28 @@
+.hint-panel {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    /* Exactly cover navi-bar + sub-navi-indicator-mask */
+    height: calc(
+        clamp(var(--sub-navi-height), min(8vw, 8vh), var(--navi-height))
+        + clamp(32px, min(6vw, 6vh), var(--sub-navi-height))
+    );
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 12px;
+    color: var(--text-green);
+    font-size: var(--font-size);
+    font-weight: bold;
+    text-shadow: var(--text-shadow-green);
+    text-align: center;
+    /* .frosted-glass class provides backdrop-filter + border */
+    transform: translateY(-100%);
+    transition: transform var(--transition-normal) ease-out;
+    pointer-events: none;
+}
+
+.hint-panel.active {
+    transform: translateY(0);
+}

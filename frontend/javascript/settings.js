@@ -19,6 +19,8 @@ const GLOBAL_DEFAULTS = {
     locale: 'default',
     globalAudio: '100',
     sfx: '100',
+    showHints: true,
+    screensaverTimeout: 60,
 };
 
 // --- Debounced push ---

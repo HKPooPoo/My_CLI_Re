@@ -439,6 +439,7 @@ async function updateDropButtonState() {
         dropBtnEl.textContent = t('common.na');
         dropBtnEl.disabled = true;
         currentDropAction = null;
+        delete dropBtnEl.dataset.hint;
         return;
     }
     dropBtnEl.disabled = false;
@@ -461,19 +462,23 @@ async function updateDropButtonState() {
     // 1. Local & Content -> CLEAN
     if (selected.isLocal && hasContent) {
         dropBtnEl.textContent = t('blackboard.cleanStep1');
+        dropBtnEl.dataset.hint = 'hints.dropClean';
         currentDropAction = "clean";
     }
     // 2. Cloud (且無 Local Content 需清理) -> DROP
     else if (selected.isServer) {
         dropBtnEl.textContent = t('blackboard.dropStep1');
+        dropBtnEl.dataset.hint = 'hints.dropDrop';
         currentDropAction = "drop";
     }
     // 3. Local (且無 Content, 無 Cloud) -> DELETE
     else if (selected.isLocal) {
         dropBtnEl.textContent = t('blackboard.deleteStep1');
+        dropBtnEl.dataset.hint = 'hints.dropDelete';
         currentDropAction = "delete";
     } else {
         dropBtnEl.textContent = t('common.na');
+        delete dropBtnEl.dataset.hint;
         currentDropAction = null;
     }
 }

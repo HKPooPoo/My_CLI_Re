@@ -230,6 +230,16 @@
     "sfxLabel": "Sound Effects",
     "localeName": "English"
   },
+  "hints": {
+    "push": "Navigate toward newer entries. Creates a blank page at the top.",
+    "pull": "Navigate toward older entries in this topic.",
+    "commit": "Upload all local entries of the selected topic to server.",
+    "checkout": "Switch to the selected topic, or download it from server.",
+    "fork": "Duplicate all entries into a new independent topic.",
+    "dropClean": "Clear all entries in this topic, leaving one empty placeholder.",
+    "dropDrop": "Delete the server-side copy of this topic.",
+    "dropDelete": "Permanently remove this empty topic from local storage."
+  },
   "config": {
     "maxSlotLabel": "Max Entries",
     "maxFilesLabel": "Max Files",
@@ -237,6 +247,8 @@
     "updateTimestamp": "Update Timestamp",
     "autoSync": "Auto-Sync (Multi-Device)",
     "boardSwap": "Board Swap Default",
+    "showHints": "Button Hints",
+    "screensaverTimeout": "Screensaver Delay (sec)",
     "resetAll": "Reset All Settings",
     "resetComplete": "Settings reset to defaults."
   },
