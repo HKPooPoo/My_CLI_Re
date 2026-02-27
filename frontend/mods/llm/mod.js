@@ -41,7 +41,6 @@ export default {
         const prompt = ctx.config.prompt;
 
         if (!prompt) { out.value = tFn('mods.llm.noPrompt'); return; }
-        out.value = tFn('mods.llm.processing');
 
         try {
             const inputText = ctx.board.getText().trim();
