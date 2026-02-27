@@ -146,6 +146,7 @@ export default {
     async _startAll() {
         if (this._running) return;
         this._running = true;
+        document.documentElement.classList.add('aa-active');
 
         const config = _getConfig();
         if (!config) return;
@@ -199,6 +200,7 @@ export default {
     /** Stop all layers. Called when instance is removed. */
     _stopAll() {
         this._running = false;
+        document.documentElement.classList.remove('aa-active');
 
         if (this._matrixRain) { this._matrixRain.destroy(); this._matrixRain = null; }
         if (this._perlinBg) { this._perlinBg.destroy(); this._perlinBg = null; }

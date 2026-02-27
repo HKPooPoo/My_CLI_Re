@@ -174,7 +174,7 @@ export default {
             isRecording = true;
             if ($voiceBtn) $voiceBtn.classList.add("recording");
             playAudio("UISelectOn.mp3");
-            window.voiceMsg = _ui.toast(_t('mods.speechToText.listening'));
+            window.voiceMsg = _ui.toastLoading(_t('mods.speechToText.listening'));
         } catch (err) {
             console.error("Mic Access Error:", err);
             if ($voiceBtn) $voiceBtn.classList.remove("recording");

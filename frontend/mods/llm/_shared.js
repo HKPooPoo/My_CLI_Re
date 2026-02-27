@@ -239,6 +239,8 @@ export async function runLlm(config, prompt, inputText, out, tFn) {
     const messages = buildMessages(prompt, inputText, provider);
 
     try {
+        out.dataset.loading = 'true';
+
         if (provider === 'client') {
             if (!navigator.gpu) {
                 out.value = tFn('mods.llm.noWebGPU');
@@ -298,6 +300,7 @@ export async function runLlm(config, prompt, inputText, out, tFn) {
         console.error(`[llm] ${tag} error:`, e);
         out.value = tFn(`mods.llm.${tag}Error`, { error: e.message || String(e) });
     } finally {
+        delete out.dataset.loading;
         if (_currentAbortController === controller) _currentAbortController = null;
     }
 }

@@ -254,6 +254,9 @@ export function createModContext(opts) {
             toastSuccess(msg) {
                 return BBMessage.success(msg);
             },
+            toastLoading(msg, duration) {
+                return BBMessage.loading(msg, duration);
+            },
             getShelfElement() {
                 const shelfId = template?.shelfPanelId;
                 if (!shelfId) return null;

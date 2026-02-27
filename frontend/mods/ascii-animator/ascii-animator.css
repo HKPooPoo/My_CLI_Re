@@ -46,3 +46,39 @@
 }
 
 /* Toast spinner: pure textContent manipulation, no CSS needed */
+
+/* =========================================================
+ * Cross-MOD Loading Animations (data-loading convention)
+ * Gated behind .aa-active on <html> — no effect without
+ * an ASCII Animator instance.
+ * ========================================================= */
+
+/* Textarea loading: pulsing border glow */
+.aa-active textarea[data-loading="true"] {
+    animation: aa-loading-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes aa-loading-pulse {
+    0%, 100% { box-shadow: 0 0 0 1px var(--text-green); }
+    50%      { box-shadow: 0 0 8px 2px var(--text-green); }
+}
+
+/* Feature button loading: subtle opacity pulse */
+.aa-active .feature-btn[data-loading="true"] {
+    animation: aa-btn-pulse 1s ease-in-out infinite;
+}
+
+@keyframes aa-btn-pulse {
+    0%, 100% { opacity: 1; }
+    50%      { opacity: 0.5; }
+}
+
+/* Light theme: reduced glow */
+:root.theme-light.aa-active textarea[data-loading="true"] {
+    animation: aa-loading-pulse-light 1.5s ease-in-out infinite;
+}
+
+@keyframes aa-loading-pulse-light {
+    0%, 100% { box-shadow: 0 0 0 1px var(--text-green); }
+    50%      { box-shadow: 0 0 6px 1px var(--text-green); }
+}

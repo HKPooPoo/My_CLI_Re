@@ -140,7 +140,10 @@ export default {
             return;
         }
 
-        if (this._outputEl) this._outputEl.value = t('mods.translate.decrypting');
+        if (this._outputEl) {
+            this._outputEl.value = t('mods.translate.decrypting');
+            this._outputEl.dataset.loading = 'true';
+        }
 
         try {
             const provider = ctx.instance.getConfig('provider') || 'google';
@@ -159,6 +162,8 @@ export default {
             if (this._outputEl) {
                 this._outputEl.value = t('mods.translate.criticalBreach', { error: e.message.toUpperCase() });
             }
+        } finally {
+            if (this._outputEl) delete this._outputEl.dataset.loading;
         }
     },
 
