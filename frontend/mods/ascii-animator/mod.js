@@ -10,6 +10,7 @@ import { createMatrixRain } from './layers/matrix-rain.js';
 import { createPerlinBg } from './layers/perlin-bg.js';
 import { createMouseLight } from './layers/mouse-light.js';
 import { createToastSpinner } from './layers/toast-spinner.js';
+import { createShelfSpinner } from './layers/shelf-spinner.js';
 import { getInstances } from '../mod-loader.js';
 
 let _textmodeLoaded = false;
@@ -97,6 +98,11 @@ export default {
             this._toastSpinner = createToastSpinner();
         }
 
+        // Shelf spinner (textarea loading animation)
+        if (config.toastAnim !== false && !this._shelfSpinner) {
+            this._shelfSpinner = createShelfSpinner();
+        }
+
         // Mouse light
         if (config.mouseLight && !this._mouseLight) {
             this._mouseLight = createMouseLight(config);
@@ -159,6 +165,7 @@ export default {
         if (this._perlinBg) { this._perlinBg.destroy(); this._perlinBg = null; }
         if (this._mouseLight) { this._mouseLight.destroy(); this._mouseLight = null; }
         if (this._toastSpinner) { this._toastSpinner.destroy(); this._toastSpinner = null; }
+        if (this._shelfSpinner) { this._shelfSpinner.destroy(); this._shelfSpinner = null; }
 
         if (this._onActivated) window.removeEventListener('screensaver:activated', this._onActivated);
         if (this._onDeactivated) window.removeEventListener('screensaver:deactivated', this._onDeactivated);
@@ -229,6 +236,12 @@ export default {
             } else if (!value && this._toastSpinner) {
                 this._toastSpinner.destroy();
                 this._toastSpinner = null;
+            }
+            if (value && !this._shelfSpinner) {
+                this._shelfSpinner = createShelfSpinner();
+            } else if (!value && this._shelfSpinner) {
+                this._shelfSpinner.destroy();
+                this._shelfSpinner = null;
             }
         }
     },

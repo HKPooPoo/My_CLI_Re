@@ -34,7 +34,8 @@ export default {
     },
 
     getDeployPages(config) {
-        return ['broadcast-channel'];
+        const target = TARGETS[config.target || 'text'];
+        return target ? [target.page] : ['broadcast-channel'];
     },
 
     _outputEl: null,

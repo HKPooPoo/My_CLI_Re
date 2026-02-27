@@ -35,6 +35,7 @@ const ASSETS = [
   '/javascript/mod-board-provider.js',
   '/javascript/mod-field-registry.js',
   '/javascript/mods-manager.js',
+  '/javascript/blackboard-msg.js',
   '/javascript/version.js',
   '/javascript/theme-engine.js',
   '/mods/mod-loader.js',
@@ -118,8 +119,10 @@ self.addEventListener('fetch', (event) => {
       // [FIX]: Use no-cache to bypass browser HTTP cache during background revalidation
       // — ensures stale-while-revalidate actually gets fresh files from server
       const fetchPromise = fetch(event.request, { cache: 'no-cache' }).then((networkResponse) => {
-        // [FIX]: 忽略 206 Partial Content (影片/音頻串流)，Cache API 不支援
-        if (networkResponse.status === 206) {
+        // [FIX]: Only cache successful (2xx) responses — never cache 403/404/500
+        // errors, which would poison the SWR cache and break MOD loading.
+        // Also skip 206 Partial Content (streaming) — Cache API doesn't support it.
+        if (!networkResponse.ok || networkResponse.status === 206) {
           return networkResponse;
         }
 

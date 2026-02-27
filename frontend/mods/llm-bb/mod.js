@@ -35,7 +35,7 @@ export default {
     },
 
     getDeployPages(config) {
-        const target = TARGETS[config.target];
+        const target = TARGETS[config.target || 'branch-log'];
         return target ? [target.page] : [];
     },
 
