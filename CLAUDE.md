@@ -169,8 +169,18 @@ Two-level hierarchy: main navi (`data-navi-item`: blackboard, walkie-typie, broa
 
 - **JS:** `t('section.key')` or `t('section.key', { var })` for interpolation
 - **HTML:** `data-i18n="key"` for textContent, `data-i18n-placeholder="key"` for placeholder
-- **New strings:** Add to BOTH `frontend/locales/en.json` AND `frontend/locales/zh-TW.json`
+- **New strings:** Add to ALL THREE locale files: `en.json`, `default.json`, AND `zh-TW.json`
 - Locale stored in `localStorage['locale']`, defaults to `'default'` (which falls back to en.json on fetch failure)
+
+**Three locales, three voices:**
+
+| File | Purpose | Terminology style |
+|------|---------|-------------------|
+| `en.json` | "GIT MODE" — VCS-inspired power user English | PUSH/PULL/COMMIT/BRANCH |
+| `default.json` | Friendly English — zero jargon, guides the user | Newer/Older/Upload/Topic |
+| `zh-TW.json` | Natural Traditional Chinese — no translated manuals | 較新/較舊/上傳/主題 |
+
+Code-level identifiers (`commit`, `checkout`, `push`, `pull`, `branch`) remain unchanged. Only **UI display text** varies per locale. When adding strings to `default.json` and `zh-TW.json`, never leak VCS terms — use the vocabulary mapping in the table above.
 - `mergeStrings(partial)` deep-merges into global strings (used by mod-loader for MOD-local i18n)
 - `renderDOM()` re-scans all `data-i18n*` elements — **do NOT** put `data-i18n` on elements managed by MultiStepButton (conflicts with armed-state label)
 
@@ -182,9 +192,11 @@ Two-level hierarchy: main navi (`data-navi-item`: blackboard, walkie-typie, broa
 
 ### Toast & Messages
 
-- `toast.addMessage(text, duration, type)` — creates animated toast, returns `{ update(text, duration), close() }`
+- `toast.addMessage(text, duration, type, loading)` — creates animated toast, returns `{ update(text, duration), close() }`
 - `BBMessage.info(text)` — prefixes "SYSTEM > ", `BBMessage.error(text)` — prefixes "CRITICAL > ", `BBMessage.success(text)` — prefixes "SYSTEM > "
+- `BBMessage.loading(text)` — prefixes "SYSTEM > ", sets `data-loading="true"` on toast element. `.update()` auto-removes `data-loading`. Use for async operations that show progress (auth, sync, fork, etc.)
 - `BBMessage.requireLogin()` — standard login-required message
+- **ModContext:** `ctx.ui.toast()`, `ctx.ui.toastError()`, `ctx.ui.toastSuccess()`, `ctx.ui.toastLoading()`
 
 ### CSS Architecture (`stylesheets/`)
 
@@ -249,7 +261,7 @@ Instance data model (persisted in `localStorage['mod-instances']`):
 - **`mod-field-registry.js`** — config field type registry. Built-in: `select`, `text`, `range`, `toggle`, `info`, `action`. Custom via `ctx.ui.registerFieldType()`
 - **`mod-hooks.js`** — priority-ordered pipeline. API: `register/unregister/unregisterAll/run/has`. Hook points not yet instrumented (Phase C deferred).
 - **`mod-tools.js`** — cross-MOD tool registry (OpenAI function-calling compatible). API: `register/unregisterAll/executeTool/getToolDefinitions/hasTool/getToolNames`
-- **`mods-manager.js`** — list page (template catalog + active instances InfiniteList) + config page (fields from `configSchema`, instance management: UP/DOWN/DELETE)
+- **`mods-manager.js`** — list page (template catalog + active instances, unified InfiniteList via `.mods-navigable` class) + config page (fields from `configSchema`, instance management: UP/DOWN/DELETE). Wheel/click navigates both catalog and active items; selecting a catalog item shows template preview in config, selecting an instance shows full config.
 - **`feature-shelf.js`** — feature button visibility per page (driven by `template.pages` keys), click → deactivate previous → build ModContext → `template.activate(ctx)`. Exports: `openShelf()`, `closeShelf()`
 
 ### Instance UI Positions (4)
@@ -308,7 +320,15 @@ when built-in types genuinely don't cover the use case.
 - Prefer multiple simple instances over one complex config
 - The `configSchema` should be scannable in under 5 seconds
 
-**7. Yellow-zone bypasses.** When no framework API exists for what you need:
+**7. Cross-MOD loading convention (`data-loading`).** When a MOD performs async operations:
+- Set `element.dataset.loading = 'true'` on the affected element (textarea, button, etc.)
+- Remove in `finally` block: `delete element.dataset.loading`
+- For toasts: use `ctx.ui.toastLoading()` or `BBMessage.loading()` (auto-sets attribute)
+- ASCII Animator MOD responds with visual animations (gated behind `.aa-active` class on `<html>`)
+- Without ASCII Animator installed, `data-loading` is inert — zero visual effect
+- This is a convention-based protocol: producers never import the consumer
+
+**8. Yellow-zone bypasses.** When no framework API exists for what you need:
 - Direct DOM access is acceptable WITH a comment: `// BYPASS: reason, migrate when API X exists`
 - Examples: textarea event listeners (no `record:textChanged` hook yet), secondary textarea reads
 - When the framework API is added, migrate all yellow-zone code to use it
@@ -321,7 +341,7 @@ when built-in types genuinely don't cover the use case.
 
 **Template version** — `template.version` (SemVer string). Displayed in mods-manager list and config pages.
 
-### Current Templates (7)
+### Current Templates (9)
 
 | ID | Group | maxInstances | Providers | Tools |
 |----|-------|-------------|-----------|-------|
@@ -329,6 +349,8 @@ when built-in types genuinely don't cover the use case.
 | `speech-to-text` | linguistics | 1 | google-speech | — |
 | `markdown-preview` | utilities | 1 | marked (client) | — |
 | `llm` | llm | unlimited | client (WebLLM), server (Ollama), apikey (cloud) | — |
+| `llm-bb` | llm | unlimited | (shared with llm) | — |
+| `llm-bc` | llm | unlimited | (shared with llm) | — |
 | `light-theme` | theme | 1 | — | — |
 | `info-screensaver` | screensaver | 1 | — | — |
 | `ascii-animator` | decoration | 1 | textmode.js (WebGL2) | — |
