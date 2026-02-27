@@ -238,7 +238,66 @@
     "fork": "Create an independent copy of this entire topic. The copy and the original won't affect each other afterward.",
     "dropClean": "Erase all entries in this topic but keep the topic itself for future use. One blank placeholder will remain.",
     "dropDrop": "Remove the cloud copy of this topic. Your local entries on this device stay untouched.",
-    "dropDelete": "Permanently delete this empty topic from your device. This cannot be undone."
+    "dropDelete": "Permanently delete this empty topic from your device. This cannot be undone.",
+    "wt": {
+      "theyPush": "View newer entries on your partner's board.",
+      "theyPull": "View older entries on your partner's board.",
+      "wePush": "View newer entries on your shared board.",
+      "wePull": "View older entries on your shared board.",
+      "add": "Connect with someone by entering their user ID.",
+      "cut": "Remove the connection with your selected partner."
+    },
+    "bc": {
+      "pin": "Save this channel to your favourites for easy access.",
+      "cast": "Send your text as a new message to the channel.",
+      "create": "Create a new public channel anyone can join.",
+      "delete": "Delete a channel you created. This cannot be undone."
+    },
+    "mods": {
+      "refresh": "Check if all MOD servers are still connected."
+    },
+    "config": {
+      "maxSlot": "How many entries to keep per topic. Oldest entries are removed when full.",
+      "autoCleanBlanks": "Automatically delete blank entries when you move to another entry.",
+      "updateTimestamp": "When you edit an old entry, move it to the top so it appears as the newest.",
+      "autoSync": "Keep your entries in sync across devices automatically. You need to be logged in.",
+      "boardSwap": "Show your partner's messages at the top by default.",
+      "screensaverTimeout": "How long to wait before the screensaver appears.",
+      "crtBlendMode": "Make the screen lines less harsh by blending them more softly."
+    },
+    "llm": {
+      "button": "Use AI to process the text on your screen.",
+      "provider": "Where the AI runs: in your browser, on a local server, or in the cloud.",
+      "clientModel": "The AI model that runs directly in your browser. Bigger models are smarter but slower.",
+      "apiProvider": "Which cloud AI service to connect to.",
+      "apiModel": "The specific AI model to use from your cloud provider.",
+      "apiKey": "Your secret key for the cloud AI. It stays on your device only.",
+      "temperature": "How creative the AI should be. Low = precise, High = creative."
+    },
+    "llmBb": {
+      "button": "Analyze your blackboard entries with AI.",
+      "target": "What to analyze: entries from this topic, or all topics combined."
+    },
+    "llmBc": {
+      "button": "Analyze broadcast channel messages with AI.",
+      "target": "What to analyze: the current message, or all messages in the channel."
+    },
+    "translate": {
+      "button": "Translate the text on your screen to another language.",
+      "provider": "Google translates online. LibreTranslate runs on your own server."
+    },
+    "stt": {
+      "button": "Use your microphone to type by speaking."
+    },
+    "markdownPreview": {
+      "button": "See a formatted preview of your text (headings, bold, lists, etc.)."
+    },
+    "aa": {
+      "matrixRain": "Animated falling characters on the idle screen, inspired by The Matrix.",
+      "perlinBg": "A gentle animated texture behind your content, like shifting clouds.",
+      "mouseLight": "A soft glow that follows your cursor around the screen.",
+      "toastAnim": "Add a spinning animation to loading messages."
+    }
   },
   "config": {
     "maxSlotLabel": "Max Entries",

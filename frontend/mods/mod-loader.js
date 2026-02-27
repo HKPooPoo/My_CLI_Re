@@ -171,6 +171,7 @@ function createInstanceButton(instance, btnContainer, shelfContainer) {
     btn.className = 'feature-btn';
     btn.dataset.featureBtn = btnId;
     btn.dataset.instanceId = instance.instanceId;
+    if (template.buttonHintKey) btn.dataset.hint = template.buttonHintKey;
     // No textContent — icons are rendered via CSS ::after mask-image
 
     // Runtime icon injection — templates that provide getIconUrl() get inline CSS var

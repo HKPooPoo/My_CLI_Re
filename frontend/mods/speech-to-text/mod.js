@@ -32,6 +32,7 @@ export default {
 
     // --- Metadata (v2) ---
     version: '2.0.0',
+    buttonHintKey: 'hints.stt.button',
 
     // --- Instance architecture ---
     maxInstances: 1,

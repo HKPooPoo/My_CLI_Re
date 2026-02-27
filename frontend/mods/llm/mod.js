@@ -30,6 +30,7 @@ export default {
     version: '4.0.0',
     minApiVersion: 1,
     shelfPanelId: 'llm',
+    buttonHintKey: 'hints.llm.button',
 
     getButtonDataId(config) {
         return 'llm-' + (config.icon || 'summarize');

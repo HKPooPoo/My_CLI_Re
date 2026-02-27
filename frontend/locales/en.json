@@ -231,7 +231,66 @@
     "fork": "FORK — Duplicate all records of the selected branch into a new independent branch.",
     "dropClean": "CLEAN — Wipe all records in this branch, leaving one empty placeholder.",
     "dropDrop": "DROP — Delete the server-side copy of this branch.",
-    "dropDelete": "DELETE — Permanently remove this empty branch from local storage."
+    "dropDelete": "DELETE — Permanently remove this empty branch from local storage.",
+    "wt": {
+      "theyPush": "Navigate to NEWER entries on their board.",
+      "theyPull": "Navigate to OLDER entries on their board.",
+      "wePush": "Navigate to NEWER entries on our shared board.",
+      "wePull": "Navigate to OLDER entries on our shared board.",
+      "add": "ADD — Connect to another user by entering their UID.",
+      "cut": "CUT — Disconnect from the selected partner."
+    },
+    "bc": {
+      "pin": "PIN — Subscribe to this channel for quick access.",
+      "cast": "CAST — Publish current text as a new entry.",
+      "create": "CREATE — Start a new public broadcast channel.",
+      "delete": "DELETE — Permanently remove a channel you own."
+    },
+    "mods": {
+      "refresh": "Refresh server connection status for all MOD instances."
+    },
+    "config": {
+      "maxSlot": "Maximum entries per branch. Older entries are removed when the limit is reached.",
+      "autoCleanBlanks": "Auto-remove entries with empty text when navigating away.",
+      "updateTimestamp": "Move edited entries to the newest position instead of keeping original order.",
+      "autoSync": "Auto-sync with server when remote changes are detected. Requires login.",
+      "boardSwap": "Show partner's board on top by default.",
+      "screensaverTimeout": "Seconds of inactivity before the screensaver activates.",
+      "crtBlendMode": "Apply overlay blend to CRT scanlines for a softer look."
+    },
+    "llm": {
+      "button": "Run AI processing on the current text using your configured prompt.",
+      "provider": "Client = browser (WebGPU). Server = local Ollama. API Key = cloud (OpenAI/Anthropic).",
+      "clientModel": "Model downloaded and run in-browser via WebGPU. Larger = smarter but more memory.",
+      "apiProvider": "Cloud AI service to use with your API key.",
+      "apiModel": "Model ID for the cloud provider (e.g. gpt-4o-mini).",
+      "apiKey": "Your API key. Stored locally only — never sent to our server.",
+      "temperature": "0 = deterministic and focused. 1 = creative and varied."
+    },
+    "llmBb": {
+      "button": "Run AI analysis on blackboard branch records.",
+      "target": "Data scope: current branch from LOG page, from BRANCH page, or all branches."
+    },
+    "llmBc": {
+      "button": "Run AI analysis on broadcast channel content.",
+      "target": "Analyze current text entry or full channel history."
+    },
+    "translate": {
+      "button": "Translate the current text to the configured language.",
+      "provider": "Google = cloud API. LibreTranslate = self-hosted Docker server."
+    },
+    "stt": {
+      "button": "Record audio and convert speech to text."
+    },
+    "markdownPreview": {
+      "button": "Render current text as formatted Markdown."
+    },
+    "aa": {
+      "matrixRain": "Falling character rain on the screensaver, like the Matrix.",
+      "perlinBg": "Animated Perlin noise behind page content — organic, cloud-like texture.",
+      "mouseLight": "Cursor flashlight glow, like scanning a CRT screen.",
+      "toastAnim": "Spinning braille characters on loading toasts."
+    }
   },
   "config": {
     "maxSlotLabel": "MAX ENTRIES",

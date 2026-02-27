@@ -26,10 +26,10 @@ const BCConfig = {
         this.container.innerHTML = '';
 
         this.controls = {
-            maxSlot: createRangeControl(this.container, 'bc', 'maxSlot', 'config.maxSlotLabel', 10, 100, 10),
+            maxSlot: createRangeControl(this.container, 'bc', 'maxSlot', 'config.maxSlotLabel', 10, 100, 10, 'hints.config.maxSlot'),
             maxFiles: createRangeControl(this.container, 'bc', 'maxFiles', 'config.maxFilesLabel', 1, 20, 1),
-            autoClean: createToggleControl(this.container, 'bc', 'autoCleanBlanks', 'config.autoCleanBlanks'),
-            updateTs: createToggleControl(this.container, 'bc', 'updateTimestamp', 'config.updateTimestamp'),
+            autoClean: createToggleControl(this.container, 'bc', 'autoCleanBlanks', 'config.autoCleanBlanks', 'hints.config.autoCleanBlanks'),
+            updateTs: createToggleControl(this.container, 'bc', 'updateTimestamp', 'config.updateTimestamp', 'hints.config.updateTimestamp'),
         };
     }
 };

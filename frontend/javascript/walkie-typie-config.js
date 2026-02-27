@@ -26,11 +26,11 @@ const WTConfig = {
         this.container.innerHTML = '';
 
         this.controls = {
-            maxSlot: createRangeControl(this.container, 'wt', 'maxSlot', 'config.maxSlotLabel', 10, 100, 10),
+            maxSlot: createRangeControl(this.container, 'wt', 'maxSlot', 'config.maxSlotLabel', 10, 100, 10, 'hints.config.maxSlot'),
             maxFiles: createRangeControl(this.container, 'wt', 'maxFiles', 'config.maxFilesLabel', 1, 20, 1),
-            autoClean: createToggleControl(this.container, 'wt', 'autoCleanBlanks', 'config.autoCleanBlanks'),
-            updateTs: createToggleControl(this.container, 'wt', 'updateTimestamp', 'config.updateTimestamp'),
-            boardSwap: createToggleControl(this.container, 'wt', 'boardSwap', 'config.boardSwap'),
+            autoClean: createToggleControl(this.container, 'wt', 'autoCleanBlanks', 'config.autoCleanBlanks', 'hints.config.autoCleanBlanks'),
+            updateTs: createToggleControl(this.container, 'wt', 'updateTimestamp', 'config.updateTimestamp', 'hints.config.updateTimestamp'),
+            boardSwap: createToggleControl(this.container, 'wt', 'boardSwap', 'config.boardSwap', 'hints.config.boardSwap'),
         };
     }
 };

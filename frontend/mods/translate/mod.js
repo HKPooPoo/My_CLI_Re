@@ -22,6 +22,7 @@ export default {
 
     // --- Metadata (v2) ---
     version: '2.0.0',
+    buttonHintKey: 'hints.translate.button',
 
     // --- Instance architecture ---
     // maxInstances: 0 = unlimited (default when omitted)
@@ -74,6 +75,7 @@ export default {
             key: 'provider',
             type: 'select',
             labelKey: 'mods.translate.config.provider',
+            hintKey: 'hints.translate.provider',
             options: [
                 { value: 'google', labelKey: 'mods.translate.provider.google' },
                 { value: 'libretranslate', labelKey: 'mods.translate.provider.libre' },

@@ -17,7 +17,7 @@ import { PLATFORM_VERSION } from './version.js';
 
 // --- Shared Config Helpers (exported for WT/BC config pages) ---
 
-export function createRangeControl(container, scope, key, labelKey, min, max, step = 1) {
+export function createRangeControl(container, scope, key, labelKey, min, max, step = 1, hintKey) {
     const item = document.createElement('div');
     item.className = 'misc-list-item';
 
@@ -25,6 +25,7 @@ export function createRangeControl(container, scope, key, labelKey, min, max, st
     label.className = 'misc-label';
     label.setAttribute('data-i18n', labelKey);
     label.textContent = t(labelKey);
+    if (hintKey) label.dataset.hint = hintKey;
 
     const group = document.createElement('div');
     group.className = 'misc-range-group';
@@ -59,7 +60,7 @@ export function createRangeControl(container, scope, key, labelKey, min, max, st
     return { range, valueSpan };
 }
 
-export function createToggleControl(container, scope, key, labelKey) {
+export function createToggleControl(container, scope, key, labelKey, hintKey) {
     const item = document.createElement('div');
     item.className = 'misc-list-item';
 
@@ -67,6 +68,7 @@ export function createToggleControl(container, scope, key, labelKey) {
     label.className = 'misc-label';
     label.setAttribute('data-i18n', labelKey);
     label.textContent = t(labelKey);
+    if (hintKey) label.dataset.hint = hintKey;
 
     const btn = document.createElement('button');
     btn.className = 'misc-toggle-btn crt-text-green';
@@ -124,14 +126,14 @@ export const MISC = {
         container.innerHTML = '';
 
         this.bbControls = {
-            maxSlot: createRangeControl(container, 'bb', 'maxSlot', 'config.maxSlotLabel', 10, 100, 10),
+            maxSlot: createRangeControl(container, 'bb', 'maxSlot', 'config.maxSlotLabel', 10, 100, 10, 'hints.config.maxSlot'),
             maxFiles: createRangeControl(container, 'bb', 'maxFiles', 'config.maxFilesLabel', 1, 20, 1),
-            autoClean: createToggleControl(container, 'bb', 'autoCleanBlanks', 'config.autoCleanBlanks'),
-            updateTs: createToggleControl(container, 'bb', 'updateTimestamp', 'config.updateTimestamp'),
-            autoSync: createToggleControl(container, 'bb', 'autoSync', 'config.autoSync'),
+            autoClean: createToggleControl(container, 'bb', 'autoCleanBlanks', 'config.autoCleanBlanks', 'hints.config.autoCleanBlanks'),
+            updateTs: createToggleControl(container, 'bb', 'updateTimestamp', 'config.updateTimestamp', 'hints.config.updateTimestamp'),
+            autoSync: createToggleControl(container, 'bb', 'autoSync', 'config.autoSync', 'hints.config.autoSync'),
             showHints: createToggleControl(container, 'global', 'showHints', 'config.showHints'),
-            screensaverTimeout: createRangeControl(container, 'global', 'screensaverTimeout', 'config.screensaverTimeout', 10, 300, 10),
-            crtBlendMode: createToggleControl(container, 'global', 'crtBlendMode', 'config.crtBlendModeLabel'),
+            screensaverTimeout: createRangeControl(container, 'global', 'screensaverTimeout', 'config.screensaverTimeout', 10, 300, 10, 'hints.config.screensaverTimeout'),
+            crtBlendMode: createToggleControl(container, 'global', 'crtBlendMode', 'config.crtBlendModeLabel', 'hints.config.crtBlendMode'),
         };
     },
 

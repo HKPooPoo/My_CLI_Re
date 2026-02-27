@@ -91,26 +91,26 @@ export default {
     // ===================== Config Schema =====================
     configSchema: [
         // --- Matrix Rain ---
-        { key: 'matrixRain', type: 'toggle', labelKey: 'mods.asciiAnimator.matrixRain', default: true },
+        { key: 'matrixRain', type: 'toggle', labelKey: 'mods.asciiAnimator.matrixRain', hintKey: 'hints.aa.matrixRain', default: true },
         { key: 'rainSpeed', type: 'range', labelKey: 'mods.asciiAnimator.rainSpeed',
           min: 1, max: 10, step: 1, default: 5, showWhen: { key: 'matrixRain', value: true } },
         { key: 'rainDensity', type: 'range', labelKey: 'mods.asciiAnimator.rainDensity',
           min: 1, max: 10, step: 1, default: 5, showWhen: { key: 'matrixRain', value: true } },
 
         // --- Perlin Noise Background ---
-        { key: 'perlinBg', type: 'toggle', labelKey: 'mods.asciiAnimator.perlinBg', default: false },
+        { key: 'perlinBg', type: 'toggle', labelKey: 'mods.asciiAnimator.perlinBg', hintKey: 'hints.aa.perlinBg', default: false },
         { key: 'perlinOpacity', type: 'range', labelKey: 'mods.asciiAnimator.perlinOpacity',
           min: 3, max: 30, step: 1, default: 8, showWhen: { key: 'perlinBg', value: true } },
         { key: 'perlinSpeed', type: 'range', labelKey: 'mods.asciiAnimator.perlinSpeed',
           min: 1, max: 10, step: 1, default: 3, showWhen: { key: 'perlinBg', value: true } },
 
         // --- Mouse Light ---
-        { key: 'mouseLight', type: 'toggle', labelKey: 'mods.asciiAnimator.mouseLight', default: false },
+        { key: 'mouseLight', type: 'toggle', labelKey: 'mods.asciiAnimator.mouseLight', hintKey: 'hints.aa.mouseLight', default: false },
         { key: 'lightRadius', type: 'range', labelKey: 'mods.asciiAnimator.lightRadius',
           min: 3, max: 15, step: 1, default: 8, showWhen: { key: 'mouseLight', value: true } },
 
         // --- Toast Spinner ---
-        { key: 'toastAnim', type: 'toggle', labelKey: 'mods.asciiAnimator.toastAnim', default: true },
+        { key: 'toastAnim', type: 'toggle', labelKey: 'mods.asciiAnimator.toastAnim', hintKey: 'hints.aa.toastAnim', default: true },
     ],
 
     // ===================== Lifecycle =====================

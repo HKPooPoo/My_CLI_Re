@@ -46,6 +46,7 @@ export default {
     version: '1.0.0',
     minApiVersion: 1,
     shelfPanelId: 'llm',
+    buttonHintKey: 'hints.llmBb.button',
 
     getButtonDataId(config) {
         return 'llm-' + (config.icon || 'summarize-branch');
@@ -76,7 +77,7 @@ export default {
     providers: PROVIDERS,
 
     configSchema: [
-        { key: 'target', type: 'select', labelKey: 'mods.llmBb.config.target', default: 'branch-log',
+        { key: 'target', type: 'select', labelKey: 'mods.llmBb.config.target', hintKey: 'hints.llmBb.target', default: 'branch-log',
           options: Object.entries(TARGETS).map(([v, t]) => ({ value: v, labelKey: t.labelKey })) },
         { key: 'prompt', type: 'textarea', labelKey: 'mods.llm.config.prompt', default: '', rows: 3,
           showWhen: { key: 'target', value: 'branch-log' },      presets: TARGET_PRESETS['branch-log'] },

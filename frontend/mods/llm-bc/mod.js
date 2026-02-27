@@ -40,6 +40,7 @@ export default {
     version: '1.0.0',
     minApiVersion: 1,
     shelfPanelId: 'llm',
+    buttonHintKey: 'hints.llmBc.button',
 
     getButtonDataId(config) {
         return 'llm-' + (config.icon || 'summarize');
@@ -68,7 +69,7 @@ export default {
     providers: PROVIDERS,
 
     configSchema: [
-        { key: 'target', type: 'select', labelKey: 'mods.llmBc.config.target', default: 'text',
+        { key: 'target', type: 'select', labelKey: 'mods.llmBc.config.target', hintKey: 'hints.llmBc.target', default: 'text',
           options: Object.entries(TARGETS).map(([v, t]) => ({ value: v, labelKey: t.labelKey })) },
         { key: 'prompt', type: 'textarea', labelKey: 'mods.llm.config.prompt', default: '', rows: 3,
           showWhen: { key: 'target', value: 'text' },     presets: TARGET_PRESETS['text'] },
