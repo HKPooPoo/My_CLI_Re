@@ -23,35 +23,6 @@ export const ICONS = [
     { value: 'summarize-all',    url: '/images/llm-summarize-all.svg',    labelKey: 'mods.llm.icon.summarizeAll' },
 ];
 
-export const PROVIDERS = [
-    { id: 'client', type: 'client', nameKey: 'mods.llm.provider.client' },
-    { id: 'server', type: 'server', nameKey: 'mods.llm.provider.server', healthEndpoint: '/mods/llm/ollama/health' },
-    { id: 'apikey', type: 'cloud', nameKey: 'mods.llm.provider.apikey' },
-];
-
-/** Provider-related config fields shared by all LLM templates. */
-export const PROVIDER_CONFIG_SCHEMA = [
-    { key: 'provider', type: 'select', labelKey: 'mods.llm.config.provider', hintKey: 'hints.llm.provider', default: 'client', options: [
-        { value: 'client', labelKey: 'mods.llm.provider.client' },
-        { value: 'server', labelKey: 'mods.llm.provider.server' },
-        { value: 'apikey', labelKey: 'mods.llm.provider.apikey' },
-    ]},
-    { key: 'clientModel', type: 'select', labelKey: 'mods.llm.config.clientModel', hintKey: 'hints.llm.clientModel', default: 'Qwen3-0.6B-q4f16_1-MLC', showWhen: { key: 'provider', value: 'client' }, options: [
-        { value: 'Qwen3-0.6B-q4f16_1-MLC', labelKey: 'mods.llm.clientModel.qwen3_06b' },
-        { value: 'Qwen3-1.7B-q4f16_1-MLC', labelKey: 'mods.llm.clientModel.qwen3_17b' },
-        { value: 'Qwen3-4B-q4f16_1-MLC',   labelKey: 'mods.llm.clientModel.qwen3_4b' },
-    ]},
-    { key: 'serverModel', type: 'info', labelKey: 'mods.llm.config.serverModel', showWhen: { key: 'provider', value: 'server' } },
-    { key: 'serverTest', type: 'action', labelKey: 'mods.llm.config.serverTest', actionLabelKey: 'mods.llm.serverTestBtn', showWhen: { key: 'provider', value: 'server' } },
-    { key: 'apiProvider', type: 'select', labelKey: 'mods.llm.config.apiProvider', hintKey: 'hints.llm.apiProvider', default: 'openai', showWhen: { key: 'provider', value: 'apikey' }, options: [
-        { value: 'openai',    labelKey: 'mods.llm.apiProvider.openai' },
-        { value: 'anthropic', labelKey: 'mods.llm.apiProvider.anthropic' },
-    ]},
-    { key: 'apiModel', type: 'text', labelKey: 'mods.llm.config.apiModel', hintKey: 'hints.llm.apiModel', default: 'gpt-4o-mini', showWhen: { key: 'provider', value: 'apikey' } },
-    { key: 'apiKey', type: 'text', labelKey: 'mods.llm.config.apiKey', hintKey: 'hints.llm.apiKey', default: '', showWhen: { key: 'provider', value: 'apikey' } },
-    { key: 'temperature', type: 'range', labelKey: 'mods.llm.config.temperature', hintKey: 'hints.llm.temperature', min: 0, max: 1, step: 0.1, default: 0.3 },
-];
-
 // ===================== Helpers =====================
 
 let _currentAbortController = null;
@@ -113,25 +84,25 @@ export function cleanDelta(text, isFirst) {
 
 /**
  * Build the message array for LLM inference.
- * Follows Qwen's standard pattern: system=constraints, user=task+data.
+ * Client: single user message with /no_think prefix (small models ignore system).
+ * Server + API: proper system + user separation.
  */
 export function buildMessages(prompt, inputText, provider) {
+    const userContent = `${prompt}\n\n${inputText}`;
+
+    // Client: single message (small models ignore system messages).
+    // /no_think prefix for Qwen3 thinking suppression.
     if (provider === 'client') {
         return [{ role: 'user', content:
-            `Respond with the result only. No preamble.\n${prompt}\n\n---\n${inputText}`,
+            `/no_think\nRespond with the result only. No preamble.\n${userContent}`,
         }];
     }
 
-    const userContent = `${prompt}\n\n${inputText}`;
-
-    if (provider === 'server') {
-        return [
-            { role: 'system', content: 'Respond with the result only. No preamble.' },
-            { role: 'user', content: userContent },
-        ];
-    }
-
-    return [{ role: 'user', content: userContent }];
+    // Server + API: proper system + user separation
+    return [
+        { role: 'system', content: 'Respond with the result only. No preamble.' },
+        { role: 'user', content: userContent },
+    ];
 }
 
 // ===================== Shelf =====================
@@ -253,11 +224,15 @@ export async function runLlm(config, prompt, inputText, out, tFn) {
             out.value = tFn('mods.llm.loading');
             await svc.ensureModel(model, (p) => { out.value = p; });
 
-            out.value = '';
-            for await (const chunk of svc.chat(messages, { temperature: temp })) {
+            let tokens = 0;
+            for await (const chunk of svc.chat(messages, { temperature: temp, signal: controller.signal })) {
                 if (controller.signal.aborted) return;
                 if (chunk.done) break;
-                out.value += chunk.delta;
+                const text = cleanDelta(chunk.delta, tokens === 0);
+                if (!text) continue;
+                if (tokens === 0) out.value = '';
+                out.value += text;
+                tokens++;
             }
 
             if (!out.value.trim()) out.value = tFn('mods.llm.noOutput');
@@ -308,14 +283,6 @@ export async function runLlm(config, prompt, inputText, out, tFn) {
     } finally {
         delete out.dataset.loading;
         if (_currentAbortController === controller) _currentAbortController = null;
-    }
-}
-
-/** Abort the current LLM request (if any). For use by a future STOP button. */
-export function abortLlm() {
-    if (_currentAbortController) {
-        _currentAbortController.abort();
-        _currentAbortController = null;
     }
 }
 

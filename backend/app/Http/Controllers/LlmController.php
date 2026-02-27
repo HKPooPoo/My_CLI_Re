@@ -77,7 +77,7 @@ class LlmController extends Controller
             'keep_alive' => '5m',
             'options'    => [
                 'temperature'  => $validated['temperature'] ?? 0.3,
-                'num_ctx'      => 2048,
+                'num_ctx'      => 4096,
             ],
         ]);
 
@@ -211,7 +211,7 @@ class LlmController extends Controller
             'keep_alive' => '5m',
             'options'    => [
                 'temperature'  => $temperature,
-                'num_ctx'      => 2048,
+                'num_ctx'      => 4096,
             ],
         ]);
 

@@ -17,6 +17,12 @@ let _engine = null;    // MLCEngine instance
 let _currentModel = null;
 let _loading = false;
 
+/** Detect WASM engine corruption (freed tokenizer, unloaded model). */
+function _isEngineCorrupted(e) {
+    const msg = e?.message || '';
+    return msg.includes('deleted object') || msg.includes('not loaded') || msg.includes('Tokenizer');
+}
+
 /**
  * Lazy-import WebLLM from CDN (cached by browser after first fetch).
  */
@@ -89,21 +95,19 @@ export const WebLlmService = {
             throw new Error('No model loaded. Call ensureModel() first.');
         }
 
+        // Stop any in-flight generation before starting a new one
+        _engine.interruptGenerate?.();
+
         const temperature = opts.temperature ?? 0.3;
         const maxTokens = opts.maxTokens ?? 2048;
         const signal = opts.signal;
 
-        // Qwen3 models: disable thinking mode (better instruction following).
-        // /no_think prefix + extra_body are Qwen3-specific; skip for Qwen2.5.
+        // Qwen3: disable thinking via extra_body (API-level flag).
+        // /no_think text prefix is handled by the caller in buildMessages().
         const isQwen3 = _currentModel.toLowerCase().includes('qwen3');
-        const processedMessages = isQwen3
-            ? messages.map(m => m.role === 'user'
-                ? { ...m, content: '/no_think\n' + m.content }
-                : m)
-            : messages;
 
         const requestParams = {
-            messages: processedMessages,
+            messages,
             temperature,
             max_tokens: maxTokens,
             stream: true,
@@ -111,33 +115,50 @@ export const WebLlmService = {
             ...(isQwen3 && { extra_body: { enable_thinking: false } }),
         };
 
-        const chunks = await _engine.chat.completions.create(requestParams);
+        let chunks;
+        try {
+            chunks = await _engine.chat.completions.create(requestParams);
+        } catch (e) {
+            if (_isEngineCorrupted(e)) {
+                _engine = null;
+                _currentModel = null;
+            }
+            throw e;
+        }
 
         const t0 = performance.now();
         let answerTokens = 0;
 
-        for await (const chunk of chunks) {
-            if (signal?.aborted) break;
+        try {
+            for await (const chunk of chunks) {
+                if (signal?.aborted) break;
 
-            const rawDelta = chunk.choices[0]?.delta?.content || '';
-            if (!rawDelta) continue;
+                const rawDelta = chunk.choices[0]?.delta?.content || '';
+                if (!rawDelta) continue;
 
-            // Strip <think> / </think> tags but KEEP content between them.
-            // Small models (0.6B) put the answer inside think blocks.
-            const text = rawDelta.replace(/<\/?think>/g, '');
-            if (!text) continue;
+                // Strip <think> / </think> tags but KEEP content between them.
+                // Small models (0.6B) put the answer inside think blocks.
+                const text = rawDelta.replace(/<\/?think>/g, '');
+                if (!text) continue;
 
-            // Skip leading newlines (common after think tags)
-            const cleaned = answerTokens === 0 ? text.replace(/^\n+/, '') : text;
-            if (!cleaned) continue;
+                // Skip leading newlines (common after think tags)
+                const cleaned = answerTokens === 0 ? text.replace(/^\n+/, '') : text;
+                if (!cleaned) continue;
 
-            answerTokens++;
+                answerTokens++;
 
-            yield {
-                delta: cleaned,
-                done: false,
-                meta: { answerTokens, elapsed: ((performance.now() - t0) / 1000).toFixed(1) },
-            };
+                yield {
+                    delta: cleaned,
+                    done: false,
+                    meta: { answerTokens, elapsed: ((performance.now() - t0) / 1000).toFixed(1) },
+                };
+            }
+        } catch (e) {
+            if (_isEngineCorrupted(e)) {
+                _engine = null;
+                _currentModel = null;
+            }
+            throw e;
         }
 
         const elapsed = ((performance.now() - t0) / 1000).toFixed(1);
