@@ -406,6 +406,27 @@
     border-bottom: none;
 }
 
+/* Active catalog item — green glow (mirrors .mods-list-item.active) */
+.mods-catalog-item.active {
+    background: var(--text-green);
+    color: var(--bg-primary);
+    box-shadow: 0 0 10px var(--text-green);
+}
+
+.mods-catalog-item.active .mods-catalog-item-name {
+    color: var(--bg-primary);
+}
+
+.mods-catalog-item.active .mods-catalog-add-btn {
+    color: var(--bg-primary);
+    border-color: var(--bg-primary);
+}
+
+.mods-catalog-item.active .mods-catalog-added {
+    color: var(--bg-primary);
+    opacity: 0.7;
+}
+
 .mods-catalog-item-name {
     font-size: 0.95em;
     white-space: nowrap;
@@ -427,6 +448,10 @@
 }
 
 @media (hover: hover) {
+    .mods-catalog-item:not(.active):hover {
+        background: var(--text-green-10);
+    }
+
     .mods-catalog-add-btn:hover {
         background: var(--text-green);
         color: var(--bg-primary);
