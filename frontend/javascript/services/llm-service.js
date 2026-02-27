@@ -1,19 +1,21 @@
 import { apiRequest } from './api.js';
 
 export const LlmService = {
-    chat(data) {
+    chat(data, { signal } = {}) {
         return apiRequest('/mods/llm/chat', {
             method: 'POST',
             body: JSON.stringify(data),
+            signal,
         });
     },
 
-    async *chatStream(data) {
+    async *chatStream(data, { signal } = {}) {
         const response = await fetch('/api/mods/llm/chat/stream', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Accept': 'text/event-stream' },
             credentials: 'same-origin',
             body: JSON.stringify(data),
+            signal,
         });
 
         if (!response.ok) {

@@ -82,6 +82,8 @@ class LlmController extends Controller
         ]);
 
         return response()->stream(function () use ($url, $payload) {
+            ignore_user_abort(false);
+
             $ch = curl_init($url);
             curl_setopt_array($ch, [
                 CURLOPT_POST          => true,
@@ -89,6 +91,10 @@ class LlmController extends Controller
                 CURLOPT_HTTPHEADER    => ['Content-Type: application/json'],
                 CURLOPT_TIMEOUT       => 300,
                 CURLOPT_WRITEFUNCTION => function ($ch, $data) {
+                    if (connection_aborted()) {
+                        return 0; // Abort cURL transfer → frees worker + GPU
+                    }
+
                     foreach (explode("\n", $data) as $line) {
                         $line = trim($line);
                         if ($line === '') continue;

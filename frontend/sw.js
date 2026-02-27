@@ -1,4 +1,4 @@
-const CACHE_NAME = 'blackboard-v59-2026-02-27'; // Add editable prompt to LLM shelf
+const CACHE_NAME = 'blackboard-v60-2026-02-27'; // LLM abort + replace queue
 const ASSETS = [
   '/',
   '/index.html',

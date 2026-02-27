@@ -54,6 +54,8 @@ export const PROVIDER_CONFIG_SCHEMA = [
 
 // ===================== Helpers =====================
 
+let _currentAbortController = null;
+
 let _webLlmSvc = null;
 async function _getWebLlm() {
     if (!_webLlmSvc) {
@@ -227,17 +229,22 @@ export function activateShelfPrompt(ctx) {
  * Streams/writes output to the given textarea element.
  */
 export async function runLlm(config, prompt, inputText, out, tFn) {
+    // Abort + Replace: cancel any running request before starting a new one
+    if (_currentAbortController) _currentAbortController.abort();
+    const controller = new AbortController();
+    _currentAbortController = controller;
+
     const provider = config.provider || 'client';
     const temp = parseFloat(config.temperature) || 0.3;
     const messages = buildMessages(prompt, inputText, provider);
 
-    if (provider === 'client') {
-        if (!navigator.gpu) {
-            out.value = tFn('mods.llm.noWebGPU');
-            return;
-        }
+    try {
+        if (provider === 'client') {
+            if (!navigator.gpu) {
+                out.value = tFn('mods.llm.noWebGPU');
+                return;
+            }
 
-        try {
             const svc = await _getWebLlm();
             const model = config.clientModel || CLIENT_MODEL;
 
@@ -246,24 +253,20 @@ export async function runLlm(config, prompt, inputText, out, tFn) {
 
             out.value = '';
             for await (const chunk of svc.chat(messages, { temperature: temp })) {
+                if (controller.signal.aborted) return;
                 if (chunk.done) break;
                 out.value += chunk.delta;
             }
 
             if (!out.value.trim()) out.value = tFn('mods.llm.noOutput');
-        } catch (e) {
-            console.error('[llm] client error:', e);
-            out.value = tFn('mods.llm.clientError', { error: e.message || String(e) });
-        }
-    } else if (provider === 'server') {
-        out.value = tFn('mods.llm.connecting');
+        } else if (provider === 'server') {
+            out.value = tFn('mods.llm.connecting');
 
-        try {
             let tokens = 0;
             for await (const chunk of LlmService.chatStream({
                 provider: 'ollama', model: SERVER_MODEL, messages,
                 temperature: temp,
-            })) {
+            }, { signal: controller.signal })) {
                 if (chunk.error) throw new Error(chunk.error);
                 if (chunk.done) break;
                 const text = cleanDelta(chunk.delta, tokens === 0);
@@ -274,29 +277,36 @@ export async function runLlm(config, prompt, inputText, out, tFn) {
             }
 
             if (!out.value.trim()) out.value = tFn('mods.llm.noOutput');
-        } catch (e) {
-            console.error('[llm] server error:', e);
-            out.value = tFn('mods.llm.serverError', { error: e.message || String(e) });
-        }
-    } else {
-        if (!config.apiKey) {
-            out.value = tFn('mods.llm.noApiKey');
-            return;
-        }
+        } else {
+            if (!config.apiKey) {
+                out.value = tFn('mods.llm.noApiKey');
+                return;
+            }
 
-        try {
             out.value = tFn('mods.llm.processing');
             const result = await LlmService.chat({
                 provider: config.apiProvider || 'openai',
                 model: config.apiModel || 'gpt-4o-mini',
                 messages, temperature: temp,
                 apiKey: config.apiKey,
-            });
+            }, { signal: controller.signal });
             out.value = result.content || tFn('mods.llm.noOutput');
-        } catch (e) {
-            console.error('[llm] api error:', e);
-            out.value = tFn('mods.llm.apiError', { error: e.message || String(e) });
         }
+    } catch (e) {
+        if (controller.signal.aborted) return; // Aborted by newer request — silent exit
+        const tag = provider === 'server' ? 'server' : provider === 'client' ? 'client' : 'api';
+        console.error(`[llm] ${tag} error:`, e);
+        out.value = tFn(`mods.llm.${tag}Error`, { error: e.message || String(e) });
+    } finally {
+        if (_currentAbortController === controller) _currentAbortController = null;
+    }
+}
+
+/** Abort the current LLM request (if any). For use by a future STOP button. */
+export function abortLlm() {
+    if (_currentAbortController) {
+        _currentAbortController.abort();
+        _currentAbortController = null;
     }
 }
 
