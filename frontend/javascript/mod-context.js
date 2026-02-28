@@ -241,6 +241,11 @@ export function createModContext(opts) {
                 if (!scope) return [];
                 return BoardProvider.getAttachments(scope);
             },
+            getAttachmentsWithMeta() {
+                const scope = this.getScope();
+                if (!scope) return [];
+                return BoardProvider.getAttachmentsWithMeta(scope);
+            },
             async getAllRecords() {
                 const scope = this.getScope();
                 const meta = BoardProvider.getCurrentRecord(scope);

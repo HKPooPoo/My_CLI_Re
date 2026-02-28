@@ -70,6 +70,29 @@ export function getAttachments(scope) {
 }
 
 /**
+ * Get file attachment metadata from the active record.
+ * Preserves MIME info when available from IndexedDB records.
+ *
+ * @param {'bb'|'wt'|'bc'} scope
+ * @returns {Array<{hash: string, name?: string, mime?: string, size?: number}>}
+ */
+export function getAttachmentsWithMeta(scope) {
+    const meta = getCurrentRecord(scope);
+    if (!meta?.fileHash) return [];
+
+    const fh = meta.fileHash;
+    const normalize = (item) => {
+        if (typeof item === 'object' && item?.hash) return item;
+        if (typeof item === 'string') return { hash: item };
+        return null;
+    };
+
+    if (Array.isArray(fh)) return fh.map(normalize).filter(Boolean);
+    const single = normalize(fh);
+    return single ? [single] : [];
+}
+
+/**
  * Get all records for a branch (history).
  *
  * @param {'bb'|'wt'|'bc'} scope

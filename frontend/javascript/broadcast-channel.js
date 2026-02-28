@@ -63,6 +63,7 @@ export const BCChannel = {
         currentHead: 0,
         isVirtual: false,
         maxSlot: Settings.get('bc', 'maxSlot'),
+        currentFileHash: null,
     },
 
     // Reader mode — server records in memory (oldest→newest from API, reversed for head 0 = newest)
@@ -90,7 +91,7 @@ export const BCChannel = {
             branchName: this.currentChannel?.name ?? null,
             timestamp:  null,
             text:       this.elements.textarea?.value ?? '',
-            fileHash:   null,
+            fileHash:   this.state.currentFileHash,
             owner:      null,
             isVirtual:  this.state.isVirtual,
             headIndex:  this.isOwnerMode ? this.state.currentHead : this.readerHead,
@@ -466,6 +467,7 @@ export const BCChannel = {
         if (this.state.isVirtual) {
             if (this.elements.textarea) this.elements.textarea.value = '';
             this.bcAttach?.clear();
+            this.state.currentFileHash = null;
             this.updateIndicators(t('broadcast.headNew'));
             return;
         }
@@ -478,6 +480,7 @@ export const BCChannel = {
 
             // Sync attachment chip
             const bin = entry?.file_hash ?? null;
+            this.state.currentFileHash = bin;
             const hash = (typeof bin === 'object') ? bin?.hash : bin;
             this.bcAttach?.setFromRecord(hash || null, typeof bin === 'object' ? bin : null);
 
@@ -495,6 +498,7 @@ export const BCChannel = {
 
         // Attachment (read-only)
         const bin = record?.file_hash ?? null;
+        this.state.currentFileHash = bin;
         const hash = typeof bin === 'object' ? bin?.hash : bin;
         this.bcAttach?.setFromRecord(hash || null, typeof bin === 'object' ? bin : null);
 

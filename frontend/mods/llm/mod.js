@@ -7,6 +7,7 @@
 import { ModState } from '../../javascript/mod-state.js';
 import {
     ensureOutputEl, initShelf, activateShelfPrompt, runLlm,
+    runLlmWithImages, blobToBase64, renderPdfToImages,
     checkHealth, getInfoValue, onAction,
     getInstanceName, getIconUrl,
     migrateToSharedConfig, initPrewarm, onSharedConfigChange,
@@ -46,9 +47,13 @@ export default {
         if (!prompt) { out.value = tFn('mods.llm.noPrompt'); return; }
 
         try {
-            const inputText = ctx.board.getText().trim();
-            if (!inputText) { out.value = tFn('mods.llm.empty'); return; }
-            await runLlm(ctx.config, prompt, inputText, out, tFn);
+            if (ctx.config.target === 'file') {
+                await _activateFile(ctx, prompt, out, tFn);
+            } else {
+                const inputText = ctx.board.getText().trim();
+                if (!inputText) { out.value = tFn('mods.llm.empty'); return; }
+                await runLlm(ctx.config, prompt, inputText, out, tFn);
+            }
         } catch (e) {
             console.error('[llm] activate error:', e);
             out.value = tFn('mods.llm.error', { error: e.message || String(e) });
@@ -115,6 +120,66 @@ function _migrateOldConfig() {
         ModState.setConfig(inst.instanceId, 'prompt', prompt);
         ModState.setConfig(inst.instanceId, 'icon', icon);
         console.log(`[llm] migrated instance ${inst.instanceId}: task="${task}" \u2192 prompt/icon`);
+    }
+}
+
+// ===================== File Target =====================
+
+const IMAGE_MIMES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif']);
+
+async function _activateFile(ctx, prompt, out, tFn) {
+    // Vision requires Ollama qwen3-vl — other providers lack image support.
+    // Extending to apikey would need a different message schema (OpenAI content array).
+    const provider = ctx.config.provider || 'client';
+    if (provider !== 'server') {
+        out.value = tFn('mods.llm.fileServerOnly');
+        return;
+    }
+
+    const attachments = ctx.board.getAttachmentsWithMeta();
+    if (!attachments.length) {
+        out.value = tFn('mods.llm.noFiles');
+        return;
+    }
+
+    out.value = tFn('mods.llm.processingFiles');
+    out.dataset.loading = 'true';
+
+    try {
+        const images = [];
+        let enrichedPrompt = prompt;
+
+        for (const att of attachments) {
+            const blob = await ctx.file.readContent(att.hash);
+            const mime = att.mime || blob.type || '';
+
+            if (IMAGE_MIMES.has(mime)) {
+                images.push(await blobToBase64(blob));
+            } else if (mime === 'application/pdf') {
+                const pdfImages = await renderPdfToImages(blob);
+                images.push(...pdfImages);
+            } else {
+                // Non-image, non-PDF: read as text and prepend to prompt
+                const text = await blob.text();
+                if (text.trim()) {
+                    enrichedPrompt += `\n\n--- File: ${att.name || att.hash} ---\n${text}`;
+                }
+            }
+        }
+
+        if (images.length > 0) {
+            // runLlmWithImages manages its own loading state
+            delete out.dataset.loading;
+            await runLlmWithImages(ctx.config, enrichedPrompt, images, out, tFn);
+        } else if (enrichedPrompt !== prompt) {
+            // All files were text — use regular text path with enriched prompt
+            delete out.dataset.loading;
+            await runLlm(ctx.config, enrichedPrompt, '', out, tFn);
+        } else {
+            out.value = tFn('mods.llm.noFiles');
+        }
+    } finally {
+        delete out.dataset.loading;
     }
 }
 

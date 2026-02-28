@@ -33,7 +33,8 @@ const state = {
     branchId: 0,        // 當前分支物理 ID
     currentHead: 0,     // 歷史深度指標 (0 表示最新)
     maxSlot: Settings.get('bb', 'maxSlot'),
-    isVirtual: false    // 是否處於「新頁面」的虛擬狀態 (尚未存入 DB)
+    isVirtual: false,   // 是否處於「新頁面」的虛擬狀態 (尚未存入 DB)
+    currentFileHash: null,
 };
 
 let debounceTimer = null;
@@ -45,7 +46,7 @@ registerMetadataProvider('bb', () => ({
     branchName: state.branch,
     timestamp:  null,  // current record timestamp resolved at read time
     text:       BBUI.getTextareaValue() || '',
-    fileHash:   null,  // resolved by MOD via getAllRecords if needed
+    fileHash:   state.currentFileHash,
     owner:      state.owner,
     isVirtual:  state.isVirtual,
     headIndex:  state.currentHead,
@@ -170,6 +171,7 @@ async function syncView() {
         BBUI.setTextarea("");
         BBUI.updateIndicators(state.branch || t('blackboard.branchNameFallback'), "NEW", false);
         bbAttach?.clear();
+        state.currentFileHash = null;
         return;
     }
 
@@ -179,6 +181,7 @@ async function syncView() {
 
     // Sync attachment chip display (multi-file aware)
     const binData = entry?.file_hash;
+    state.currentFileHash = binData ?? null;
     if (Array.isArray(binData)) {
         const hashes = binData.map(f => (typeof f === 'object') ? f.hash : f).filter(Boolean);
         bbAttach?.setFromRecord(hashes);

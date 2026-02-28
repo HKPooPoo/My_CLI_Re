@@ -22,6 +22,8 @@ class LlmController extends Controller
             'messages' => 'required|array|min:1',
             'messages.*.role' => 'required|string|in:system,user,assistant',
             'messages.*.content' => 'required|string',
+            'messages.*.images' => 'sometimes|array',
+            'messages.*.images.*' => 'sometimes|string',
             'temperature' => 'sometimes|numeric|min:0|max:2',
             'apiKey' => 'sometimes|nullable|string|max:200',
         ]);
@@ -65,6 +67,8 @@ class LlmController extends Controller
             'messages'           => 'required|array|min:1',
             'messages.*.role'    => 'required|string|in:system,user,assistant',
             'messages.*.content' => 'required|string',
+            'messages.*.images'  => 'sometimes|array',
+            'messages.*.images.*' => 'sometimes|string',
             'temperature'        => 'sometimes|numeric|min:0|max:2',
         ]);
 

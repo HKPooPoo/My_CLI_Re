@@ -106,6 +106,99 @@ export function buildMessages(prompt, inputText, provider) {
     ];
 }
 
+// ===================== Vision Helpers =====================
+
+/** Convert Blob to raw base64 string (no data URI prefix — Ollama native format). */
+export function blobToBase64(blob) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result.split(',')[1]);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+    });
+}
+
+/** Render all pages of a PDF to base64 JPEG images via pdf.js CDN. */
+export async function renderPdfToImages(blob) {
+    const pdfjsLib = await import('https://cdn.jsdelivr.net/npm/pdfjs-dist@4.9.155/build/pdf.min.mjs');
+    pdfjsLib.GlobalWorkerOptions.workerSrc =
+        'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.9.155/build/pdf.worker.min.mjs';
+
+    const data = new Uint8Array(await blob.arrayBuffer());
+    const pdf = await pdfjsLib.getDocument({ data }).promise;
+    const images = [];
+
+    for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i);
+        const viewport = page.getViewport({ scale: 2.0 });
+        const canvas = document.createElement('canvas');
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
+        await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+        images.push(canvas.toDataURL('image/jpeg', 0.85).split(',')[1]);
+    }
+
+    return images;
+}
+
+/**
+ * Build message array with images for Ollama vision API (native format).
+ * content: string prompt, images: array of raw base64 strings.
+ */
+export function buildMessagesWithImages(prompt, images) {
+    return [
+        { role: 'system', content: 'Respond with the result only. No preamble.' },
+        { role: 'user', content: prompt, images },
+    ];
+}
+
+/**
+ * Execute LLM vision inference. Server provider (Ollama qwen3-vl) only.
+ * Streams output to the given textarea element.
+ */
+export async function runLlmWithImages(config, prompt, images, out, tFn) {
+    if (_currentAbortController) _currentAbortController.abort();
+    const controller = new AbortController();
+    _currentAbortController = controller;
+
+    const temp = parseFloat(config.temperature) || 0.3;
+    const messages = buildMessagesWithImages(prompt, images);
+
+    try {
+        out.dataset.loading = 'true';
+        out.value = tFn('mods.llm.connecting');
+
+        const t0 = Date.now();
+        let tokens = 0;
+        for await (const chunk of LlmService.chatStream({
+            provider: 'ollama', model: SERVER_MODEL, messages,
+            temperature: temp,
+        }, { signal: controller.signal })) {
+            if (chunk.status) {
+                const sec = Math.floor((Date.now() - t0) / 1000);
+                out.value = tFn('mods.llm.thinking', { seconds: sec });
+                continue;
+            }
+            if (chunk.error) throw new Error(chunk.error);
+            if (chunk.done) break;
+            const text = cleanDelta(chunk.delta, tokens === 0);
+            if (!text) continue;
+            if (tokens === 0) out.value = '';
+            out.value += text;
+            tokens++;
+        }
+
+        if (!out.value.trim()) out.value = tFn('mods.llm.noOutput');
+    } catch (e) {
+        if (controller.signal.aborted) return;
+        console.error('[llm] vision error:', e);
+        out.value = tFn('mods.llm.serverError', { error: e.message || String(e) });
+    } finally {
+        delete out.dataset.loading;
+        if (_currentAbortController === controller) _currentAbortController = null;
+    }
+}
+
 // ===================== Shelf =====================
 
 let _activeInstanceId = null;

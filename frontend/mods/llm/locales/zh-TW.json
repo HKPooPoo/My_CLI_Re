@@ -4,6 +4,7 @@
       "name": "LLM",
       "desc": "AI 文字處理 — 以提示詞為基礎的實例，支援瀏覽器、本機或雲端 LLM。",
       "config": {
+        "target": "目標",
         "prompt": "提示詞",
         "icon": "圖示",
         "provider": "提供者",
@@ -16,11 +17,18 @@
         "apiModel": "API 模型",
         "apiKey": "API 金鑰"
       },
+      "target": {
+        "text": "文字區域",
+        "file": "附件"
+      },
       "preset": {
         "summarize": "摘要",
         "translate": "翻譯",
         "polish": "潤飾",
         "explain": "解釋",
+        "ocr": "文字辨識（OCR）",
+        "toMarkdown": "轉換為 Markdown",
+        "describe": "描述圖片",
         "branchSummary": "主題",
         "branchTimeline": "時間線",
         "branchExtract": "重點",
@@ -31,6 +39,7 @@
         "summarize": "摘要",
         "translate": "翻譯",
         "polish": "潤飾",
+        "ocr": "OCR",
         "summarizeFiles": "檔案",
         "summarizeBranch": "分支",
         "summarizeAll": "全部"
@@ -67,7 +76,10 @@
       "serverTesting": "正在檢查 Ollama...",
       "serverOnline": "已連線 — {model} 就緒",
       "serverOffline": "離線 — 無法連線 Ollama",
-      "serverNoModel": "已連線 — 但找不到 {model}。可用模型：{available}"
+      "serverNoModel": "已連線 — 但找不到 {model}。可用模型：{available}",
+      "processingFiles": "正在處理附件...",
+      "noFiles": "目前記錄沒有附件。",
+      "fileServerOnly": "檔案處理需要伺服器提供者（Ollama）。"
     }
   }
 }
