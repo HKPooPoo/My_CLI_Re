@@ -220,21 +220,32 @@ users (uid, passcode, title, email, settings JSONB)
 ```bash
 # 1. Clone
 git clone <repository-url>
-cd !My_CLI_Re
+cd My_CLI_Re
 
-# 2. Environment
+# 2. Environment — copy template and fill in credentials
 cp .env.example .env
-# Fill in: GG_API (Google Cloud), CLOUDFLARED_TOKEN, MAIL_* credentials
+# Optional: fill in GG_API (Google Cloud), CLOUDFLARED_TOKEN, MAIL_* credentials
 
-# 3. Build and start (core services)
-docker compose up -d --build
+# 3. Build and start (core services only — ~2 min first time for composer install)
+docker compose up -d --build nginx api db redis
 
-# 4. Initialize Laravel
-docker exec my-cli-api sh -c "cp .env.example .env && php artisan key:generate && php artisan migrate --force"
+# 4. Generate APP_KEY — copy the output into .env
+docker exec my-cli-api php artisan key:generate --force --show
+# Paste the base64:... output as the APP_KEY value in .env
 
-# 5. (Optional) Start MOD services (LibreTranslate + Ollama)
+# 5. Restart API to pick up the new key, then run migrations
+docker compose up -d api
+docker exec my-cli-api php artisan migrate --force
+
+# 6. (Optional) Start MOD services (LibreTranslate + Ollama)
 docker compose --profile mods up -d
 ```
+
+> **Note:** The entrypoint script auto-installs Composer dependencies on first boot
+> when `vendor/` is missing. No manual `composer install` needed.
+>
+> **Full stack:** To start all services (including queue, scheduler, reverb, pgadmin,
+> mailpit, tunnel), run `docker compose up -d --build` instead of step 3.
 
 ### Service URLs
 
@@ -312,8 +323,10 @@ docker exec my-cli-api ./vendor/bin/pint                 # Lint PHP
 │   ├── images/                 # Icons, banners
 │   └── audio/                  # 10 sound effects
 ├── docker/
+│   ├── entrypoint.sh           # Auto composer install + optional setup
 │   └── nginx/default.conf      # Reverse proxy config
 ├── docker-compose.yml          # 12 services, 5 volumes
+├── .gitattributes              # Force LF for shell scripts
 ├── documents/                  # Design docs, proposals
 └── .env.example                # Environment template
 ```
