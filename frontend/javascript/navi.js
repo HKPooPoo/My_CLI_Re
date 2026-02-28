@@ -132,13 +132,14 @@ export function updateNaviPosition($naviItem, silent = false, instant = false) {
     const $subNaviItems = stateOfNaviItem.$subNaviItems;
     const $subNaviTrack = stateOfNaviItem.$subNaviTrack;
 
-    // 計算居中對齊位移
+    // 計算居中對齊位移 (batch read offsetWidth to minimize reflows)
+    const itemWidths = Array.from($subNaviItems).map(el => el.offsetWidth);
     let offsetLeft = 0;
     for (let i = 0; i < subNaviHeadIndex; i++) {
-        offsetLeft += $subNaviItems[i].offsetWidth + 32; // 32px 為 navi.css 定義的間隔
+        offsetLeft += itemWidths[i] + 32; // 32px 為 navi.css 定義的間隔
     }
 
-    const currentHeadSubNaviItemWidth = $subNaviItems[subNaviHeadIndex].offsetWidth;
+    const currentHeadSubNaviItemWidth = itemWidths[subNaviHeadIndex];
     const offsetSummation = offsetLeft + (currentHeadSubNaviItemWidth / 2);
     const translateX = -offsetSummation;
 

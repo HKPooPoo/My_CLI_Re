@@ -9,6 +9,8 @@
     <meta name="theme-color" content="#32FF32">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="description" content="My CLI Re — a retro CRT-themed communication platform with personal, paired, and public boards.">
+    <script>window.addEventListener('unhandledrejection', e => console.error('[Unhandled]', e.reason))</script>
     <script type="module" src="./javascript/audio.js"></script>
     <!-- i18n: fire-and-forget init — locale JSON loads before any user interaction -->
     <script type="module">
@@ -58,7 +60,10 @@
 
 <body>
     <div class="header">
-        <img src="./images/banner.png" class="header-img" alt="banner in header">
+        <picture>
+            <source srcset="./images/banner.webp" type="image/webp">
+            <img src="./images/banner.png" class="header-img" alt="banner in header" width="2752" height="1370">
+        </picture>
         <!--hud.css-->
         <div class="hud-bar">
             <div id="login-status-bar">UID: <div class="crt-text-cyan" id="login-status-display">Connecting...</div>
@@ -66,7 +71,7 @@
             <div id="db-status-bar">DB: <div id="db-status-display">Connecting...</div>
             </div>
         </div>
-        <button id="theme-change-btn"></button>
+        <button id="theme-change-btn" aria-label="Toggle theme"></button>
         <!--hud.js-->
         <script type="module" src="./javascript/hud.js"></script>
     </div>
@@ -163,7 +168,7 @@
             <div class="feature-container" style="display: flex;">
                 <!-- Feature buttons and shelf panels are created dynamically by MOD loader -->
                 <div class="feature-shelf-container frosted-glass">
-                    <button class="feature-shelf-back-btn">>></button>
+                    <button class="feature-shelf-back-btn" aria-label="Close shelf">>></button>
                 </div>
             </div>
             <button class="push-btn" data-hint="hints.push" data-i18n="common.push">PUSH</button>

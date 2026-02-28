@@ -83,7 +83,27 @@ updateLoginStatus();
 replaceCrtTextColorBy("crt-text-orange"); // 最初顯示為 orange (CONNECTING...)
 
 // [Optimization]: 延遲首次檢測，避免頁面加載時的 NetworkError
-setTimeout(() => {
+let heartbeatIntervalId = null;
+
+function startHeartbeat() {
+    if (heartbeatIntervalId) return;
     updateDatabaseStatus();
-    setInterval(updateDatabaseStatus, 15000); // 放寬輪詢間隔至 15 秒
-}, 3000);
+    heartbeatIntervalId = setInterval(updateDatabaseStatus, 15000);
+}
+
+function stopHeartbeat() {
+    if (heartbeatIntervalId) {
+        clearInterval(heartbeatIntervalId);
+        heartbeatIntervalId = null;
+    }
+}
+
+setTimeout(startHeartbeat, 3000);
+
+document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+        stopHeartbeat();
+    } else {
+        startHeartbeat();
+    }
+});

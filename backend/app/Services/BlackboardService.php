@@ -71,9 +71,7 @@ class BlackboardService
                 );
             }
 
-            foreach ($fileHashes as $hash) {
-                $this->fileService->markCommitted($hash);
-            }
+            $this->fileService->markCommittedBatch($fileHashes);
 
             Cache::forget("user:{$user->id}:branches");
             Cache::forget("bb:branch:{$user->id}:{$branchId}:details");

@@ -88,7 +88,7 @@ services:
       REVERB_HOST: reverb
       REVERB_PORT: 8081
       REVERB_SCHEME: http
-    command: php artisan queue:listen --tries=1 --timeout=0
+    command: php artisan queue:listen --tries=3 --timeout=120
     depends_on:
       - db
       - redis

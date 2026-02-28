@@ -74,9 +74,7 @@ class WalkieTypieBoardService
                 );
             }
 
-            foreach ($fileHashes as $hash) {
-                $this->fileService->markCommitted($hash);
-            }
+            $this->fileService->markCommittedBatch($fileHashes);
 
             Cache::forget("wt:boards:{$branchId}");
 

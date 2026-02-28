@@ -44,6 +44,7 @@ class AuthService
 
         $token = Str::random(32);
         Cache::put("reset_{$user->uid}_{$token}", $user->uid, now()->addMinutes(10));
+        Cache::put("reset_token:{$token}", $user->uid, now()->addMinutes(10));
 
         $command = "/passwd --token {$token} --new YOUR_NEW_PASSCODE";
         Mail::to($user->email)->send(new ResetPasscodeMail($user->uid, $command));
@@ -69,28 +70,22 @@ class AuthService
                 throw new \Exception('PASSWORD FORMAT INVALID. MUST BE 4-32 CHARS, NO SPACES.');
             }
 
-            // Try all users to find the matching scoped cache key
-            $uid = null;
-            $cacheKey = null;
-            $users = User::all();
-            foreach ($users as $u) {
-                $key = "reset_{$u->uid}_{$token}";
-                if (Cache::get($key) === $u->uid) {
-                    $uid = $u->uid;
-                    $cacheKey = $key;
-                    break;
-                }
-            }
+            $uid = Cache::get("reset_token:{$token}");
 
             if (!$uid) {
                 throw new \Exception('INVALID OR EXPIRED TOKEN.');
             }
 
             $userToUpdate = User::where('uid', $uid)->first();
+            if (!$userToUpdate) {
+                throw new \Exception('INVALID OR EXPIRED TOKEN.');
+            }
+
             $userToUpdate->passcode = Hash::make($newPass);
             $userToUpdate->save();
 
-            Cache::forget($cacheKey);
+            Cache::forget("reset_{$uid}_{$token}");
+            Cache::forget("reset_token:{$token}");
             return 'PASSCODE UPDATED SUCCESSFULLY.';
         }
 

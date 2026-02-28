@@ -133,9 +133,7 @@ class BroadcastChannelService
                 DB::table('broadcast_boards')->insert($insertData);
             }
 
-            foreach ($fileHashes as $hash) {
-                $this->fileService->markCommitted($hash);
-            }
+            $this->fileService->markCommittedBatch($fileHashes);
 
             return DB::table('broadcast_channels')->where('id', $channelId)->first();
         });
