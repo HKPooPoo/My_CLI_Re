@@ -132,6 +132,12 @@ class FileService
             }
         }
 
+        // Mark stale staged files (uploaded but never committed) as orphaned
+        $staleStaged = File::where('status', 'staged')
+            ->where('created_at', '<', now()->subHours(24))
+            ->update(['status' => 'orphaned']);
+        $marked += $staleStaged;
+
         return $marked;
     }
 

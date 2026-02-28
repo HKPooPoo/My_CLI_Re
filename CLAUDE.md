@@ -50,6 +50,10 @@ Broadcast    = Board(scope: PUBLIC) → public channels, one-to-many
 
 **branch_id:** `Date.now()` — millisecond timestamp, NOT sequential. Branch name is a separate display label stored on every record.
 
+### Known Design Decisions
+
+**LWW Commit (Last-Write-Wins):** Commit is full-branch replacement — client sends all records, server DELETEs records not in payload then UPSERTs the rest. No conflict detection, no optimistic locking. Accepted for personal notebook system: same-user dual-device simultaneous commit is near-impossible (auto-sync deviceId prevents self-echo). Diff-Match-Patch is not applicable — DMP solves intra-document text conflicts, not inter-record set conflicts. Timestamp-Based Union Merge was considered but rejected — `updateText()` uses delete + create (IndexedDB primary key includes timestamp, cannot update in place), so union merge would resurrect old record versions. Correct merge would require record lineage tracking, which exceeds the system's complexity budget.
+
 ## Development Commands
 
 ```bash
@@ -112,7 +116,7 @@ Models: `User`, `File` only. Events (4): `BroadcastChannelUpdated`, `WalkieTypie
 - **broadcast_pins** — user_id FK cascade, channel_id FK cascade; UNIQUE(user_id, channel_id)
 - **files** — hash (unique), user_id FK, original_name, mime_type, size (bigint), disk_path, status (default 'staged')
 
-`file_hash` migrated from varchar(512) to text for JSON array serialization. File status lifecycle: `staged` → `committed` → `orphaned` (cleaned after 24h).
+`file_hash` migrated from varchar(512) to text for JSON array serialization. File status lifecycle: `staged` → `committed` → `orphaned` (cleaned after 24h). Stale `staged` files (uploaded but never committed within 24h) are also marked `orphaned` by the hourly cron and cleaned in the next cycle.
 
 ### Frontend (`frontend/`)
 
