@@ -55,6 +55,9 @@ services:
       MAIL_FROM_ADDRESS: ${MAIL_FROM_ADDRESS:-admin@my-cli.local}
       MAIL_FROM_NAME: ${MAIL_FROM_NAME:-MyCLI_System}
       BROADCAST_CONNECTION: reverb
+      REVERB_APP_ID: ${REVERB_APP_ID:-my-cli}
+      REVERB_APP_KEY: ${REVERB_APP_KEY:-my-cli-key}
+      REVERB_APP_SECRET: ${REVERB_APP_SECRET:-my-cli-secret}
       REVERB_HOST: reverb
       REVERB_PORT: 8081
       REVERB_SCHEME: http
@@ -97,6 +100,9 @@ services:
       MAIL_FROM_ADDRESS: ${MAIL_FROM_ADDRESS:-admin@my-cli.local}
       MAIL_FROM_NAME: ${MAIL_FROM_NAME:-MyCLI_System}
       BROADCAST_CONNECTION: reverb
+      REVERB_APP_ID: ${REVERB_APP_ID:-my-cli}
+      REVERB_APP_KEY: ${REVERB_APP_KEY:-my-cli-key}
+      REVERB_APP_SECRET: ${REVERB_APP_SECRET:-my-cli-secret}
       REVERB_HOST: reverb
       REVERB_PORT: 8081
       REVERB_SCHEME: http

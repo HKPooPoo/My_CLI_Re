@@ -1,11 +1,25 @@
 #!/bin/sh
-set -e
 
 # --- Auto-install Composer dependencies (fresh clone) ---
 if [ ! -f vendor/autoload.php ]; then
     echo "[entrypoint] vendor/ not found — running composer install..."
-    mkdir -p vendor
-    COMPOSER_PROCESS_TIMEOUT=600 composer install --no-interaction --no-progress
+    # Docker Desktop Windows volume mounts have filesystem race conditions
+    # that break composer's parallel downloads. Work around by installing
+    # to a container-local path first, then copying to the mounted volume.
+    cp composer.json /tmp/composer.json
+    cp composer.lock /tmp/composer.lock
+    cd /tmp
+    composer install --no-interaction --no-progress --no-scripts
+    cd /var/www/html
+    cp -r /tmp/vendor vendor
+    rm -rf /tmp/vendor /tmp/composer.json /tmp/composer.lock
+    # Run post-install scripts (package:discover, etc.)
+    composer run-script post-autoload-dump 2>/dev/null || true
+    if [ ! -f vendor/autoload.php ]; then
+        echo "[entrypoint] ERROR: composer install failed"
+        exit 1
+    fi
+    echo "[entrypoint] composer install complete"
 fi
 
 # --- [OPTIONAL] First-run auto-setup ---
