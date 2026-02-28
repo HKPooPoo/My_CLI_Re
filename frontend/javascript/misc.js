@@ -17,7 +17,7 @@ import { PLATFORM_VERSION } from './version.js';
 
 // --- Shared Config Helpers (exported for WT/BC config pages) ---
 
-export function createRangeControl(container, scope, key, labelKey, min, max, step = 1, hintKey) {
+export function createRangeControl(container, scope, key, labelKey, min, max, step = 1, hintKey, formatter) {
     const item = document.createElement('div');
     item.className = 'misc-list-item';
 
@@ -40,12 +40,13 @@ export function createRangeControl(container, scope, key, labelKey, min, max, st
 
     const valueSpan = document.createElement('span');
     valueSpan.className = 'misc-range-value crt-text-green';
-    valueSpan.textContent = range.value;
+    valueSpan.textContent = formatter ? formatter(parseInt(range.value)) : range.value;
 
     range.addEventListener('input', () => {
-        valueSpan.textContent = range.value;
-        if (scope === 'global') Settings.setGlobal(key, parseInt(range.value));
-        else Settings.set(scope, key, parseInt(range.value));
+        const v = parseInt(range.value);
+        valueSpan.textContent = formatter ? formatter(v) : v;
+        if (scope === 'global') Settings.setGlobal(key, v);
+        else Settings.set(scope, key, v);
     });
     range.addEventListener('change', () => {
         playAudio('UIGeneralFocus.mp3');
@@ -57,7 +58,7 @@ export function createRangeControl(container, scope, key, labelKey, min, max, st
     item.appendChild(group);
     container.appendChild(item);
 
-    return { range, valueSpan };
+    return { range, valueSpan, formatter };
 }
 
 export function createToggleControl(container, scope, key, labelKey, hintKey) {
@@ -132,7 +133,8 @@ export const MISC = {
             updateTs: createToggleControl(container, 'bb', 'updateTimestamp', 'config.updateTimestamp', 'hints.config.updateTimestamp'),
             autoSync: createToggleControl(container, 'bb', 'autoSync', 'config.autoSync', 'hints.config.autoSync'),
             showHints: createToggleControl(container, 'global', 'showHints', 'config.showHints'),
-            screensaverTimeout: createRangeControl(container, 'global', 'screensaverTimeout', 'config.screensaverTimeout', 10, 300, 10, 'hints.config.screensaverTimeout'),
+            screensaverTimeout: createRangeControl(container, 'global', 'screensaverTimeout', 'config.screensaverTimeout', 10, 310, 10, 'hints.config.screensaverTimeout',
+                (v) => v >= 310 ? t('mods.disabled') : v),
             crtBlendMode: createToggleControl(container, 'global', 'crtBlendMode', 'config.crtBlendModeLabel', 'hints.config.crtBlendMode'),
         };
     },
@@ -160,8 +162,10 @@ export const MISC = {
             this.bbControls.autoSync?.updateLabel();
             this.bbControls.showHints?.updateLabel();
             if (this.bbControls.screensaverTimeout) {
-                this.bbControls.screensaverTimeout.range.value = Settings.getGlobal('screensaverTimeout');
-                this.bbControls.screensaverTimeout.valueSpan.textContent = Settings.getGlobal('screensaverTimeout');
+                const v = Settings.getGlobal('screensaverTimeout');
+                const fmt = this.bbControls.screensaverTimeout.formatter;
+                this.bbControls.screensaverTimeout.range.value = v;
+                this.bbControls.screensaverTimeout.valueSpan.textContent = fmt ? fmt(v) : v;
             }
         }
     },

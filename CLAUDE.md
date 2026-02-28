@@ -11,6 +11,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 3. Do NOT push to remote — this repo is local-only
 4. Keep commits atomic: one task = one before/after commit pair
 
+## Keeping CLAUDE.md Current (MANDATORY)
+
+**This file must stay in sync with the codebase.** When an implementation changes documented behavior — new settings, new events, new layers, changed defaults, new templates, altered APIs — update the relevant sections of CLAUDE.md in the same commit. If you added it, document it. If you changed it, update the docs. Stale documentation is worse than no documentation.
+
 ## Project Overview
 
 **My CLI Re** (My Clean Logging Interface) is a versioned communication platform with a unified Board model across three visibility scopes — personal (Blackboard), paired (Walkie-Typie), and public (Broadcast). Docker-based full-stack: Laravel 12 (PHP-FPM) backend + vanilla JS frontend served by Nginx, retro CRT terminal aesthetic.
@@ -154,6 +158,7 @@ Two-level hierarchy: main navi (`data-navi-item`: blackboard, walkie-typie, broa
 | `mods:instanceAdded` | mod-state.js | `{ instance }` | New instance created |
 | `mods:instanceRemoved` | mod-state.js | `{ instanceId, templateId, instance }` | Instance deleted |
 | `mods:configChanged` | mod-state.js | `{ instanceId, templateId, key, value }` | Instance config changed |
+| `mods:sharedConfigChanged` | mod-state.js | `{ group, key, value }` | Group shared config changed |
 | `mods:reordered` | mod-state.js | `{ instanceId, direction }` | Instance order changed |
 | `mods:selected` | mods-manager.js | `{ instanceId }` | Instance selected in list (500ms debounce) |
 | `mods:buttonsRebuilt` | mod-loader.js | — | Instance buttons DOM rebuilt |
@@ -254,13 +259,13 @@ Instance data model (persisted in `localStorage['mod-instances']`):
 ### Architecture
 
 - **`mod-loader.js`** — discovers MOD folders via Nginx autoindex, fetches `manifest.json` (data) + `import()` `mod.js` (code) per folder, merges, validates, registers, creates DOM, calls init(). Exports: `getTemplate()`, `getAllTemplates()`, `getInstances()`, `getInstancesByTemplate()`, `rebuildInstanceButtons()`, `updateInstanceButton()`, `removeInstanceButton()`
-- **`mod-state.js`** — instance CRUD + template registry. `addInstance()` respects `maxInstances` cap. `removeInstance()` always allowed (no guard on maxInstances). Dispatches `mods:instanceAdded/Removed`, `mods:configChanged`, `mods:reordered`
+- **`mod-state.js`** — instance CRUD + template registry + shared config storage. `addInstance()` respects `maxInstances` cap. `removeInstance()` always allowed (no guard on maxInstances). Shared config API: `getSharedConfig/setSharedConfig/getSharedConfigAll/getSharedConfigSchema/initSharedDefaults`. Dispatches `mods:instanceAdded/Removed`, `mods:configChanged`, `mods:reordered`, `mods:sharedConfigChanged`
 - **`mod-context.js`** — `createModContext()` builds sandboxed API: `ctx.instance.*`, `ctx.board.*`, `ctx.ui.*`, `ctx.i18n.*`, `ctx.storage.*`, `ctx.net.*`, `ctx.file.*`, `ctx.events.*`, `ctx.hooks.*`, `ctx.query.*`. Read the file for full API reference.
 - **`mod-board-provider.js`** — board data access (metadata providers, history, file cache)
 - **`mod-field-registry.js`** — config field type registry. Built-in: `select`, `text`, `range`, `toggle`, `info`, `action`. Custom via `ctx.ui.registerFieldType()`
 - **`mod-hooks.js`** — priority-ordered pipeline. API: `register/unregister/unregisterAll/run/has`. Hook points not yet instrumented (Phase C deferred).
 - **`mod-tools.js`** — cross-MOD tool registry (OpenAI function-calling compatible). API: `register/unregisterAll/executeTool/getToolDefinitions/hasTool/getToolNames`
-- **`mods-manager.js`** — list page (template catalog + active instances, unified InfiniteList via `.mods-navigable` class) + config page (fields from `configSchema`, instance management: UP/DOWN/DELETE). Wheel/click navigates both catalog and active items; selecting a catalog item shows template preview in config, selecting an instance shows full config.
+- **`mods-manager.js`** — list page (template catalog + active instances, unified InfiniteList via `.mods-navigable` class) + config page (shared config ENGINE section + per-instance INSTANCE section, instance management: UP/DOWN/DELETE). Field creators use an accessor pattern `{ get(key), set(key, val) }` so the same renderer works for both shared and instance fields.
 - **`feature-shelf.js`** — feature button visibility per page (driven by `template.pages` keys), click → deactivate previous → build ModContext → `template.activate(ctx)`. Exports: `openShelf()`, `closeShelf()`
 
 ### Instance UI Positions (4)
@@ -271,6 +276,36 @@ Instance data model (persisted in `localStorage['mod-instances']`):
 | Config page | Config fields + UP/DOWN/DELETE | Framework |
 | Feature button | Icon button in HUD bar | Framework (data-instance-id, CSS ::after icon) |
 | Shelf panel | Content when button clicked | **Template** fills in `init()` (shared per template) |
+
+### Shared Config (Group-Level Settings)
+
+When multiple templates in the same `group` need identical settings (e.g. LLM provider, API key, model), use **shared config** instead of duplicating fields on every instance.
+
+**How it works:**
+1. ONE template in the group declares `sharedConfigSchema` in its `manifest.json` (same field format as `configSchema`)
+2. Framework stores shared values in `localStorage['mod-shared-config']` under the group name
+3. When rendering config for ANY instance in the group, framework shows shared fields in an "ENGINE" section above per-instance fields
+4. `mod-context.js` merges shared values into `ctx.config` before freezing — MOD code reads `config.provider` without knowing it's shared
+5. Changing a shared field fires `mods:sharedConfigChanged` event and calls `template.onSharedConfigChange(key, value)` on all templates in the group
+
+**Config page layout (for any instance in a group with shared config):**
+```
+── ENGINE ──                    ← shared config section
+  Provider:     [client ▼]
+  Temperature:  [===●===] 0.3
+
+── INSTANCE ──                  ← per-instance config section
+  Prompt:       [____________]
+  Icon:         [● ○ ○ ○ ○ ○]
+```
+
+**Framework APIs:**
+- `ctx.instance.getSharedConfig(key)` / `ctx.instance.setSharedConfig(key, val)` — explicit access from MOD code
+- `ModState.getSharedConfig(group, key)` / `ModState.setSharedConfig(group, key, val)` — direct API (use in shared helpers like `_shared.js`)
+
+**Example:** The `llm` group (llm, llm-bb, llm-bc) shares provider, clientModel, apiKey, temperature. Only `llm/manifest.json` declares `sharedConfigSchema`; `llm-bb` and `llm-bc` inherit from the group automatically.
+
+**Lifecycle method:** Implement `onSharedConfigChange(key, value)` on the template object to react to shared config changes (e.g. re-trigger model prewarming when provider changes).
 
 ### Adding a New Template
 
@@ -289,7 +324,8 @@ Instance data model (persisted in `localStorage['mod-instances']`):
 
 **1. Use framework APIs — never bypass them.**
 - Text access: `ctx.board.getText()`, `ctx.board.getTextarea()`, `ctx.board.insertAtCursor()`
-- Config: `ctx.instance.getConfig(key)` / `ctx.instance.setConfig(key, val)`
+- Config: `ctx.instance.getConfig(key)` / `ctx.instance.setConfig(key, val)` (per-instance)
+- Shared config: `ctx.instance.getSharedConfig(key)` / `ctx.instance.setSharedConfig(key, val)` (group-level)
 - Events: `ctx.events.on()` / `ctx.events.off()` (auto-cleanup on deactivate)
 - UI: `ctx.ui.toast()`, `ctx.ui.getShelfElement()`, `ctx.ui.registerFieldType()`
 - Storage: `ctx.storage.get(key)` / `ctx.storage.set(key, val)` (per-instance sandboxed)

@@ -16,5 +16,29 @@
     "configSchema": [],
     "defaultInstances": [
         { "config": {} }
+    ],
+
+    "_docs:sharedConfigSchema": [
+        "── Shared Config (optional) ──────────────────────────────",
+        "If multiple templates in the same `group` should share config",
+        "(e.g. provider, API key, model), add a `sharedConfigSchema` field",
+        "on ONE template in the group (usually the primary one).",
+        "",
+        "- Same field format as `configSchema`",
+        "- Stored in localStorage['mod-shared-config'] under the group name",
+        "- Framework renders shared fields in an ENGINE section above",
+        "  per-instance fields when editing ANY instance in the group",
+        "- ctx.config merges shared values transparently — MOD code",
+        "  reads config.provider without knowing it's shared",
+        "- Other templates in the group do NOT repeat these fields",
+        "- Implement onSharedConfigChange(key, value) in mod.js to react",
+        "",
+        "Example:",
+        "  \"sharedConfigSchema\": [",
+        "      { \"key\": \"provider\", \"type\": \"select\", ... },",
+        "      { \"key\": \"apiKey\", \"type\": \"text\", \"showWhen\": { \"key\": \"provider\", \"value\": \"api\" } }",
+        "  ]",
+        "",
+        "See llm/manifest.json for a real-world example."
     ]
 }

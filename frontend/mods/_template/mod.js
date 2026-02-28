@@ -14,7 +14,9 @@
  * 5. Create locale files in locales/{en,zh-TW,default}.json
  * 6. Add CSS icon: .feature-btn[data-feature-btn="{btn-id}"]::after
  *    OR implement getIconUrl() for runtime icons (no CSS editing needed)
- * 7. Refresh browser — MOD appears automatically in catalog
+ * 7. (Optional) If your group needs shared config, add sharedConfigSchema
+ *    to ONE template's manifest.json and implement onSharedConfigChange()
+ * 8. Refresh browser — MOD appears automatically in catalog
  *
  * Data vs Code separation:
  *   manifest.json — pure data: id, group, nameKey, configSchema, etc.
@@ -49,6 +51,9 @@
  * - ctx.board methods return null if no page is active (e.g. during init).
  * - onConfigChange() now receives a real ModContext (not null).
  * - manifest.json id MUST match folder name, or the MOD will be skipped.
+ * - ctx.config merges shared group config transparently — if your group
+ *   has sharedConfigSchema, reading ctx.config.provider gives the shared
+ *   value (no need to call getSharedConfig explicitly for reads).
  *
  * Yellow-zone bypasses:
  * - When the framework lacks an API you need (e.g. textarea event
@@ -175,10 +180,25 @@ export default {
      */
     destroy(ctx) {},
 
+    // ===================== Shared Config =====================
+
+    /**
+     * Called when a shared config field changes (from any instance in the group).
+     * Only relevant if your group uses `sharedConfigSchema` in manifest.json.
+     *
+     * Use case: re-evaluate side effects when shared settings change.
+     * Example: the LLM group re-triggers model prewarming when provider or
+     * clientModel changes.
+     *
+     * @param {string} key    The shared config key that changed
+     * @param {*}      value  The new value
+     */
+    // onSharedConfigChange(key, value) {},
+
     // ===================== Optional Methods =====================
 
     // getDeployPages(config) { return ['blackboard-log']; },
-    // getInfoValue(key, instanceId) { return '—'; },
-    // async onAction(key, instanceId) { },
+    // getInfoValue(key) { return '—'; },
+    // async onAction(key) { },
     // getIconUrl(config) { return null; },
 };

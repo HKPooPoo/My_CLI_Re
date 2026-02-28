@@ -11,6 +11,7 @@ import { getInstances } from '../mod-loader.js';
 import { t } from '../../javascript/i18n.js';
 
 let _clockInterval = null;
+let _refreshInterval = null;
 let _layer = null;
 let _onActivated = null;
 let _onDeactivated = null;
@@ -117,6 +118,47 @@ function _stopClock() {
     }
 }
 
+/** Re-read live data and update existing rows in place (syncs with HUD heartbeat). */
+function _refreshData() {
+    if (!_layer) return;
+
+    // User
+    const userEl = _layer.querySelector('[data-is-row="user"] .is-content');
+    if (userEl) {
+        const user = localStorage.getItem('currentUser') || '\u2014';
+        const title = localStorage.getItem('currentTitle') || '';
+        userEl.textContent = title ? `USER: ${user} [${title}]` : `USER: ${user}`;
+    }
+
+    // DB — mirror HUD's #db-status-display
+    const dbEl = _layer.querySelector('[data-is-row="db"] .is-content');
+    if (dbEl) {
+        const hud = document.getElementById('db-status-display');
+        const dbText = hud ? hud.textContent.trim() : '\u2014';
+        const online = dbText.toLowerCase().includes('online') || dbText.toLowerCase().includes('connected');
+        dbEl.textContent = `DB:   ${online ? '\u25CF ONLINE' : '\u25CB OFFLINE'}`;
+        dbEl.className = 'is-content ' + (online ? 'is-online' : 'is-offline');
+    }
+
+    // MOD count
+    const modsEl = _layer.querySelector('[data-is-row="mods"] .is-content');
+    if (modsEl) {
+        modsEl.textContent = `MODS: ${getInstances().length} ${t('mods.infoScreensaver.active')}`;
+    }
+}
+
+function _startRefresh() {
+    _stopRefresh();
+    _refreshInterval = setInterval(_refreshData, 15000);
+}
+
+function _stopRefresh() {
+    if (_refreshInterval) {
+        clearInterval(_refreshInterval);
+        _refreshInterval = null;
+    }
+}
+
 function _show(config) {
     const overlay = document.getElementById('press-start-overlay');
     if (!overlay) return;
@@ -131,10 +173,12 @@ function _show(config) {
     if (label) label.style.display = 'none';
 
     if (config.showClock !== false) _startClock();
+    _startRefresh();
 }
 
 function _hide() {
     _stopClock();
+    _stopRefresh();
     if (_layer && _layer.parentNode) {
         _layer.parentNode.removeChild(_layer);
     }

@@ -84,8 +84,10 @@ overlay.addEventListener("animationend", () => {
 window.addEventListener("blur", () => {
     if (overlay.style.display === "flex") return;
 
-    // 當離開頁面時間超過設定值時，恢復 Press Start 螢幕
-    const timeout = (parseInt(Settings.getGlobal('screensaverTimeout')) || 60) * 1000;
+    // 當離開頁面時間超過設定值時，恢復 Press Start 螢幕（310 = OFF）
+    const rawTimeout = parseInt(Settings.getGlobal('screensaverTimeout')) || 60;
+    if (rawTimeout >= 310) return;
+    const timeout = rawTimeout * 1000;
     focusTimer = setTimeout(() => {
         overlay.classList.add("crt-switch-on");
         overlay.style.display = "flex";
