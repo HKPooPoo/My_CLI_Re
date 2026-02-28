@@ -1,3 +1,10 @@
+# ============================================================
+# MINIMAL DEPLOY (for MOD development only):
+#   Only need: nginx, api, db, redis
+#   Skip: pgadmin, mailpit, reverb, tunnel, queue, scheduler
+#   Command: docker compose up -d nginx api db redis
+# ============================================================
+
 services:
   nginx:
     image: nginx:alpine
@@ -15,10 +22,13 @@ services:
     build: ./backend
     container_name: my-cli-api
     volumes:
+      - ./docker/entrypoint.sh:/usr/local/bin/docker-entrypoint.sh:ro
       - ./backend:/var/www/html
       - file-storage:/var/www/html/storage/app/private/files
       - ./docker/php/uploads.ini:/usr/local/etc/php/conf.d/uploads.ini:ro
       - ./docker/php/zz-upload.conf:/usr/local/etc/php-fpm.d/zz-upload.conf:ro
+    entrypoint: ["sh", "/usr/local/bin/docker-entrypoint.sh"]
+    command: ["php-fpm"]
     environment:
       APP_ENV: local
       APP_DEBUG: "true"
@@ -61,7 +71,9 @@ services:
     build: ./backend
     container_name: my-cli-queue
     volumes:
+      - ./docker/entrypoint.sh:/usr/local/bin/docker-entrypoint.sh:ro
       - ./backend:/var/www/html
+    entrypoint: ["sh", "/usr/local/bin/docker-entrypoint.sh"]
     environment:
       APP_ENV: local
       APP_DEBUG: "true"
@@ -98,8 +110,10 @@ services:
     build: ./backend
     container_name: my-cli-scheduler
     volumes:
+      - ./docker/entrypoint.sh:/usr/local/bin/docker-entrypoint.sh:ro
       - ./backend:/var/www/html
       - file-storage:/var/www/html/storage/app/private/files
+    entrypoint: ["sh", "/usr/local/bin/docker-entrypoint.sh"]
     environment:
       APP_ENV: local
       APP_DEBUG: "true"
@@ -163,7 +177,9 @@ services:
     build: ./backend
     container_name: my-cli-reverb
     volumes:
+      - ./docker/entrypoint.sh:/usr/local/bin/docker-entrypoint.sh:ro
       - ./backend:/var/www/html
+    entrypoint: ["sh", "/usr/local/bin/docker-entrypoint.sh"]
     environment:
       APP_ENV: local
       APP_DEBUG: "true"

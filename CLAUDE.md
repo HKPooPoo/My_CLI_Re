@@ -164,6 +164,7 @@ Two-level hierarchy: main navi (`data-navi-item`: blackboard, walkie-typie, broa
 | `mods:buttonsRebuilt` | mod-loader.js | — | Instance buttons DOM rebuilt |
 | `screensaver:activated` | pressStart.js | `{ initial }` | Overlay shown (idle timeout or page load) |
 | `screensaver:deactivated` | pressStart.js | — | Overlay dismissed by click |
+| `llm:progress` | llm/_shared.js | `{ status, text?, model? }` | WebLLM model loading/ready/error |
 | `theme:changed` | theme-engine.js | `{ themeId }` | Active theme MOD changed |
 
 **Gotcha:** `list:selectionChanged` fires from ALL InfiniteList instances — listeners MUST check `container.contains(detail.item)` to filter.

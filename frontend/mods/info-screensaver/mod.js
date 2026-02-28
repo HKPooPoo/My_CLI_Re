@@ -25,26 +25,16 @@ function _buildDashboard(config) {
     const layer = document.createElement('div');
     layer.id = 'info-screensaver-layer';
 
-    // Gather data
-    const user = localStorage.getItem('currentUser') || '\u2014';
-    const title = localStorage.getItem('currentTitle') || '';
-    // BYPASS: reading DOM for DB status — no framework API for this
-    const dbEl = document.getElementById('db-status-display');
-    const dbText = dbEl ? dbEl.textContent.trim() : '\u2014';
-    const dbOnline = dbText.toLowerCase().includes('online') || dbText.toLowerCase().includes('connected');
     const modCount = getInstances().length;
 
     // Build rows
     const rows = [];
     rows.push(_row('title', `MY CLI Re v${PLATFORM_VERSION}`));
 
-    if (config.showUser !== false) {
-        const userLine = title ? `${user} [${title}]` : user;
-        rows.push(_row('user', `USER: ${userLine}`));
-    }
-    if (config.showDb !== false) {
-        const indicator = dbOnline ? '\u25CF ONLINE' : '\u25CB OFFLINE';
-        rows.push(_row('db', `DB:   ${indicator}`, dbOnline ? 'online' : 'offline'));
+    if (config.showLlm !== false) {
+        const llmRow = _row('llm', '');
+        llmRow.style.display = 'none'; // hidden until llm:progress event
+        rows.push(llmRow);
     }
     if (config.showMods !== false) {
         rows.push(_row('mods', `MODS: ${modCount} ${t('mods.infoScreensaver.active')}`));
@@ -118,29 +108,9 @@ function _stopClock() {
     }
 }
 
-/** Re-read live data and update existing rows in place (syncs with HUD heartbeat). */
+/** Re-read live data and update existing rows in place. */
 function _refreshData() {
     if (!_layer) return;
-
-    // User
-    const userEl = _layer.querySelector('[data-is-row="user"] .is-content');
-    if (userEl) {
-        const user = localStorage.getItem('currentUser') || '\u2014';
-        const title = localStorage.getItem('currentTitle') || '';
-        userEl.textContent = title ? `USER: ${user} [${title}]` : `USER: ${user}`;
-    }
-
-    // DB — mirror HUD's #db-status-display
-    const dbEl = _layer.querySelector('[data-is-row="db"] .is-content');
-    if (dbEl) {
-        const hud = document.getElementById('db-status-display');
-        const dbText = hud ? hud.textContent.trim() : '\u2014';
-        const online = dbText.toLowerCase().includes('online') || dbText.toLowerCase().includes('connected');
-        dbEl.textContent = `DB:   ${online ? '\u25CF ONLINE' : '\u25CB OFFLINE'}`;
-        dbEl.className = 'is-content ' + (online ? 'is-online' : 'is-offline');
-    }
-
-    // MOD count
     const modsEl = _layer.querySelector('[data-is-row="mods"] .is-content');
     if (modsEl) {
         modsEl.textContent = `MODS: ${getInstances().length} ${t('mods.infoScreensaver.active')}`;
@@ -174,11 +144,50 @@ function _show(config) {
 
     if (config.showClock !== false) _startClock();
     _startRefresh();
+    _startLlmListener();
+}
+
+let _onLlmProgress = null;
+
+function _startLlmListener() {
+    _stopLlmListener();
+    _onLlmProgress = ({ detail }) => {
+        const row = _layer?.querySelector('[data-is-row="llm"]');
+        if (!row) return;
+        const content = row.querySelector('.is-content');
+        if (!content) return;
+
+        if (detail.status === 'progress') {
+            row.style.display = '';
+            content.textContent = `LLM: ${detail.text}`;
+            content.className = 'is-content is-loading';
+            content.dataset.loading = 'true';
+        } else if (detail.status === 'ready') {
+            row.style.display = '';
+            content.textContent = `LLM: ${detail.model} \u2713`;
+            content.className = 'is-content is-online';
+            delete content.dataset.loading;
+        } else if (detail.status === 'error') {
+            row.style.display = '';
+            content.textContent = `LLM: ${detail.text}`;
+            content.className = 'is-content is-offline';
+            delete content.dataset.loading;
+        }
+    };
+    window.addEventListener('llm:progress', _onLlmProgress);
+}
+
+function _stopLlmListener() {
+    if (_onLlmProgress) {
+        window.removeEventListener('llm:progress', _onLlmProgress);
+        _onLlmProgress = null;
+    }
 }
 
 function _hide() {
     _stopClock();
     _stopRefresh();
+    _stopLlmListener();
     if (_layer && _layer.parentNode) {
         _layer.parentNode.removeChild(_layer);
     }

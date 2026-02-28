@@ -1,7 +1,7 @@
 /* Info Screensaver — Dashboard overlay */
 
 #info-screensaver-layer {
-    position: fixed;
+    position: absolute;
     inset: 0;
     z-index: 10;
     display: flex;
@@ -68,6 +68,12 @@
     text-align: center;
 }
 
+/* LLM loading row — orange during loading */
+[data-is-row="llm"] .is-content.is-loading {
+    color: var(--text-orange, #ffaa00);
+    text-shadow: 0 0 4px var(--text-orange, #ffaa00);
+}
+
 /* Light theme adaptation — delegate to CSS custom properties */
 :root.theme-light .is-box {
     color: var(--text-green);
@@ -86,6 +92,11 @@
 
 :root.theme-light .is-content.is-offline {
     color: var(--text-red);
+    text-shadow: none;
+}
+
+:root.theme-light [data-is-row="llm"] .is-content.is-loading {
+    color: var(--text-orange);
     text-shadow: none;
 }
 

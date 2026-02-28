@@ -482,8 +482,9 @@ function createConfigField(accessor, template, field, schema) {
     const label = document.createElement('div');
     label.className = 'mods-config-field-label';
     label.textContent = t(field.labelKey) || field.key;
-    if (field.hintKey) label.dataset.hint = field.hintKey;
     wrapper.appendChild(label);
+
+    if (field.hintKey) wrapper.dataset.hint = field.hintKey;
 
     const renderer = getRenderer(field.type);
     if (renderer) {
