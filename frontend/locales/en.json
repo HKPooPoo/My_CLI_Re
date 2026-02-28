@@ -265,8 +265,7 @@
       "apiProvider": "Cloud AI service to use with your API key.",
       "apiModel": "Model ID for the cloud provider (e.g. gpt-4o-mini).",
       "apiKey": "Your API key. Stored locally only — never sent to our server.",
-      "temperature": "0 = deterministic and focused. 1 = creative and varied.",
-      "target": "TEXTAREA reads the text area. ATTACHMENTS processes file attachments via vision model (server only)."
+      "temperature": "0 = deterministic and focused. 1 = creative and varied."
     },
     "llmBb": {
       "button": "Run AI analysis on blackboard branch records.",

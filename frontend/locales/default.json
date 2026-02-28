@@ -272,8 +272,7 @@
       "apiProvider": "Which cloud AI service to connect to.",
       "apiModel": "The specific AI model to use from your cloud provider.",
       "apiKey": "Your secret key for the cloud AI. It stays on your device only.",
-      "temperature": "How creative the AI should be. Low = precise, High = creative.",
-      "target": "Text Area reads the text box. Attachments processes file attachments with the vision model (server only)."
+      "temperature": "How creative the AI should be. Low = precise, High = creative."
     },
     "llmBb": {
       "button": "Analyze your blackboard entries with AI.",

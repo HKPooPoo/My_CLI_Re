@@ -378,7 +378,7 @@ when built-in types genuinely don't cover the use case.
 
 **Template version** — `template.version` (SemVer string). Displayed in mods-manager list and config pages.
 
-### Current Templates (9)
+### Current Templates (10)
 
 | ID | Group | maxInstances | Providers | Tools |
 |----|-------|-------------|-----------|-------|
@@ -388,6 +388,7 @@ when built-in types genuinely don't cover the use case.
 | `llm` | llm | unlimited | client (WebLLM), server (Ollama), apikey (cloud) | — |
 | `llm-bb` | llm | unlimited | (shared with llm) | — |
 | `llm-bc` | llm | unlimited | (shared with llm) | — |
+| `llm-file` | llm | unlimited | server (Ollama) | — |
 | `light-theme` | theme | 1 | — | — |
 | `info-screensaver` | screensaver | 1 | — | — |
 | `ascii-animator` | decoration | 1 | textmode.js (WebGL2) | — |

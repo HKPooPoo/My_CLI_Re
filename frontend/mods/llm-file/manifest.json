@@ -1,0 +1,36 @@
+{
+    "id": "llm-file",
+    "group": "llm",
+    "nameKey": "mods.llmFile.name",
+    "descriptionKey": "mods.llmFile.desc",
+    "version": "1.0.0",
+    "minApiVersion": 1,
+    "buttonHintKey": "hints.llmFile.button",
+    "shelfPanelId": "llm",
+    "pages": {
+        "blackboard-log":    { "textareaSelector": "#log-textarea" },
+        "broadcast-channel": { "textareaSelector": "#channel-textarea" }
+    },
+    "providers": [
+        { "id": "server", "type": "server", "nameKey": "mods.llm.provider.server", "healthEndpoint": "/mods/llm/ollama/health" }
+    ],
+    "configSchema": [
+        { "key": "prompt", "type": "textarea", "labelKey": "mods.llmFile.config.prompt", "default": "", "rows": 3,
+          "presets": [
+              { "labelKey": "mods.llmFile.preset.ocr",        "value": "Extract all text from this image. Output plain text only." },
+              { "labelKey": "mods.llmFile.preset.toMarkdown",  "value": "Convert this document to well-structured Markdown." },
+              { "labelKey": "mods.llmFile.preset.describe",    "value": "Describe what you see in this image in detail." },
+              { "labelKey": "mods.llmFile.preset.summarize",   "value": "Summarize the content of these files concisely." }
+          ]
+        },
+        { "key": "icon", "type": "icon-picker", "labelKey": "mods.llmFile.config.icon", "default": "ocr",
+          "icons": [
+              { "value": "ocr",             "url": "/images/llm-summarize-files.svg", "labelKey": "mods.llmFile.icon.ocr" },
+              { "value": "summarize-files", "url": "/images/llm-summarize-files.svg", "labelKey": "mods.llm.icon.summarizeFiles" }
+          ]
+        }
+    ],
+    "defaultInstances": [
+        { "config": { "prompt": "Extract all text from this image. Output plain text only.", "icon": "ocr" } }
+    ]
+}

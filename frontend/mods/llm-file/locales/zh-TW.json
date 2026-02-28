@@ -1,0 +1,15 @@
+{
+  "mods": {
+    "llmFile": {
+      "name": "LLM 檔案",
+      "desc": "AI 檔案處理 — 文字辨識、圖片描述、文件分析，透過視覺模型處理附件。",
+      "config": { "prompt": "提示詞", "icon": "圖示" },
+      "preset": { "ocr": "文字辨識（OCR）", "toMarkdown": "轉換為 Markdown", "describe": "描述圖片", "summarize": "摘要檔案" },
+      "icon": { "ocr": "OCR" },
+      "processing": "正在處理附件...",
+      "noFiles": "目前記錄沒有附件。",
+      "serverOnly": "檔案處理需要伺服器提供者（Ollama）。"
+    }
+  },
+  "hints": { "llmFile": { "button": "用 AI 視覺模型讀取並分析附件檔案。" } }
+}

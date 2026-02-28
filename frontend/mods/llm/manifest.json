@@ -3,7 +3,7 @@
     "group": "llm",
     "nameKey": "mods.llm.name",
     "descriptionKey": "mods.llm.desc",
-    "version": "4.2.0",
+    "version": "4.1.0",
     "minApiVersion": 1,
     "buttonHintKey": "hints.llm.button",
     "shelfPanelId": "llm",
@@ -40,19 +40,12 @@
         { "key": "temperature", "type": "range", "labelKey": "mods.llm.config.temperature", "hintKey": "hints.llm.temperature", "min": 0, "max": 1, "step": 0.1, "default": 0.3 }
     ],
     "configSchema": [
-        { "key": "target", "type": "select", "labelKey": "mods.llm.config.target", "hintKey": "hints.llm.target", "default": "text", "options": [
-            { "value": "text", "labelKey": "mods.llm.target.text" },
-            { "value": "file", "labelKey": "mods.llm.target.file" }
-        ]},
         { "key": "prompt", "type": "textarea", "labelKey": "mods.llm.config.prompt", "default": "", "rows": 3,
           "presets": [
               { "labelKey": "mods.llm.preset.summarize", "value": "Summarize concisely." },
               { "labelKey": "mods.llm.preset.translate", "value": "Translate to English." },
               { "labelKey": "mods.llm.preset.polish",    "value": "Improve grammar and clarity. Keep the original meaning." },
-              { "labelKey": "mods.llm.preset.explain",   "value": "Explain in simple terms." },
-              { "labelKey": "mods.llm.preset.ocr",       "value": "Extract all text from this image. Output plain text only." },
-              { "labelKey": "mods.llm.preset.toMarkdown", "value": "Convert this document to well-structured Markdown." },
-              { "labelKey": "mods.llm.preset.describe",  "value": "Describe what you see in this image in detail." }
+              { "labelKey": "mods.llm.preset.explain",   "value": "Explain in simple terms." }
           ]
         },
         { "key": "icon", "type": "icon-picker", "labelKey": "mods.llm.config.icon", "default": "summarize",
@@ -60,7 +53,6 @@
               { "value": "summarize",        "url": "/images/llm-summarize.svg",        "labelKey": "mods.llm.icon.summarize" },
               { "value": "translate",        "url": "/images/llm-translate.svg",        "labelKey": "mods.llm.icon.translate" },
               { "value": "polish",           "url": "/images/llm-polish.svg",           "labelKey": "mods.llm.icon.polish" },
-              { "value": "ocr",              "url": "/images/llm-summarize-files.svg",  "labelKey": "mods.llm.icon.ocr" },
               { "value": "summarize-files",  "url": "/images/llm-summarize-files.svg",  "labelKey": "mods.llm.icon.summarizeFiles" },
               { "value": "summarize-branch", "url": "/images/llm-summarize-branch.svg", "labelKey": "mods.llm.icon.summarizeBranch" },
               { "value": "summarize-all",    "url": "/images/llm-summarize-all.svg",    "labelKey": "mods.llm.icon.summarizeAll" }
@@ -70,7 +62,6 @@
     "defaultInstances": [
         { "config": { "prompt": "Translate to English.", "icon": "translate" } },
         { "config": { "prompt": "Summarize concisely.", "icon": "summarize" } },
-        { "config": { "prompt": "Improve grammar and clarity. Keep the original meaning.", "icon": "polish" } },
-        { "config": { "target": "file", "prompt": "Extract all text from this image. Output plain text only.", "icon": "ocr" } }
+        { "config": { "prompt": "Improve grammar and clarity. Keep the original meaning.", "icon": "polish" } }
     ]
 }

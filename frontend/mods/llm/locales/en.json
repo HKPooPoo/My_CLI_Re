@@ -4,7 +4,6 @@
       "name": "LLM",
       "desc": "AI TEXT PROCESSING — PROMPT-BASED INSTANCES WITH BROWSER, LOCAL, OR CLOUD LLM.",
       "config": {
-        "target": "TARGET",
         "prompt": "PROMPT",
         "icon": "ICON",
         "provider": "PROVIDER",
@@ -17,18 +16,11 @@
         "apiModel": "API MODEL",
         "apiKey": "API KEY"
       },
-      "target": {
-        "text": "TEXTAREA",
-        "file": "ATTACHMENTS"
-      },
       "preset": {
         "summarize": "SUMMARIZE",
         "translate": "TRANSLATE",
         "polish": "POLISH",
         "explain": "EXPLAIN",
-        "ocr": "OCR (EXTRACT TEXT)",
-        "toMarkdown": "TO MARKDOWN",
-        "describe": "DESCRIBE IMAGE",
         "branchSummary": "THEMES",
         "branchTimeline": "TIMELINE",
         "branchExtract": "KEY POINTS",
@@ -39,7 +31,6 @@
         "summarize": "SUMMARIZE",
         "translate": "TRANSLATE",
         "polish": "POLISH",
-        "ocr": "OCR",
         "summarizeFiles": "FILES",
         "summarizeBranch": "BRANCH",
         "summarizeAll": "ALL"
@@ -76,10 +67,7 @@
       "serverTesting": "CHECKING OLLAMA...",
       "serverOnline": "ONLINE — {model} READY",
       "serverOffline": "OFFLINE — OLLAMA NOT REACHABLE",
-      "serverNoModel": "ONLINE — BUT {model} NOT FOUND. AVAILABLE: {available}",
-      "processingFiles": "PROCESSING ATTACHMENTS...",
-      "noFiles": "NO ATTACHMENTS ON CURRENT RECORD.",
-      "fileServerOnly": "FILE PROCESSING REQUIRES SERVER PROVIDER (OLLAMA)."
+      "serverNoModel": "ONLINE — BUT {model} NOT FOUND. AVAILABLE: {available}"
     }
   }
 }
