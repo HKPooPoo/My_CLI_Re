@@ -24,7 +24,9 @@ fi
 
 # --- [OPTIONAL] First-run auto-setup ---
 # Uncomment the block below for full one-shot deploy.
-# It will auto-create .env, generate APP_KEY, wait for DB, and run migrations.
+# NOTE: key:generate writes to backend/.env, but docker-compose.yml
+# environment variables override it. After first run, copy the generated
+# APP_KEY from backend/.env to root .env and restart: docker compose up -d api
 #
 # if [ ! -f .env ]; then
 #     cp .env.example .env
