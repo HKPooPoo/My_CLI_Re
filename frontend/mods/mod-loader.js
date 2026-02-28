@@ -253,7 +253,7 @@ function createInstanceButton(instance, btnContainer, shelfContainer) {
     if (template.buttonHintKey) btn.dataset.hint = template.buttonHintKey;
     // Accessibility: set aria-label from instance name
     if (typeof template.getInstanceName === 'function') {
-        btn.setAttribute('aria-label', template.getInstanceName(instance.config));
+        btn.setAttribute('aria-label', template.getInstanceName(instance.config, t));
     }
     // No textContent — icons are rendered via CSS ::after mask-image
 
