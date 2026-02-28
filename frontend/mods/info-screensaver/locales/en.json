@@ -4,8 +4,7 @@
             "name": "Info Screensaver",
             "desc": "Shows a live system dashboard on the screensaver overlay",
             "active": "active",
-            "showUser": "Show User",
-            "showDb": "Show DB Status",
+            "showLlm": "Show LLM Status",
             "showMods": "Show MOD Count",
             "showClock": "Show Clock"
         }

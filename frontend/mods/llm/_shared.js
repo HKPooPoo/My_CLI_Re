@@ -223,7 +223,12 @@ export async function runLlm(config, prompt, inputText, out, tFn) {
             const model = config.clientModel || CLIENT_MODEL;
 
             out.value = tFn('mods.llm.loading');
-            await svc.ensureModel(model, (p) => { out.value = p; });
+            window.dispatchEvent(new CustomEvent('llm:progress', { detail: { status: 'progress', text: tFn('mods.llm.loading') } }));
+            await svc.ensureModel(model, (p) => {
+                out.value = p;
+                window.dispatchEvent(new CustomEvent('llm:progress', { detail: { status: 'progress', text: p } }));
+            });
+            window.dispatchEvent(new CustomEvent('llm:progress', { detail: { status: 'ready', model } }));
 
             let tokens = 0;
             for await (const chunk of svc.chat(messages, { temperature: temp, signal: controller.signal })) {
@@ -401,8 +406,15 @@ export async function tryPrewarm() {
     const model = shared.clientModel || CLIENT_MODEL;
     if (svc.getLoadedModel() === model) return;
     console.info(`[llm] Prewarming: ${model}`);
-    try { await svc.ensureModel(model); }
-    catch (e) { console.warn('[llm] Prewarm failed:', e); }
+    try {
+        await svc.ensureModel(model, (p) => {
+            window.dispatchEvent(new CustomEvent('llm:progress', { detail: { status: 'progress', text: p } }));
+        });
+        window.dispatchEvent(new CustomEvent('llm:progress', { detail: { status: 'ready', model } }));
+    } catch (e) {
+        console.warn('[llm] Prewarm failed:', e);
+        window.dispatchEvent(new CustomEvent('llm:progress', { detail: { status: 'error', text: e.message } }));
+    }
 }
 
 /**
