@@ -61,8 +61,6 @@ services:
       REVERB_HOST: reverb
       REVERB_PORT: 8081
       REVERB_SCHEME: http
-      LIBRETRANSLATE_HOST: ${LIBRETRANSLATE_HOST:-libretranslate}
-      LIBRETRANSLATE_PORT: ${LIBRETRANSLATE_PORT:-5000}
       OLLAMA_HOST: ${OLLAMA_HOST:-ollama}
       OLLAMA_PORT: ${OLLAMA_PORT:-11434}
     depends_on:
@@ -220,16 +218,6 @@ services:
       - TUNNEL_TOKEN=${CLOUDFLARED_TOKEN}
     depends_on:
       - nginx
-
-  libretranslate:
-    image: libretranslate/libretranslate:latest
-    container_name: my-cli-libretranslate
-    profiles:
-      - mods
-    environment:
-      - LT_LOAD_ONLY=en,zh,ja
-      - LT_DISABLE_WEB_UI=true
-    restart: unless-stopped
 
   ollama:
     image: ollama/ollama:latest

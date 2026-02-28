@@ -2,7 +2,7 @@
   "mods": {
     "translate": {
       "name": "TRANSLATION",
-      "desc": "MULTI-LANGUAGE TRANSLATION VIA GOOGLE CLOUD API OR LOCAL LIBRETRANSLATE.",
+      "desc": "MULTI-LANGUAGE TRANSLATION VIA GOOGLE CLOUD API.",
       "lang": {
         "zhTW": "繁中",
         "zhCN": "简中",
@@ -10,13 +10,10 @@
         "ja": "日"
       },
       "provider": {
-        "google": "GOOGLE CLOUD",
-        "libre": "LIBRETRANSLATE (LOCAL)"
+        "google": "GOOGLE CLOUD"
       },
       "config": {
-        "targetLang": "TARGET LANGUAGE",
-        "provider": "PROVIDER",
-        "libreStatus": "SERVER STATUS"
+        "targetLang": "TARGET LANGUAGE"
       },
       "bufferEmpty": "PROTOCOL ERROR: BUFFER EMPTY. INPUT REQUIRED.",
       "decrypting": "DECRYPTING LINGUISTICS... STANDBY.",

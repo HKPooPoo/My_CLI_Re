@@ -276,8 +276,7 @@
       "target": "Analyze current text entry or full channel history."
     },
     "translate": {
-      "button": "Translate the current text to the configured language.",
-      "provider": "Google = cloud API. LibreTranslate = self-hosted Docker server."
+      "button": "Translate the current text to the configured language."
     },
     "stt": {
       "button": "Record audio and convert speech to text."

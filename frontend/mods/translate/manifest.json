@@ -11,9 +11,7 @@
         "broadcast-channel": { "textareaSelector": "#channel-textarea" }
     },
     "providers": [
-        { "id": "google", "type": "cloud", "nameKey": "mods.translate.provider.google" },
-        { "id": "libretranslate", "type": "server", "nameKey": "mods.translate.provider.libre",
-          "healthEndpoint": "/mods/offline-translate/health" }
+        { "id": "google", "type": "cloud", "nameKey": "mods.translate.provider.google" }
     ],
     "configSchema": [
         {
@@ -27,29 +25,12 @@
                 { "value": "ja",    "labelKey": "mods.translate.lang.ja" }
             ],
             "default": "zh-TW"
-        },
-        {
-            "key": "provider",
-            "type": "select",
-            "labelKey": "mods.translate.config.provider",
-            "hintKey": "hints.translate.provider",
-            "options": [
-                { "value": "google", "labelKey": "mods.translate.provider.google" },
-                { "value": "libretranslate", "labelKey": "mods.translate.provider.libre" }
-            ],
-            "default": "google"
-        },
-        {
-            "key": "libreStatus",
-            "type": "info",
-            "labelKey": "mods.translate.config.libreStatus",
-            "showWhen": { "key": "provider", "value": "libretranslate" }
         }
     ],
     "defaultInstances": [
-        { "config": { "targetLang": "zh-TW", "provider": "google" } },
-        { "config": { "targetLang": "zh-CN", "provider": "google" } },
-        { "config": { "targetLang": "en",    "provider": "google" } },
-        { "config": { "targetLang": "ja",    "provider": "google" } }
+        { "config": { "targetLang": "zh-TW" } },
+        { "config": { "targetLang": "zh-CN" } },
+        { "config": { "targetLang": "en" } },
+        { "config": { "targetLang": "ja" } }
     ]
 }

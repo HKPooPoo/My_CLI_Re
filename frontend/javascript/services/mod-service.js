@@ -7,7 +7,7 @@ import { apiRequest } from './api.js';
 
 export const ModService = {
     /**
-     * @param {string} endpoint — relative path like '/mods/offline-translate/health' (apiRequest adds /api)
+     * @param {string} endpoint — relative path like '/mods/llm/ollama/health' (apiRequest adds /api)
      */
     checkHealth(endpoint) {
         return apiRequest(endpoint);

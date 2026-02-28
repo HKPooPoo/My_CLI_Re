@@ -2,15 +2,12 @@
  * Feature - Translator (Language Translation)
  * =================================================================
  * Handles text translation via PHP Proxy.
- * MOD-aware: per-language MOD lookup determines provider.
- *   - If offline MOD enabled + server online → libretranslate
- *   - Otherwise → google (default)
+ * Provider: Google Cloud Translation API.
  * =================================================================
  */
 
 import { playAudio } from "./audio.js";
 import { TranslationService } from "./services/translation-service.js";
-import { ModState } from "./mod-state.js";
 import { t } from './i18n.js';
 
 const TRANSLATE_BTN_PREFIX = 'translate-';
@@ -34,7 +31,8 @@ $translateBtns.forEach($btn => {
         $translatorOutput.value = t('translator.decrypting');
 
         try {
-            const translation = await translateText(text, targetLang);
+            const data = await TranslationService.translate({ text, target: targetLang });
+            const translation = data.data?.translations?.[0]?.translatedText;
             $translatorOutput.value = translation || t('translator.nullResult');
         } catch (e) {
             console.error("Translation Error:", e);
@@ -42,24 +40,3 @@ $translateBtns.forEach($btn => {
         }
     });
 });
-
-/**
- * Remote translation request (per-language MOD-aware provider selection)
- */
-async function translateText(text, targetLang) {
-    const payload = { text, target: targetLang };
-
-    // Check if offline MOD for this language is enabled and its server is online
-    const offlineModId = `translate-${targetLang}-offline`;
-    if (ModState.isEnabled(offlineModId) && ModState.getServerStatus(offlineModId) === 'online') {
-        payload.provider = 'libretranslate';
-    }
-
-    try {
-        const data = await TranslationService.translate(payload);
-        return data.data?.translations?.[0]?.translatedText;
-    } catch (error) {
-        if (error.message) throw new Error(error.message);
-        throw error;
-    }
-}

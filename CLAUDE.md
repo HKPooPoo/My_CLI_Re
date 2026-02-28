@@ -73,13 +73,12 @@ docker exec my-cli-api sh -c "cp .env.example .env && php artisan key:generate &
 | Mailpit | `http://localhost:8025` |
 | Reverb (WS) | `ws://localhost:8081` |
 | PostgreSQL | `localhost:5431` |
-| LibreTranslate | Docker-internal only (not host-exposed), started with `--profile mods` |
 
 ## Architecture
 
-### Docker Services (11)
+### Docker Services (10)
 
-nginx (static SPA + reverse proxy) · api (Laravel 12 PHP-FPM) · reverb (WebSocket) · queue (`queue:listen`) · scheduler (cron) · db (PostgreSQL 16) · redis · pgadmin · mailpit · tunnel (Cloudflare) · libretranslate (optional, `profiles: [mods]`)
+nginx (static SPA + reverse proxy) · api (Laravel 12 PHP-FPM) · reverb (WebSocket) · queue (`queue:listen`) · scheduler (cron) · db (PostgreSQL 16) · redis · pgadmin · mailpit · tunnel (Cloudflare)
 
 ### Backend (`backend/`)
 
@@ -382,7 +381,7 @@ when built-in types genuinely don't cover the use case.
 
 | ID | Group | maxInstances | Providers | Tools |
 |----|-------|-------------|-----------|-------|
-| `translate` | linguistics | unlimited | google, libretranslate | `translate_text` |
+| `translate` | linguistics | unlimited | google | `translate_text` |
 | `speech-to-text` | linguistics | 1 | google-speech | — |
 | `markdown-preview` | utilities | 1 | marked (client) | — |
 | `llm` | llm | unlimited | client (WebLLM), server (Ollama), apikey (cloud) | — |

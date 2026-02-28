@@ -276,8 +276,7 @@
       "target": "分析範圍：目前的文字、或頻道的完整歷史。"
     },
     "translate": {
-      "button": "將畫面上的文字翻譯成指定語言。",
-      "provider": "Google 透過雲端翻譯。LibreTranslate 使用自架伺服器。"
+      "button": "將畫面上的文字翻譯成指定語言。"
     },
     "stt": {
       "button": "用麥克風錄音，將語音轉為文字。"

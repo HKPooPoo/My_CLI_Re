@@ -511,7 +511,7 @@ export const ModState = {
         if (!configs['translate']) {
             configs['translate'] = {};
         }
-        configs['translate'].provider = anyOfflineEnabled ? 'libretranslate' : 'google';
+        configs['translate'].provider = 'google';
 
         for (const id of V1_TRANSLATE_IDS) {
             delete states[id];

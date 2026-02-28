@@ -40,11 +40,6 @@ return [
         'project_id' => env('GG_PROJECT_ID', 'my-cli-re'),
     ],
 
-    'libretranslate' => [
-        'host' => env('LIBRETRANSLATE_HOST', 'libretranslate'),
-        'port' => env('LIBRETRANSLATE_PORT', '5000'),
-    ],
-
     'ollama' => [
         'host' => env('OLLAMA_HOST', 'ollama'),
         'port' => env('OLLAMA_PORT', '11434'),

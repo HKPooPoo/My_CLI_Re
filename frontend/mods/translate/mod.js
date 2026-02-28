@@ -3,7 +3,6 @@
  */
 
 import { TranslationService } from '../../javascript/services/translation-service.js';
-import { ModState } from '../../javascript/mod-state.js';
 import { t } from '../../javascript/i18n.js';
 
 export default {
@@ -25,16 +24,11 @@ export default {
                 properties: {
                     text: { type: 'string', description: 'Text to translate' },
                     targetLang: { type: 'string', description: 'Target language code (zh-TW, zh-CN, en, ja)', enum: ['zh-TW', 'zh-CN', 'en', 'ja'] },
-                    provider: { type: 'string', description: 'Translation provider', enum: ['google', 'libretranslate'] },
                 },
                 required: ['text', 'targetLang']
             },
             async execute(args) {
-                const payload = { text: args.text, target: args.targetLang };
-                if (args.provider === 'libretranslate') {
-                    payload.provider = 'libretranslate';
-                }
-                const data = await TranslationService.translate(payload);
+                const data = await TranslationService.translate({ text: args.text, target: args.targetLang });
                 return { translatedText: data.data?.translations?.[0]?.translatedText };
             }
         }
@@ -72,13 +66,7 @@ export default {
         }
 
         try {
-            const provider = ctx.instance.getConfig('provider') || 'google';
-            const payload = { text, target: targetLang };
-            if (provider === 'libretranslate') {
-                payload.provider = 'libretranslate';
-            }
-
-            const data = await TranslationService.translate(payload);
+            const data = await TranslationService.translate({ text, target: targetLang });
             const translation = data.data?.translations?.[0]?.translatedText;
             if (this._outputEl) {
                 this._outputEl.value = translation || t('mods.translate.nullResult');
@@ -94,33 +82,5 @@ export default {
     },
 
     async deactivate() {},
-
-    async checkHealth(instanceConfig) {
-        const provider = instanceConfig?.provider || 'google';
-        if (provider === 'libretranslate') {
-            const libre = this.providers.find(p => p.id === 'libretranslate');
-            if (libre?.healthEndpoint) {
-                try {
-                    const { ModService } = await import('../../javascript/services/mod-service.js');
-                    await ModService.checkHealth(libre.healthEndpoint);
-                    return 'online';
-                } catch {
-                    return 'offline';
-                }
-            }
-        }
-        return 'online';
-    },
-
     destroy() {},
-
-    getInfoValue(key, instanceId) {
-        if (key === 'libreStatus') {
-            const status = instanceId
-                ? ModState.getServerStatus(instanceId)
-                : 'unknown';
-            return t(`mods.status.${status}`);
-        }
-        return '\u2014';
-    },
 };

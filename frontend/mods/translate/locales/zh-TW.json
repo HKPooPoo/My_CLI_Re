@@ -2,7 +2,7 @@
   "mods": {
     "translate": {
       "name": "翻譯",
-      "desc": "透過 Google Cloud API 或本機 LibreTranslate 進行多語言翻譯。",
+      "desc": "透過 Google Cloud API 進行多語言翻譯。",
       "lang": {
         "zhTW": "繁中",
         "zhCN": "簡中",
@@ -10,13 +10,10 @@
         "ja": "日"
       },
       "provider": {
-        "google": "Google Cloud",
-        "libre": "LibreTranslate（本機）"
+        "google": "Google Cloud"
       },
       "config": {
-        "targetLang": "目標語言",
-        "provider": "翻譯提供者",
-        "libreStatus": "伺服器狀態"
+        "targetLang": "目標語言"
       },
       "bufferEmpty": "協定錯誤：緩衝區為空，請輸入內容。",
       "decrypting": "解密語言中... 請稍候。",

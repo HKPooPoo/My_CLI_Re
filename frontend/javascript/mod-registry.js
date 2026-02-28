@@ -56,56 +56,6 @@ export const MOD_REGISTRY = {
         defaultEnabled: true
     },
 
-    // --- TRANSLATION: Offline (LibreTranslate Docker) ---
-    'translate-zh-TW-offline': {
-        id: 'translate-zh-TW-offline',
-        nameKey: 'mods.translateZhTwOffline.name',
-        descriptionKey: 'mods.translateZhTwOffline.desc',
-        group: 'linguistics',
-        type: MOD_TYPES.SERVER,
-        featureButtons: ['translate-zh-TW'],
-        provider: 'libretranslate',
-        healthEndpoint: '/mods/offline-translate/health',
-        config: [],
-        defaultEnabled: false
-    },
-    'translate-zh-CN-offline': {
-        id: 'translate-zh-CN-offline',
-        nameKey: 'mods.translateZhCnOffline.name',
-        descriptionKey: 'mods.translateZhCnOffline.desc',
-        group: 'linguistics',
-        type: MOD_TYPES.SERVER,
-        featureButtons: ['translate-zh-CN'],
-        provider: 'libretranslate',
-        healthEndpoint: '/mods/offline-translate/health',
-        config: [],
-        defaultEnabled: false
-    },
-    'translate-en-offline': {
-        id: 'translate-en-offline',
-        nameKey: 'mods.translateEnOffline.name',
-        descriptionKey: 'mods.translateEnOffline.desc',
-        group: 'linguistics',
-        type: MOD_TYPES.SERVER,
-        featureButtons: ['translate-en'],
-        provider: 'libretranslate',
-        healthEndpoint: '/mods/offline-translate/health',
-        config: [],
-        defaultEnabled: false
-    },
-    'translate-ja-offline': {
-        id: 'translate-ja-offline',
-        nameKey: 'mods.translateJaOffline.name',
-        descriptionKey: 'mods.translateJaOffline.desc',
-        group: 'linguistics',
-        type: MOD_TYPES.SERVER,
-        featureButtons: ['translate-ja'],
-        provider: 'libretranslate',
-        healthEndpoint: '/mods/offline-translate/health',
-        config: [],
-        defaultEnabled: false
-    },
-
     // --- LINGUISTICS: Speech ---
     'speech-to-text': {
         id: 'speech-to-text',

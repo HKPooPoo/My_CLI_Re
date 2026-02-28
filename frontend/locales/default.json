@@ -283,8 +283,7 @@
       "target": "What to analyze: the current message, or all messages in the channel."
     },
     "translate": {
-      "button": "Translate the text on your screen to another language.",
-      "provider": "Google translates online. LibreTranslate runs on your own server."
+      "button": "Translate the text on your screen to another language."
     },
     "stt": {
       "button": "Use your microphone to type by speaking."

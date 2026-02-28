@@ -47,7 +47,7 @@ A full instance-based plugin framework. Templates are blueprints; users create i
 | `llm` | llm | AI text processing — client (WebGPU), server (Ollama), or cloud API |
 | `llm-bb` | llm | Blackboard-specific AI processing |
 | `llm-bc` | llm | Broadcast-specific AI processing |
-| `translate` | linguistics | One-click translation via Google Cloud API or LibreTranslate |
+| `translate` | linguistics | One-click translation via Google Cloud API |
 | `speech-to-text` | linguistics | Microphone transcription via Google Speech API |
 | `markdown-preview` | utilities | Live Markdown rendering (client-side, `marked` library) |
 | `light-theme` | theme | Alternative high-contrast light visual mode |
@@ -109,7 +109,6 @@ redis ──── Session, cache, queue broker
 pgadmin ── Database admin UI (port 8080)
 mailpit ── Email testing (port 8025)
 tunnel ─── Cloudflare Tunnel (public HTTPS access)
-libretranslate ─ Self-hosted translation (profile: mods)
 ollama ───────── Self-hosted LLM server (profile: mods, GPU-enabled, port 11434)
 ```
 
@@ -237,7 +236,7 @@ docker exec my-cli-api php artisan key:generate --force --show
 docker compose up -d api
 docker exec my-cli-api php artisan migrate --force
 
-# 6. (Optional) Start MOD services (LibreTranslate + Ollama)
+# 6. (Optional) Start MOD services (Ollama)
 docker compose --profile mods up -d
 ```
 
