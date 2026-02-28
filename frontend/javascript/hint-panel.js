@@ -37,5 +37,7 @@ document.addEventListener('mouseleave', (e) => {
     if (!e.target.closest) return;
     const target = e.target.closest('[data-hint]');
     if (!target) return;
+    // Still inside the same [data-hint] container — don't hide
+    if (e.relatedTarget && target.contains(e.relatedTarget)) return;
     panel.classList.remove('active');
 }, true);

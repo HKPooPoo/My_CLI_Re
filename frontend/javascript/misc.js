@@ -20,6 +20,7 @@ import { PLATFORM_VERSION } from './version.js';
 export function createRangeControl(container, scope, key, labelKey, min, max, step = 1, hintKey, formatter) {
     const item = document.createElement('div');
     item.className = 'misc-list-item';
+    if (hintKey) item.dataset.hint = hintKey;
 
     const label = document.createElement('div');
     label.className = 'misc-label';
@@ -28,7 +29,6 @@ export function createRangeControl(container, scope, key, labelKey, min, max, st
 
     const group = document.createElement('div');
     group.className = 'misc-range-group';
-    if (hintKey) group.dataset.hint = hintKey;
 
     const range = document.createElement('input');
     range.type = 'range';
@@ -70,9 +70,10 @@ export function createToggleControl(container, scope, key, labelKey, hintKey) {
     label.setAttribute('data-i18n', labelKey);
     label.textContent = t(labelKey);
 
+    if (hintKey) item.dataset.hint = hintKey;
+
     const btn = document.createElement('button');
     btn.className = 'misc-toggle-btn crt-text-green';
-    if (hintKey) btn.dataset.hint = hintKey;
 
     function updateLabel() {
         const val = scope === 'global' ? Settings.getGlobal(key) : Settings.get(scope, key);

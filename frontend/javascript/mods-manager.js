@@ -484,11 +484,11 @@ function createConfigField(accessor, template, field, schema) {
     label.textContent = t(field.labelKey) || field.key;
     wrapper.appendChild(label);
 
-    if (field.hintKey) wrapper.dataset.hint = field.hintKey;
-
     const renderer = getRenderer(field.type);
     if (renderer) {
-        wrapper.appendChild(renderer(accessor, template, field));
+        const rendered = renderer(accessor, template, field);
+        if (field.hintKey) wrapper.dataset.hint = field.hintKey;
+        wrapper.appendChild(rendered);
     }
 
     return wrapper;

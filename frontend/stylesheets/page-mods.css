@@ -1,6 +1,6 @@
 /* === mods-container — mirrors .misc-container === */
 .mods-container {
-    justify-content: space-around;
+    /* justify-content: space-around; */
     gap: var(--panel-gap);
     width: var(--container-width);
     max-width: var(--container-max-width);
@@ -8,6 +8,7 @@
     padding: var(--panel-padding);
     border: var(--border-line);
     position: relative;
+    min-height: clamp(192px, calc(var(--container-width) / 1.56), 56vh);
 }
 
 .mods-title {
@@ -535,18 +536,33 @@
 }
 
 /* === textarea field type === */
-.mods-textarea-field { display: flex; flex-direction: column; gap: 6px; width: 100%; }
+.mods-textarea-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    width: 100%;
+}
+
 .mods-config-field-textarea {
-    width: 100%; resize: none;
-    font-family: inherit; font-size: inherit;
-    color: var(--text-green); background: transparent;
-    border: var(--border-line); border-radius: var(--border-radius);
+    width: 100%;
+    resize: none;
+    font-family: inherit;
+    font-size: inherit;
+    color: var(--text-green);
+    background: transparent;
+    border: var(--border-line);
+    border-radius: var(--border-radius);
     padding: 6px 8px;
     max-height: 6em;
     overflow-y: auto;
     /* Scrollbar → .mod-scrollbar class (mod-shared.css) */
 }
-.mods-config-field-textarea:focus { border-color: var(--text-orange); outline: none; }
+
+.mods-config-field-textarea:focus {
+    border-color: var(--text-orange);
+    outline: none;
+}
+
 /* Scrollbar → .mod-scrollbar-x class (mod-shared.css) */
 .mods-textarea-presets {
     flex-direction: row;
@@ -554,13 +570,19 @@
     gap: 4px;
     overflow-x: auto;
 }
+
 .mods-textarea-preset {
-    font-size: 0.75em; padding: 2px 8px;
-    border: 1px solid var(--text-green); border-radius: 12px;
-    color: var(--text-green); background: transparent; cursor: pointer;
+    font-size: 0.75em;
+    padding: 2px 8px;
+    border: 1px solid var(--text-green);
+    border-radius: 12px;
+    color: var(--text-green);
+    background: transparent;
+    cursor: pointer;
     flex-shrink: 0;
     white-space: nowrap;
 }
+
 /* === icon-picker field type === */
 /* Scrollbar → .mod-scrollbar-x class (mod-shared.css) */
 .mods-icon-picker-grid {
@@ -570,44 +592,69 @@
     width: 100%;
     overflow-x: auto;
 }
+
 .mods-icon-picker-item {
-    width: 36px; height: 36px; flex-shrink: 0;
-    border: var(--border-line); border-radius: var(--border-radius);
-    background: transparent; cursor: pointer; position: relative;
-    display: flex; align-items: center; justify-content: center;
+    width: 36px;
+    height: 36px;
+    flex-shrink: 0;
+    border: var(--border-line);
+    border-radius: var(--border-radius);
+    background: transparent;
+    cursor: pointer;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
+
 .mods-icon-picker-item::after {
-    content: ""; display: block; width: 60%; height: 60%;
+    content: "";
+    display: block;
+    width: 60%;
+    height: 60%;
     background-color: var(--text-green);
-    -webkit-mask-image: var(--picker-icon); mask-image: var(--picker-icon);
-    -webkit-mask-size: contain; mask-size: contain;
-    -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
-    -webkit-mask-position: center; mask-position: center;
+    -webkit-mask-image: var(--picker-icon);
+    mask-image: var(--picker-icon);
+    -webkit-mask-size: contain;
+    mask-size: contain;
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+    -webkit-mask-position: center;
+    mask-position: center;
 }
+
 @media (hover: hover) {
     .mods-icon-picker-item:hover {
         background: transparent;
         box-shadow: 0 0 6px var(--text-green);
     }
+
     .mods-icon-picker-item:hover::after {
         background-color: var(--text-green);
     }
 }
+
 .mods-icon-picker-item.selected {
-    border-color: var(--text-orange); box-shadow: 0 0 6px var(--text-orange);
+    border-color: var(--text-orange);
+    box-shadow: 0 0 6px var(--text-orange);
 }
 
 /* === Version badge in instance list === */
 .mods-list-item-version {
-    font-size: 0.7em; margin-left: 6px; opacity: 0.6;
+    font-size: 0.7em;
+    margin-left: 6px;
+    opacity: 0.6;
 }
+
 .mods-list-item.active .mods-list-item-version {
-    color: var(--bg-primary); opacity: 0.7;
+    color: var(--bg-primary);
+    opacity: 0.7;
 }
 
 /* === Platform version === */
 .misc-platform-version {
-    text-align: center; font-size: 0.75em; opacity: 0.4;
+    text-align: center;
+    font-size: 0.75em;
+    opacity: 0.4;
     padding: calc(var(--panel-gap) / 2) 0 0;
 }
-
