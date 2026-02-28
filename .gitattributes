@@ -1,0 +1,2 @@
+# Force LF for shell scripts (prevent CRLF on Windows clone)
+*.sh text eol=lf
