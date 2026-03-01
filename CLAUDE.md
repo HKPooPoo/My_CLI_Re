@@ -381,13 +381,14 @@ when built-in types genuinely don't cover the use case.
 
 **Template version** — `template.version` (SemVer string). Displayed in mods-manager list and config pages.
 
-### Current Templates (10)
+### Current Templates (11)
 
 | ID | Group | maxInstances | Providers | Tools |
 |----|-------|-------------|-----------|-------|
 | `translate` | linguistics | unlimited | google | `translate_text` |
 | `speech-to-text` | linguistics | 1 | google-speech | — |
 | `markdown-preview` | utilities | 1 | marked (client) | — |
+| `file-attach` | utilities | 2 | — | — |
 | `llm` | llm | unlimited | client (WebLLM), server (Ollama), apikey (cloud) | — |
 | `llm-bb` | llm | unlimited | (shared with llm) | — |
 | `llm-bc` | llm | unlimited | (shared with llm) | — |

@@ -6,7 +6,9 @@ use Illuminate\Foundation\Configuration\Middleware;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
-        channels: __DIR__.'/../routes/channels.php',
+        // channels: removed — broadcasting routes are registered manually in api.php
+        // to avoid 'web'+'auth' middleware which causes 500 (no login route in API-only app).
+        // Channel authorization callbacks are loaded via require() in api.php.
         web: __DIR__ . '/../routes/web.php',
         api: __DIR__ . '/../routes/api.php',
         commands: __DIR__ . '/../routes/console.php',

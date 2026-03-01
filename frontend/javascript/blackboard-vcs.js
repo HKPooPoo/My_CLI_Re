@@ -216,9 +216,9 @@ export const BBVCS = {
     /**
      * Checkout: 切換分支
      */
-    async checkout(state, targetBranchId, targetOwner) {
+    async checkout(state, targetBranchId, targetOwner, { silent = false } = {}) {
         if (targetOwner !== "local") {
-            BBMessage.info(t('blackboard.syncing'));
+            if (!silent) BBMessage.info(t('blackboard.syncing'));
 
             try {
                 const data = await BlackboardService.fetchBranchDetails(targetBranchId);

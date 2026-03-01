@@ -671,18 +671,23 @@ window.addEventListener('online', () => {
 });
 
 /**
- * 低頻輪詢：僅在視窗處於焦點且位於黑板頁面時，每 秒自動檢查一次雲端分支狀態
+ * 輪詢：每 5 秒刷新分支清單（輕量 GET）。
+ * 即時內容同步靠 WebSocket (BBSync._handleRemoteEvent)。
  */
-setInterval(() => {
+let _pollBusy = false;
+setInterval(async () => {
+    if (_pollBusy) return;
+
     const loggedInUser = localStorage.getItem("currentUser");
-    // [Fix]: Check active page class instead of non-existent ID
     const activePage = document.querySelector(".page.active");
     const isBlackboardVisible = activePage && activePage.dataset.page && activePage.dataset.page.startsWith("blackboard-");
 
     if (document.visibilityState === 'visible' && isBlackboardVisible && loggedInUser && !isInitializing) {
-        updateBranchList();
+        _pollBusy = true;
+        try { await updateBranchList(); } catch (_) {}
+        _pollBusy = false;
     }
-}, 10_000);
+}, 5_000);
 
 // PWA logic extracted to pwa.js
 import "./pwa.js";

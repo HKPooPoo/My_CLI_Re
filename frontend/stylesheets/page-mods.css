@@ -192,6 +192,7 @@
     max-height: clamp(192px, calc(var(--container-width) / 1.56), 56vh);
     overflow-y: auto;
     overflow-x: hidden;
+    height: 100%;
 }
 
 .mods-config-description {

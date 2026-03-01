@@ -28,12 +28,16 @@
         "allCompare": "COMPARE"
       },
       "icon": {
-        "summarize": "SUMMARIZE",
-        "translate": "TRANSLATE",
-        "polish": "POLISH",
-        "summarizeFiles": "FILES",
-        "summarizeBranch": "BRANCH",
-        "summarizeAll": "ALL"
+        "summarize": "Summarize",
+        "translate": "Translate",
+        "polish": "Polish",
+        "summarizeFiles": "Files",
+        "summarizeBranch": "Branch",
+        "summarizeAll": "All",
+        "translateZhTW": "Chinese (Traditional)",
+        "translateZhCN": "Chinese (Simplified)",
+        "translateEn": "English",
+        "translateJa": "Japanese"
       },
       "provider": {
         "client": "CLIENT (BROWSER)",

@@ -55,7 +55,11 @@
               { "value": "polish",           "url": "/images/llm-polish.svg",           "labelKey": "mods.llm.icon.polish" },
               { "value": "summarize-files",  "url": "/images/llm-summarize-files.svg",  "labelKey": "mods.llm.icon.summarizeFiles" },
               { "value": "summarize-branch", "url": "/images/llm-summarize-branch.svg", "labelKey": "mods.llm.icon.summarizeBranch" },
-              { "value": "summarize-all",    "url": "/images/llm-summarize-all.svg",    "labelKey": "mods.llm.icon.summarizeAll" }
+              { "value": "summarize-all",    "url": "/images/llm-summarize-all.svg",    "labelKey": "mods.llm.icon.summarizeAll" },
+              { "value": "translate-zh-TW",  "url": "/images/translate_zh_tw.svg",      "labelKey": "mods.llm.icon.translateZhTW" },
+              { "value": "translate-zh-CN",  "url": "/images/translate_zh_cn.svg",      "labelKey": "mods.llm.icon.translateZhCN" },
+              { "value": "translate-en",     "url": "/images/translate_en.svg",         "labelKey": "mods.llm.icon.translateEn" },
+              { "value": "translate-ja",     "url": "/images/translate_ja.svg",         "labelKey": "mods.llm.icon.translateJa" }
           ]
         }
     ],

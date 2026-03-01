@@ -1,0 +1,18 @@
+{
+    "mods": {
+        "fileAttach": {
+            "name": "附加檔案",
+            "nameFile": "附加檔案",
+            "nameCamera": "拍照",
+            "desc": "從裝置選擇檔案或拍照。",
+            "noTextarea": "此頁面無編輯器",
+            "config": { "mode": "輸入模式" },
+            "mode": { "file": "選擇檔案", "camera": "拍照" }
+        }
+    },
+    "hints": {
+        "fileAttach": {
+            "button": "在目前的編輯器附加檔案或拍照。"
+        }
+    }
+}

@@ -33,7 +33,11 @@
         "polish": "POLISH",
         "summarizeFiles": "FILES",
         "summarizeBranch": "BRANCH",
-        "summarizeAll": "ALL"
+        "summarizeAll": "ALL",
+        "translateZhTW": "TRANSLATE 繁中",
+        "translateZhCN": "TRANSLATE 简中",
+        "translateEn": "TRANSLATE EN",
+        "translateJa": "TRANSLATE 日本語"
       },
       "provider": {
         "client": "CLIENT (BROWSER)",

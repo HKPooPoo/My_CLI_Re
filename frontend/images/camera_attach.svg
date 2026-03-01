@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100%" height="100%">
+    <!-- Camera icon -->
+    <path d="M 12 36 L 30 36 L 38 24 L 62 24 L 70 36 L 88 36 Q 92 36 92 40 L 92 78 Q 92 82 88 82 L 12 82 Q 8 82 8 78 L 8 40 Q 8 36 12 36 Z"
+          stroke="black" stroke-width="5" fill="none" stroke-linejoin="round" />
+    <!-- Lens -->
+    <circle cx="50" cy="58" r="14" stroke="black" stroke-width="5" fill="none" />
+</svg>

@@ -13,7 +13,11 @@ use App\Http\Controllers\SettingsController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Broadcast;
 
-Broadcast::routes(['prefix' => 'api', 'middleware' => ['web', 'auth']]);
+// Broadcasting auth — session middleware already in api group (bootstrap/app.php).
+// No extra middleware needed: BroadcastController returns 403 if unauthenticated.
+// Do NOT use 'prefix' => 'api' — api.php routes already have /api prefix.
+Broadcast::routes(['middleware' => []]);
+require base_path('routes/channels.php');
 
 // Translation & Speech — expensive AI routes, auth + strict throttle
 Route::middleware([/*'auth:sanctum',*/ 'throttle:10,1'])->group(function () {
@@ -34,8 +38,8 @@ Route::middleware('throttle:30,1')->group(function () {
     Route::post('/register', [AuthController::class, 'register']);
 });
 
-// Write operations — 30 req/min, auth required (defense-in-depth)
-Route::middleware([/*'auth:sanctum',*/ 'throttle:30,1'])->group(function () {
+// Write operations — 60 req/min, auth required (defense-in-depth)
+Route::middleware([/*'auth:sanctum',*/ 'throttle:60,1'])->group(function () {
     Route::post('/broadcast/channels/cast', [BroadcastChannelController::class, 'cast']);
     Route::patch('/broadcast/channels/{channelId}', [BroadcastChannelController::class, 'rename']);
     Route::delete('/broadcast/channels/{channelId}', [BroadcastChannelController::class, 'destroy']);

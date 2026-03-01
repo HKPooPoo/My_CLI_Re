@@ -1,0 +1,18 @@
+{
+    "mods": {
+        "fileAttach": {
+            "name": "Attach File",
+            "nameFile": "Attach File",
+            "nameCamera": "Camera",
+            "desc": "Add files or take photos from your device.",
+            "noTextarea": "No editor on this page",
+            "config": { "mode": "Input mode" },
+            "mode": { "file": "File picker", "camera": "Camera" }
+        }
+    },
+    "hints": {
+        "fileAttach": {
+            "button": "Attach a file or take a photo on the current editor."
+        }
+    }
+}
