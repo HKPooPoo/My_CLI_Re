@@ -56,7 +56,108 @@ Let us mock up scenarios for different purpose:
    
 #### Use Case UML
 
+Three actor levels interact with MyCLI. Each higher-level actor inherits all capabilities of the level below it. Use cases are grouped by the three Board scopes (Blackboard, Walkie-Typie, Broadcast) plus cross-cutting concerns (Auth, Files, MODs, Config). The `<<include>>` relationship indicates a mandatory sub-flow; the `<<extend>>` relationship indicates an optional extension triggered by a condition.
 
+```mermaid
+flowchart LR
+    %% ══════════ Actors ══════════
+    Guest(["Guest<br/>(unauthenticated)"])
+    User(["Registered User<br/>(UID + passcode)"])
+    Titled(["Titled User<br/>(has title)"])
+    System(["System<br/>(automated)"])
+
+    %% ══════════ Actor Generalization ══════════
+    Titled -->|extends| User -->|extends| Guest
+
+    %% ══════════ System Boundary ══════════
+    subgraph MyCLI["MyCLI System"]
+        direction TB
+
+        subgraph BB["Blackboard — Board(SELF)"]
+            UC_BBWrite("Write / Edit Text")
+            UC_BBNav("Navigate Records<br/>PUSH · PULL")
+            UC_BBBranch("Manage Branches<br/>Fork · Checkout · Rename<br/>Delete · Clean · Search")
+            UC_BBAttach("Attach Files to Record")
+            UC_BBCommit("Commit Branch<br/>to Server")
+            UC_BBDrop("Drop Server Branch")
+            UC_BBAutoSync("Auto-Sync<br/>via WebSocket")
+        end
+
+        subgraph WT["Walkie-Typie — Board(PAIR)"]
+            UC_WTConnect("Connect / Disconnect<br/>Partner")
+            UC_WTChat("Real-Time<br/>P2P Messaging")
+            UC_WTTag("Tag Partner")
+        end
+
+        subgraph BC["Broadcast — Board(PUBLIC)"]
+            UC_BCBrowse("Browse Channel List")
+            UC_BCRead("Read Channel Content")
+            UC_BCPin("Pin / Unpin Channel")
+            UC_BCCreate("Create<br/>Broadcast Channel")
+            UC_BCCast("Cast<br/>Channel Content")
+            UC_BCManage("Manage Own Channel<br/>Rename · Delete")
+        end
+
+        subgraph AuthAccount["Authentication & Account"]
+            UC_Register("Register Account")
+            UC_Login("Login / Logout")
+            UC_ResetPW("Reset Password<br/>via Email")
+            UC_BindEmail("Bind Email")
+        end
+
+        subgraph FileSystem["File Management"]
+            UC_Upload("Upload File")
+            UC_Download("Download File<br/>via SHA-256 Hash")
+        end
+
+        subgraph ModSystem["MOD System"]
+            UC_ModManage("Manage MOD Instances<br/>Add · Remove · Configure")
+            UC_ModUse("Use MOD Features<br/>Translate · LLM · STT<br/>Markdown · Theme")
+        end
+
+        subgraph Configuration["Configuration"]
+            UC_Config("Configure Preferences<br/>Language · Audio · Max Slot<br/>Auto-Clean · Timestamp Mode")
+        end
+
+        subgraph SystemOps["System Operations"]
+            UC_CleanFiles("Clean Orphaned Files<br/>24h Lifecycle")
+            UC_WSBroadcast("Broadcast<br/>WebSocket Events")
+        end
+    end
+
+    %% ══════════ Guest Associations ══════════
+    Guest --> UC_BBWrite & UC_BBNav & UC_BBBranch & UC_BBAttach
+    Guest --> UC_BCBrowse & UC_BCRead
+    Guest --> UC_Upload & UC_Download
+    Guest --> UC_ModManage & UC_ModUse
+    Guest --> UC_Config & UC_Register
+
+    %% ══════════ Registered User Associations (unique) ══════════
+    User --> UC_Login & UC_ResetPW & UC_BindEmail
+    User --> UC_BBCommit & UC_BBDrop & UC_BBAutoSync
+    User --> UC_WTConnect & UC_WTChat & UC_WTTag
+    User --> UC_BCPin
+
+    %% ══════════ Titled User Associations (unique) ══════════
+    Titled --> UC_BCCreate & UC_BCCast & UC_BCManage
+
+    %% ══════════ System Associations ══════════
+    System --> UC_CleanFiles & UC_WSBroadcast
+
+    %% ══════════ Include Relationships ══════════
+    UC_BBCommit -.->|"≪include≫"| UC_Upload
+    UC_BCCast -.->|"≪include≫"| UC_Upload
+    UC_BBAutoSync -.->|"≪include≫"| UC_BBCommit
+```
+
+**Actor–Requirement Traceability:**
+
+| Actor | Covers Requirements | Key Capabilities |
+|-------|-------------------|------------------|
+| Guest | 1, 2, 3, 7, 8 | Local-first recording, branch management, read broadcasts, MODs |
+| Registered User | 4, 5, 6 | Multi-device sync (Commit/Checkout), P2P communication (WT), channel pinning |
+| Titled User | 7 | Broadcast channel ownership (Create/Cast/Rename/Delete) |
+| System | — | Orphaned file cleanup (24h cron), WebSocket event broadcasting |
 
 ### System Requirement
 
