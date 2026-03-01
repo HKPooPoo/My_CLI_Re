@@ -160,10 +160,47 @@ flowchart LR
 | System | — | Orphaned file cleanup (24h cron), WebSocket event broadcasting |
 
 ### System Requirement
-
-
 #### Functional Requirement
-
+1. Blackboard - The system shall:
+   1. provide immediately available text area on the first step of accessing the website
+   2. support file attachment on each pages
+   3. store all records in IndexedDB to uphold the local-first principle
+   4. support simplistic chronological navigation: PUSH and PULL buttons to navigate records
+   5. support black page auto-clean to improve the UX of navigation
+   6. support record auto-clean whenever accumulated records reach the dedicated threshold
+   7. order pages based on the timestamp of each page
+   8. support update timestamp on a page is updated, such that it goes to the front (assume user editing a page indicates the higher priority)
+   9. create a blank page after hitting PUSH button on the latest record, such that user can incrementally append records
+   10. support forking a branch, which creates a duplicate containing all previous records
+   11. support clearing a branch, which clear all records inside a branch
+   12. support CRUD a branch
+   13. support branch renaming
+   14. support switching branch from local
+   15. support upload/ download branch from server
+   16. support deleting the branch on the server
+   17. support configurations for the NO. 4, 5, 6 functional requirements
+2. Walkie-Typie - The system shall:
+   18. support real-time peer-to-peer text communication (include file attachment) between two registered users
+   19. support connecting each others by UID
+   20. support disconnect others
+   21. create a twin board for both sides after the connection
+   22. display both side of board on single page
+   23. provide same operation logic as Blackboard does
+   24. auto-commit one side's board after editions
+   25. auto sync other sides board
+   26. restrict the behaviour on not owned broad (read only, still can PUSH and PULL pages)
+   27. support renaming connections
+   28. support configurations as Blackboard does
+3. Boardcast - The system shall:
+   29. allow any users, including non-authenticated guests to browse and read existing Broadcast channels
+   30. restrict behaviour for non-titled users on a channel (same logic as not owned broad on Walkie-Typie)
+   31. provide same logic of operation for titled UID as Blackboard page and branch does
+   32. restrict each channel CRUD permission, that each channel that created by a UID with title, that channel is binded with the title of the creater; only UID with corresponding title can modify it
+4.  Mods - The system shall:
+   33. provide a series of official made mods
+   34. support configuration for each mods
+   35. support instantiate a mod for multiple time, each mod instance doesn't share configurations
+   36. support adding mod functional button on dedicated page, based on the definitions that defined in each mods; each instance's button are independent
 
 #### Non-functional Requirement
 
