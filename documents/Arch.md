@@ -1,0 +1,839 @@
+# Act
+## Introduction
+The project we are building is a xxxxxx named "MyCLI". It stands for Clean Logging Interface, outlooking a minimalistic style notebook system with comprehensive fundamental features and highly customizable configures, such that the website can be used in different ways based on the demands of users.
+
+## Project Vision
+
+
+This project was inspired by video game culture, git and the command line interface; therefore, we referenced many terminologies from them. To avoid ambiguity, please do refer to the background section below for context:
+
+## Background
+1. Clean "Logging" Interface: The word "log" has different meanings in different areas. In computing, it refers to those automated record systems with immutable timestamps which serve engineers; in entertainment, log refers to intentional narrative artifacts created by fictional characters that serve the story. In this project, we are trying to combine both concepts together, utilizing the timestamp concept from log on computing, with less restriction, such that users can manipulate records easily.
+2. Git Concepts (Branch, Fork, Push, Pull, Commit, Checkout): Git, which is a version control system (VCS) that offers powerful functions for developers to easily track, manage, and collaborate on changes made to the source code over time. In general, every developer holds a local copy of the repository. In this project, we are not going to duplicate a git VCS. Instead, we are using the local-first concept for this project with a branch management system for categorizing notes, an extra sectioning system based on timestamp inside of a branch, and capability for users to push and pull records via the server. Further terminology explanations  will be mentioned on the corresponding sections in this report.
+3. Mods: In video games' domain, mod indicates "modification", refers to alterations made to a video game that allow users to customize their game experience from visual retexturing to functional features. Initially, the UI/UX of this project prototype is considered non-user-friendly; therefore, we decided to append a mod controlling system that allows users to customize UX by activating the official-offered mods to change text expression, color theme, or even additional LLM features for aiding the UX. Moreover, due to the framework that offers various APIs for mod development, enabling programmers to develop their own one with greater ease.
+
+## Specification (System Analyse)
+### User Requirement
+Suppose our project is capable for most kind of people in different pupose, let's define the expectations. Users are supposed be able to:
+1. start recording at the first step on the website
+2. view past records chronologically
+3. organize catagorized records
+4. record at anytime with any devices
+5. access same pieces of records from any devices
+6. exchange data with another in real time
+7. browse and read the latest published content (website changelog, operation guideline, etc.)
+8. customize aids (translation, AI, etc.)
+
+#### Use Cases and Scenarios
+Let us mock up scenarios for different purpose:
+1. Agile Jotting with LLM Aid (Covers Requirement 1, 2, 8):
+   1. User Identity: A secondary student, non-registered user.
+   2. Goal: To jot down missions such as daily homeworks and assignments instantly everyday without manage each days' records
+   3. Scenario (Story): After a class, the lecture destributed some daily homeworks and assignments due a few days later. The student opens the website on his mobile browser. The text area is immediately stand by for input without login or setups. He entered all homeworks and assignments with due date on the first page.
+   When he back to home and opens the website, all records remain on the first page. Then he reviews the reminders and start working.
+   Next day, new homeworks are destributed. He presses PUSH to open a new blank page and jot them down. The previous day's homework is still accessible, if he want, press PULL to bring them back.
+   After a week, the time passes, the records grow: The newest homework always on the top, and the initial record remains bottom, but still accessable by pressing PULL button. In whole process, he never names a file, creates a folder, or deletes outdated entry. Nevertheless, after accumulating 10 records, the oldest one will be automatically be cleaned up because it reach the default cleaning threshold. Therefore, he goes to configuration page to set the max history slot to 100.
+   Two weeks later, he suddently remember the examintation, but he don't want to manually search for it. Therefore, he goes to MOD page and picked a LLM. After that, a LLM entery manifests on the first page. Then he asked it about the examination. Finally, the llm tells him the information he asked about the examination with date.
+2. Organizing with Branches (Covers Requirement 3):
+   1. User Identity: The student from previous scenario, after several week of use.
+   2. Goal: Seperate learning materials from incremental daily homework records, such that each subject is eaier to read and organize.
+   3. Scenario (Stroy): The student is in three courses: Software Engineering, Data Structure, and Logical and Reasoning. The examination is getting near, he wants to have a more static place to store study materials, such that he can access them quicker. The record stacked of homework and examination has been accumulated for a while. Meanwhile, he realize that using the same approach as jotting homework will make it hard to find.
+   Although he never creates or named the current branch, he realized it is because the system implicitly automatically do this for him. The stack which stores homework is a branch called "master". He needs a new branch to store study materials. So he created a blank new branch, and named it "study". Now he have two branches, but he is still in branch "master". He then pressed "CHECKOUT" to switch to "study" brach, so that he can edit it. 
+   The process is similar to jotting down homework, but this time, the storing object is files. He then attached the files into a page, pressed "PUSH" to iterate the process untill all subject is moved. It implicitly catagorized the material. Each page should have one subject material only.
+   Henceforth, whenever he wants to visit different content from homework and study materials, he just need to press "CHECKOUT" to swtich branch.
+   Finally, after a semester, he is no longer need the materials. Therefore, he deleted the "study" branch. 
+3. Data Transmission (Covers Requirement 4, 5, 6):
+   1. User Identity: The student from scenario 1 and 2 and his girl friend
+   2. Goal: A user can access his own record from different device, and transmit data to other user. Authentication is needed.
+   3. Scenario (Story): The student has been accessing the website all along with mobile device. He realized that all records are stored locally. To solve this, he registered an account with a simple UID and passcode. The system doesn't require email or phone number. Then he pressed COMMIT to upload the homework branch to the server. Then, on his PC, he logs in to the same account, he can see the record is non-local and shows "async", which indicates it is not on the PC yet. He then pressed "CHECKOUT", the branch status shows "local" and "synced".
+   Suddenly, his home router was downed for a moment, but he doesn't worry, the website can work offline; he just need to press COMMIT after the router is online.
+   He then realized that he needs to manually do the sync job. Therefore, he goes to the configuration page, and turns on the auto-sync.
+   One day, her girl friend want his study material. While he only have WhatsApp, her girl friend only uses Line. However, registering an instant messaging app needs email or phone number. To make it quicker, he recommanded this website to his girl friend. After both side have a registered accound, they can start exchange data.
+4. Official Announcements (Covers Requirement 7):
+   1. User Identiy: Lectures and students
+   2. Goal: Assume a school is the host of the website, the administrator will manage the permissions for all users. Lecturers who own permission are able to publish a one-to-many message publicly.
+   3. Scenario: A university hosts MyCLI on its own server for internal communication. The IT department is responsible to manage the account for all students and lectures. All lectures has been destributed an account with a "title", allow them to publish a public branch, such that all users can see the news. Some lectures are announcing new homeworks on the website publicly. Although the operation logic is similar on how a branch does, only the person who owned a corresponing "title" can modify their own public branch.   
+   
+#### Use Case UML
+
+```mermaid
+graph TD
+    User([fa:fa-user User — authenticated])
+    Guest([fa:fa-user-slash Guest — unauthenticated])
+
+    BB["Blackboard — Personal
+    Write / Navigate
+    Fork Branch
+    Commit / Checkout / Drop / Clean
+    Auto-Sync"]
+
+    WT["Walkie-Typie — Paired
+    Connect / Disconnect
+    Real-Time Chat + Whisper
+    Commit / Fetch Board"]
+
+    BC["Broadcast — Public
+    Cast Channel ᵗⁱᵗˡᵉ
+    Read / Pin
+    Create / Rename / Delete ᵗⁱᵗˡᵉ"]
+
+    Misc["Auth / Files / MODs
+    Login / Register / Logout
+    Upload / Download
+    MOD Instances + Features"]
+
+    PG[(PostgreSQL)]
+    WS([Reverb WS])
+    ExtAPI([Google / Ollama / Cloud LLM])
+
+    User --> BB & WT & BC & Misc
+    Guest -.-> BB & Misc
+    Guest -.->|Read / Pin only| BC
+
+    BB & WT & BC --> PG
+    BB & WT & BC --> WS
+    Misc --> ExtAPI
+```
+
+### System Requirement
+
+
+#### Functional Requirement
+
+
+#### Non-functional Requirement
+
+
+## System Modeling (System Design)
+
+
+### User Interface Design
+
+
+#### Entity Relationship Diagram (ERD)
+
+```mermaid
+erDiagram
+    users {
+        varchar uid UK "unique user identifier"
+        varchar passcode "hashed"
+        varchar title "nullable"
+        varchar email "nullable"
+        jsonb settings "nullable"
+    }
+
+    sessions {
+        bigint user_id FK
+        int last_activity
+    }
+
+    blackboards {
+        bigint user_id FK
+        varchar branch_id UK "Date.now() ms"
+        bigint timestamp UK "ms, record time"
+        longtext text "nullable"
+        text file_hash "nullable"
+    }
+
+    walkie_typie_connections {
+        bigint user_id FK
+        bigint partner_id FK
+        varchar my_branch_id "wt_{myId}_{partnerId}"
+        varchar partner_branch_id "wt_{partnerId}_{myId}"
+    }
+
+    walkie_typie_boards {
+        bigint user_id FK
+        varchar branch_id UK
+        bigint timestamp UK "ms"
+        longtext text "nullable"
+        text file_hash "nullable"
+    }
+
+    broadcast_channels {
+        varchar name UK
+        bigint user_id FK "owner"
+        bigint last_signal "ms"
+    }
+
+    broadcast_boards {
+        bigint channel_id FK "cascade"
+        bigint timestamp UK "ms"
+        longtext text "nullable"
+        text file_hash "nullable"
+    }
+
+    broadcast_pins {
+        bigint user_id FK "cascade"
+        bigint channel_id FK "cascade"
+    }
+
+    files {
+        varchar hash UK "SHA-256"
+        bigint user_id FK "nullable"
+        varchar original_name
+        varchar mime_type
+        bigint size "bytes"
+        varchar disk_path
+        varchar status "staged → committed → orphaned"
+    }
+
+    users ||--o{ blackboards : "owns"
+    users ||--o{ walkie_typie_connections : "initiates"
+    users ||--o{ walkie_typie_boards : "owns"
+    users ||--o{ broadcast_channels : "creates"
+    users ||--o{ broadcast_pins : "pins"
+    users ||--o{ files : "uploads"
+    users ||--o{ sessions : "has"
+    users ||--o{ walkie_typie_connections : "partner_id"
+
+    broadcast_channels ||--o{ broadcast_boards : "contains"
+    broadcast_channels ||--o{ broadcast_pins : "pinned by"
+```
+
+#### IndexedDB Schema (Dexie.js — Client-Side Primary Storage)
+
+```mermaid
+erDiagram
+    blackboard {
+        compound_pk PK "[owner+branch_id+timestamp]"
+        string owner "sync state tag"
+        string branch_id "Date.now() ms"
+        bigint timestamp "ms"
+        string text "record content"
+    }
+
+    walkie_typie {
+        compound_pk PK "[branch_id+timestamp]"
+        string branch_id "wt_{myId}_{partnerId}"
+        bigint timestamp "ms"
+        string branch "WE or THEY"
+        string text "record content"
+    }
+
+    broadcast_boards {
+        compound_pk PK "[local_channel_id+timestamp]"
+        int local_channel_id "FK to broadcast_channels"
+        bigint timestamp "ms"
+        string text "record content"
+    }
+
+    broadcast_channels {
+        int local_id PK "auto-increment"
+        string name "display name"
+        int server_channel_id "nullable"
+    }
+
+    file_blobs {
+        string hash PK "SHA-256"
+        blob blob "binary data"
+        string status "pending | synced"
+    }
+```
+
+> **Note:** 6 schema versions (v1–v6). v6 migrated camelCase → snake\_case with full data clear. Key differences from PostgreSQL: no `user_id` FK (single-user client), `owner` field encodes sync state, `file_blobs` stores actual binary data (server `files` table stores only metadata + disk path).
+
+#### Data Flow: Local-First Sync Architecture
+
+```mermaid
+flowchart LR
+    subgraph Client["Browser (Client)"]
+        IDB[(IndexedDB<br/>Dexie.js)]
+        FB[(file_blobs)]
+    end
+
+    subgraph Server
+        API[Laravel API]
+        PG[(PostgreSQL)]
+        WS[Reverb WS]
+        Disk[Disk Storage]
+    end
+
+    IDB -- "commit (POST records)<br/>LWW full-branch replace" --> API
+    API -- "checkout (GET records)" --> IDB
+    API <--> PG
+
+    API -- "broadcast event" --> WS
+    WS -- "signal → re-fetch" --> IDB
+
+    FB -- "upload blob" --> API
+    API -- "store file" --> Disk
+    API -- "download file" --> FB
+```
+
+### Unified Modeling Language Diagrams (UML)
+
+
+#### Class UML
+
+**Backend Class Diagram (Laravel)**
+
+```mermaid
+classDiagram
+    direction TB
+
+    class User {
+        +string uid
+        +string passcode
+        +jsonb settings
+    }
+
+    class File {
+        +string hash
+        +string status
+    }
+
+    class AuthController {
+        +executeCommand()
+    }
+
+    class BlackboardController {
+        +commit()
+    }
+
+    class WalkieTypieController {
+        +signal()
+        +commitBoard()
+    }
+
+    class BroadcastChannelController {
+        +cast()
+    }
+
+    class FileController {
+        +upload()
+        +download()
+    }
+
+    class SettingsController
+
+    class LlmController {
+        +chatStream()
+    }
+
+    class TranslationController {
+        +translate()
+    }
+
+    class SpeechController {
+        +recognize()
+    }
+
+    class AuthService {
+        +executeCommand()
+    }
+
+    class BlackboardService {
+        +commit()
+    }
+
+    class WalkieTypieBoardService {
+        +commit()
+    }
+
+    class BroadcastChannelService {
+        +cast()
+    }
+
+    class FileService {
+        +upload()
+        +markOrphaned()
+    }
+
+    class SettingsService
+
+    class BroadcastChannelUpdated {
+        +int channelId
+        +string action
+    }
+
+    class WalkieTypieConnectionUpdated {
+        +array connectionData
+    }
+
+    class WalkieTypieContentUpdated {
+        +array contentData
+    }
+
+    class BlackboardUpdated {
+        +string branchId
+        +string deviceId
+    }
+
+    class WalkieTypieSignal {
+        +string senderUid
+        +string partnerUid
+    }
+
+    AuthController --> AuthService
+    BlackboardController --> BlackboardService
+    WalkieTypieController --> WalkieTypieBoardService
+    BroadcastChannelController --> BroadcastChannelService
+    FileController --> FileService
+    SettingsController --> SettingsService
+    BlackboardService --> FileService
+    BroadcastChannelService --> FileService
+
+    BlackboardService ..> BlackboardUpdated : fires
+    BroadcastChannelService ..> BroadcastChannelUpdated : fires
+    WalkieTypieController ..> WalkieTypieConnectionUpdated : fires
+    WalkieTypieController ..> WalkieTypieContentUpdated : fires
+    WalkieTypieController ..> WalkieTypieSignal : fires
+
+    User "1" --> "*" File : uploads
+```
+
+**Frontend Module Diagram (ES Modules)**
+
+```mermaid
+classDiagram
+    direction TB
+
+    class BBCore {
+        +getRecord()
+        +addRecord()
+        +updateText()
+    }
+
+    class BBVCS {
+        +push()
+        +pull()
+        +commit()
+    }
+
+    class BBSync {
+        +startListening()
+        +scheduleCommit()
+    }
+
+    class AuthManager {
+        +init()
+    }
+
+    class WTCore {
+        +init()
+    }
+
+    class BCChannel {
+        +openChannel()
+        +closeChannel()
+    }
+
+    class ModState {
+        +addInstance()
+        +removeInstance()
+    }
+
+    class IndexedDB {
+        <<Dexie v6>>
+        +blackboard Table
+        +walkie_typie Table
+        +broadcast_boards Table
+        +broadcast_channels Table
+        +file_blobs Table
+    }
+
+    class EchoService {
+        +getEcho()
+        +releaseEcho()
+    }
+
+    BBVCS --> BBCore : reads/writes records
+    BBVCS --> IndexedDB : via BBCore
+    BBSync --> BBVCS : triggers commit
+    BBSync --> EchoService : listens WebSocket
+    WTCore --> EchoService : private channel
+    BCChannel --> EchoService : public channel
+    BCChannel --> IndexedDB : owner mode storage
+    AuthManager ..> WTCore : auth:updated event
+    ModState --> IndexedDB : via localStorage
+```
+
+#### Sequence Diagram
+
+**Blackboard Commit Flow**
+
+```mermaid
+sequenceDiagram
+    actor User
+    participant UI as Blackboard UI
+    participant BBVCS as BBVCS (VCS Logic)
+    participant IDB as IndexedDB
+    participant FileSvc as FileService (API)
+    participant API as Laravel API
+    participant DB as PostgreSQL
+    participant WS as Reverb WebSocket
+
+    User->>UI: Clicks "Commit"
+    UI->>BBVCS: commit(branchMeta, deviceId)
+    BBVCS->>IDB: scrubBranch() — clean empty records
+    BBVCS->>IDB: getAllRecordsForBranch("local", branchId)
+    IDB-->>BBVCS: records[]
+
+    alt Has file attachments
+        BBVCS->>FileSvc: exists(hash) — check each file
+        FileSvc-->>BBVCS: true/false
+        opt File not on server
+            BBVCS->>IDB: get file blob from file_blobs
+            BBVCS->>FileSvc: upload(blob)
+            FileSvc-->>BBVCS: { hash, name, mime, size }
+        end
+    end
+
+    BBVCS->>API: POST /api/blackboard/commit { branch_id, branch_name, records[] }
+    API->>DB: DELETE old records WHERE branch_id AND timestamp NOT IN incoming
+    API->>DB: UPSERT records
+    API->>DB: Mark files as "committed"
+    API->>WS: broadcast(BlackboardUpdated) to user's private channel
+    API-->>BBVCS: 200 "Commit Successful"
+
+    BBVCS->>IDB: Update owner to "local, online/{uid} [synced]"
+    BBVCS-->>UI: Success
+    UI->>User: Toast "Commit Successful"
+
+    WS->>UI: BlackboardUpdated (other devices, filtered by deviceId)
+    UI->>API: GET /api/blackboard/branches/{branchId}
+    API-->>UI: records[]
+    UI->>IDB: Replace local records with synced data
+```
+
+**Walkie-Typie Real-Time Communication**
+
+```mermaid
+sequenceDiagram
+    actor UserA as User A
+    participant ClientA as Client A
+    participant WS as Reverb WebSocket
+    participant API as Laravel API
+    participant DB as PostgreSQL
+    participant ClientB as Client B
+    actor UserB as User B
+
+    Note over UserA, UserB: Connection
+    UserA->>ClientA: Enter partner UID
+    ClientA->>API: POST /api/walkie-typie/connections
+    API->>DB: UPSERT connection (A↔B)
+    API->>WS: broadcast(WTConnectionUpdated) to both
+    WS->>ClientB: WTConnectionUpdated event
+
+    Note over UserA, UserB: Whisper Layer (50ms)
+    UserA->>ClientA: Types in textarea
+    ClientA->>WS: whisper("typing") — 50ms debounce
+    WS->>ClientB: typing indicator
+
+    Note over UserA, UserB: IDB Layer (200ms) + Server Sync (2s)
+    ClientA->>ClientA: Save to IndexedDB
+    ClientA->>API: POST boards/commit + POST signal
+    API->>DB: UPSERT board records
+    API->>WS: broadcast(WTContentUpdated) to User B
+    WS->>ClientB: WTContentUpdated
+    ClientB->>API: GET boards/{branchId}
+    API-->>ClientB: records[]
+    ClientB->>UserB: Update textarea
+```
+
+**Broadcast Cast Flow**
+
+```mermaid
+sequenceDiagram
+    actor Owner as Channel Owner
+    participant Client as Owner Client
+    participant API as Laravel API
+    participant DB as PostgreSQL
+    participant WS as Reverb WebSocket
+    participant ReaderClient as Reader Client
+    actor Reader as Reader
+
+    Owner->>Client: Clicks "Cast" (commit channel)
+    Client->>Client: Collect records from IndexedDB
+    Client->>API: POST /api/broadcast/channels/cast { channel_name, records[] }
+    API->>DB: Find or create broadcast_channel
+    API->>DB: DELETE old broadcast_boards for channel
+    API->>DB: INSERT new broadcast_boards
+    API->>DB: Mark files as "committed"
+    API->>WS: broadcast(BroadcastChannelUpdated) on public channel
+    API-->>Client: 200 { channel }
+    Client->>Owner: Toast "Cast Complete"
+
+    WS->>ReaderClient: BroadcastChannelUpdated { action: "cast" }
+    ReaderClient->>API: GET /api/broadcast/channels/{id}/boards
+    API->>DB: SELECT boards
+    API-->>ReaderClient: records[]
+    ReaderClient->>Reader: Refresh channel content
+```
+
+#### State Diagram
+
+**Blackboard Navigation State Machine**
+
+```mermaid
+stateDiagram-v2
+    [*] --> Virtual : First boot (no records)
+
+    Virtual --> RecordView : User types text → addRecord()
+    Virtual --> RecordView : Pull (has existing records)
+
+    RecordView --> RecordView : Push (head > 0) → head--
+    RecordView --> RecordView : Pull (head < count-1) → head++
+    RecordView --> Virtual : Push at head 0 → enter virtual mode
+
+    RecordView --> Saving : Text changed (auto-save)
+    Saving --> RecordView : Save complete
+
+    RecordView --> Committing : User triggers Commit
+    Committing --> RecordView : Commit success → owner="synced"
+    Committing --> RecordView : Commit failed → error toast
+
+    RecordView --> BranchSwitch : Checkout another branch
+    BranchSwitch --> RecordView : Load head 0 of new branch
+    BranchSwitch --> Virtual : New branch is empty
+
+    RecordView --> Forking : User triggers Fork
+    Forking --> RecordView : New branch created, switched
+
+    state Virtual {
+        [*] --> BlankTextarea
+        BlankTextarea : head = 0, isVirtual = true
+        BlankTextarea : Textarea is empty, no backing record
+    }
+
+    state RecordView {
+        [*] --> DisplayRecord
+        DisplayRecord : Show record at current head
+        DisplayRecord : Update head indicator
+    }
+```
+
+**File Status Lifecycle**
+
+```mermaid
+stateDiagram-v2
+    [*] --> Staged : File uploaded via POST /api/files
+
+    Staged --> Committed : Included in Commit/Cast payload
+    Committed --> Committed : Referenced by active records
+
+    Committed --> Orphaned : No records reference this file (24h check)
+    Staged --> Orphaned : Never committed within 24h
+
+    Orphaned --> [*] : CleanOrphanedFiles command deletes from disk
+
+    note right of Staged : Initial state after upload
+    note right of Committed : Protected from cleanup
+    note right of Orphaned : Scheduled for deletion
+```
+
+**Walkie-Typie Connection State Machine**
+
+```mermaid
+stateDiagram-v2
+    [*] --> NotLoggedIn : App starts
+
+    NotLoggedIn --> LoggedIn : auth:updated (login success)
+    LoggedIn --> NotLoggedIn : auth:updated (logout)
+
+    state LoggedIn {
+        [*] --> NoConnection
+        NoConnection --> Connecting : User enters partner UID
+        Connecting --> Connected : API returns 200 + WS event
+        Connecting --> NoConnection : Partner not found (404)
+
+        Connected --> Typing : User types (whisper layer)
+        Typing --> Connected : Typing timeout
+        Connected --> Syncing : Auto-commit (2s debounce)
+        Syncing --> Connected : Commit + signal complete
+
+        Connected --> Disconnecting : User clicks Disconnect
+        Disconnecting --> NoConnection : Both connections deleted + WS event
+    }
+```
+
+**Navigation State Machine**
+
+```mermaid
+stateDiagram-v2
+    [*] --> Blackboard : Default main navi
+
+    state MainNavi {
+        Blackboard --> WalkieTypie : Click main navi
+        WalkieTypie --> Broadcast : Click main navi
+        Broadcast --> MODs : Click main navi
+        MODs --> Blackboard : Click main navi
+        Blackboard --> Blackboard : Scroll/swipe sub-navi
+        WalkieTypie --> WalkieTypie : Scroll/swipe sub-navi
+        Broadcast --> Broadcast : Scroll/swipe sub-navi
+        MODs --> MODs : Scroll/swipe sub-navi
+    }
+
+    state Blackboard {
+        [*] --> BB_Log
+        BB_Log : Sub-page: log (record view)
+        BB_Branches : Sub-page: branches list
+        BB_Misc : Sub-page: misc (settings, sync, about)
+        BB_Log --> BB_Branches
+        BB_Branches --> BB_Misc
+    }
+
+    state WalkieTypie {
+        [*] --> WT_Text
+        WT_Text : Sub-page: text (conversation)
+        WT_List : Sub-page: list (connections)
+        WT_Config : Sub-page: config
+        WT_Text --> WT_List
+        WT_List --> WT_Config
+    }
+
+    state Broadcast {
+        [*] --> BC_Channel
+        BC_Channel : Sub-page: channel (content view)
+        BC_List : Sub-page: list (all channels)
+        BC_Config : Sub-page: config
+        BC_Channel --> BC_List
+        BC_List --> BC_Config
+    }
+
+    state MODs {
+        [*] --> MOD_List
+        MOD_List : Sub-page: list (instances + catalog)
+        MOD_Config : Sub-page: config (shared + instance)
+        MOD_List --> MOD_Config
+    }
+```
+
+#### Activity Diagram
+
+**Blackboard Commit Workflow**
+
+```mermaid
+flowchart TD
+    Start([User clicks Commit]) --> CheckLogin{User logged in?}
+    CheckLogin -- No --> ErrorLogin[Error: Login Required]
+    CheckLogin -- Yes --> CleanBranch[Clean empty records<br/>scrubBranch / cleanupOldRecords]
+    CleanBranch --> GetRecords[Get all local records<br/>for branch]
+    GetRecords --> FilterEmpty[Filter out blank records<br/>no text AND no file]
+    FilterEmpty --> CheckRecords{Records remaining?}
+    CheckRecords -- No --> ErrorNoData[Error: No Data to Commit]
+    CheckRecords -- Yes --> CheckFiles{Has file attachments?}
+    CheckFiles -- Yes --> UploadFiles[Check & upload missing files<br/>skip existing, POST new blobs]
+    UploadFiles --> PreparePayload
+    CheckFiles -- No --> PreparePayload[Prepare commit payload<br/>serialize file_hash arrays]
+    PreparePayload --> SendAPI[POST /api/blackboard/commit]
+    SendAPI --> ServerProcess[Server: DELETE stale + UPSERT records<br/>+ mark files committed + bust cache]
+    ServerProcess --> BroadcastEvent{Auto-sync enabled?}
+    BroadcastEvent -- Yes --> FireEvent[Broadcast BlackboardUpdated<br/>via WebSocket]
+    BroadcastEvent -- No --> UpdateOwner
+    FireEvent --> UpdateOwner[Update local owner tag<br/>to 'local, online/uid synced']
+    UpdateOwner --> Success([Commit Successful])
+```
+
+**MOD System Boot Sequence**
+
+```mermaid
+flowchart TD
+    Start([i18n:ready event fires]) --> LoadAll[loadAllMods]
+    LoadAll --> Discover[Fetch /mods/ via Nginx autoindex<br/>Get folder list as JSON]
+    Discover --> ForEach[For each MOD folder]
+    ForEach --> FetchManifest[Fetch manifest.json<br/>parse data: id, configSchema, pages]
+    FetchManifest --> ImportMod[Dynamic import mod.js<br/>get code: init, activate, etc.]
+    ImportMod --> MergeTemplate[Merge manifest + mod.js<br/>into single template object]
+    MergeTemplate --> Validate{manifest.id<br/>matches folder?}
+    Validate -- No --> Skip[Skip invalid MOD]
+    Validate -- Yes --> Register[Register template<br/>in ModState._templates]
+    Register --> MoreFolders{More folders?}
+    MoreFolders -- Yes --> ForEach
+    MoreFolders -- No --> WireContext[Set context factory<br/>for lazy ModContext creation]
+    WireContext --> Migration[Run migration<br/>v1 → v2 → v3 legacy data]
+    Migration --> FetchLocales[Fetch MOD-local locale files<br/>mergeStrings into i18n]
+    FetchLocales --> BuildDOM[Create DOM elements:<br/>instance buttons + shelf panels]
+    BuildDOM --> RegisterHooksTools[Register declarative<br/>hooks and tools]
+    RegisterHooksTools --> CallInit[Call template.init for<br/>each registered template]
+    CallInit --> InitSharedDefaults[Initialize shared config<br/>defaults for each group]
+    InitSharedDefaults --> Dispatch([Dispatch mods:loaded event])
+```
+
+**User Authentication Flow**
+
+```mermaid
+flowchart TD
+    Start([User opens app]) --> CheckSession[GET /api/auth-status]
+    CheckSession --> SessionValid{Session valid?}
+    SessionValid -- Yes --> ShowLogout[Show logged-in UI<br/>display uid + title]
+    SessionValid -- No --> ShowLogin[Show login/register form]
+
+    ShowLogin --> UserAction{User action}
+    UserAction -- Register --> ValidateReg[Validate uid + passcode]
+    ValidateReg --> PostRegister[POST /api/register]
+    PostRegister --> RegSuccess{Success?}
+    RegSuccess -- Yes --> AutoLogin[Auto-login → set session]
+    RegSuccess -- No --> ShowError[Show error message]
+    AutoLogin --> ShowLogout
+
+    UserAction -- Login --> ValidateLogin[Validate uid + passcode]
+    ValidateLogin --> PostLogin[POST /api/login]
+    PostLogin --> LoginSuccess{Credentials valid?}
+    LoginSuccess -- Yes --> SetSession[Set session + localStorage]
+    LoginSuccess -- No --> ShowError
+    SetSession --> ShowLogout
+    ShowLogout --> DispatchAuth([Dispatch auth:updated event])
+    DispatchAuth --> InitWT[WTCore.init — subscribe WebSocket]
+    DispatchAuth --> InitSync[BBSync.startListening]
+    DispatchAuth --> SyncSettings[Fetch server settings]
+
+    ShowLogout --> LogoutAction{User clicks logout}
+    LogoutAction --> PostLogout[POST /api/logout]
+    PostLogout --> ClearLocal[Clear localStorage + session]
+    ClearLocal --> ReleaseEcho[releaseEcho — disconnect WebSocket]
+    ReleaseEcho --> ShowLogin
+```
+
+#### Deployment Diagram
+
+```mermaid
+flowchart TB
+    subgraph Docker["Docker Compose (11 Services)"]
+        subgraph Web["Web Tier"]
+            nginx["nginx :80<br/>/ → SPA fallback<br/>/mods/ → autoindex JSON<br/>/api/* → FastCGI<br/>/app → WebSocket upgrade"]
+        end
+
+        subgraph App["Application Tier"]
+            api["api<br/>PHP-FPM :9000<br/>Laravel 12"]
+            reverb["reverb<br/>:8081<br/>WebSocket Server"]
+            queue["queue<br/>queue:listen<br/>Redis Queue Worker"]
+            scheduler["scheduler<br/>schedule:work<br/>Cron Jobs"]
+        end
+
+        subgraph Data["Data Tier"]
+            db[("db<br/>PostgreSQL 16<br/>:5431")]
+            redis[("redis<br/>Alpine<br/>Cache + Queue")]
+        end
+
+        subgraph Tools["Dev Tools"]
+            pgadmin["pgadmin<br/>:8080"]
+            mailpit["mailpit<br/>:8025 UI / :1025 SMTP"]
+        end
+
+        subgraph External["External / Optional"]
+            tunnel["tunnel<br/>Cloudflare Tunnel"]
+            ollama["ollama<br/>:11434<br/>GPU nvidia<br/>profile: mods"]
+        end
+    end
+
+    User((User)) --> nginx
+
+    nginx -- "/api/*" --> api
+    nginx -- "/app WS" --> reverb
+
+    api --> db
+    api --> redis
+    queue --> db
+    queue --> redis
+    scheduler --> db
+    scheduler --> redis
+    reverb --> redis
+
+    pgadmin --> db
+    tunnel --> nginx
+
+    api -. "Ollama API<br/>(optional)" .-> ollama
+```
+
