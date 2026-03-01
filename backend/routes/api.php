@@ -9,7 +9,6 @@ use App\Http\Controllers\WalkieTypieController;
 use App\Http\Controllers\FileController;
 use App\Http\Controllers\BroadcastChannelController;
 use App\Http\Controllers\LlmController;
-use App\Http\Controllers\SettingsController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Broadcast;
 
@@ -62,12 +61,6 @@ Route::middleware('throttle:10,1')->group(function () {
     Route::post('/auth/command', [AuthController::class, 'executeCommand']);
     Route::post('/auth/request-reset', [AuthController::class, 'requestPasswordReset']);
     Route::post('/auth/request-bind', [AuthController::class, 'requestEmailBinding']);
-});
-
-// Settings — auth required, rate limited
-Route::middleware([/*'auth:sanctum',*/ 'throttle:30,1'])->prefix('settings')->group(function () {
-    Route::get('/', [SettingsController::class, 'show']);
-    Route::post('/', [SettingsController::class, 'store']);
 });
 
 // Blackboard Sync — auth required
