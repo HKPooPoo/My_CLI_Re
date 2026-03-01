@@ -24,17 +24,6 @@ const GLOBAL_DEFAULTS = {
     crtBlendMode: false,
 };
 
-// --- Debounced push ---
-let _pushTimer = null;
-let _pushCallback = null;
-
-function _schedulePush() {
-    clearTimeout(_pushTimer);
-    _pushTimer = setTimeout(() => {
-        if (_pushCallback) _pushCallback();
-    }, 3000);
-}
-
 // --- Key helpers ---
 function _scopeKey(scope, key) { return `setting-${scope}-${key}`; }
 function _globalKey(key) { return `setting-${key}`; }
@@ -122,7 +111,6 @@ export function set(scope, key, value) {
     window.dispatchEvent(new CustomEvent('settings:changed', {
         detail: { scope, key, value }
     }));
-    _schedulePush();
 }
 
 export function getGlobal(key) {
@@ -138,49 +126,6 @@ export function setGlobal(key, value) {
     window.dispatchEvent(new CustomEvent('settings:changed', {
         detail: { scope: 'global', key, value }
     }));
-    _schedulePush();
-}
-
-export function getAllForSync() {
-    _migrateOnce();
-    const result = { scoped: {}, global: {} };
-
-    for (const scope of SCOPES) {
-        result.scoped[scope] = {};
-        for (const key of Object.keys(SCOPE_DEFAULTS[scope])) {
-            result.scoped[scope][key] = get(scope, key);
-        }
-    }
-
-    for (const key of Object.keys(GLOBAL_DEFAULTS)) {
-        result.global[key] = getGlobal(key);
-    }
-
-    // Include WT boardSwap
-    result.scoped.wt.boardSwap = get('wt', 'boardSwap');
-
-    return result;
-}
-
-export function importAll(obj) {
-    if (!obj) return;
-
-    if (obj.scoped) {
-        for (const scope of SCOPES) {
-            if (!obj.scoped[scope]) continue;
-            for (const [key, value] of Object.entries(obj.scoped[scope])) {
-                localStorage.setItem(_scopeKey(scope, key), _serialize(value));
-            }
-        }
-    }
-
-    if (obj.global) {
-        for (const [key, value] of Object.entries(obj.global)) {
-            localStorage.setItem(_globalKey(key), _serialize(value));
-        }
-    }
-
-    window.dispatchEvent(new CustomEvent('settings:changed', { detail: { scope: 'all' } }));
 }
 
 export function resetAll() {
@@ -198,15 +143,6 @@ export function resetAll() {
     localStorage.setItem(_scopeKey('wt', 'boardSwap'), 'false');
 
     window.dispatchEvent(new CustomEvent('settings:changed', { detail: { scope: 'all' } }));
-    _schedulePush();
-}
-
-/**
- * Register a callback for auto-push on settings change.
- * Called by settings-sync-service after auth is available.
- */
-export function onPush(callback) {
-    _pushCallback = callback;
 }
 
 /**
