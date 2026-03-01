@@ -23,6 +23,17 @@ import { BBMessage } from '../javascript/blackboard-msg.js';
 import { MOD_API_VERSION } from '../javascript/version.js';
 
 const _templates = {};
+let _modsReady = false;
+
+// Re-merge MOD locales whenever the user switches language.
+// initI18n() replaces _strings entirely, wiping MOD keys merged during boot.
+// Guard: skip the initial i18n:ready (which triggers loadAllMods itself).
+window.addEventListener('i18n:ready', async () => {
+    if (!_modsReady) return;
+    const locale = getActiveLocale();
+    const tpls = Object.values(_templates);
+    await Promise.allSettled(tpls.map(tpl => loadModLocale(tpl, locale)));
+});
 
 // ===================== Discovery =====================
 
@@ -180,6 +191,7 @@ export async function loadAllMods() {
 
     // Always notify — even on partial failure
     window.dispatchEvent(new CustomEvent('mods:loaded'));
+    _modsReady = true;
 }
 
 /**
