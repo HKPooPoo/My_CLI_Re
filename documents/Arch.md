@@ -56,44 +56,7 @@ Let us mock up scenarios for different purpose:
    
 #### Use Case UML
 
-```mermaid
-graph TD
-    User([fa:fa-user User — authenticated])
-    Guest([fa:fa-user-slash Guest — unauthenticated])
 
-    BB["Blackboard — Personal
-    Write / Navigate
-    Fork Branch
-    Commit / Checkout / Drop / Clean
-    Auto-Sync"]
-
-    WT["Walkie-Typie — Paired
-    Connect / Disconnect
-    Real-Time Chat + Whisper
-    Commit / Fetch Board"]
-
-    BC["Broadcast — Public
-    Cast Channel ᵗⁱᵗˡᵉ
-    Read / Pin
-    Create / Rename / Delete ᵗⁱᵗˡᵉ"]
-
-    Misc["Auth / Files / MODs
-    Login / Register / Logout
-    Upload / Download
-    MOD Instances + Features"]
-
-    PG[(PostgreSQL)]
-    WS([Reverb WS])
-    ExtAPI([Google / Ollama / Cloud LLM])
-
-    User --> BB & WT & BC & Misc
-    Guest -.-> BB & Misc
-    Guest -.->|Read / Pin only| BC
-
-    BB & WT & BC --> PG
-    BB & WT & BC --> WS
-    Misc --> ExtAPI
-```
 
 ### System Requirement
 
