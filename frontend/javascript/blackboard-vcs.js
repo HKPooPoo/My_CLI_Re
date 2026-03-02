@@ -183,7 +183,17 @@ export const BBVCS = {
         }
 
         try {
-            const payloadRecords = records.map(r => {
+            // Deduplicate records by timestamp — multiple owner variants
+            // (e.g. "local" vs "local, online/uid [synced]") can produce
+            // records with the same branch_id+timestamp in IndexedDB.
+            const seen = new Set();
+            const uniqueRecords = records.filter(r => {
+                if (seen.has(r.timestamp)) return false;
+                seen.add(r.timestamp);
+                return true;
+            });
+
+            const payloadRecords = uniqueRecords.map(r => {
                 let fh = r.file_hash;
                 if (Array.isArray(fh)) {
                     fh = fh.map(item => (item && typeof item === 'object') ? item.hash : item).filter(Boolean);

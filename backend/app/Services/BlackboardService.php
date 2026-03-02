@@ -63,6 +63,15 @@ class BlackboardService
                 ];
             }
 
+            // Deduplicate by timestamp — client may send records with the same
+            // branch_id+timestamp due to multiple owner variants in IndexedDB.
+            // Keep the last occurrence (most recently processed).
+            $deduped = [];
+            foreach ($insertData as $row) {
+                $deduped[$row['timestamp']] = $row;
+            }
+            $insertData = array_values($deduped);
+
             if (!empty($insertData)) {
                 DB::table('blackboards')->upsert(
                     $insertData,
