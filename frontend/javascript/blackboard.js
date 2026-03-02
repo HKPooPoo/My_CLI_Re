@@ -420,6 +420,7 @@ function updateCheckoutButtonState() {
     }
     checkoutBtnEl.disabled = false;
 
+    console.log('[CHECKOUT-BTN]', { selectedId: selected.id, stateId: state.branchId, same: selected.id === state.branchId });
     if (selected.id === state.branchId) {
         // Same branch as HEAD → Checkout (pull from server)
         checkoutBtnEl.textContent = t('blackboard.checkoutBtn');

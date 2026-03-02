@@ -1,4 +1,4 @@
-const CACHE_NAME = 'blackboard-v83-2026-03-01';
+const CACHE_NAME = 'blackboard-v84-2026-03-03';
 
 // Core framework only — MOD files (mods/*, vendor libs, MOD assets) are NOT listed here.
 // They are cached lazily via the stale-while-revalidate fetch handler on first page load.

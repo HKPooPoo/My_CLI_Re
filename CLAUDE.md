@@ -35,7 +35,8 @@ Broadcast    = Board(scope: PUBLIC) → public channels, one-to-many
 | **Push** | Navigate toward NEWER records (decrement head index) |
 | **Pull** | Navigate toward OLDER records (increment head index) |
 | **Commit** | Upload ALL local records to server (full-branch replacement, Last-Write-Wins) |
-| **Checkout** | Switch to a different branch, or download a server branch to local |
+| **Checkout** | Re-download the current HEAD branch from server (same branch selected) |
+| **Switch** | Change to a different branch (different branch selected) |
 | **Fork** | Duplicate all records into a new independent branch (NO parent pointer, NO ancestry) |
 | **Branch** | Independent flat timeline of text snapshots (NO tree, NO parent-child) |
 | **HEAD** | In-memory integer offset into the record list (0 = newest) |
@@ -198,6 +199,20 @@ Code-level identifiers (`commit`, `checkout`, `push`, `pull`, `branch`) remain u
 - **INSTANT:** `new MultiStepButton(el, { action })` — single click fires
 - **CONFIRM:** `new MultiStepButton(el, { action, confirm: true, confirmLabel })` — first click arms (`.btn-armed`), second fires, auto-resets after 3s
 - Prevents double-fire via `aria-busy="true"` during async actions
+- **Do NOT use for dynamic-label buttons.** Constructor captures `originalLabel = el.textContent` at init time — external `textContent` changes conflict. Use raw `addEventListener` instead (see Dynamic Buttons below).
+
+### Dynamic State Buttons (Blackboard)
+
+Buttons that change label/behavior based on list selection context. Use raw `addEventListener` + module-level state variables (NOT MultiStepButton). Remove `data-i18n` from HTML — text is set purely by JS.
+
+**Checkout/Switch** (`checkout-btn`): `updateCheckoutButtonState()` on `list:selectionChanged`
+- `selected.id === state.branchId` → **CHECKOUT** (re-download from server, `targetOwner="remote"`)
+- `selected.id !== state.branchId` → **SWITCH** (change branch, `targetOwner` based on `isLocal`)
+
+**Clean/Drop/Delete** (`drop-btn`): `updateDropButtonState()` on `list:selectionChanged`
+- `isLocal && hasContent` → **CLEAN** (wipe records, keep branch)
+- `isServer` (no local content) → **DROP** (delete server copy)
+- `isLocal && !hasContent && !isServer` → **DELETE** (remove empty branch)
 
 ### Toast & Messages
 
