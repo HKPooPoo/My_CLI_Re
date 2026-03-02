@@ -148,37 +148,38 @@ export const BBVCS = {
             throw new Error(t('blackboard.noData'));
         }
 
-        // [File Sync]: Upload pending files first (multi-file aware)
-        const fileUploadPromises = records
-            .filter(r => r.file_hash)
-            .flatMap((r) => {
-                // Normalize to array of hashes
-                const items = Array.isArray(r.file_hash) ? r.file_hash : [r.file_hash];
-                return items.map(async (item) => {
-                    const hash = (item && typeof item === 'object') ? item.hash : item;
-                    if (!hash) return;
-                    try {
-                        const exists = await FileService.exists(hash);
-                        if (exists) return;
+        // [File Sync]: Upload pending files sequentially to avoid 429 rate-limit.
+        // Deduplicate hashes first — same file may appear in multiple records.
+        const uniqueHashes = new Set();
+        for (const r of records) {
+            if (!r.file_hash) continue;
+            const items = Array.isArray(r.file_hash) ? r.file_hash : [r.file_hash];
+            for (const item of items) {
+                const hash = (item && typeof item === 'object') ? item.hash : item;
+                if (hash) uniqueHashes.add(hash);
+            }
+        }
 
-                        const fileData = await db.file_blobs.get(hash);
-                        if (!fileData || !fileData.blob) {
-                            console.warn(`Local file missing for hash ${hash}, skipping upload.`);
-                            return;
-                        }
-
-                        await FileService.upload(fileData.blob);
-                        await db.file_blobs.update(hash, { status: 'synced' });
-                    } catch (err) {
-                        console.error(`Failed to sync file ${hash}:`, err);
-                        throw new Error(t('blackboard.fileSyncFailed'));
-                    }
-                });
-            });
-
-        if (fileUploadPromises.length > 0) {
+        if (uniqueHashes.size > 0) {
             BBMessage.info(t('blackboard.syncingFiles'));
-            await Promise.all(fileUploadPromises);
+            for (const hash of uniqueHashes) {
+                try {
+                    const exists = await FileService.exists(hash);
+                    if (exists) continue;
+
+                    const fileData = await db.file_blobs.get(hash);
+                    if (!fileData || !fileData.blob) {
+                        console.warn(`Local file missing for hash ${hash}, skipping upload.`);
+                        continue;
+                    }
+
+                    await FileService.upload(fileData.blob);
+                    await db.file_blobs.update(hash, { status: 'synced' });
+                } catch (err) {
+                    console.error(`Failed to sync file ${hash}:`, err);
+                    throw new Error(t('blackboard.fileSyncFailed'));
+                }
+            }
         }
 
         try {
