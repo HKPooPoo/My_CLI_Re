@@ -3,7 +3,6 @@
  */
 
 import { TranslationService } from '../../javascript/services/translation-service.js';
-import { t } from '../../javascript/i18n.js';
 
 export default {
     getButtonDataId(config) {

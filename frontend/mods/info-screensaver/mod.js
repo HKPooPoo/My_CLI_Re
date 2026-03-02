@@ -7,19 +7,12 @@
  */
 
 import { PLATFORM_VERSION } from '../../javascript/version.js';
+// BYPASS: Direct import — no ctx.query.getInstances() API
 import { getInstances } from '../mod-loader.js';
+// BYPASS: Direct import — t() needed in _buildDashboard and _refreshData outside activate context
 import { t } from '../../javascript/i18n.js';
 
-let _clockInterval = null;
-let _refreshInterval = null;
-let _layer = null;
-let _onActivated = null;
-let _onDeactivated = null;
-let _running = false;
-
-function _getInstance() {
-    return getInstances().find(i => i.templateId === 'info-screensaver') || null;
-}
+// --- Pure helper functions (no mutable state) ---
 
 function _buildDashboard(config) {
     const layer = document.createElement('div');
@@ -27,13 +20,12 @@ function _buildDashboard(config) {
 
     const modCount = getInstances().length;
 
-    // Build rows
     const rows = [];
     rows.push(_row('title', `MY CLI Re v${PLATFORM_VERSION}`));
 
     if (config.showLlm !== false) {
         const llmRow = _row('llm', '');
-        llmRow.style.display = 'none'; // hidden until llm:progress event
+        llmRow.style.display = 'none';
         rows.push(llmRow);
     }
     if (config.showMods !== false) {
@@ -43,7 +35,6 @@ function _buildDashboard(config) {
         rows.push(_row('clock', _formatTime()));
     }
 
-    // Box frame
     const box = document.createElement('div');
     box.className = 'is-box';
 
@@ -89,148 +80,10 @@ function _row(id, text, status) {
 
 function _formatTime() {
     const d = new Date();
-    return d.toTimeString().slice(0, 8); // HH:MM:SS
+    return d.toTimeString().slice(0, 8);
 }
 
-function _startClock() {
-    _stopClock();
-    _clockInterval = setInterval(() => {
-        if (!_layer) return;
-        const clockRow = _layer.querySelector('[data-is-row="clock"] .is-content');
-        if (clockRow) clockRow.textContent = _formatTime();
-    }, 1000);
-}
-
-function _stopClock() {
-    if (_clockInterval) {
-        clearInterval(_clockInterval);
-        _clockInterval = null;
-    }
-}
-
-/** Re-read live data and update existing rows in place. */
-function _refreshData() {
-    if (!_layer) return;
-    const modsEl = _layer.querySelector('[data-is-row="mods"] .is-content');
-    if (modsEl) {
-        modsEl.textContent = `MODS: ${getInstances().length} ${t('mods.infoScreensaver.active')}`;
-    }
-}
-
-function _startRefresh() {
-    _stopRefresh();
-    _refreshInterval = setInterval(_refreshData, 15000);
-}
-
-function _stopRefresh() {
-    if (_refreshInterval) {
-        clearInterval(_refreshInterval);
-        _refreshInterval = null;
-    }
-}
-
-function _show(config) {
-    const overlay = document.getElementById('press-start-overlay');
-    if (!overlay) return;
-
-    _hide(); // Clean previous
-
-    _layer = _buildDashboard(config);
-    overlay.appendChild(_layer);
-
-    // Hide the PRESS START label
-    const label = document.getElementById('press-start-label');
-    if (label) label.style.display = 'none';
-
-    if (config.showClock !== false) _startClock();
-    _startRefresh();
-    _startLlmListener();
-}
-
-let _onLlmProgress = null;
-
-function _startLlmListener() {
-    _stopLlmListener();
-    _onLlmProgress = ({ detail }) => {
-        const row = _layer?.querySelector('[data-is-row="llm"]');
-        if (!row) return;
-        const content = row.querySelector('.is-content');
-        if (!content) return;
-
-        if (detail.status === 'progress') {
-            row.style.display = '';
-            content.textContent = `LLM: ${detail.text}`;
-            content.className = 'is-content is-loading';
-            content.dataset.loading = 'true';
-        } else if (detail.status === 'ready') {
-            row.style.display = '';
-            content.textContent = `LLM: ${detail.model} \u2713`;
-            content.className = 'is-content is-online';
-            delete content.dataset.loading;
-        } else if (detail.status === 'error') {
-            row.style.display = '';
-            content.textContent = `LLM: ${detail.text}`;
-            content.className = 'is-content is-offline';
-            delete content.dataset.loading;
-        }
-    };
-    window.addEventListener('llm:progress', _onLlmProgress);
-}
-
-function _stopLlmListener() {
-    if (_onLlmProgress) {
-        window.removeEventListener('llm:progress', _onLlmProgress);
-        _onLlmProgress = null;
-    }
-}
-
-function _hide() {
-    _stopClock();
-    _stopRefresh();
-    _stopLlmListener();
-    if (_layer && _layer.parentNode) {
-        _layer.parentNode.removeChild(_layer);
-    }
-    _layer = null;
-
-    // Restore PRESS START label
-    const label = document.getElementById('press-start-label');
-    if (label) label.style.display = '';
-}
-
-function _startListening() {
-    if (_running) return;
-    _running = true;
-
-    const getConfig = () => {
-        const inst = _getInstance();
-        return inst ? inst.config : {};
-    };
-
-    _onActivated = () => {
-        if (!_getInstance()) return; // Guard: instance may have been removed
-        _show(getConfig());
-    };
-    _onDeactivated = () => { _hide(); };
-
-    window.addEventListener('screensaver:activated', _onActivated);
-    window.addEventListener('screensaver:deactivated', _onDeactivated);
-
-    // If screensaver is already visible, show immediately
-    const overlay = document.getElementById('press-start-overlay');
-    if (overlay && overlay.style.display !== 'none') {
-        _show(getConfig());
-    }
-}
-
-function _stopListening() {
-    _running = false;
-    _hide();
-    if (_onActivated) window.removeEventListener('screensaver:activated', _onActivated);
-    if (_onDeactivated) window.removeEventListener('screensaver:deactivated', _onDeactivated);
-    _onActivated = null;
-    _onDeactivated = null;
-}
+// --- Template ---
 
 export default {
     getButtonDataId(_config) {
@@ -256,39 +109,181 @@ export default {
             document.head.appendChild(link);
         }
 
-        // Listen for instance add/remove
+        // BYPASS: Direct window.addEventListener — no ctx.events.onPersistent() for init-time listeners
         this._onInstanceAdded = ({ detail }) => {
-            if (detail.instance.templateId === 'info-screensaver') _startListening();
+            if (detail.instance.templateId === 'info-screensaver') this._startListening();
         };
         this._onInstanceRemoved = ({ detail }) => {
-            if (detail.templateId === 'info-screensaver') _stopListening();
+            if (detail.templateId === 'info-screensaver') this._stopListening();
         };
         window.addEventListener('mods:instanceAdded', this._onInstanceAdded);
         window.addEventListener('mods:instanceRemoved', this._onInstanceRemoved);
 
-        // If instance already exists at boot (persisted), start
-        if (_getInstance()) _startListening();
+        if (this._getInstance()) this._startListening();
     },
 
     async activate(_ctx) {},
     async deactivate(_ctx) {},
 
     onConfigChange(_ctx, _key, _value) {
-        if (!_running) return;
-        // Re-render dashboard if currently visible
-        if (_layer) {
-            const inst = _getInstance();
-            if (inst) _show(inst.config);
+        if (!this._running) return;
+        if (this._layer) {
+            const inst = this._getInstance();
+            if (inst) this._show(inst.config);
         }
     },
 
     async checkHealth(_instanceConfig) { return 'online'; },
 
     destroy(_ctx) {
-        _stopListening();
+        this._stopListening();
         if (this._onInstanceAdded) window.removeEventListener('mods:instanceAdded', this._onInstanceAdded);
         if (this._onInstanceRemoved) window.removeEventListener('mods:instanceRemoved', this._onInstanceRemoved);
         this._onInstanceAdded = null;
         this._onInstanceRemoved = null;
+    },
+
+    // --- Private methods (use mutable state on `this`) ---
+
+    _getInstance() {
+        return getInstances().find(i => i.templateId === 'info-screensaver') || null;
+    },
+
+    _startClock() {
+        this._stopClock();
+        this._clockInterval = setInterval(() => {
+            if (!this._layer) return;
+            const clockRow = this._layer.querySelector('[data-is-row="clock"] .is-content');
+            if (clockRow) clockRow.textContent = _formatTime();
+        }, 1000);
+    },
+
+    _stopClock() {
+        if (this._clockInterval) {
+            clearInterval(this._clockInterval);
+            this._clockInterval = null;
+        }
+    },
+
+    _refreshData() {
+        if (!this._layer) return;
+        const modsEl = this._layer.querySelector('[data-is-row="mods"] .is-content');
+        if (modsEl) {
+            modsEl.textContent = `MODS: ${getInstances().length} ${t('mods.infoScreensaver.active')}`;
+        }
+    },
+
+    _startRefresh() {
+        this._stopRefresh();
+        this._refreshInterval = setInterval(() => this._refreshData(), 15000);
+    },
+
+    _stopRefresh() {
+        if (this._refreshInterval) {
+            clearInterval(this._refreshInterval);
+            this._refreshInterval = null;
+        }
+    },
+
+    _startLlmListener() {
+        this._stopLlmListener();
+        // BYPASS: Direct window.addEventListener — llm:progress is a convention-based event, no ctx in this scope
+        this._onLlmProgress = ({ detail }) => {
+            const row = this._layer?.querySelector('[data-is-row="llm"]');
+            if (!row) return;
+            const content = row.querySelector('.is-content');
+            if (!content) return;
+
+            if (detail.status === 'progress') {
+                row.style.display = '';
+                content.textContent = `LLM: ${detail.text}`;
+                content.className = 'is-content is-loading';
+                content.dataset.loading = 'true';
+            } else if (detail.status === 'ready') {
+                row.style.display = '';
+                content.textContent = `LLM: ${detail.model} \u2713`;
+                content.className = 'is-content is-online';
+                delete content.dataset.loading;
+            } else if (detail.status === 'error') {
+                row.style.display = '';
+                content.textContent = `LLM: ${detail.text}`;
+                content.className = 'is-content is-offline';
+                delete content.dataset.loading;
+            }
+        };
+        window.addEventListener('llm:progress', this._onLlmProgress);
+    },
+
+    _stopLlmListener() {
+        if (this._onLlmProgress) {
+            window.removeEventListener('llm:progress', this._onLlmProgress);
+            this._onLlmProgress = null;
+        }
+    },
+
+    // BYPASS: Direct DOM access — #press-start-overlay is framework-owned, no ctx.ui API for screensaver layer
+    _show(config) {
+        const overlay = document.getElementById('press-start-overlay');
+        if (!overlay) return;
+
+        this._hide();
+
+        this._layer = _buildDashboard(config);
+        overlay.appendChild(this._layer);
+
+        const label = document.getElementById('press-start-label');
+        if (label) label.style.display = 'none';
+
+        if (config.showClock !== false) this._startClock();
+        this._startRefresh();
+        this._startLlmListener();
+    },
+
+    _hide() {
+        this._stopClock();
+        this._stopRefresh();
+        this._stopLlmListener();
+        if (this._layer && this._layer.parentNode) {
+            this._layer.parentNode.removeChild(this._layer);
+        }
+        this._layer = null;
+
+        const label = document.getElementById('press-start-label');
+        if (label) label.style.display = '';
+    },
+
+    _startListening() {
+        if (this._running) return;
+        this._running = true;
+
+        const getConfig = () => {
+            const inst = this._getInstance();
+            return inst ? inst.config : {};
+        };
+
+        // BYPASS: Direct window.addEventListener — no ctx.events.onPersistent() for init-time listeners
+        this._onActivated = () => {
+            if (!this._getInstance()) return;
+            this._show(getConfig());
+        };
+        this._onDeactivated = () => { this._hide(); };
+
+        window.addEventListener('screensaver:activated', this._onActivated);
+        window.addEventListener('screensaver:deactivated', this._onDeactivated);
+
+        // BYPASS: Direct DOM access — check if screensaver overlay is already visible
+        const overlay = document.getElementById('press-start-overlay');
+        if (overlay && overlay.style.display !== 'none') {
+            this._show(getConfig());
+        }
+    },
+
+    _stopListening() {
+        this._running = false;
+        this._hide();
+        if (this._onActivated) window.removeEventListener('screensaver:activated', this._onActivated);
+        if (this._onDeactivated) window.removeEventListener('screensaver:deactivated', this._onDeactivated);
+        this._onActivated = null;
+        this._onDeactivated = null;
     },
 };

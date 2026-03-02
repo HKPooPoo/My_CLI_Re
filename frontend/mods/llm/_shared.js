@@ -6,6 +6,10 @@
  */
 
 import { LlmService } from '../../javascript/services/llm-service.js';
+// BYPASS: Direct framework imports — _shared.js is a cross-template utility, not a single template.
+// ModState: shared config migration + prewarm reads group config outside activate context.
+// t(): shelf init + onAction toasts outside activate context. BBMessage: server test action toast.
+// Migrate to ctx.* when framework provides cross-template shared module API.
 import { ModState } from '../../javascript/mod-state.js';
 import { t } from '../../javascript/i18n.js';
 import { BBMessage } from '../../javascript/blackboard-msg.js';
@@ -213,6 +217,8 @@ let _configListenerBound = false;
  * Get or create the shared #llm-output textarea in the shelf.
  * All LLM templates share one shelf panel via shelfPanelId: 'llm'.
  */
+// BYPASS: Direct DOM queries for shared shelf elements — all LLM templates share one shelf panel
+// via shelfPanelId: 'llm'. No ctx.ui API for cross-template shelf element lookup.
 export function ensureOutputEl(templateObj) {
     if (templateObj._outputEl && templateObj._outputEl.isConnected) return templateObj._outputEl;
     templateObj._outputEl = document.getElementById('llm-output');
@@ -258,7 +264,8 @@ export function initShelf(templateObj, ctx) {
         templateObj._outputEl = el;
     }
 
-    // Config → shelf sync (one-time listener)
+    // BYPASS: Direct window.addEventListener — one-time persistent listener for config→shelf sync,
+    // shared across all LLM templates. No ctx.events.onPersistent() API.
     if (!_configListenerBound) {
         _configListenerBound = true;
         window.addEventListener('mods:configChanged', ({ detail }) => {
@@ -470,6 +477,8 @@ export function migrateToSharedConfig() {
     }
 
     // Clean shared keys from all instance configs
+    // BYPASS: Direct config mutation + private _persistInstances() — migration runs once at boot,
+    // no public batch-delete API. Using setConfig() per key would dispatch unnecessary events.
     for (const inst of llmInsts) {
         if (!inst.config) continue;
         for (const k of sharedKeys) delete inst.config[k];

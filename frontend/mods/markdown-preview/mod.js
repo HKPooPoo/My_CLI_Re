@@ -2,12 +2,8 @@
  * Markdown Preview MOD — Code module (data in manifest.json)
  */
 
+// BYPASS: Direct import — t() needed in debounced input handler where no ctx is available
 import { t } from '../../javascript/i18n.js';
-
-let _debounceTimer = null;
-let _activeTextarea = null;
-let _outputEl = null;
-let _currentInstanceId = null;
 
 export default {
     getButtonDataId(config) {
@@ -25,25 +21,34 @@ export default {
             output.id = 'feature-markdown-output';
             output.className = 'markdown-rendered mod-shelf-content';
             shelf.appendChild(output);
-            _outputEl = output;
+            this._outputEl = output;
         }
+
+        // Pre-bind input handler — arrow function captures `this` (template object)
+        this._boundOnInput = () => {
+            clearTimeout(this._debounceTimer);
+            this._debounceTimer = setTimeout(() => {
+                if (this._activeTextarea && this._outputEl) {
+                    _renderMarkdownImpl(this._outputEl, this._activeTextarea.value);
+                }
+            }, 300);
+        };
 
         ctx.events.on('navi:pageChanged', () => {
             this._bindTextarea();
         });
 
         ctx.events.on('mods:instanceRemoved', (e) => {
-            if (e.detail?.templateId === 'markdown-preview' && _outputEl) {
-                _outputEl.innerHTML = '';
+            if (e.detail?.templateId === 'markdown-preview' && this._outputEl) {
+                this._outputEl.innerHTML = '';
             }
         });
     },
 
     async activate(ctx) {
-        _currentInstanceId = ctx.instanceId || null;
+        this._currentInstanceId = ctx.instanceId || null;
         this._bindTextarea();
-        const textarea = this._getActiveTextarea();
-        if (textarea) this._renderMarkdown(textarea.value);
+        if (this._activeTextarea) this._renderMarkdown(this._activeTextarea.value);
     },
 
     async deactivate() {},
@@ -53,13 +58,14 @@ export default {
     },
 
     destroy() {
-        if (_activeTextarea) {
-            _activeTextarea.removeEventListener('input', this._onTextareaInput);
+        if (this._activeTextarea && this._boundOnInput) {
+            this._activeTextarea.removeEventListener('input', this._boundOnInput);
         }
     },
 
     // --- Private ---
 
+    // BYPASS: Direct DOM query — needed in navi:pageChanged handler where no ctx is available
     _getActiveTextarea() {
         const activePage = document.querySelector('.page.active');
         if (!activePage) return null;
@@ -71,32 +77,22 @@ export default {
 
     _bindTextarea() {
         const textarea = this._getActiveTextarea();
-        if (_activeTextarea === textarea) return;
+        if (this._activeTextarea === textarea) return;
 
-        if (_activeTextarea) {
-            _activeTextarea.removeEventListener('input', this._onTextareaInput);
+        if (this._activeTextarea && this._boundOnInput) {
+            this._activeTextarea.removeEventListener('input', this._boundOnInput);
         }
 
-        _activeTextarea = textarea;
+        this._activeTextarea = textarea;
 
-        if (_activeTextarea) {
-            _activeTextarea.addEventListener('input', this._onTextareaInput);
-            this._renderMarkdown(_activeTextarea.value);
+        if (this._activeTextarea && this._boundOnInput) {
+            this._activeTextarea.addEventListener('input', this._boundOnInput);
+            this._renderMarkdown(this._activeTextarea.value);
         }
-    },
-
-    _onTextareaInput: function() {
-        clearTimeout(_debounceTimer);
-        _debounceTimer = setTimeout(() => {
-            const textarea = _activeTextarea;
-            if (textarea && _outputEl) {
-                _renderMarkdownImpl(textarea.value);
-            }
-        }, 300);
     },
 
     _renderMarkdown(text) {
-        _renderMarkdownImpl(text);
+        _renderMarkdownImpl(this._outputEl, text);
     }
 };
 
@@ -126,20 +122,20 @@ function _sanitizeHtml(html) {
     return div.innerHTML;
 }
 
-function _renderMarkdownImpl(text) {
-    if (!_outputEl) return;
+function _renderMarkdownImpl(outputEl, text) {
+    if (!outputEl) return;
     if (!text || !text.trim()) {
-        _outputEl.innerHTML = `<div class="md-empty">${t('mods.markdownPreview.emptyContent')}</div>`;
+        outputEl.innerHTML = `<div class="md-empty">${t('mods.markdownPreview.emptyContent')}</div>`;
         return;
     }
     try {
         if (typeof marked !== 'undefined') {
-            _outputEl.innerHTML = _sanitizeHtml(marked.parse(text, { breaks: true, gfm: true }));
+            outputEl.innerHTML = _sanitizeHtml(marked.parse(text, { breaks: true, gfm: true }));
         } else {
-            _outputEl.textContent = text;
+            outputEl.textContent = text;
         }
     } catch (e) {
         console.error('Markdown render failed:', e);
-        _outputEl.textContent = text;
+        outputEl.textContent = text;
     }
 }

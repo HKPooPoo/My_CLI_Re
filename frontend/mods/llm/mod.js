@@ -4,6 +4,7 @@
  * Reads the focused textarea on any page. Simple prompt -> response.
  */
 
+// BYPASS: Direct ModState import — one-time migration reads/writes instance configs at boot
 import { ModState } from '../../javascript/mod-state.js';
 import {
     ensureOutputEl, initShelf, activateShelfPrompt, runLlm,

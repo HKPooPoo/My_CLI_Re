@@ -11,6 +11,7 @@ import { createPerlinBg } from './layers/perlin-bg.js';
 import { createMouseLight } from './layers/mouse-light.js';
 import { createToastSpinner } from './layers/toast-spinner.js';
 import { createShelfSpinner } from './layers/shelf-spinner.js';
+// BYPASS: Direct import — no ctx.query.getInstances() API
 import { getInstances } from '../mod-loader.js';
 
 let _textmodeLoaded = false;
@@ -70,7 +71,7 @@ export default {
             document.head.appendChild(link);
         }
 
-        // Listen for instance add/remove to start/stop all layers
+        // BYPASS: Direct window.addEventListener — no ctx.events.onPersistent() for init-time listeners
         this._onInstanceAdded = ({ detail }) => {
             if (detail.instance.templateId === 'ascii-animator') this._startAll();
         };
@@ -117,7 +118,7 @@ export default {
             this._perlinBg = createPerlinBg(config);
         }
 
-        // Matrix rain — screensaver events
+        // BYPASS: Direct window.addEventListener — screensaver events, no ctx.events.onPersistent()
         this._onActivated = async () => {
             const c = _getConfig();
             if (!c || c.matrixRain === false || this._matrixRain) return;
@@ -143,7 +144,7 @@ export default {
             this._matrixRain = createMatrixRain(overlay, { ...config, light: _isLightTheme() });
         }
 
-        // Rebuild rain with new color scheme when theme changes
+        // BYPASS: Direct window.addEventListener — theme:changed event, no ctx.events.onPersistent()
         this._onThemeChanged = () => {
             if (!this._matrixRain) return;
             const c = _getConfig();
