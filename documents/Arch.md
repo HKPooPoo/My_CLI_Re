@@ -3,7 +3,14 @@
 The project we are building is a moddable notebook named "MyCLI". It stands for Clean Logging Interface, visioning a minimalistic style notebook system with comprehensive fundamental features and highly customizable configurations, such that the website can be used in different ways based on the demands of users.
 
 ## Project Vision
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+MyCLI adopts the sandbox philosophy that has been proven by video games like Minecraft and Rimworld. They are famous sandbox games that have no explicit goal. Instead, the goal is defined by users. Therefore, MyCLI is more like a framework which built in with fundamental operations of text. We divided text-oriented operations into three parts: self-texting (Blackboard), one-to-one texting (Walkie-Typie), and one-to-many texting (Broadcast). Each of the namings indicates the concept:
+1. Blackboard: This is the fundamental concept for the remaining two. Imagine an actual blackboard where lecture used to highlight key information; this is a "page" of Blackboard. Next, imagine there exists a long scroll, where users can only read a part of it. When users need to read other parts, they need to push up and pull down; this is the concept of the PUSH and PULL concept for operating a Blackboard.
+2. Walkie-Typie: The source of the concept is obvious - the walkie-talkie, where users can instantly talk. We want to adopt this concept to text, where the typed text is streamingly shown on the other side.
+3. Broadcast: There are two sources for this concept - the broadcast and the notice board. We want a place where users should actively visit, and have a broadcast-wide propagation characteristic.
+
+Moreover, we should introduce the modding system of our product. It is like the extension features from the browser, that every user can customize which mod to be activated to provide a unique user experience for each user. Some of the mods are merely theme changing or configurations, but some connect third-party API services, and even a client LLM that runs on their machine offline, which allows users to analyse the notebook by custom prompts.
+
+In summary, we have board-based adoption of self-messaging, one-to-one messaging, and one-to-many messaging. Some might ask: Where is many-to-many? Unfortunately, there already exists many brilliant software that are proficient in this domain, such as Discord. Adopting this feature would trade off the flexibility, which is obvious, as has been proven in video games: Most of the multiplayer games have weak compatibility with flexibility and mod culture.
 
 This project was inspired by video game culture, git and the command line interface; therefore, we referenced many terminologies from them. To avoid ambiguity, please do refer to the background section below for context:
 
@@ -168,62 +175,95 @@ flowchart LR
 #### Functional Requirement
 1. Blackboard - The system shall:
    1. provide immediately available text area on the first step of accessing the website
-   2. support file attachment on each pages
+   2. support file attachment on each page
    3. store all records in IndexedDB to uphold the local-first principle
    4. support simplistic chronological navigation: PUSH and PULL buttons to navigate records
    5. support black page auto-clean to improve the UX of navigation
    6. support record auto-clean whenever accumulated records reach the dedicated threshold
    7. order pages based on the timestamp of each page
    8. support update timestamp on a page is updated, such that it goes to the front (assume user editing a page indicates the higher priority)
-   9. create a blank page after hitting PUSH button on the latest record, such that user can incrementally append records
+   9. create a blank page after hitting the PUSH button on the latest record, such that the user can incrementally append records
    10. support forking a branch, which creates a duplicate containing all previous records
-   11. support clearing a branch, which clear all records inside a branch
-   12. support CRUD a branch
+   11. support clearing a branch, which clears all records inside a branch
+   12. support CRUD on a branch
    13. support branch renaming
-   14. support switching branch from local
+   14. support switching the branch from local
    15. support upload/ download branch from server
    16. support deleting the branch on the server
    17. support configurations for the NO. 4, 5, 6 functional requirements
 2. Walkie-Typie - The system shall:
-   18. support real-time peer-to-peer text communication (include file attachment) between two registered users
-   19. support connecting each others by UID
+   18. support real-time peer-to-peer text communication (including file attachment) between two registered users
+   19. support connecting to each other by UID
    20. support disconnect others
    21. create a twin board for both sides after the connection
-   22. display both side of board on single page
+   22. display both sides of the board on a single page
    23. provide same operation logic as Blackboard does
    24. auto-commit one side's board after editions
-   25. auto sync other sides board
+   25. auto sync the other side's board
    26. restrict the behaviour on not owned broad (read only, still can PUSH and PULL pages)
    27. support renaming connections
    28. support configurations as Blackboard does
 3. Boardcast - The system shall:
-   29. allow any users, including non-authenticated guests to browse and read existing Broadcast channels
+   29. allow any users, including non-authenticated guests, to browse and read existing Broadcast channels
    30. restrict behaviour for non-titled users on a channel (same logic as not owned broad on Walkie-Typie)
-   31. provide same logic of operation for titled UID as Blackboard page and branch does
-   32. restrict each channel CRUD permission, that each channel that created by a UID with title, that channel is binded with the title of the creater; only UID with corresponding title can modify it
+   31. provide the same logic of operation for the titled UID as the Blackboard page, and the branch does
+   32. restrict each channel's CRUD permission so that each channel created by a UID with a title, that channel is bound to the title of the creator; only the UID with the corresponding title can modify it
 4.  Mods - The system shall:
-   33. provide a series of official made mods
-   34. support configuration for each mods
-   35. support instantiate a mod for multiple time, each mod instance doesn't share configurations
-   36. support adding mod functional button on dedicated page, based on the definitions that defined in each mods; each instance's button are independent
+   33. provide a series of officially made mods
+   34. support configuration for each mod
+   35. support instantiating a mod multiple times; each mod instance doesn't share configurations
+   36. support adding a mod functional button on a dedicated page, based on the definitions that are defined in each mod; each instance's button is independent
 
-#### Non-functional Requirement
-1. Performance:
-   1. All board page content from Blackboard, Walkie-Typie, and Broadcast shall auto-save after an input action + 200ms debounce, to avoid too many system writting behaviour.
-   2. System shall ompress the HTTP responses to reduse bandwidth consumption; using Nginx Gzip, with minimum length of 256 bytes for files
-   3. System shall cache the frequently requested data to reduce server database burden; setting up Time To Live (TTL) for branch list, branch details, broadcast channels TTL smaller than 120 seconds
-   4. System shall do SHA-1 for attached files to dedupe, because the allowed maximal file to be attached is 1GB. We do not expect multiple attachment of a 1GB file will create multiple instance; deduping by SHA-1 could reduce the occupied storage of both client and server.
-   5. System shall pre-cache the static resources, such that the website can be instantly loaded; we can use Service Worker to cache the HTML, CSS, JS, and audio files.
-   6. w
-   7. System shall define the API request timeouts in 15s as default, to avoid hanging connections.
-   8. System shall use database indexing to optimize query performance
-2. Reliability:
-3. Usability:
-4. Portability:
-5. Security:
+#### Non-functional Requirement (NFR)
+1. Performance- The system shall:
+   1. auto save all board page content from Blackboard, Walkie-Typie, and Broadcast after an input action + 200ms debounce, to avoid too many system writing behaviours.
+   2. ompress the HTTP responses to reduce bandwidth consumption; using Nginx Gzip, with a minimum length of 256 bytes for files
+   3. cache the frequently requested data to reduce server database burden; setting up Time To Live (TTL) for branch list, branch details, broadcast channels, with TTL smaller than 120 seconds
+   4. do SHA-1 for the attached files to deduplication, because the allowed maximum file size to be attached is 1GB. We do not expect multiple attachments of a 1GB file to create multiple instances; deduplicating by SHA-256 hashing could reduce the occupied storage of both client and server.
+   5. pre-cache the static resources, such that the website can be instantly loaded; we can use Service Worker to cache the HTML, CSS, JS, and audio files.
+   6. define the API request timeouts in 15s as the default, to avoid hanging connections.
+   7. use database indexing to optimize query performance
+2. Reliability - The system shall:
+   8. eternalize the board data to clients' local before any sync behaviour to the server
+   9. auto restart the server services (Docker Containers)
+   10. retry the queue jobs after it fails for 3 times
+   11. maintain the server database referential integrity via cascading deletes
+   12. auto clean orphaned files (not being attached by any of the pages) after 24 hours to prevent residuals
+   13. provide structured error responses for all API failures, such as 400, 404, and 401 errors.
+   14. use SHA-256 hashing for content-addressed storage for integrity verification and deduplication, as mentioned in the performance NFR.
+   15. update the indexedDB version on data structure changes to prevent data loss.
+3.  Usability - The system shall:
+   16. officially support fundamental theme-changing extensions for language and color patterns, such as Chinese and Light Mode.
+   17. provide i18n json files for anyone to easily customize their own UI texts
+   18. provide responsive layout across mobile and desktop
+   19. support touch-based interactions
+   20. installable as a Progressive Web App (PWA) for an offline use case
+   21. provide contextual hints for complicated features
+   22. provide audio feedback for navigation actions
+   23. animate transactions
+   24. provide rich customizable options of the NFR of NO. 16, 19, 20, 21, 22, etc.
+   25. provide creative officially made mods as templates, also some API for mods provided as the framework, such that other developers can more easily develop their own mods
+4. Portability - The system shall:
+   26.   auto adapt the most suitable CSS depending on the screen size, operating system, and the browser
+   27.   provide a comprehensive Dockerized system and push it to GitHub, so that other developers can be easier to one-shot deploy and host the server
+   28.   provide .env.example with defined variable names for easier deployment for developers
+5. Security - The system shall:
+   29.  hash the passwords before any storage behaviour
+   30.  implement rate limiting for API ports to prevent abusement
+   31.  validate the authentication input on the client, such as password, email, and UID length and format.
+   32.  validate the attached files, reject high-risk file extensions such as php, exe, and html, etc.
+   33.  provide saver DOM operations; never use innerHTML, but textContent, to avoid Cross-Site Scripting (XSS)
+   34.  parameterize queries to prevent SQL injections
+   35.  set security headers to mitigate common web attacks
+   36.  protect sessions with secure cookie attributes
+   37.  use content-addressed hashing (SHA-256) as an access token for file accesses
+   38. isolate backend services from direct external access
+   39. defined a .gitignore file for the GitHub repository of this project
+   40. define a .env file that includes all API keys and passwords, such as smtp.google.com and pgAdmin configurations; the .env file will be included in .gitignore, we will provide a .env.example file instead
+   41. define .htaccess to reject unpermitted access requests
 
 ## System Modeling (System Design)
-
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 ### User Interface Design
 
