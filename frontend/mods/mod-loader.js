@@ -1,15 +1,15 @@
 /**
- * MOD Loader - Dynamic Folder-Based Discovery
+ * MOD Loader - Dynamic Folder-Based Discovery (Lazy Code Loading)
  * =================================================================
  * Responsibilities:
  * 1. Discover MOD folders via Nginx autoindex JSON (/mods/)
- * 2. For each folder: fetch manifest.json (data) + import() mod.js (code)
- * 3. Merge into a single template object with identical shape to v2
- * 4. Register templates in ModState, run migration (no auto-instantiation)
- * 5. For each template: fetch locale JSON, merge into i18n
- * 6. Create feature buttons FROM INSTANCES (not templates)
- * 7. Create shelf panels per template (shared across instances)
- * 8. Call template.init() once per template
+ * 2. Phase 1 (ALL folders): fetch manifest.json, validate, register in ModState
+ * 3. Phase 1.5: wire context factory, run migration, init shared config, load locales
+ * 4. Phase 2 (ACTIVE only): import() mod.js for templates with instances
+ * 5. Create feature buttons FROM INSTANCES (not templates)
+ * 6. Create shelf panels per template (shared across instances)
+ * 7. Call template.init() only for code-loaded templates
+ * 8. Export ensureCodeLoaded() for on-demand lazy loading
  * 9. Export query API: getTemplate(), getAllTemplates(), getInstances(), etc.
  * =================================================================
  */
@@ -23,6 +23,7 @@ import { BBMessage } from '../javascript/blackboard-msg.js';
 import { MOD_API_VERSION } from '../javascript/version.js';
 
 const _templates = {};
+const _codeLoaded = new Set();
 let _modsReady = false;
 
 // Re-merge MOD locales whenever the user switches language.
@@ -50,13 +51,13 @@ async function discoverModFolders() {
         .map(e => e.name);
 }
 
+// ===================== Manifest Loading =====================
+
 /**
- * Load a single MOD from its folder.
- * Fetches manifest.json (data) + imports mod.js (code), merges into one object.
- * Returns null on failure (logged, not thrown).
+ * Fetch manifest.json only from a MOD folder.
+ * Returns parsed manifest data, or null on failure.
  */
-async function loadSingleMod(folderName) {
-    // 1. Fetch manifest.json (required)
+async function loadManifest(folderName) {
     const manifestRes = await fetch(`/mods/${folderName}/manifest.json`);
     if (!manifestRes.ok) {
         console.warn(`[mod-loader] ${folderName}/manifest.json not found (${manifestRes.status}), skipping`);
@@ -77,53 +78,128 @@ async function loadSingleMod(folderName) {
         return null;
     }
 
-    // 2. Dynamic import mod.js (required)
+    return manifestData;
+}
+
+// ===================== Code Loading =====================
+
+/**
+ * Import mod.js and merge code INTO the existing template object in-place.
+ * Returns true on success, false on failure.
+ */
+async function loadModCode(templateId) {
     let modCode;
     try {
-        const module = await import(`/mods/${folderName}/mod.js`);
+        const module = await import(`/mods/${templateId}/mod.js`);
         modCode = module.default || module;
     } catch (e) {
-        console.warn(`[mod-loader] ${folderName}/mod.js import failed, skipping:`, e);
-        return null;
+        console.warn(`[mod-loader] ${templateId}/mod.js import failed:`, e);
+        return false;
     }
 
-    // 3. Merge: data (base) + code (override), id pinned from manifest
-    return { ...manifestData, ...modCode, id: manifestData.id };
+    // Merge code into existing manifest-only template object (in-place mutation)
+    // ModState's reference to the same object updates automatically
+    Object.assign(_templates[templateId], modCode);
+
+    // Re-pin id from manifest to prevent code from overwriting it
+    _templates[templateId].id = templateId;
+
+    return true;
+}
+
+/**
+ * Ensure a template's code (mod.js) is loaded, validated, and initialized.
+ * Idempotent — safe to call multiple times; subsequent calls return immediately.
+ * Used both at boot (for templates with instances) and on-demand (first ADD).
+ */
+export async function ensureCodeLoaded(templateId) {
+    if (_codeLoaded.has(templateId)) return true;
+    if (!_templates[templateId]) return false;
+
+    const success = await loadModCode(templateId);
+    if (!success) return false;
+
+    // Validate full template (manifest + code)
+    const errors = validateTemplate(_templates[templateId]);
+    if (errors.length > 0) {
+        console.warn(`[mod-loader] Full validation failed for "${templateId}":`, errors);
+        return false;
+    }
+
+    _codeLoaded.add(templateId);
+
+    const tpl = _templates[templateId];
+
+    // Register declarative hooks (template.hooks[])
+    if (Array.isArray(tpl.hooks)) {
+        for (const hook of tpl.hooks) {
+            ModHooks.register(hook.name, hook.handler, hook.priority || 100, tpl.id);
+        }
+    }
+
+    // Register declarative tools (template.tools[])
+    if (Array.isArray(tpl.tools)) {
+        for (const tool of tpl.tools) {
+            ModTools.register(tpl.id, tool);
+        }
+    }
+
+    // Call init() once
+    try {
+        if (typeof tpl.init === 'function') {
+            const initCtx = createInitContext(tpl.id, tpl);
+            await tpl.init(initCtx);
+        }
+    } catch (e) {
+        console.error(`[mod-loader] init failed for ${tpl.id}:`, e);
+    }
+
+    return true;
 }
 
 // ===================== Boot =====================
 
 /**
- * Load all MODs via dynamic discovery.
+ * Load all MODs via dynamic discovery (two-phase).
  * Called once on i18n:ready.
+ *
+ * Phase 1:  Manifest discovery — fetch manifest.json for ALL folders,
+ *           validate manifest fields, register in ModState.
+ * Phase 1.5: Framework setup — wire context factory, run migration,
+ *           init shared config defaults, load MOD locales.
+ * Phase 2:  Code loading — import() mod.js ONLY for templates with instances,
+ *           validate full template, register hooks/tools, call init().
  */
 export async function loadAllMods() {
     // Inject query functions into ModContext (breaks circular dependency)
     setQueryProvider({ getTemplate, getAllTemplates, getInstances, getInstancesByTemplate });
 
     try {
+        // ── Phase 1: Manifest Discovery (ALL folders) ──
         const folders = await discoverModFolders();
-        const results = await Promise.allSettled(folders.map(loadSingleMod));
-        let templateDefs = results
-            .filter(r => r.status === 'fulfilled' && r.value)
-            .map(r => r.value);
+        const results = await Promise.allSettled(folders.map(loadManifest));
 
         // Log any rejected promises
         results.forEach((r, i) => {
             if (r.status === 'rejected') {
-                console.warn(`[mod-loader] Failed to load "${folders[i]}":`, r.reason);
+                console.warn(`[mod-loader] Failed to load manifest for "${folders[i]}":`, r.reason);
             }
         });
 
-        // 1. Validate and register all templates in ModState
-        const validatedDefs = [];
-        for (const tpl of templateDefs) {
-            const errors = validateTemplate(tpl);
+        const manifests = results
+            .filter(r => r.status === 'fulfilled' && r.value)
+            .map(r => r.value);
+
+        // Validate manifest fields and register in ModState
+        const registeredIds = [];
+        for (const tpl of manifests) {
+            const errors = validateManifest(tpl);
             if (errors.length > 0) {
-                console.warn(`[mod-loader] Template validation failed for "${tpl.id || '(unknown)'}":`, errors);
+                console.warn(`[mod-loader] Manifest validation failed for "${tpl.id || '(unknown)'}":`, errors);
                 BBMessage.error(t('mods.validationFailed', { id: tpl.id || '(unknown)' }));
                 continue;
             }
+
             // Check API version compatibility
             if (tpl.minApiVersion && tpl.minApiVersion > MOD_API_VERSION) {
                 console.warn(`[mod-loader] Template "${tpl.id}" requires API v${tpl.minApiVersion}, current is v${MOD_API_VERSION}. Some features may not work.`);
@@ -131,60 +207,44 @@ export async function loadAllMods() {
 
             ModState.registerTemplate(tpl.id, tpl);
             _templates[tpl.id] = tpl;
-            validatedDefs.push(tpl);
+            registeredIds.push(tpl.id);
         }
-        templateDefs = validatedDefs;
+
+        // ── Phase 1.5: Framework Setup (manifest-only) ──
 
         // Wire context factory for onConfigChange lifecycle
         setContextFactory(createModContext);
 
         // Initialize shared config defaults for groups with sharedConfigSchema
         const seenGroups = new Set();
-        for (const tpl of validatedDefs) {
+        for (const id of registeredIds) {
+            const tpl = _templates[id];
             if (tpl.sharedConfigSchema && !seenGroups.has(tpl.group)) {
                 seenGroups.add(tpl.group);
                 ModState.initSharedDefaults(tpl.group, tpl.sharedConfigSchema);
             }
         }
 
-        // 2. Run migration (v1 → v2 → v3) only — no auto-creation.
-        //    Users ADD mods manually from the catalog; localStorage remembers.
+        // Run migration (v1 → v2 → v3) only — no auto-creation.
+        // Users ADD mods manually from the catalog; localStorage remembers.
         ModState.migrateV2ToV3();
 
-        // 3. Load locale files and merge into i18n
+        // Load locale files and merge into i18n (needs manifest.id only)
         const locale = getActiveLocale();
-        await Promise.allSettled(templateDefs.map(tpl => loadModLocale(tpl, locale)));
+        await Promise.allSettled(registeredIds.map(id => loadModLocale(_templates[id], locale)));
 
-        // 4. Create DOM elements (buttons from instances + shelves from templates)
+        // ── Phase 2: Code Loading (ONLY templates with instances) ──
+
+        const activeTemplateIds = [...new Set(
+            ModState.getInstances().map(inst => inst.templateId)
+        )];
+
+        await Promise.allSettled(activeTemplateIds.map(id => ensureCodeLoaded(id)));
+
+        // Create DOM elements (buttons from instances + shelves from templates)
+        // Runs after code loaded, so getButtonDataId etc. are available
         createAllInstanceDOM();
 
-        // 5. Register declarative hooks and tools from templates
-        for (const tpl of templateDefs) {
-            // Register declarative hooks (template.hooks[])
-            if (Array.isArray(tpl.hooks)) {
-                for (const hook of tpl.hooks) {
-                    ModHooks.register(hook.name, hook.handler, hook.priority || 100, tpl.id);
-                }
-            }
-            // Register declarative tools (template.tools[])
-            if (Array.isArray(tpl.tools)) {
-                for (const tool of tpl.tools) {
-                    ModTools.register(tpl.id, tool);
-                }
-            }
-        }
-
-        // 6. Call init() on each template once — pass full ModContext
-        for (const tpl of templateDefs) {
-            try {
-                if (typeof tpl.init === 'function') {
-                    const initCtx = createInitContext(tpl.id, tpl);
-                    await tpl.init(initCtx);
-                }
-            } catch (e) {
-                console.error(`[mod-loader] init failed for ${tpl.id}:`, e);
-            }
-        }
     } catch (e) {
         console.error('[mod-loader] loadAllMods failed:', e);
     }
@@ -339,6 +399,23 @@ export function updateInstanceButton(instanceId) {
 
 // --- Template Validation ---
 
+/**
+ * Lightweight manifest-only validation.
+ * Checks only data fields available from manifest.json.
+ */
+function validateManifest(tpl) {
+    const errors = [];
+    if (!tpl.id)                              errors.push('missing "id"');
+    if (!tpl.group)                           errors.push('missing "group"');
+    if (!tpl.nameKey)                         errors.push('missing "nameKey"');
+    if (!Array.isArray(tpl.defaultInstances)) errors.push('missing defaultInstances[]');
+    return errors;
+}
+
+/**
+ * Full template validation (manifest + code).
+ * Called by ensureCodeLoaded() after mod.js merge.
+ */
 function validateTemplate(tpl) {
     const errors = [];
     if (!tpl.id)                                    errors.push('missing "id"');

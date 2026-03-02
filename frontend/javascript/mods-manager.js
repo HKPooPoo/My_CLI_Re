@@ -8,7 +8,8 @@
  */
 
 import { getAllTemplates, getTemplate, getInstances, getInstancesByTemplate,
-         rebuildInstanceButtons, removeInstanceButton, updateInstanceButton } from '../mods/mod-loader.js';
+         rebuildInstanceButtons, removeInstanceButton, updateInstanceButton,
+         ensureCodeLoaded } from '../mods/mod-loader.js';
 import { ModState } from './mod-state.js';
 import { InfiniteList } from './blackboard-ui-list.js';
 import { BBMessage } from './blackboard-msg.js';
@@ -228,8 +229,16 @@ function renderActiveInstances(container) {
     }
 }
 
-function handleAddInstance(templateId) {
+async function handleAddInstance(templateId) {
     playAudio('UISelectOn.mp3');
+
+    // Lazy-load code if this is the first instance for this template
+    const loaded = await ensureCodeLoaded(templateId);
+    if (!loaded) {
+        BBMessage.error(t('mods.loadFailed'));
+        return;
+    }
+
     const instance = ModState.addInstance(templateId);
     if (!instance) {
         BBMessage.error(t('mods.maxReached'));

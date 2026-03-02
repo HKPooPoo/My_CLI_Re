@@ -338,6 +338,8 @@
     "maxReached": "Added",
     "sharedConfig": "ENGINE",
     "instanceConfig": "INSTANCE",
+    "validationFailed": "Extension '{id}' failed to load — check console",
+    "loadFailed": "Extension failed to load — check console",
     "status": {
       "unknown": "Checking...",
       "online": "Available",

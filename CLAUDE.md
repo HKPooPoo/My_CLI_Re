@@ -271,13 +271,20 @@ Instance data model (persisted in `localStorage['mod-instances']`):
 
 ### Boot Sequence
 
-`i18n:ready` → `loadAllMods()` → discover folders via Nginx autoindex → fetch manifest.json + import() mod.js per folder → merge data+code → validate templates → register in ModState → wire context factory → run migration (v1→v2→v3, legacy data only) → fetch MOD-local locales → create DOM (buttons from instances + shelves from templates) → register declarative hooks + tools → call `template.init(ctx)` → dispatch `mods:loaded`
+`i18n:ready` → `loadAllMods()` → discover folders via Nginx autoindex →
+Phase 1: fetch manifest.json per folder → validate manifest → register in ModState →
+wire context factory → run migration (v1→v2→v3, legacy data only) → init shared config → fetch MOD-local locales →
+Phase 2: identify templates with instances → `import()` mod.js for those only →
+merge data+code → validate full template → register hooks + tools →
+create DOM (buttons + shelves) → call `template.init(ctx)` → dispatch `mods:loaded`
+
+On-demand: when user ADDs first instance of an unused template → `ensureCodeLoaded(templateId)` lazily imports mod.js, validates, registers hooks/tools, calls init(). Idempotent — cached after first call.
 
 **No auto-instantiation:** First boot starts with zero instances. Users add instances manually from the template catalog. `defaultInstances` in templates are used only by v2→v3 migration for legacy data.
 
 ### Architecture
 
-- **`mod-loader.js`** — discovers MOD folders via Nginx autoindex, fetches `manifest.json` (data) + `import()` `mod.js` (code) per folder, merges, validates, registers, creates DOM, calls init(). Exports: `getTemplate()`, `getAllTemplates()`, `getInstances()`, `getInstancesByTemplate()`, `rebuildInstanceButtons()`, `updateInstanceButton()`, `removeInstanceButton()`
+- **`mod-loader.js`** — discovers MOD folders via Nginx autoindex. Two-phase loading: Phase 1 fetches `manifest.json` (data) for ALL folders; Phase 2 `import()` `mod.js` (code) only for templates with active instances. `ensureCodeLoaded(templateId)` provides on-demand lazy loading for first-time ADD. Exports: `getTemplate()`, `getAllTemplates()`, `getInstances()`, `getInstancesByTemplate()`, `ensureCodeLoaded()`, `rebuildInstanceButtons()`, `updateInstanceButton()`, `removeInstanceButton()`
 - **`mod-state.js`** — instance CRUD + template registry + shared config storage. `addInstance()` respects `maxInstances` cap. `removeInstance()` always allowed (no guard on maxInstances). Shared config API: `getSharedConfig/setSharedConfig/getSharedConfigAll/getSharedConfigSchema/initSharedDefaults`. Dispatches `mods:instanceAdded/Removed`, `mods:configChanged`, `mods:reordered`, `mods:sharedConfigChanged`
 - **`mod-context.js`** — `createModContext()` builds sandboxed API: `ctx.instance.*`, `ctx.board.*`, `ctx.ui.*`, `ctx.i18n.*`, `ctx.storage.*`, `ctx.net.*`, `ctx.file.*`, `ctx.events.*`, `ctx.hooks.*`, `ctx.query.*`. Read the file for full API reference.
 - **`mod-board-provider.js`** — board data access (metadata providers, history, file cache)
