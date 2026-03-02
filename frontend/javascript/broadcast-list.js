@@ -159,12 +159,12 @@ export const BCList = {
                         playAudio('UISelectOff.mp3');
                         await BroadcastService.unpin(ch.serverChannelId);
                         ch.isPinned = false;
-                        BBMessage.info(t('broadcast.unpinned'));
+                        BBMessage.success(t('broadcast.unpinned'));
                     } else {
                         playAudio('UISelectOn.mp3');
                         await BroadcastService.pin(ch.serverChannelId);
                         ch.isPinned = true;
-                        BBMessage.info(t('broadcast.pinned'));
+                        BBMessage.success(t('broadcast.pinned'));
                     }
                     // Re-sort and re-render to reflect new pin state
                     this.updatePinBtnText();

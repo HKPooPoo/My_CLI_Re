@@ -146,9 +146,8 @@ async function transcribeAudio(audioBlob) {
                 insertTextAtCursor(transcript);
                 playAudio("UIGeneralOK.mp3"); // 識別成功音效
 
-                if (window.voiceMsg) {
-                    window.voiceMsg.update(t('speech.verified'));
-                }
+                if (window.voiceMsg) window.voiceMsg.close();
+                BBMessage.success(t('speech.verified'));
             } else {
                 if (window.voiceMsg) window.voiceMsg.close();
                 BBMessage.error(t('speech.noSpeech'));

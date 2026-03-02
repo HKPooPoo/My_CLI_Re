@@ -209,7 +209,7 @@ export const MISC = {
                 sound: 'UIGeneralCancel.mp3',
                 action: async () => {
                     Settings.resetAll();
-                    BBMessage.info(t('config.resetComplete'));
+                    BBMessage.success(t('config.resetComplete'));
                     this.renderBBConfig();
                     this.updateUI();
                 }

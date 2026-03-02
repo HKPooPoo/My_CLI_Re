@@ -162,7 +162,7 @@ export const AuthManager = {
                 action: async () => {
                     try {
                         this.updateUI(null);
-                        BBMessage.info(t('auth.logoutComplete'));
+                        BBMessage.success(t('auth.logoutComplete'));
                         // 非阻塞：後端登出 + 清除本地同步資料
                         AuthService.logout().catch(() => {});
                         BBCore.wipeSyncedData().catch(() => {});

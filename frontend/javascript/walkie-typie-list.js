@@ -74,7 +74,7 @@ export const WTList = {
                         if (result.connection) {
                             this.handleUpdate(result.connection);
                             this.elements.uidInput.value = "";
-                            BBMessage.info(t('walkieTypie.connected'));
+                            BBMessage.success(t('walkieTypie.connected'));
                         }
                     } catch (e) {
                         console.error("CONNECT ERROR:", e);
