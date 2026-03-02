@@ -434,42 +434,33 @@ function updateCheckoutButtonState() {
 }
 
 if (checkoutBtnEl) {
-    new MultiStepButton(checkoutBtnEl, {
-        sound: "Click.mp3",
-        action: async () => {
-            if (!currentCheckoutAction) return;
-            const selected = getSelectedBranchInfo();
-            if (!selected) return;
+    checkoutBtnEl.addEventListener("click", async () => {
+        if (!currentCheckoutAction) return;
+        const selected = getSelectedBranchInfo();
+        if (!selected) return;
 
+        playAudio("Click.mp3");
+
+        try {
             if (currentCheckoutAction === "checkout") {
                 // Re-download from server (always remote)
-                const msg = BBMessage.loading(t('blackboard.loading'));
-                try {
-                    await BBVCS.checkout(state, selected.id, "remote");
-                    msg.update(t('blackboard.loadComplete'));
-                    await syncView();
-                    await updateBranchList();
-                } catch (e) {
-                    console.error("CHECKOUT ERROR:", e);
-                    msg.close();
-                    BBMessage.error(t('blackboard.loadFailed'));
-                }
+                BBMessage.info(t('blackboard.loading'));
+                await BBVCS.checkout(state, selected.id, "remote");
+                BBMessage.success(t('blackboard.loadComplete'));
             } else {
                 // Switch to a different branch
-                const msg = BBMessage.loading(t('blackboard.switching'));
-                try {
-                    const targetOwner = selected.isLocal ? "local" : "remote";
-                    await BBVCS.checkout(state, selected.id, targetOwner);
-                    msg.update(t('blackboard.switchComplete'));
-                    await syncView();
-                    await updateBranchList();
-                    updateCheckoutButtonState();
-                } catch (e) {
-                    console.error("SWITCH ERROR:", e);
-                    msg.close();
-                    BBMessage.error(t('blackboard.loadFailed'));
-                }
+                BBMessage.info(t('blackboard.switching'));
+                const targetOwner = selected.isLocal ? "local" : "remote";
+                await BBVCS.checkout(state, selected.id, targetOwner);
+                BBMessage.success(t('blackboard.switchComplete'));
             }
+
+            await syncView();
+            await updateBranchList();
+            updateCheckoutButtonState();
+        } catch (e) {
+            console.error("CHECKOUT/SWITCH ERROR:", e);
+            BBMessage.error(t('blackboard.loadFailed'));
         }
     });
 }
