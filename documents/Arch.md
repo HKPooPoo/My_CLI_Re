@@ -1,9 +1,9 @@
 # Act
 ## Introduction
-The project we are building is a xxxxxx named "MyCLI". It stands for Clean Logging Interface, outlooking a minimalistic style notebook system with comprehensive fundamental features and highly customizable configures, such that the website can be used in different ways based on the demands of users.
+The project we are building is a moddable notebook named "MyCLI". It stands for Clean Logging Interface, visioning a minimalistic style notebook system with comprehensive fundamental features and highly customizable configurations, such that the website can be used in different ways based on the demands of users.
 
 ## Project Vision
-
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 This project was inspired by video game culture, git and the command line interface; therefore, we referenced many terminologies from them. To avoid ambiguity, please do refer to the background section below for context:
 
@@ -13,6 +13,11 @@ This project was inspired by video game culture, git and the command line interf
 3. Mods: In video games' domain, mod indicates "modification", refers to alterations made to a video game that allow users to customize their game experience from visual retexturing to functional features. Initially, the UI/UX of this project prototype is considered non-user-friendly; therefore, we decided to append a mod controlling system that allows users to customize UX by activating the official-offered mods to change text expression, color theme, or even additional LLM features for aiding the UX. Moreover, due to the framework that offers various APIs for mod development, enabling programmers to develop their own one with greater ease.
 
 ## Specification (System Analyse)
+There exist many text oriented software currently, here are the software list and how people typically uses them:
+1. WhatsApp, which is a popular instant messaging software for people to communicate. It aggregates many kinds of features, such as one-to-one messaging and calling, group messaging and calling. But many of us will use the "text to myself" feature for agile note jotting, or simply transmit documents from mobile to PC.
+2. Discord, which is a strong community aggregator, where users can join different clubs and communicate with all club members. 
+
+
 ### User Requirement
 Suppose our project is capable for most kind of people in different pupose, let's define the expectations. Users are supposed be able to:
 1. start recording at the first step on the website
@@ -203,7 +208,16 @@ flowchart LR
    36. support adding mod functional button on dedicated page, based on the definitions that defined in each mods; each instance's button are independent
 
 #### Non-functional Requirement
-
+1. Performance:
+   1. Blackboard page content auto-save after an input action + 200ms debounce, to avoid too many system writting behaviour !!!!!!!!!
+   2. System should ompress the HTTP responses to reduse bandwidth consumption; using Nginx Gzip, with minimum length of 256 bytes for files
+   3. System should cache the frequently requested data to reduce server database burden; setting up Time To Live (TTL) for branch list, branch details, broadcast channels TTL smaller than 120 seconds
+   4. System should do SHA-1 for attached files to dedupe, because the allowed maximal file to be attached is 1GB. We do not expect multiple attachment of a 1GB file will create multiple instance; deduping by SHA-1 could reduce the occupied storage of both client and server.
+   5. System should pre-cache the static resources, such that the website can be instantly loaded; we can use Service Worker to cache the HTML, CSS, JS, and audio files.
+2. Reliability:
+3. Usability:
+4. Portability:
+5. Security:
 
 ## System Modeling (System Design)
 
