@@ -391,6 +391,117 @@ erDiagram
 
 > **Note:** 6 schema versions (v1–v6). v6 migrated camelCase → snake\_case with full data clear. Key differences from PostgreSQL: no `user_id` FK (single-user client), `owner` field encodes sync state, `file_blobs` stores actual binary data (server `files` table stores only metadata + disk path).
 
+#### Technical System Architecture
+
+```mermaid
+flowchart TB
+    subgraph Client["Client Layer (Browser)"]
+        direction TB
+
+        subgraph Presentation["Presentation"]
+            SPA["SPA · index.html"]
+            CRT["CRT CSS · Theme Engine"]
+            SW["Service Worker · PWA"]
+            I18N["i18n · 3 locales"]
+            NAV["Navi · Page Router"]
+        end
+
+        subgraph CoreLogic["Core Logic"]
+            BB["Blackboard Core"]
+            WT["Walkie-Typie Core"]
+            BC["Broadcast Core"]
+            MOD["MOD Framework<br/>mod-loader · mod-state<br/>mod-context · mod-hooks"]
+        end
+
+        subgraph ClientStorage["Local Storage"]
+            IDB[("IndexedDB<br/>(Dexie.js)")]
+            FileBlobs[("file_blobs")]
+            LS["localStorage<br/>settings · mods"]
+        end
+
+        subgraph ServiceLayer["Service Layer"]
+            API_SVC["apiRequest()<br/>HTTP client"]
+            ECHO["Laravel Echo<br/>WS client"]
+            WEBLLM["WebLLM<br/>(WebGPU)"]
+        end
+
+        Presentation --> CoreLogic
+        CoreLogic --> ClientStorage
+        CoreLogic --> ServiceLayer
+    end
+
+    subgraph Nginx["Nginx Reverse Proxy (:80)"]
+        direction LR
+        STATIC["/&ast; → SPA fallback"]
+        APIROUTE["/api/&ast; → FastCGI"]
+        WSROUTE["/app → WS proxy"]
+        MODROUTE["/mods/ → autoindex JSON"]
+    end
+
+    subgraph AppTier["Application Tier"]
+        direction LR
+        subgraph LaravelAPI["Laravel API (PHP-FPM)"]
+            CTRL["Controllers"]
+            SVC["Services"]
+            CTRL --> SVC
+        end
+        subgraph Reverb["Reverb WS"]
+            PUBSUB["Pub/Sub<br/>Echo events"]
+        end
+        subgraph Async["Async Workers"]
+            QUEUE["Queue · Jobs"]
+            CRON["Scheduler<br/>CleanOrphanedFiles"]
+        end
+    end
+
+    subgraph DataTier["Data Tier"]
+        direction LR
+        PG[("PostgreSQL 16")]
+        REDIS[("Redis<br/>cache · queue")]
+        DISK[("Disk<br/>files/")]
+    end
+
+    subgraph External["External Services"]
+        direction LR
+        GOOGLE["Google APIs<br/>Translate · Speech"]
+        OLLAMA["Ollama<br/>Local LLM"]
+        CLOUD_AI["Cloud AI<br/>OpenAI · Anthropic"]
+        CF["Cloudflare<br/>Tunnel"]
+    end
+
+    %% Client → Nginx
+    API_SVC -- "HTTP / REST" --> Nginx
+    ECHO -- "WebSocket" --> Nginx
+
+    %% Nginx → App Tier
+    APIROUTE -- "FastCGI" --> LaravelAPI
+    WSROUTE -- "TCP proxy" --> Reverb
+
+    %% App Tier → Data Tier
+    SVC -- "SQL" --> PG
+    SVC -- "Cache / Queue" --> REDIS
+    SVC -- "File I/O" --> DISK
+    QUEUE -- "SQL" --> PG
+    CRON -- "SQL" --> PG
+
+    %% App Tier → External
+    SVC -- "HTTPS" --> GOOGLE
+    SVC -- "HTTP" --> OLLAMA
+    SVC -- "HTTPS" --> CLOUD_AI
+    Nginx -- "Tunnel" --> CF
+
+    %% Client-direct external
+    WEBLLM -. "WebGPU<br/>(client-direct)" .-> WEBLLM
+
+    style Client fill:#1a1a2e,stroke:#0f0,color:#0f0
+    style Nginx fill:#16213e,stroke:#f90,color:#f90
+    style AppTier fill:#0f3460,stroke:#0ff,color:#0ff
+    style DataTier fill:#1a1a2e,stroke:#ff0,color:#ff0
+    style External fill:#2d1b4e,stroke:#f0f,color:#f0f
+```
+
+> **Reading guide:** Top-to-bottom = client request path. Client layer is split into Presentation (UI framework), Core Logic (domain modules), Local Storage (IndexedDB/localStorage), and Service Layer (network abstractions). Nginx routes by path pattern. Application tier separates synchronous API from async workers. External services are backend-mediated except WebLLM which runs entirely in-browser via WebGPU.
+
 #### Data Flow: Local-First Sync Architecture
 
 ```mermaid
