@@ -2,7 +2,7 @@
  * i18n — Lightweight Internationalisation Module
  * ================================================
  * - Locale files: /locales/{locale}.json  (fetched at runtime)
- * - Language detection: localStorage.getItem('locale') || 'en'
+ * - Language detection: localStorage.getItem('locale') || 'default'
  * - DOM binding: data-i18n="key"  →  el.textContent
  *                data-i18n-placeholder="key"  →  el.placeholder
  * - JS usage: import { t } from './i18n.js';  then  t('auth.loginError')
@@ -14,7 +14,7 @@ function getLocale() {
     try {
         return localStorage.getItem('locale') || 'default';
     } catch {
-        return 'en';
+        return 'default';
     }
 }
 
