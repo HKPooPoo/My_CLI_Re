@@ -186,11 +186,11 @@ Two-level hierarchy: main navi (`data-navi-item`: blackboard, walkie-typie, broa
 
 | File | Purpose | Terminology style |
 |------|---------|-------------------|
-| `en.json` | "GIT MODE" — VCS-inspired power user English | PUSH/PULL/COMMIT/BRANCH |
-| `default.json` | Friendly English — zero jargon, guides the user | Newer/Older/Upload/Topic |
+| `default.json` | "GIT MODE" — VCS-inspired power user English (default locale) | PUSH/PULL/COMMIT/BRANCH |
+| `en.json` | Friendly English — zero jargon, guides the user | Newer/Older/Upload/Topic |
 | `zh-TW.json` | Natural Traditional Chinese — no translated manuals | 較新/較舊/上傳/主題 |
 
-Code-level identifiers (`commit`, `checkout`, `push`, `pull`, `branch`) remain unchanged. Only **UI display text** varies per locale. When adding strings to `default.json` and `zh-TW.json`, never leak VCS terms — use the vocabulary mapping in the table above.
+Code-level identifiers (`commit`, `checkout`, `push`, `pull`, `branch`) remain unchanged. Only **UI display text** varies per locale. When adding strings to `en.json` and `zh-TW.json`, never leak VCS terms — use the vocabulary mapping in the table above.
 - `mergeStrings(partial)` deep-merges into global strings (used by mod-loader for MOD-local i18n)
 - `renderDOM()` re-scans all `data-i18n*` elements — **do NOT** put `data-i18n` on elements managed by MultiStepButton (conflicts with armed-state label)
 
