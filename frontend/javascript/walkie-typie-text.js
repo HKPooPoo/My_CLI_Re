@@ -392,16 +392,17 @@ export const WTText = {
     // =====================================================================
 
     async loadConnection(connection) {
-        // Flush any pending WE save before switching (prevents uncommitted content loss)
-        // NOTE: Do NOT use timers.flush('save') — the save timer's closure captures
-        // stale text from handleMyInput. Read live textarea value instead.
-        if (this.currentConnection && this.elements.weTextarea) {
-            this.timers.cancel('save');
-            await WTVCS.save(this.weState, this.elements.weTextarea.value);
-        }
-
-        // Cancel all pending timers from previous connection
+        // Capture live state synchronously BEFORE any await suspension point,
+        // then cancel all timers atomically — prevents input events from
+        // rescheduling timers between cancel and save.
+        const hadConnection = !!this.currentConnection;
+        const liveText = this.elements.weTextarea?.value;
         this.timers.cancelAll();
+
+        // Save with the captured live value (NOT the timer's stale closure)
+        if (hadConnection && liveText !== undefined) {
+            await WTVCS.save(this.weState, liveText);
+        }
 
         // LEAVE OLD CHANNEL
         if (this.activeChannel) {

@@ -197,9 +197,18 @@ export const BCChannel = {
             this.loadChannel(e.detail);
         });
 
-        // Auth change → cancel pending timers
+        // Auth change → full teardown (mirrors broadcast:cleared)
         window.addEventListener('auth:updated', () => {
             this.timers.cancelAll();
+            this._unsubscribeFromChannel(this.currentChannel?.serverChannelId);
+            this.currentChannel = null;
+            this.isOwnerMode = false;
+            this.serverRecords = [];
+            this.readerHead = 0;
+            this.lockTextarea();
+            this.clearIndicators();
+            this.bcAttach?.clear();
+            if (this.elements.textarea) this.elements.textarea.value = '';
         });
 
         // Channel deleted → clear display
