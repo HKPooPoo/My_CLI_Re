@@ -38,19 +38,24 @@ function mimeIcon(mime) {
     return '📎';
 }
 
-const BLOB_MAX = 50;
+// const BLOB_MAX = 50;
 const MAX_FILE_SIZE = 1 * 1024 * 1024 * 1024; // 1 GB
 
-async function _pruneFileBlobs() {
-    const count = await db.file_blobs.count();
-    if (count <= BLOB_MAX) return;
-    // Only evict synced blobs (local-only blobs cannot be re-downloaded)
-    const synced = await db.file_blobs.where('status').equals('synced').toArray();
-    synced.sort((a, b) => (a.last_accessed ?? 0) - (b.last_accessed ?? 0));
-    const excess = count - BLOB_MAX;
-    const toDelete = synced.slice(0, excess).map(b => b.hash);
-    if (toDelete.length) await db.file_blobs.bulkDelete(toDelete);
-}
+// Disabled: blob pruning removed to avoid data loss for local-only users.
+// Synced blobs (server-backed) were evicted by LRU when count > BLOB_MAX,
+// but local blobs had no server backup and were never pruned anyway.
+// Keeping for potential future reuse with a user-facing quota/notification system.
+//
+// async function _pruneFileBlobs() {
+//     const count = await db.file_blobs.count();
+//     if (count <= BLOB_MAX) return;
+//     // Only evict synced blobs (local-only blobs cannot be re-downloaded)
+//     const synced = await db.file_blobs.where('status').equals('synced').toArray();
+//     synced.sort((a, b) => (a.last_accessed ?? 0) - (b.last_accessed ?? 0));
+//     const excess = count - BLOB_MAX;
+//     const toDelete = synced.slice(0, excess).map(b => b.hash);
+//     if (toDelete.length) await db.file_blobs.bulkDelete(toDelete);
+// }
 
 export const EditorAttachments = {
     /**
@@ -247,7 +252,7 @@ export const EditorAttachments = {
                     }
 
                     this.currentHashes.push(hash);
-                    _pruneFileBlobs(); // fire-and-forget
+                    // _pruneFileBlobs(); // Disabled: see comment at function definition
 
                     // Replace loading chip with real chip
                     this._removeLoadingChip();
