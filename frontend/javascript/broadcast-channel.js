@@ -36,6 +36,7 @@ import { getEcho } from './echo-service.js';
 import { t } from './i18n.js';
 import * as Settings from './settings.js';
 import { registerMetadataProvider } from './mod-board-provider.js';
+import { TimerGroup } from './timer-group.js';
 
 const _readerCache = new Map();  // serverChannelId → { records, fetchedAt }
 const READER_CACHE_TTL = 30_000; // 30 seconds
@@ -71,7 +72,7 @@ export const BCChannel = {
     readerHead: 0,
 
     isOwnerMode: false,
-    saveTimer: null,
+    timers: new TimerGroup(),
 
     // Attachment instance
     bcAttach: null,
@@ -196,8 +197,14 @@ export const BCChannel = {
             this.loadChannel(e.detail);
         });
 
+        // Auth change → cancel pending timers
+        window.addEventListener('auth:updated', () => {
+            this.timers.cancelAll();
+        });
+
         // Channel deleted → clear display
         window.addEventListener('broadcast:cleared', () => {
+            this.timers.cancelAll();
             this._unsubscribeFromChannel(this.currentChannel?.serverChannelId);
             this.currentChannel = null;
             this.isOwnerMode = false;
@@ -253,8 +260,7 @@ export const BCChannel = {
             if (!this.isOwnerMode) return;
             if ($savedStatus) $savedStatus.textContent = t('common.unsaved');
 
-            clearTimeout(this.saveTimer);
-            this.saveTimer = setTimeout(async () => {
+            this.timers.schedule('save', async () => {
                 await this.save(this.elements.textarea.value);
                 this.updateIndicators();
             }, 200);
@@ -266,7 +272,7 @@ export const BCChannel = {
     // =====================================================================
 
     async loadChannel(channel) {
-        clearTimeout(this.saveTimer);
+        this.timers.cancelAll();
         // Unsubscribe from previous channel before switching
         if (this.currentChannel?.serverChannelId !== channel.serverChannelId) {
             this._unsubscribeFromChannel(this.currentChannel?.serverChannelId);

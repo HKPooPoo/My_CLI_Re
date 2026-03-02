@@ -209,11 +209,14 @@ flowchart LR
 
 #### Non-functional Requirement
 1. Performance:
-   1. Blackboard page content auto-save after an input action + 200ms debounce, to avoid too many system writting behaviour !!!!!!!!!
-   2. System should ompress the HTTP responses to reduse bandwidth consumption; using Nginx Gzip, with minimum length of 256 bytes for files
-   3. System should cache the frequently requested data to reduce server database burden; setting up Time To Live (TTL) for branch list, branch details, broadcast channels TTL smaller than 120 seconds
-   4. System should do SHA-1 for attached files to dedupe, because the allowed maximal file to be attached is 1GB. We do not expect multiple attachment of a 1GB file will create multiple instance; deduping by SHA-1 could reduce the occupied storage of both client and server.
-   5. System should pre-cache the static resources, such that the website can be instantly loaded; we can use Service Worker to cache the HTML, CSS, JS, and audio files.
+   1. All board page content from Blackboard, Walkie-Typie, and Broadcast shall auto-save after an input action + 200ms debounce, to avoid too many system writting behaviour.
+   2. System shall ompress the HTTP responses to reduse bandwidth consumption; using Nginx Gzip, with minimum length of 256 bytes for files
+   3. System shall cache the frequently requested data to reduce server database burden; setting up Time To Live (TTL) for branch list, branch details, broadcast channels TTL smaller than 120 seconds
+   4. System shall do SHA-1 for attached files to dedupe, because the allowed maximal file to be attached is 1GB. We do not expect multiple attachment of a 1GB file will create multiple instance; deduping by SHA-1 could reduce the occupied storage of both client and server.
+   5. System shall pre-cache the static resources, such that the website can be instantly loaded; we can use Service Worker to cache the HTML, CSS, JS, and audio files.
+   6. w
+   7. System shall define the API request timeouts in 15s as default, to avoid hanging connections.
+   8. System shall use database indexing to optimize query performance
 2. Reliability:
 3. Usability:
 4. Portability:

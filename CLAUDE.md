@@ -124,7 +124,7 @@ Multi-section SPA — pure HTML, CSS, ES modules. No framework.
 
 **Key directories:** `javascript/` (42 modules + `services/` 11 + `vendor/` 4) · `mods/` (manifest + loader + 3 templates) · `stylesheets/` (18 CSS files) · `locales/` (en.json, zh-TW.json, default.json) · `images/` (14 files) · `audio/` (10 MP3s)
 
-**Architectural patterns:** Event-driven (`window.dispatchEvent`) · Hybrid storage (IndexedDB local + PostgreSQL via API) · Real-time via Laravel Echo/Reverb · Service layer abstracts all HTTP calls
+**Architectural patterns:** Event-driven (`window.dispatchEvent`) · Hybrid storage (IndexedDB local + PostgreSQL via API) · Real-time via Laravel Echo/Reverb · Service layer abstracts all HTTP calls · Debounce lifecycle via `TimerGroup` (`timer-group.js`) — named timer scheduling with `cancel/cancelAll/flush`; used by BB, BC, WT for input debounce management
 
 **Legacy file:** `mod-registry.js` — v1 MOD registry remnant, exports `MOD_TYPES`. Not actively used by v2 system.
 

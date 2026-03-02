@@ -4,9 +4,10 @@
  * Architecture (Server-Authoritative):
  *
  * WE 側 (editable):
- *   Input → 200ms → WTVCS.save() → IndexedDB (local cache)
- *         → 200ms → signal → Broadcast (no DB writes)
- *         → 2s   → commit → Postgres + last_signal update
+ *   Input → 50ms  → whisper signal → partner (Client Event, no DB)
+ *         → 200ms → WTVCS.save() → IndexedDB (local cache)
+ *         → 2s    → commit → Postgres + last_signal update
+ *   Timers managed by TimerGroup (cancel on PUSH/PULL/auth/disconnect).
  *   Push/Pull → IndexedDB
  *
  * THEY 側 (read-only):
@@ -29,6 +30,7 @@ import { playAudio } from "./audio.js";
 import { t } from './i18n.js';
 import * as Settings from './settings.js';
 import { registerMetadataProvider } from './mod-board-provider.js';
+import { TimerGroup } from './timer-group.js';
 
 export const WTText = {
     elements: {
@@ -48,9 +50,7 @@ export const WTText = {
     currentConnection: null,
     activeChannel: null, // The shared Echo channel instance
     isSwapped: false,
-    saveTimer: null,
-    signalTimer: null,
-    commitTimer: null,
+    timers: new TimerGroup(),
 
     wtWeAttach: null,
     wtTheyAttach: null,
@@ -118,8 +118,8 @@ export const WTText = {
                 // any await suspension point, so both timers are guaranteed cancelled.
                 // triggerCommit() at the end of onAttach reschedules the commit with
                 // the correct, fully-persisted state.
-                clearTimeout(this.saveTimer);
-                clearTimeout(this.commitTimer);
+                this.timers.cancel('save');
+                this.timers.cancel('commit');
 
                 const binData = { hash, ...meta };
                 this.currentBin = binData;
@@ -197,9 +197,7 @@ export const WTText = {
         // WTCore.releaseEcho() already handles channel disconnection;
         // we just need to clear local state, timers, and boards.
         window.addEventListener("auth:updated", () => {
-            clearTimeout(this.saveTimer);
-            clearTimeout(this.signalTimer);
-            clearTimeout(this.commitTimer);
+            this.timers.cancelAll();
 
             this.activeChannel = null;
             this.currentConnection = null;
@@ -227,9 +225,7 @@ export const WTText = {
         });
 
         window.addEventListener("walkie-typie:disconnected", (e) => {
-            clearTimeout(this.saveTimer);
-            clearTimeout(this.signalTimer);
-            clearTimeout(this.commitTimer);
+            this.timers.cancelAll();
 
             if (this.currentConnection &&
                 this.currentConnection.partner_uid === e.detail.partnerUid) {
@@ -265,6 +261,7 @@ export const WTText = {
 
         this.elements.wePushBtn?.addEventListener("click", async () => {
             if (!this.currentConnection) return;
+            this.timers.cancelAll();
             playAudio("UIGeneralFocus.mp3");
             await WTVCS.push(this.weState, this.elements.weTextarea.value, false);
             this.refreshWE();
@@ -272,6 +269,7 @@ export const WTText = {
 
         this.elements.wePullBtn?.addEventListener("click", async () => {
             if (!this.currentConnection) return;
+            this.timers.cancelAll();
             playAudio("UIGeneralFocus.mp3");
             await WTVCS.pull(this.weState, this.elements.weTextarea.value, false);
             this.refreshWE();
@@ -395,16 +393,15 @@ export const WTText = {
 
     async loadConnection(connection) {
         // Flush any pending WE save before switching (prevents uncommitted content loss)
+        // NOTE: Do NOT use timers.flush('save') — the save timer's closure captures
+        // stale text from handleMyInput. Read live textarea value instead.
         if (this.currentConnection && this.elements.weTextarea) {
-            clearTimeout(this.saveTimer);
-            this.saveTimer = null;
+            this.timers.cancel('save');
             await WTVCS.save(this.weState, this.elements.weTextarea.value);
         }
 
-        // Clear pending signals and commits from previous connection
-        clearTimeout(this.saveTimer);
-        clearTimeout(this.signalTimer);
-        clearTimeout(this.commitTimer);
+        // Cancel all pending timers from previous connection
+        this.timers.cancelAll();
 
         // LEAVE OLD CHANNEL
         if (this.activeChannel) {
@@ -626,35 +623,27 @@ export const WTText = {
      * Trigger a delayed commit (debounced).
      */
     triggerCommit(text) {
-        clearTimeout(this.commitTimer);
-        this.commitTimer = setTimeout(() => {
-            this.commitWE(text);
-        }, 2000);
+        this.timers.schedule('commit', () => this.commitWE(text), 2000);
     },
 
     /**
-     * Mirrors Blackboard's input handler:
-     * 200ms → WTVCS.save() (local) + signal (Whisper - instant)
-     * 2s → commit (Postgres + last_signal)
+     * Three-tier debounce pipeline:
+     *   50ms  → whisper signal to partner (Client Event, no DB)
+     *   200ms → WTVCS.save() to IndexedDB (local persistence)
+     *   2s    → commitWE() to PostgreSQL (server persistence)
      */
     handleMyInput(e) {
         if (!this.currentConnection) return;
         const text = e.target.value;
 
-        // 200ms: Local save (IndexedDB, same as Blackboard)
-        clearTimeout(this.saveTimer);
-        this.saveTimer = setTimeout(async () => {
+        this.timers.schedule('save', async () => {
             await WTVCS.save(this.weState, text);
         }, 200);
 
-        // 50ms: Whisper signal to partner (Client Event, bypassing API)
-        // Reduced debounce for snappier feel
-        clearTimeout(this.signalTimer);
-        this.signalTimer = setTimeout(() => {
+        this.timers.schedule('signal', () => {
             this.broadcastSignal(text);
         }, 50);
 
-        // 2s: Persistent commit
         this.triggerCommit(text);
     },
 

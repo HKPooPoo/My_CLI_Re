@@ -25,6 +25,7 @@ import { t } from './i18n.js';
 import * as Settings from './settings.js';
 import { registerMetadataProvider } from './mod-board-provider.js';
 import { BBSync } from './blackboard-sync.js';
+import { TimerGroup } from './timer-group.js';
 
 // --- 全域狀態聲明 ---
 const state = {
@@ -37,7 +38,7 @@ const state = {
     currentFileHash: null,
 };
 
-let debounceTimer = null;
+const timers = new TimerGroup();
 let isInitializing = false;
 
 // Register metadata provider for MOD board data access
@@ -552,8 +553,7 @@ BBUI.elements.textarea?.addEventListener("input", () => {
     // 立即更新為 UNSAVED，但不要觸發完整的 DOM 重繪
     if (BBUI.elements.savedStatus) BBUI.elements.savedStatus.textContent = t('blackboard.statusUnsaved');
 
-    clearTimeout(debounceTimer);
-    debounceTimer = setTimeout(async () => {
+    timers.schedule('save', async () => {
         await BBVCS.save(state, BBUI.getTextareaValue());
 
         // [Fix]: 狀態更新後，依據是否仍為虛擬狀態顯示指標
@@ -578,6 +578,7 @@ window.addEventListener("blackboard:branchRename", async (e) => {
 
 // 監聽授權變動 (登入/登出)
 window.addEventListener("auth:updated", async () => {
+    timers.cancelAll();
     BBSync.stopListening();
     // [Fix]: Ensure we don't lose local state visibility on auth change
     // Force a re-init to ensure UI reflects current data
