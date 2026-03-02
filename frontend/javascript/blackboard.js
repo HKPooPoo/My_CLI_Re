@@ -401,30 +401,74 @@ if (BBUI.elements.commitBtn) {
     });
 }
 
-// CHECKOUT: 切換/下載分支
-if (BBUI.elements.checkoutBtn) {
-    new MultiStepButton(BBUI.elements.checkoutBtn, {
+// CHECKOUT/SWITCH: Dynamic dual-state button (like DROP's 3-state)
+// - Same branch as HEAD → CHECKOUT (re-download from server)
+// - Different branch     → SWITCH  (change active branch)
+const checkoutBtnEl = BBUI.elements.checkoutBtn;
+let currentCheckoutAction = null;
+let checkoutButtonTimer = null;
+
+function updateCheckoutButtonState() {
+    if (!checkoutBtnEl) return;
+
+    const selected = getSelectedBranchInfo();
+    if (!selected) {
+        checkoutBtnEl.textContent = t('common.na');
+        checkoutBtnEl.disabled = true;
+        currentCheckoutAction = null;
+        return;
+    }
+    checkoutBtnEl.disabled = false;
+
+    if (selected.id === state.branchId) {
+        // Same branch as HEAD → Checkout (pull from server)
+        checkoutBtnEl.textContent = t('blackboard.checkoutBtn');
+        checkoutBtnEl.dataset.hint = 'hints.checkout';
+        currentCheckoutAction = "checkout";
+    } else {
+        // Different branch → Switch
+        checkoutBtnEl.textContent = t('blackboard.switchBtn');
+        checkoutBtnEl.dataset.hint = 'hints.switch';
+        currentCheckoutAction = "switch";
+    }
+}
+
+if (checkoutBtnEl) {
+    new MultiStepButton(checkoutBtnEl, {
         sound: "Click.mp3",
         action: async () => {
+            if (!currentCheckoutAction) return;
             const selected = getSelectedBranchInfo();
             if (!selected) return;
 
-            const msg = BBMessage.loading(t('blackboard.loading'));
-            try {
-                // [Fix]: 如果本地已存在，優先使用本地 (不強制同步)；僅在純雲端分支時才下載
-                const targetOwner = selected.isLocal ? "local" : "remote";
-                await BBVCS.checkout(state, selected.id, targetOwner);
-
-                msg.update(t('blackboard.loadComplete'));
-                await syncView();
-                // [Fix]: 切換後，列表選取狀態應跟隨切換到新分支 (可選，視 UX 需求而定，這裡保持自動更新)
-                // 由於 updateBranchList 會抓取 DOM 選取狀態，這裡不需要額外操作，
-                // 但為了讓使用者知道切換成功，清單刷新後選取項通常會停留在該分支上。
-                await updateBranchList();
-            } catch (e) {
-                console.error("LOAD ERROR:", e);
-                msg.close();
-                BBMessage.error(t('blackboard.loadFailed'));
+            if (currentCheckoutAction === "checkout") {
+                // Re-download from server (always remote)
+                const msg = BBMessage.loading(t('blackboard.loading'));
+                try {
+                    await BBVCS.checkout(state, selected.id, "remote");
+                    msg.update(t('blackboard.loadComplete'));
+                    await syncView();
+                    await updateBranchList();
+                } catch (e) {
+                    console.error("CHECKOUT ERROR:", e);
+                    msg.close();
+                    BBMessage.error(t('blackboard.loadFailed'));
+                }
+            } else {
+                // Switch to a different branch
+                const msg = BBMessage.loading(t('blackboard.switching'));
+                try {
+                    const targetOwner = selected.isLocal ? "local" : "remote";
+                    await BBVCS.checkout(state, selected.id, targetOwner);
+                    msg.update(t('blackboard.switchComplete'));
+                    await syncView();
+                    await updateBranchList();
+                    updateCheckoutButtonState();
+                } catch (e) {
+                    console.error("SWITCH ERROR:", e);
+                    msg.close();
+                    BBMessage.error(t('blackboard.loadFailed'));
+                }
             }
         }
     });
@@ -540,10 +584,13 @@ window.addEventListener("list:selectionChanged", ({ detail }) => {
     // 防抖：避免快速滾動時頻繁查詢 DB
     if (dropButtonTimer) clearTimeout(dropButtonTimer);
     dropButtonTimer = setTimeout(updateDropButtonState, 100);
+    if (checkoutButtonTimer) clearTimeout(checkoutButtonTimer);
+    checkoutButtonTimer = setTimeout(updateCheckoutButtonState, 100);
 });
 
 window.addEventListener("list:updated", () => {
     setTimeout(updateDropButtonState, 50);
+    setTimeout(updateCheckoutButtonState, 50);
 });
 
 // --- 事件監聽區 ---
