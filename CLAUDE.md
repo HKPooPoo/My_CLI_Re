@@ -81,9 +81,9 @@ docker exec my-cli-api sh -c "cp .env.example .env && php artisan key:generate &
 
 ## Architecture
 
-### Docker Services (10)
+### Docker Services (12)
 
-nginx (static SPA + reverse proxy) · api (Laravel 12 PHP-FPM) · reverb (WebSocket) · queue (`queue:listen`) · scheduler (cron) · db (PostgreSQL 16) · redis · pgadmin · mailpit · tunnel (Cloudflare)
+nginx (static SPA + reverse proxy) · api (Laravel 12 PHP-FPM) · reverb (WebSocket) · queue (`queue:listen`) · scheduler (cron) · db (PostgreSQL 16) · redis · pgadmin · mailpit · tunnel (Cloudflare) · ollama (Qwen3.5 LLM, GPU) · ollama-init (one-shot model pull)
 
 ### Backend (`backend/`)
 
