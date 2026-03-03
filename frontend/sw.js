@@ -1,33 +1,107 @@
-const CACHE_NAME = 'blackboard-v86-2026-03-04';
+const CACHE_NAME = 'blackboard-v87-2026-03-04';
 
 // Core framework only — MOD files (mods/*, vendor libs, MOD assets) are NOT listed here.
 // They are cached lazily via the stale-while-revalidate fetch handler on first page load.
 // mod-loader.js discovers MOD folders at runtime via Nginx autoindex JSON.
 const ASSETS = [
+  // --- Root ---
   '/',
   '/index.html',
   '/style.css',
-  '/stylesheets/editor-attachments.css',
+  '/manifest.json',
+  '/images/favicon.ico',
+  '/images/banner.webp',
+
+  // --- Locales (loaded at boot by i18n.js) ---
+  '/locales/default.json',
+  '/locales/en.json',
+  '/locales/zh-TW.json',
+
+  // --- Stylesheets (all from index.html, order matches <link> tags) ---
+  '/stylesheets/hud.css',
+  '/stylesheets/crt-vfx.css',
+  '/stylesheets/navi.css',
+  '/stylesheets/page.css',
+  '/stylesheets/page-auth.css',
+  '/stylesheets/page-blackboard-log.css',
+  '/stylesheets/page-ai-translate.css',
+  '/stylesheets/page-blackboard-vcs.css',
+  '/stylesheets/toast.css',
   '/stylesheets/page-walkie-typie.css',
-  '/javascript/blackboard.js',
-  '/javascript/blackboard-sync.js',
-  '/javascript/editor-attachments.js',
-  '/javascript/services/file-service.js',
-  '/javascript/indexedDB.js',
+  '/stylesheets/page-broadcast.css',
+  '/stylesheets/page-misc.css',
+  '/stylesheets/editor-attachments.css',
+  '/stylesheets/mod-shared.css',
+  '/stylesheets/page-mods.css',
+  '/stylesheets/feature-markdown.css',
+  '/stylesheets/hint-panel.css',
+  '/stylesheets/@media.css',
+  '/stylesheets/layer.css',
+  '/stylesheets/caret.css',
+
+  // --- Vendor libraries ---
   '/javascript/vendor/dexie.js',
+  '/javascript/vendor/marked.min.js',
+  '/javascript/vendor/pusher.min.js',
+  '/javascript/vendor/echo.iife.js',
+
+  // --- Core services ---
+  '/javascript/services/api.js',
+  '/javascript/services/auth-service.js',
+  '/javascript/services/status-service.js',
+  '/javascript/services/file-service.js',
+  '/javascript/services/blackboard-service.js',
+  '/javascript/services/broadcast-service.js',
+  '/javascript/services/walkie-typie-service.js',
+  '/javascript/services/mod-service.js',
+
+  // --- Boot & UI shell (directly in index.html) ---
+  '/javascript/audio.js',
+  '/javascript/textarea-tab.js',
+  '/javascript/i18n.js',
+  '/javascript/hud.js',
+  '/javascript/pressStart.js',
+  '/javascript/navi.js',
+  '/javascript/hint-panel.js',
+  '/javascript/auth.js',
+  '/javascript/misc.js',
+  '/javascript/mods-misc.js',
+
+  // --- Shared utilities ---
+  '/javascript/utils.js',
+  '/javascript/multiStepButton.js',
+  '/javascript/toast.js',
+  '/javascript/timer-group.js',
+  '/javascript/pwa.js',
+  '/javascript/indexedDB.js',
+  '/javascript/settings.js',
+  '/javascript/version.js',
+
+  // --- Blackboard ---
+  '/javascript/blackboard.js',
+  '/javascript/blackboard-core.js',
+  '/javascript/blackboard-sync.js',
+  '/javascript/blackboard-vcs.js',
+  '/javascript/blackboard-ui.js',
+  '/javascript/blackboard-ui-list.js',
+  '/javascript/blackboard-msg.js',
+
+  // --- Walkie-Typie ---
+  '/javascript/echo-service.js',
   '/javascript/walkie-typie-core.js',
   '/javascript/walkie-typie-list.js',
   '/javascript/walkie-typie-text.js',
   '/javascript/walkie-typie-vcs.js',
   '/javascript/walkie-typie-db.js',
-  '/javascript/echo-service.js',
+  '/javascript/walkie-typie-config.js',
+
+  // --- Broadcast ---
   '/javascript/broadcast-channel.js',
   '/javascript/broadcast-list.js',
   '/javascript/broadcast-config.js',
-  '/javascript/walkie-typie-config.js',
-  '/javascript/settings.js',
-  '/javascript/audio.js',
-  '/javascript/feature-shelf.js',
+  '/javascript/broadcast-db.js',
+
+  // --- MOD framework ---
   '/javascript/mod-state.js',
   '/javascript/mod-context.js',
   '/javascript/mod-hooks.js',
@@ -35,10 +109,13 @@ const ASSETS = [
   '/javascript/mod-board-provider.js',
   '/javascript/mod-field-registry.js',
   '/javascript/mods-manager.js',
-  '/javascript/blackboard-msg.js',
-  '/javascript/version.js',
+  '/javascript/feature-shelf.js',
+  '/javascript/feature-markdown.js',
   '/javascript/theme-engine.js',
+  '/javascript/editor-attachments.js',
   '/mods/mod-loader.js',
+
+  // --- Audio ---
   '/audio/Cassette.mp3',
   '/audio/Click.mp3',
   '/audio/Erase.mp3',
@@ -48,9 +125,7 @@ const ASSETS = [
   '/audio/UIPipboyOK.mp3',
   '/audio/UIPipboyOKPress.mp3',
   '/audio/UISelectOff.mp3',
-  '/audio/UISelectOn.mp3',
-  '/images/favicon.ico',
-  '/manifest.json'
+  '/audio/UISelectOn.mp3'
 ];
 
 // 安裝：快取核心資源
