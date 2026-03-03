@@ -14,16 +14,16 @@ node_modules/
 /backend/bootstrap/cache/packages.php
 /backend/bootstrap/cache/services.php
 
-# Legacy root-level duplicates (served from frontend/ via Docker)
-/audio
-/images
-/Dockerfile
-
 # Debug & test files
 /backend/check_*.php
 /frontend/test-*.html
+*_logs.txt
+*_stderr.txt
+*_output.txt
+*_tail.txt
+*_diff.txt
 
-# Prototypes & Docs (local only, force-add exceptions as needed)
+# Prototypes & Docs (local only)
 /prototypes
 /documents
 
@@ -33,17 +33,7 @@ GEMINI.md
 .gemini/
 .claude/
 mcp/
-
-# Obsolete
-/obsolete
-docker-compose.old.yml
-
-# Debug output files (from docker/artisan commands)
-*_logs.txt
-*_stderr.txt
-*_output.txt
-*_tail.txt
-*_diff.txt
+.playwright-mcp/
 
 # OS files
 .DS_Store
