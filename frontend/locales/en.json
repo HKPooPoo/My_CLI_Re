@@ -193,6 +193,10 @@
     "loginRequired": "Please log in for this action.",
     "storageFull": "Storage full. Changes may not be saved."
   },
+  "toast": {
+    "systemPrefix": "System: ",
+    "criticalPrefix": "Error: "
+  },
   "misc": {
     "pageTitle": "Settings",
     "languageLabel": "Language",

@@ -193,6 +193,10 @@
     "loginRequired": "LOGIN REQUIRED FOR THIS OPERATION.",
     "storageFull": "ERROR: STORAGE FULL"
   },
+  "toast": {
+    "systemPrefix": "SYSTEM > ",
+    "criticalPrefix": "CRITICAL > "
+  },
   "hints": {
     "push": "PUSH — Navigate toward NEWER records. Creates a new blank page at the top.",
     "pull": "PULL — Navigate toward OLDER records in this branch.",

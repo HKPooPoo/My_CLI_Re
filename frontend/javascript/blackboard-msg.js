@@ -28,7 +28,7 @@ export const BBMessage = {
      * System information (Terminal Style)
      */
     info(text) {
-        const prefix = "SYSTEM > ";
+        const prefix = t('toast.systemPrefix');
         return wrapHandler(toast.addMessage(`${prefix}${text}`, 5000, 'info'), prefix);
     },
 
@@ -36,7 +36,7 @@ export const BBMessage = {
      * System warning/error
      */
     error(text) {
-        const prefix = "CRITICAL > ";
+        const prefix = t('toast.criticalPrefix');
         return wrapHandler(toast.addMessage(`${prefix}${text}`, 5000, 'error'), prefix);
     },
 
@@ -44,7 +44,7 @@ export const BBMessage = {
      * Operation success shortcut
      */
     success(action) {
-        const prefix = "SYSTEM > ";
+        const prefix = t('toast.systemPrefix');
         return wrapHandler(toast.addMessage(`${prefix}${action}`, 5000, 'success'), prefix);
     },
 
@@ -52,7 +52,7 @@ export const BBMessage = {
      * Loading state (spinner-compatible via data-loading attribute)
      */
     loading(text) {
-        const prefix = "SYSTEM > ";
+        const prefix = t('toast.systemPrefix');
         return wrapHandler(toast.addMessage(`${prefix}${text}`, 0, 'info', true), prefix);
     },
 
