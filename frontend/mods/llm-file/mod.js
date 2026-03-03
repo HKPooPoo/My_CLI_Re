@@ -5,8 +5,8 @@
  */
 
 import {
-    ensureOutputEl, initShelf, activateShelfPrompt,
-    runLlm, runLlmWithImages, blobToBase64, renderPdfToImages,
+    initShelf, runActivation,
+    blobToBase64, renderPdfToImages,
     checkHealth, getInfoValue, onAction,
     getInstanceName, getIconUrl,
     migrateToSharedConfig, initPrewarm, onSharedConfigChange,
@@ -34,44 +34,25 @@ export default {
     },
 
     async activate(ctx) {
-        if (!ctx) return;
-        const out = ensureOutputEl(this);
-        if (!out) return;
-        activateShelfPrompt(ctx);
+        await runActivation(this, ctx, async (c, prompt) => {
+            if ((c.config.provider || 'server') !== 'server')
+                return { error: c.i18n.t('mods.llmFile.serverOnly') };
 
-        const tFn = ctx.i18n.t;
-        const config = ctx.config;
-        const prompt = config.prompt;
-        if (!prompt) { out.value = tFn('mods.llm.noPrompt'); return; }
+            const attachments = c.board.getAttachmentsWithMeta();
+            if (!attachments.length)
+                return { error: c.i18n.t('mods.llmFile.noFiles') };
 
-        const provider = config.provider || 'server';
-        if (provider !== 'server') {
-            out.value = tFn('mods.llmFile.serverOnly');
-            return;
-        }
-
-        const attachments = ctx.board.getAttachmentsWithMeta();
-        if (!attachments.length) {
-            out.value = tFn('mods.llmFile.noFiles');
-            return;
-        }
-
-        out.value = tFn('mods.llmFile.processing');
-        out.dataset.loading = 'true';
-
-        try {
             const images = [];
             let enrichedPrompt = prompt;
 
             for (const att of attachments) {
-                const blob = await ctx.file.readContent(att.hash);
+                const blob = await c.file.readContent(att.hash);
                 const mime = att.mime || blob.type || '';
 
                 if (IMAGE_MIMES.has(mime)) {
                     images.push(await blobToBase64(blob));
                 } else if (mime === 'application/pdf') {
-                    const pdfImages = await renderPdfToImages(blob);
-                    images.push(...pdfImages);
+                    images.push(...await renderPdfToImages(blob));
                 } else {
                     const text = await blob.text();
                     if (text.trim()) {
@@ -80,21 +61,10 @@ export default {
                 }
             }
 
-            if (images.length > 0) {
-                delete out.dataset.loading;
-                await runLlmWithImages(config, enrichedPrompt, images, out, tFn);
-            } else if (enrichedPrompt !== prompt) {
-                delete out.dataset.loading;
-                await runLlm(config, enrichedPrompt, '', out, tFn);
-            } else {
-                out.value = tFn('mods.llmFile.noFiles');
-            }
-        } catch (e) {
-            console.error('[llm-file] activate error:', e);
-            out.value = tFn('mods.llm.error', { error: e.message || String(e) });
-        } finally {
-            delete out.dataset.loading;
-        }
+            if (images.length > 0) return { images, prompt: enrichedPrompt };
+            if (enrichedPrompt !== prompt) return { text: '', prompt: enrichedPrompt };
+            return { error: c.i18n.t('mods.llmFile.noFiles') };
+        });
     },
 
     async deactivate() {},

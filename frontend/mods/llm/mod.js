@@ -7,7 +7,7 @@
 // BYPASS: Direct ModState import — one-time migration reads/writes instance configs at boot
 import { ModState } from '../../javascript/mod-state.js';
 import {
-    ensureOutputEl, initShelf, activateShelfPrompt, runLlm,
+    initShelf, runActivation,
     checkHealth, getInfoValue, onAction,
     getInstanceName, getIconUrl,
     migrateToSharedConfig, initPrewarm, onSharedConfigChange,
@@ -36,24 +36,10 @@ export default {
     },
 
     async activate(ctx) {
-        if (!ctx) return;
-        const out = ensureOutputEl(this);
-        if (!out) return;
-        activateShelfPrompt(ctx);
-
-        const tFn = ctx.i18n.t;
-        const prompt = ctx.config.prompt;
-
-        if (!prompt) { out.value = tFn('mods.llm.noPrompt'); return; }
-
-        try {
-            const inputText = ctx.board.getText().trim();
-            if (!inputText) { out.value = tFn('mods.llm.empty'); return; }
-            await runLlm(ctx.config, prompt, inputText, out, tFn);
-        } catch (e) {
-            console.error('[llm] activate error:', e);
-            out.value = tFn('mods.llm.error', { error: e.message || String(e) });
-        }
+        await runActivation(this, ctx, (c) => {
+            const text = c.board.getText().trim();
+            return text ? { text } : null;
+        });
     },
 
     async deactivate() {},

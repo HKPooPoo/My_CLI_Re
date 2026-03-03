@@ -280,6 +280,7 @@ export function initShelf(templateObj, ctx) {
 /**
  * Sync shelf prompt textarea with the current instance.
  * Called at the start of every activate() across all LLM templates.
+ * Preserves user edits: only loads config when switching to a different instance.
  */
 export function activateShelfPrompt(ctx) {
     const el = document.getElementById('llm-prompt');
@@ -288,14 +289,76 @@ export function activateShelfPrompt(ctx) {
     // Remove previous change handler
     if (_promptHandler) el.removeEventListener('change', _promptHandler);
 
+    const prevInstanceId = _activeInstanceId;
     _activeInstanceId = ctx.instanceId;
-    el.value = ctx.config.prompt || '';
+
+    // Only overwrite textarea when switching to a different instance
+    if (prevInstanceId !== ctx.instanceId) {
+        el.value = ctx.config.prompt || '';
+    }
 
     // Shelf → config sync on blur
     _promptHandler = () => {
         ctx.instance.setConfig('prompt', el.value);
     };
     el.addEventListener('change', _promptHandler);
+}
+
+/**
+ * Unified activation pipeline for all LLM templates.
+ * Handles: output setup, shelf prompt sync, validation, dispatch to runLlm/runLlmWithImages.
+ *
+ * collectFn(ctx, prompt) should return:
+ *   null              → no input, show mods.llm.empty
+ *   { error: string } → show custom error message
+ *   { text: string }  → run text-mode LLM
+ *   { text, prompt }  → run with enriched prompt (e.g. file text appended)
+ *   { images, prompt? } → run vision-mode LLM
+ */
+export async function runActivation(templateObj, ctx, collectFn) {
+    if (!ctx) return;
+    const out = ensureOutputEl(templateObj);
+    if (!out) return;
+    activateShelfPrompt(ctx);
+
+    const tFn = ctx.i18n.t;
+
+    // Read prompt from shelf textarea (live edit support)
+    const promptEl = document.getElementById('llm-prompt');
+    const prompt = (promptEl ? promptEl.value : ctx.config.prompt || '').trim();
+
+    if (!prompt) { out.value = tFn('mods.llm.noPrompt'); return; }
+
+    // Persist shelf prompt back to instance config if edited
+    if (promptEl && promptEl.value !== (ctx.config.prompt || '')) {
+        ctx.instance.setConfig('prompt', promptEl.value);
+    }
+
+    out.value = tFn('mods.llm.processing');
+
+    try {
+        const result = await collectFn(ctx, prompt);
+
+        if (result == null) {
+            out.value = tFn('mods.llm.empty');
+            return;
+        }
+        if (result.error) {
+            out.value = result.error;
+            return;
+        }
+
+        const finalPrompt = result.prompt || prompt;
+
+        if (result.images) {
+            await runLlmWithImages(ctx.config, finalPrompt, result.images, out, tFn);
+        } else {
+            await runLlm(ctx.config, finalPrompt, result.text || '', out, tFn);
+        }
+    } catch (e) {
+        console.error(`[${ctx.templateId || 'llm'}] activate error:`, e);
+        out.value = tFn('mods.llm.error', { error: e.message || String(e) });
+    }
 }
 
 // ===================== Provider execution =====================

@@ -6,7 +6,7 @@
 
 import {
     getContextLimits, formatRecords,
-    ensureOutputEl, initShelf, activateShelfPrompt, runLlm,
+    initShelf, runActivation,
     checkHealth, getInfoValue, onAction,
     getInstanceName, getIconUrl,
     migrateToSharedConfig, initPrewarm, onSharedConfigChange,
@@ -49,30 +49,12 @@ export default {
     },
 
     async activate(ctx) {
-        if (!ctx) return;
-        const out = ensureOutputEl(this);
-        if (!out) return;
-        activateShelfPrompt(ctx);
-
-        const tFn = ctx.i18n.t;
-        const config = ctx.config;
-        const prompt = config.prompt;
-
-        if (!prompt) { out.value = tFn('mods.llm.noPrompt'); return; }
-        out.value = tFn('mods.llm.processing');
-
-        try {
-            const targetDef = TARGETS[config.target] || TARGETS['branch-log'];
-            const provider = config.provider || 'client';
-            const limits = getContextLimits(provider);
-            const inputText = await _collectInput(ctx, targetDef.scope, limits);
-
-            if (!inputText) { out.value = tFn('mods.llm.empty'); return; }
-            await runLlm(config, prompt, inputText, out, tFn);
-        } catch (e) {
-            console.error('[llm-bb] activate error:', e);
-            out.value = tFn('mods.llm.error', { error: e.message || String(e) });
-        }
+        await runActivation(this, ctx, async (c) => {
+            const targetDef = TARGETS[c.config.target] || TARGETS['branch-log'];
+            const limits = getContextLimits(c.config.provider || 'client');
+            const text = await _collectInput(c, targetDef.scope, limits);
+            return text ? { text } : null;
+        });
     },
 
     async deactivate() {},
