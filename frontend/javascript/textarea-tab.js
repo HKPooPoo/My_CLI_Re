@@ -6,6 +6,9 @@
  *
  * Tab       → insert \t at cursor (or indent selected lines)
  * Shift+Tab → remove leading \t or up to 4 spaces from current/selected lines
+ *
+ * Uses execCommand('insertText') to preserve native undo/redo and
+ * fire proper InputEvent automatically.
  * =================================================================
  */
 
@@ -15,61 +18,68 @@ document.addEventListener('keydown', (e) => {
 
     e.preventDefault();
     const ta = e.target;
-    const start = ta.selectionStart;
-    const end = ta.selectionEnd;
+    const { selectionStart: start, selectionEnd: end, value } = ta;
 
+    // --- Single cursor (no selection) ---
     if (start === end) {
-        // No selection — single cursor
         if (e.shiftKey) {
-            // Shift+Tab: remove leading indent from current line
-            const before = ta.value.slice(0, start);
-            const lineStart = before.lastIndexOf('\n') + 1;
-            const linePrefix = ta.value.slice(lineStart, start);
+            // Shift+Tab: remove one leading \t or up to 4 spaces from current line
+            const lineStart = value.lastIndexOf('\n', start - 1) + 1;
+            const linePrefix = value.slice(lineStart, start);
             const match = linePrefix.match(/^(\t| {1,4})/);
             if (match) {
-                ta.value = ta.value.slice(0, lineStart) + ta.value.slice(lineStart + match[1].length);
-                ta.selectionStart = ta.selectionEnd = start - match[1].length;
+                ta.setSelectionRange(lineStart, lineStart + match[1].length);
+                document.execCommand('insertText', false, '');
             }
         } else {
-            // Tab: insert \t
-            ta.value = ta.value.slice(0, start) + '\t' + ta.value.slice(end);
-            ta.selectionStart = ta.selectionEnd = start + 1;
+            // Tab: insert \t at cursor
+            document.execCommand('insertText', false, '\t');
         }
-    } else {
-        // Multi-line selection — indent/outdent all selected lines
-        const lines = ta.value.split('\n');
-        let pos = 0;
-        let newStart = start;
-        let newEnd = end;
-
-        const result = lines.map((line, i) => {
-            const lineStart = pos;
-            const lineEnd = pos + line.length;
-            pos = lineEnd + 1; // +1 for \n
-
-            // Is this line within the selection?
-            if (lineEnd < start || lineStart > end) return line;
-
-            if (e.shiftKey) {
-                const match = line.match(/^(\t| {1,4})/);
-                if (match) {
-                    if (lineStart < newStart) newStart = Math.max(lineStart, newStart - match[1].length);
-                    newEnd -= match[1].length;
-                    return line.slice(match[1].length);
-                }
-                return line;
-            } else {
-                if (lineStart <= newStart && i > 0 || lineStart < newStart) newStart += 1;
-                newEnd += 1;
-                return '\t' + line;
-            }
-        });
-
-        ta.value = result.join('\n');
-        ta.selectionStart = newStart;
-        ta.selectionEnd = newEnd;
+        return;
     }
 
-    // Trigger input event so debounce/save handlers pick up the change
-    ta.dispatchEvent(new Event('input', { bubbles: true }));
+    // --- Multi-line selection: indent/outdent all affected lines ---
+    const firstLineStart = value.lastIndexOf('\n', start - 1) + 1;
+    const afterEnd = value.indexOf('\n', end);
+    const lastLineEnd = afterEnd === -1 ? value.length : afterEnd;
+
+    const block = value.slice(firstLineStart, lastLineEnd);
+    const lines = block.split('\n');
+
+    let startDelta = 0;
+    let endDelta = 0;
+    let cumLen = 0;
+
+    const newLines = lines.map((line) => {
+        const lineAbsStart = firstLineStart + cumLen;
+        cumLen += line.length + 1;
+
+        if (e.shiftKey) {
+            const match = line.match(/^(\t| {1,4})/);
+            if (!match) return line;
+            const rm = match[1].length;
+            if (lineAbsStart + rm <= start) {
+                startDelta -= rm;
+            } else if (lineAbsStart <= start) {
+                // Cursor is inside the whitespace being removed — snap to line start
+                startDelta -= (start - lineAbsStart);
+            }
+            endDelta -= rm;
+            return line.slice(rm);
+        }
+
+        if (lineAbsStart <= start) startDelta += 1;
+        endDelta += 1;
+        return '\t' + line;
+    });
+
+    // Replace block via execCommand to preserve undo history
+    ta.setSelectionRange(firstLineStart, lastLineEnd);
+    document.execCommand('insertText', false, newLines.join('\n'));
+
+    // Restore adjusted selection
+    ta.setSelectionRange(
+        Math.max(firstLineStart, start + startDelta),
+        Math.max(firstLineStart, end + endDelta)
+    );
 });
