@@ -197,13 +197,6 @@
     "systemPrefix": "System: ",
     "criticalPrefix": "Error: "
   },
-  "misc": {
-    "pageTitle": "Settings",
-    "languageLabel": "Language",
-    "globalAudioLabel": "Music",
-    "sfxLabel": "Sound Effects",
-    "localeName": "English"
-  },
   "hints": {
     "push": "Go forward to newer entries. If you're already at the newest, a blank page appears — just start typing to create a new entry.",
     "pull": "Go back to view older entries in this topic. Your current text is saved automatically before switching.",
@@ -287,6 +280,13 @@
     "crtBlendModeLabel": "Soften CRT Lines",
     "resetAll": "Reset All Settings",
     "resetComplete": "Settings reset to defaults."
+  },
+  "misc": {
+    "pageTitle": "Settings",
+    "languageLabel": "Language",
+    "globalAudioLabel": "Music",
+    "sfxLabel": "Sound Effects",
+    "localeName": "English"
   },
   "mods": {
     "pageTitle": "Extensions",

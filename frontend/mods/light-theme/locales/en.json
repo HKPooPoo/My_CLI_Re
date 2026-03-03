@@ -1,8 +1,8 @@
 {
     "mods": {
         "lightTheme": {
-            "name": "LIGHT THEME",
-            "desc": "Switch from CRT dark to a clean light appearance. Toggle via the theme button in the header."
+            "name": "Light Theme",
+            "desc": "Switch to a bright, clean look. Use the theme button at the top to toggle."
         }
     }
 }

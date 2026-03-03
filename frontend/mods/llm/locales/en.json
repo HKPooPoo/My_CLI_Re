@@ -1,78 +1,77 @@
 {
   "mods": {
     "llm": {
-      "name": "LLM",
-      "desc": "AI TEXT PROCESSING — PROMPT-BASED INSTANCES WITH BROWSER, LOCAL, OR CLOUD LLM.",
+      "name": "AI Text",
+      "desc": "Process text with AI — create prompt-based tools using browser, local, or cloud models.",
       "config": {
-        "prompt": "PROMPT",
-        "icon": "ICON",
-        "provider": "PROVIDER",
-        "temperature": "TEMPERATURE",
-        "clientModel": "BROWSER MODEL",
-        "prewarm": "PREWARM MODEL",
-        "serverModel": "SERVER MODEL",
-        "serverTest": "CONNECTION",
-        "apiProvider": "API PROVIDER",
-        "apiModel": "API MODEL",
-        "apiKey": "API KEY"
+        "prompt": "Prompt",
+        "icon": "Icon",
+        "provider": "Provider",
+        "temperature": "Temperature",
+        "clientModel": "Browser Model",
+        "prewarm": "Prewarm Model",
+        "serverModel": "Server Model",
+        "serverTest": "Connection",
+        "apiProvider": "API Provider",
+        "apiModel": "API Model",
+        "apiKey": "API Key"
       },
       "preset": {
-        "summarize": "SUMMARIZE",
-        "translate": "TRANSLATE",
-        "polish": "POLISH",
-        "explain": "EXPLAIN",
-        "branchSummary": "THEMES",
-        "branchTimeline": "TIMELINE",
-        "branchExtract": "KEY POINTS",
-        "allOverview": "OVERVIEW",
-        "allCompare": "COMPARE"
+        "summarize": "Summarize",
+        "translate": "Translate",
+        "polish": "Polish",
+        "explain": "Explain",
+        "branchSummary": "Themes",
+        "branchTimeline": "Timeline",
+        "branchExtract": "Key Points",
+        "allOverview": "Overview",
+        "allCompare": "Compare"
       },
       "icon": {
-        "summarize": "SUMMARIZE",
-        "translate": "TRANSLATE",
-        "polish": "POLISH",
-        "summarizeFiles": "FILES",
-        "summarizeBranch": "BRANCH",
-        "summarizeAll": "ALL",
-        "translateZhTW": "TRANSLATE 繁中",
-        "translateZhCN": "TRANSLATE 简中",
-        "translateEn": "TRANSLATE EN",
-        "translateJa": "TRANSLATE 日本語"
+        "summarize": "Summarize",
+        "translate": "Translate",
+        "polish": "Polish",
+        "summarizeFiles": "Files",
+        "summarizeBranch": "Topic",
+        "summarizeAll": "All",
+        "translateZhTW": "Chinese (Traditional)",
+        "translateZhCN": "Chinese (Simplified)",
+        "translateEn": "English",
+        "translateJa": "Japanese"
       },
       "provider": {
-        "client": "CLIENT (BROWSER)",
-        "server": "SERVER (OLLAMA)",
-        "apikey": "API KEY (CLOUD)"
+        "client": "Browser (WebGPU)",
+        "server": "Server (Ollama)",
+        "apikey": "API Key (Cloud)"
       },
       "clientModel": {
-        "qwen3_06b": "QWEN3 0.6B (FAST, ~400MB)",
-        "qwen3_17b": "QWEN3 1.7B (BALANCED, ~1.2GB)",
-        "qwen3_4b": "QWEN3 4B (QUALITY, ~2.8GB)",
-        "qwen3_8b": "QWEN3 8B (BEST, ~5.3GB)"
+        "qwen3_06b": "Qwen3 0.6B (Fast, ~400MB)",
+        "qwen3_17b": "Qwen3 1.7B (Balanced, ~1.2GB)",
+        "qwen3_4b": "Qwen3 4B (Quality, ~2.8GB)",
+        "qwen3_8b": "Qwen3 8B (Best, ~5.3GB)"
       },
       "apiProvider": {
-        "openai": "OPENAI",
-        "anthropic": "ANTHROPIC"
+        "openai": "OpenAI",
+        "anthropic": "Anthropic"
       },
-      "processing": "PROCESSING... STANDBY.",
-      "loading": "LOADING MODEL...",
-      "generating": "GENERATING...",
-      "connecting": "CONNECTING TO SERVER...",
-      "thinking": "MODEL THINKING... ({seconds}s)",
-      "empty": "NO INPUT TEXT.",
-      "noOutput": "MODEL RETURNED EMPTY RESPONSE.",
-      "noPrompt": "NO PROMPT SET. OPEN MOD CONFIG TO SET A PROMPT.",
-      "noApiKey": "NO API KEY SET. OPEN MOD CONFIG TO ENTER YOUR KEY.",
-      "error": "CRITICAL BREACH: {error}",
-      "clientError": "BROWSER MODEL FAILED: {error}",
-      "serverError": "SERVER UNREACHABLE: {error} — IS OLLAMA RUNNING?",
-      "apiError": "API REQUEST FAILED: {error} — CHECK YOUR KEY AND QUOTA.",
-      "noWebGPU": "WEBGPU NOT SUPPORTED — SWITCH TO SERVER OR API KEY.",
-      "serverTestBtn": "CHECK CONNECTION",
-      "serverTesting": "CHECKING OLLAMA...",
-      "serverOnline": "ONLINE — {model} READY",
-      "serverOffline": "OFFLINE — OLLAMA NOT REACHABLE",
-      "serverNoModel": "ONLINE — BUT {model} NOT FOUND. AVAILABLE: {available}"
+      "processing": "Processing...",
+      "loading": "Loading model...",
+      "connecting": "Connecting to server...",
+      "thinking": "Thinking... ({seconds}s)",
+      "empty": "No text to process.",
+      "noOutput": "The model returned an empty response.",
+      "noPrompt": "No prompt set. Go to extension config to set one.",
+      "noApiKey": "No API key set. Go to extension config to enter your key.",
+      "error": "Error: {error}",
+      "clientError": "Browser model failed: {error}",
+      "serverError": "Server unreachable: {error} — is Ollama running?",
+      "apiError": "API request failed: {error} — check your key and quota.",
+      "noWebGPU": "WebGPU not supported. Switch to server or API key.",
+      "serverTestBtn": "Check Connection",
+      "serverTesting": "Checking Ollama...",
+      "serverOnline": "Online — {model} ready",
+      "serverOffline": "Offline — Ollama not reachable",
+      "serverNoModel": "Online — but {model} not found. Available: {available}"
     }
   }
 }

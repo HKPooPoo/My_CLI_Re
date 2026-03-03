@@ -2,10 +2,10 @@
     "mods": {
         "infoScreensaver": {
             "name": "Info Screensaver",
-            "desc": "Shows a live system dashboard on the screensaver overlay",
-            "active": "active",
-            "showLlm": "Show LLM Status",
-            "showMods": "Show MOD Count",
+            "desc": "Shows a live system dashboard on the screensaver overlay.",
+            "active": "Active",
+            "showLlm": "Show AI Status",
+            "showMods": "Show Extension Count",
             "showClock": "Show Clock"
         }
     }

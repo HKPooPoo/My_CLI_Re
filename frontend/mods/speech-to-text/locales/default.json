@@ -1,18 +1,18 @@
 {
   "mods": {
     "speechToText": {
-      "name": "Voice Input",
-      "desc": "Convert speech to text.",
+      "name": "SPEECH TO TEXT",
+      "desc": "CONVERT VOICE INPUT TO TEXT VIA GOOGLE SPEECH API.",
       "provider": {
-        "google": "Google Speech"
+        "google": "GOOGLE SPEECH API"
       },
-      "listening": "Listening...",
-      "processing": "Processing...",
-      "verified": "Done!",
-      "selectBoard": "Select a board first.",
-      "noSpeech": "No speech detected.",
-      "offline": "You are offline.",
-      "micDenied": "Microphone access denied."
+      "listening": "LISTENING...",
+      "processing": "PROCESSING...",
+      "verified": "VERIFIED",
+      "selectBoard": "ERROR: SELECT BOARD",
+      "noSpeech": "ERROR: NO SPEECH",
+      "offline": "ERROR: OFFLINE",
+      "micDenied": "ERROR: MIC DENIED"
     }
   }
 }

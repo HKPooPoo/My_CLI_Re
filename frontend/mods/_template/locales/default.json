@@ -1,24 +1,24 @@
 {
     "mods": {
         "myMod": {
-            "name": "My MOD",
-            "desc": "A template MOD for reference",
-            "empty": "No text to process",
+            "name": "MY MOD",
+            "desc": "TEMPLATE MOD FOR REFERENCE.",
+            "empty": "NO TEXT TO PROCESS",
             "provider": {
-                "default": "Default"
+                "default": "DEFAULT"
             },
             "config": {
-                "mode": "Mode",
-                "apiKey": "API Key",
-                "intensity": "Intensity",
-                "autoRun": "Auto Run",
-                "status": "Server Status",
-                "test": "Test Connection",
+                "mode": "MODE",
+                "apiKey": "API KEY",
+                "intensity": "INTENSITY",
+                "autoRun": "AUTO RUN",
+                "status": "SERVER STATUS",
+                "test": "TEST CONNECTION",
                 "testBtn": "TEST"
             },
             "mode": {
-                "auto": "Automatic",
-                "manual": "Manual"
+                "auto": "AUTOMATIC",
+                "manual": "MANUAL"
             }
         }
     }

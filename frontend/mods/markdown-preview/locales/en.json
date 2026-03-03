@@ -1,13 +1,13 @@
 {
   "mods": {
     "markdownPreview": {
-      "name": "MARKDOWN PREVIEW",
-      "desc": "RENDER MARKDOWN IN FEATURE SHELF.",
+      "name": "Markdown Preview",
+      "desc": "Preview formatted text.",
       "provider": {
-        "marked": "MARKED.JS"
+        "marked": "Marked.js"
       },
-      "disabled": "MOD DISABLED",
-      "emptyContent": "NO CONTENT"
+      "disabled": "Extension disabled",
+      "emptyContent": "Empty"
     }
   }
 }

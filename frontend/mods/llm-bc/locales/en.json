@@ -1,18 +1,18 @@
 {
   "mods": {
     "llmBc": {
-      "name": "LLM BROADCAST",
-      "desc": "AI CHANNEL PROCESSING — ANALYZE FOCUSED TEXT OR FULL CHANNEL HISTORY.",
+      "name": "AI Channel Analysis",
+      "desc": "Analyze channel messages with AI — process current text or full history.",
       "config": {
-        "target": "TARGET"
+        "target": "Scope"
       },
       "target": {
-        "text": "CURRENT TEXT",
-        "history": "CHANNEL HISTORY"
+        "text": "Current Text",
+        "history": "Channel History"
       },
       "preset": {
-        "channelSummary": "THEMES",
-        "channelExtract": "KEY POINTS"
+        "channelSummary": "Themes",
+        "channelExtract": "Key Points"
       }
     }
   }

@@ -1,15 +1,15 @@
 {
   "mods": {
     "llmFile": {
-      "name": "File AI",
-      "desc": "AI file processing — extract text from images, describe photos, and analyze documents.",
-      "config": { "prompt": "Prompt", "icon": "Icon" },
-      "preset": { "ocr": "Read Text (OCR)", "toMarkdown": "Convert to Markdown", "describe": "Describe Image", "summarize": "Summarize Files" },
+      "name": "LLM FILE",
+      "desc": "AI FILE PROCESSING — OCR, IMAGE DESCRIPTION, AND DOCUMENT ANALYSIS VIA VISION MODEL.",
+      "config": { "prompt": "PROMPT", "icon": "ICON" },
+      "preset": { "ocr": "OCR (EXTRACT TEXT)", "toMarkdown": "TO MARKDOWN", "describe": "DESCRIBE IMAGE", "summarize": "SUMMARIZE FILES" },
       "icon": { "ocr": "OCR" },
-      "processing": "Reading files...",
-      "noFiles": "No files attached to this entry.",
-      "serverOnly": "File reading needs server provider (Ollama)."
+      "processing": "PROCESSING ATTACHMENTS...",
+      "noFiles": "NO ATTACHMENTS ON CURRENT RECORD.",
+      "serverOnly": "FILE PROCESSING REQUIRES SERVER PROVIDER (OLLAMA)."
     }
   },
-  "hints": { "llmFile": { "button": "Use AI to read and analyze your attached files." } }
+  "hints": { "llmFile": { "button": "Process file attachments with AI vision model." } }
 }

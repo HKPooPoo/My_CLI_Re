@@ -1,15 +1,15 @@
 {
   "mods": {
     "llmBb": {
-      "name": "LLM BLACKBOARD",
-      "desc": "AI ANALYSIS OF BRANCH RECORDS — SUMMARIZE, COMPARE, AND EXTRACT ACROSS BRANCHES.",
+      "name": "AI Log Analysis",
+      "desc": "Analyze topic entries with AI — summarize, compare, and extract across topics.",
       "config": {
-        "target": "TARGET"
+        "target": "Scope"
       },
       "target": {
-        "branchLog": "BRANCH (LOG PAGE)",
-        "branchOverview": "BRANCH (BRANCH PAGE)",
-        "all": "ALL BRANCHES"
+        "branchLog": "Topic (Entries tab)",
+        "branchOverview": "Topic (Topics tab)",
+        "all": "All Topics"
       }
     }
   }

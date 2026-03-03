@@ -1,13 +1,13 @@
 {
     "mods": {
         "fileAttach": {
-            "name": "FILE ATTACH",
-            "nameFile": "FILE ATTACH",
-            "nameCamera": "CAMERA",
-            "desc": "Attach files or take photos on mobile.",
-            "noTextarea": "NO EDITOR ON THIS PAGE",
-            "config": { "mode": "INPUT MODE" },
-            "mode": { "file": "FILE PICKER", "camera": "CAMERA" }
+            "name": "Attach File",
+            "nameFile": "Attach File",
+            "nameCamera": "Camera",
+            "desc": "Add files or take photos from your device.",
+            "noTextarea": "No editor on this page.",
+            "config": { "mode": "Input Mode" },
+            "mode": { "file": "File Picker", "camera": "Camera" }
         }
     },
     "hints": {

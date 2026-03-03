@@ -1,17 +1,17 @@
 {
     "mods": {
         "asciiAnimator": {
-            "name": "ASCII Animator",
-            "desc": "WebGL2-powered ASCII visual effects: matrix rain, perlin noise, mouse glow, toast spinners",
-            "matrixRain": "Matrix Rain",
-            "rainSpeed": "Rain Speed",
-            "rainDensity": "Rain Density",
-            "perlinBg": "Perlin Background",
-            "perlinOpacity": "Background Opacity",
-            "perlinSpeed": "Animation Speed",
-            "mouseLight": "Mouse Light",
-            "lightRadius": "Light Radius",
-            "toastAnim": "Toast Spinner"
+            "name": "ASCII ANIMATOR",
+            "desc": "WEBGL2 ASCII VFX: MATRIX RAIN, PERLIN NOISE, MOUSE GLOW, TOAST SPINNER.",
+            "matrixRain": "MATRIX RAIN",
+            "rainSpeed": "RAIN SPEED",
+            "rainDensity": "RAIN DENSITY",
+            "perlinBg": "PERLIN BACKGROUND",
+            "perlinOpacity": "BACKGROUND OPACITY",
+            "perlinSpeed": "ANIMATION SPEED",
+            "mouseLight": "MOUSE LIGHT",
+            "lightRadius": "LIGHT RADIUS",
+            "toastAnim": "TOAST SPINNER"
         }
     }
 }
