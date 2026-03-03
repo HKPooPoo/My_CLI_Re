@@ -17,7 +17,7 @@ import { BBMessage } from '../../javascript/blackboard-msg.js';
 // ===================== Constants =====================
 
 export const CLIENT_MODEL = 'Qwen3-0.6B-q4f16_1-MLC';
-export const SERVER_MODEL = 'qwen3-vl:2b-instruct';
+export const SERVER_MODEL = 'qwen3.5:4b';
 
 export const ICONS = [
     { value: 'summarize',        url: '/images/llm-summarize.svg',        labelKey: 'mods.llm.icon.summarize' },
@@ -161,7 +161,7 @@ export function buildMessagesWithImages(prompt, images) {
 }
 
 /**
- * Execute LLM vision inference. Server provider (Ollama qwen3-vl) only.
+ * Execute LLM vision inference. Server provider (Ollama qwen3.5) only.
  * Streams output to the given textarea element.
  */
 export async function runLlmWithImages(config, prompt, images, out, tFn) {
