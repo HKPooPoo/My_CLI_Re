@@ -773,11 +773,15 @@ function bindEvents() {
     elements.refreshBtn?.addEventListener('click', async () => {
         playAudio('UIGeneralFocus.mp3');
         const msg = BBMessage.loading(t('mods.refreshing'));
-
-        await ModState.refreshAllServerStatuses();
-        updateServerIndicators();
-
-        msg.update(t('mods.refreshComplete'));
+        try {
+            await ModState.refreshAllServerStatuses();
+            updateServerIndicators();
+            msg.update(t('mods.refreshComplete'));
+        } catch (e) {
+            console.error('MOD REFRESH ERROR:', e);
+            msg.close();
+            BBMessage.error(t('mods.refreshFailed'));
+        }
     });
 
     // When navigating to config page, ensure selected item is rendered

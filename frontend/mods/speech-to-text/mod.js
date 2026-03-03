@@ -148,9 +148,8 @@ export default {
             this._voiceBtn.classList.add("processing");
         }
         playAudio("UISelectOff.mp3");
-        if (this._voiceMsg) {
-            this._voiceMsg.update(this._t('mods.speechToText.processing'));
-        }
+        if (this._voiceMsg) this._voiceMsg.close();
+        this._voiceMsg = this._ui.toastLoading(this._t('mods.speechToText.processing'));
     },
 
     async _transcribeAudio(audioBlob) {

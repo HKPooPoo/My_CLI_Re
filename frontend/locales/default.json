@@ -300,6 +300,7 @@
     "refreshBtn": "REFRESH",
     "refreshing": "SCANNING...",
     "refreshComplete": "SCAN COMPLETE",
+    "refreshFailed": "ERROR: SCAN FAILED",
     "statusLabel": "STATUS",
     "catalog": "AVAILABLE",
     "active": "ACTIVE",

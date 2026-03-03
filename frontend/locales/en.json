@@ -300,6 +300,7 @@
     "refreshBtn": "Refresh",
     "refreshing": "Checking...",
     "refreshComplete": "Check complete!",
+    "refreshFailed": "Check failed.",
     "statusLabel": "Status",
     "catalog": "Available",
     "active": "Active",

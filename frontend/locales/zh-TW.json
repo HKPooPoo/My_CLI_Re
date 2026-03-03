@@ -300,6 +300,7 @@
     "refreshBtn": "重新掃描",
     "refreshing": "掃描中...",
     "refreshComplete": "掃描完成",
+    "refreshFailed": "掃描失敗",
     "statusLabel": "狀態",
     "catalog": "可用模組",
     "active": "啟用中模組",

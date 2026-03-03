@@ -441,15 +441,16 @@ if (checkoutBtnEl) {
 
         playAudio("Click.mp3");
 
+        let msg;
         try {
             if (currentCheckoutAction === "checkout") {
                 // Re-download from server (always remote)
-                const msg = BBMessage.loading(t('blackboard.loading'));
+                msg = BBMessage.loading(t('blackboard.loading'));
                 await BBVCS.checkout(state, selected.id, "remote", { silent: true });
                 msg.update(t('blackboard.loadComplete'));
             } else {
                 // Switch to a different branch
-                const msg = BBMessage.loading(t('blackboard.switching'));
+                msg = BBMessage.loading(t('blackboard.switching'));
                 const targetOwner = selected.isLocal ? "local" : "remote";
                 await BBVCS.checkout(state, selected.id, targetOwner, { silent: true });
                 msg.update(t('blackboard.switchComplete'));
@@ -460,6 +461,7 @@ if (checkoutBtnEl) {
             updateCheckoutButtonState();
         } catch (e) {
             console.error("CHECKOUT/SWITCH ERROR:", e);
+            if (msg) msg.close();
             BBMessage.error(t('blackboard.loadFailed'));
         }
     });
