@@ -288,6 +288,7 @@ erDiagram
     blackboards {
         bigint user_id FK
         varchar branch_id UK "Date.now() ms"
+        varchar branch_name "nullable, display label"
         bigint timestamp UK "ms, record time"
         longtext text "nullable"
         text file_hash "nullable"
@@ -296,13 +297,16 @@ erDiagram
     walkie_typie_connections {
         bigint user_id FK
         bigint partner_id FK
+        varchar partner_tag "nullable, display name"
         varchar my_branch_id "wt_{myId}_{partnerId}"
         varchar partner_branch_id "wt_{partnerId}_{myId}"
+        bigint last_signal "ms"
     }
 
     walkie_typie_boards {
         bigint user_id FK
         varchar branch_id UK
+        varchar branch_name "nullable, display label"
         bigint timestamp UK "ms"
         longtext text "nullable"
         text file_hash "nullable"
