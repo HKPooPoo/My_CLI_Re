@@ -2,7 +2,7 @@
   "mods": {
     "llmFile": {
       "name": "LLM FILE",
-      "desc": "AI FILE PROCESSING — OCR, IMAGE DESCRIPTION, AND DOCUMENT ANALYSIS VIA VISION MODEL.",
+      "desc": "AI FILE PROCESSING — OCR, IMAGE DESCRIPTION, AND DOCUMENT ANALYSIS. SERVER (OLLAMA) ONLY.",
       "config": { "prompt": "PROMPT", "icon": "ICON" },
       "preset": { "ocr": "OCR (EXTRACT TEXT)", "toMarkdown": "TO MARKDOWN", "describe": "DESCRIBE IMAGE", "summarize": "SUMMARIZE FILES" },
       "icon": { "ocr": "OCR" },
@@ -11,5 +11,5 @@
       "serverOnly": "FILE PROCESSING REQUIRES SERVER PROVIDER (OLLAMA)."
     }
   },
-  "hints": { "llmFile": { "button": "Process file attachments with AI vision model." } }
+  "hints": { "llmFile": { "button": "Process file attachments with server AI. Requires Ollama." } }
 }

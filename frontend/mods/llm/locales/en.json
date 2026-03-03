@@ -56,6 +56,7 @@
       },
       "processing": "Processing...",
       "loading": "Loading model...",
+      "generating": "Generating...",
       "connecting": "Connecting to server...",
       "thinking": "Thinking... ({seconds}s)",
       "empty": "No text to process.",

@@ -1,7 +1,7 @@
 /**
  * LLM FILE — Code module (data in manifest.json)
- * AI file processing: OCR, image description, and document analysis via vision model.
- * Reads attachments on the current record. Server-only (Ollama qwen3.5).
+ * AI file processing: OCR, image description, and document analysis via server multimodal AI.
+ * Reads attachments on the current record. Server-only (Ollama qwen3.5 — natively multimodal).
  */
 
 import {
