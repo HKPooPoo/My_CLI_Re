@@ -12,6 +12,7 @@ input[type="text"],
 input[type="password"] {
     caret-color: white;
     caret-shape: block;
+    tab-size: 4;
     user-select: text; /* override * { user-select: none } so Firefox shows caret */
 }
 
