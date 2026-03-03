@@ -5,7 +5,7 @@
  * =================================================================
  */
 
-import { createRangeControl, createToggleControl } from './misc.js';
+import { createRangeControl, createToggleControl, createResetButton } from './misc.js';
 import { t } from './i18n.js';
 import * as Settings from './settings.js';
 
@@ -15,6 +15,9 @@ const BCConfig = {
 
     init() {
         this.render();
+        if (this.container) {
+            createResetButton(this.container.parentElement, 'bc', () => this.render());
+        }
         window.addEventListener('i18n:ready', () => this.render());
         window.addEventListener('settings:changed', (e) => {
             if (e.detail?.scope === 'all') this.render();

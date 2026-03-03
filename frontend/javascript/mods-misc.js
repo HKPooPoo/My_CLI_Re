@@ -5,7 +5,7 @@
  * =================================================================
  */
 
-import { createToggleControl } from './misc.js';
+import { createToggleControl, createResetButton } from './misc.js';
 
 const ModsMisc = {
     container: document.getElementById('mods-misc-container'),
@@ -13,6 +13,9 @@ const ModsMisc = {
 
     init() {
         this.render();
+        if (this.container) {
+            createResetButton(this.container.parentElement, 'mods', () => this.render());
+        }
         window.addEventListener('i18n:ready', () => this.render());
         window.addEventListener('settings:changed', (e) => {
             if (e.detail?.scope === 'all') this.render();

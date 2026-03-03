@@ -129,6 +129,40 @@ export function setGlobal(key, value) {
     }));
 }
 
+/**
+ * Reset a single scope to its defaults.
+ * Fires individual settings:changed events so existing listeners react.
+ */
+export function resetScope(scope) {
+    const defaults = SCOPE_DEFAULTS[scope];
+    if (!defaults) return;
+    for (const [key, value] of Object.entries(defaults)) {
+        localStorage.setItem(_scopeKey(scope, key), _serialize(value));
+        window.dispatchEvent(new CustomEvent('settings:changed', {
+            detail: { scope, key, value }
+        }));
+    }
+    // WT boardSwap is not in SCOPE_DEFAULTS — handle explicitly
+    if (scope === 'wt') {
+        localStorage.setItem(_scopeKey('wt', 'boardSwap'), 'false');
+        window.dispatchEvent(new CustomEvent('settings:changed', {
+            detail: { scope: 'wt', key: 'boardSwap', value: false }
+        }));
+    }
+}
+
+/**
+ * Reset all global settings to defaults.
+ */
+export function resetGlobals() {
+    for (const [key, value] of Object.entries(GLOBAL_DEFAULTS)) {
+        localStorage.setItem(_globalKey(key), _serialize(value));
+        window.dispatchEvent(new CustomEvent('settings:changed', {
+            detail: { scope: 'global', key, value }
+        }));
+    }
+}
+
 export function resetAll() {
     for (const scope of SCOPES) {
         for (const [key, value] of Object.entries(SCOPE_DEFAULTS[scope])) {

@@ -96,6 +96,32 @@ export function createToggleControl(container, scope, key, labelKey, hintKey) {
     return { btn, updateLabel };
 }
 
+/**
+ * Create a scope-specific reset button.
+ * @param {HTMLElement} parentContainer - The .misc-container parent (button appended here)
+ * @param {string} scope - The settings scope to reset ('bb', 'wt', 'bc', 'mods')
+ * @param {() => void} [onReset] - Extra callback after reset (e.g. re-render)
+ */
+export function createResetButton(parentContainer, scope, onReset) {
+    const btn = document.createElement('button');
+    btn.className = 'misc-toggle-btn crt-text-orange';
+    btn.style.cssText = 'margin-top: 8px; width: 100%;';
+    btn.setAttribute('data-i18n', 'config.reset');
+    btn.textContent = t('config.reset');
+    parentContainer.appendChild(btn);
+
+    new MultiStepButton(btn, {
+        sound: 'UIGeneralCancel.mp3',
+        action: async () => {
+            Settings.resetScope(scope);
+            BBMessage.success(t('config.resetComplete'));
+            if (onReset) onReset();
+        }
+    });
+
+    return btn;
+}
+
 // --- MISC Controller ---
 
 export const MISC = {
@@ -205,12 +231,13 @@ export const MISC = {
             this.updateUI();
         });
 
-        // Reset button
+        // Reset button — BB scope + globals (everything visible on this page)
         if (this.elements.resetBtn) {
             new MultiStepButton(this.elements.resetBtn, {
                 sound: 'UIGeneralCancel.mp3',
                 action: async () => {
-                    Settings.resetAll();
+                    Settings.resetScope('bb');
+                    Settings.resetGlobals();
                     BBMessage.success(t('config.resetComplete'));
                     this.renderBBConfig();
                     this.updateUI();

@@ -278,6 +278,7 @@
     "showHints": "Button Hints",
     "screensaverTimeout": "Screensaver Delay (sec)",
     "crtBlendModeLabel": "Soften CRT Lines",
+    "reset": "Reset Settings",
     "resetAll": "Reset All Settings",
     "resetComplete": "Settings reset to defaults."
   },
