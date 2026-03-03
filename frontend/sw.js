@@ -1,4 +1,4 @@
-const CACHE_NAME = 'blackboard-v85-2026-03-04';
+const CACHE_NAME = 'blackboard-v86-2026-03-04';
 
 // Core framework only — MOD files (mods/*, vendor libs, MOD assets) are NOT listed here.
 // They are cached lazily via the stale-while-revalidate fetch handler on first page load.
@@ -8,7 +8,7 @@ const ASSETS = [
   '/index.html',
   '/style.css',
   '/stylesheets/editor-attachments.css',
-  '/stylesheets/walkie-typie.css',
+  '/stylesheets/page-walkie-typie.css',
   '/javascript/blackboard.js',
   '/javascript/blackboard-sync.js',
   '/javascript/editor-attachments.js',
@@ -49,7 +49,7 @@ const ASSETS = [
   '/audio/UIPipboyOKPress.mp3',
   '/audio/UISelectOff.mp3',
   '/audio/UISelectOn.mp3',
-  '/favicon.ico',
+  '/images/favicon.ico',
   '/manifest.json'
 ];
 
