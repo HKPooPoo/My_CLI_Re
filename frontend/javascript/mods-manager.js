@@ -105,8 +105,8 @@ function renderListPage(activeInstanceId, activeTemplateId) {
     if (!container) return;
     container.innerHTML = '';
 
-    renderTemplateCatalog(container);
     renderActiveInstances(container);
+    renderTemplateCatalog(container);
 
     // Mark selected item BEFORE refresh so InfiniteList finds it via .active class
     if (activeInstanceId) {

@@ -218,67 +218,67 @@
       "delete": "DELETE — Permanently remove a channel you own."
     },
     "mods": {
-      "refresh": "Probe remote status for all registered MOD instance."
+      "refresh": "Check remote status for all MOD instance."
     },
     "config": {
-      "maxSlot": "Max record per branch. Excess record pruned from oldest.",
-      "autoCleanBlanks": "Prune empty record on HEAD change.",
-      "updateTimestamp": "Rebase edited record to HEAD position.",
-      "autoSync": "Auto-fetch from remote on change detection. Requires auth.",
-      "boardSwap": "Default view: remote board on top.",
-      "screensaverTimeout": "Idle duration (sec) before screensaver activation.",
-      "crtBlendMode": "Overlay blend mode on CRT scanline."
+      "maxSlot": "Max record per branch. Oldest record pruned when limit is reached.",
+      "autoCleanBlanks": "Prune empty record when HEAD changes.",
+      "updateTimestamp": "Rebase edited record to HEAD.",
+      "autoSync": "Auto-fetch from remote when changes are detected. Requires auth.",
+      "boardSwap": "Show remote board on top by default.",
+      "screensaverTimeout": "Idle time in seconds before screensaver activates.",
+      "crtBlendMode": "Apply overlay blend to CRT scanline."
     },
     "llm": {
-      "button": "Run LLM on current text with configured prompt.",
-      "provider": "client = WebGPU (browser). server = Ollama (local). apikey = cloud API.",
-      "clientModel": "In-browser model via WebGPU. Larger model = more VRAM.",
-      "apiProvider": "Cloud LLM provider for API key auth.",
+      "button": "Run LLM on current text with your configured prompt.",
+      "provider": "client = WebGPU in browser. server = local Ollama. apikey = cloud API.",
+      "clientModel": "In-browser model via WebGPU. Larger model requires more VRAM.",
+      "apiProvider": "Cloud LLM provider to use with your API key.",
       "apiModel": "Model ID for cloud provider (e.g. gpt-4o-mini).",
-      "apiKey": "API key. Stored in localStorage only — never sent to server.",
-      "temperature": "0 = deterministic. 1 = creative."
+      "apiKey": "Your API key. Stored in localStorage only — never sent to server.",
+      "temperature": "0 = deterministic and focused. 1 = creative and varied."
     },
     "llmBb": {
       "button": "Run LLM analysis on blackboard branch record.",
-      "target": "Scope: current branch (LOG), current branch (BRANCH), or all branch."
+      "target": "Scope: current branch from LOG, from BRANCH, or all branch."
     },
     "llmBc": {
       "button": "Run LLM analysis on broadcast channel content.",
       "target": "Scope: current record or full channel history."
     },
     "translate": {
-      "button": "Translate current text to configured target language."
+      "button": "Translate current text to the configured target language."
     },
     "stt": {
-      "button": "Speech-to-text via microphone input."
+      "button": "Record audio and convert speech to text."
     },
     "markdownPreview": {
       "button": "Render current text as formatted Markdown."
     },
     "aa": {
-      "matrixRain": "Matrix-style character rain on screensaver.",
-      "perlinBg": "Animated Perlin noise texture behind content.",
-      "mouseLight": "Cursor-following light glow effect.",
-      "toastAnim": "Braille spinner on loading toast."
+      "matrixRain": "Falling character rain on the screensaver, Matrix-style.",
+      "perlinBg": "Animated Perlin noise texture behind page content.",
+      "mouseLight": "Cursor-following light glow on the screen.",
+      "toastAnim": "Braille spinner animation on loading toast."
     }
   },
   "config": {
-    "maxSlotLabel": "log.maxRecord",
-    "maxFilesLabel": "blob.maxFile",
-    "autoCleanBlanks": "gc.autoPrune",
-    "updateTimestamp": "rebase.onEdit",
-    "autoSync": "remote.autoFetch",
-    "boardSwap": "remote.showFirst",
-    "showHints": "core.verbose",
-    "screensaverTimeout": "core.idleTimeout (sec)",
-    "crtBlendModeLabel": "ui.crtBlend",
+    "maxSlotLabel": "RECORD LIMIT",
+    "maxFilesLabel": "BLOB LIMIT",
+    "autoCleanBlanks": "AUTO PRUNE",
+    "updateTimestamp": "REBASE ON EDIT",
+    "autoSync": "AUTO FETCH",
+    "boardSwap": "REMOTE FIRST",
+    "showHints": "VERBOSE",
+    "screensaverTimeout": "IDLE TIMEOUT (SEC)",
+    "crtBlendModeLabel": "CRT BLEND",
     "resetAll": "HARD RESET",
     "resetComplete": "RESET COMPLETE"
   },
   "misc": {
     "pageTitle": "MISC",
-    "languageLabel": "LANGUAGE",
-    "globalAudioLabel": "GLOBAL AUDIO",
+    "languageLabel": "LOCALE",
+    "globalAudioLabel": "AUDIO",
     "sfxLabel": "SFX",
     "localeName": "GIT MODE"
   },
@@ -286,8 +286,8 @@
     "pageTitle": "MOD REGISTRY",
     "listTab": "LIST",
     "configTab": "CONFIG",
-    "configDefault": "SELECT A MOD FROM THE LIST.",
-    "catalogPreview": "ADD THIS MOD TO START CONFIGURING.",
+    "configDefault": "Select a MOD from the list.",
+    "catalogPreview": "Add this MOD to start configuring.",
     "enabled": "ON",
     "disabled": "OFF",
     "refreshBtn": "REFRESH",
