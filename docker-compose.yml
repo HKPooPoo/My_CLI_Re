@@ -225,11 +225,14 @@ services:
   ollama:
     image: ollama/ollama:latest
     container_name: my-cli-ollama
+    entrypoint: ["sh", "/ollama-entrypoint.sh"]
     ports:
       - "11434:11434"
     volumes:
       - ollama-data:/root/.ollama
+      - ./docker/ollama-entrypoint.sh:/ollama-entrypoint.sh:ro
     environment:
+      - OLLAMA_MODEL=qwen3.5:4b
       - OLLAMA_MAX_LOADED_MODELS=1
       - OLLAMA_NUM_PARALLEL=1
       - OLLAMA_MAX_QUEUE=4
@@ -244,23 +247,6 @@ services:
               count: 1
               capabilities: [gpu]
     restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:11434/"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
-
-  ollama-init:
-    image: ollama/ollama:latest
-    container_name: my-cli-ollama-init
-    entrypoint: ["sh", "-c", "until curl -sf http://ollama:11434/; do sleep 2; done && ollama pull qwen3.5:4b"]
-    environment:
-      - OLLAMA_HOST=http://ollama:11434
-    depends_on:
-      ollama:
-        condition: service_healthy
-    restart: "no"
 
 volumes:
   db-data:
