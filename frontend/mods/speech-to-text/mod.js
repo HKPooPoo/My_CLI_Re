@@ -134,6 +134,7 @@ export default {
             console.error("Mic Access Error:", err);
             if (this._voiceBtn) this._voiceBtn.classList.remove("recording");
             this._flashError();
+            this._ui.toastError(this._t('mods.speechToText.micDenied'));
         }
     },
 

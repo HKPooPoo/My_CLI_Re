@@ -103,7 +103,9 @@
     "loginRequired": "請先登入",
     "uploadFailed": "上傳失敗",
     "searchPlaceholder": "搜尋主題...",
-    "autoSyncReceived": "已從其他裝置同步"
+    "autoSyncReceived": "已從其他裝置同步",
+    "initFailed": "載入面板失敗",
+    "listFailed": "載入主題列表失敗"
   },
   "walkieTypie": {
     "pageTitle": "私人訊息",
@@ -188,7 +190,8 @@
     "updateAvailable": "有可用更新"
   },
   "system": {
-    "loginRequired": "此操作需要登入。"
+    "loginRequired": "此操作需要登入。",
+    "storageFull": "儲存空間已滿，變更可能無法保存。"
   },
   "hints": {
     "push": "前進至較新的紀錄。若已在最新一筆，將出現空白頁 — 直接輸入文字即可建立新紀錄。",

@@ -11,7 +11,8 @@
       "verified": "VERIFIED",
       "selectBoard": "ERROR: SELECT BOARD",
       "noSpeech": "ERROR: NO SPEECH",
-      "offline": "ERROR: OFFLINE"
+      "offline": "ERROR: OFFLINE",
+      "micDenied": "ERROR: MIC DENIED"
     }
   }
 }

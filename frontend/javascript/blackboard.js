@@ -156,6 +156,7 @@ export async function initBoard() {
         await updateBranchList();
     } catch (e) {
         console.error("Blackboard Init Failed:", e);
+        BBMessage.error(t('blackboard.initFailed'));
     } finally {
         isInitializing = false;
     }
@@ -274,9 +275,7 @@ async function updateBranchList() {
 
     } catch (criticalError) {
         console.error("CRITICAL: Failed to update branch list", criticalError);
-        // Fallback: render empty to avoid stuck UI, or try to render what we have?
-        // If we are here, likely branchMap construction failed. 
-        // We can't do much but log.
+        BBMessage.error(t('blackboard.listFailed'));
     }
 }
 

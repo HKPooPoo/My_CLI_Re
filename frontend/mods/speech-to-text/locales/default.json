@@ -11,7 +11,8 @@
       "verified": "Done!",
       "selectBoard": "Select a board first.",
       "noSpeech": "No speech detected.",
-      "offline": "You are offline."
+      "offline": "You are offline.",
+      "micDenied": "Microphone access denied."
     }
   }
 }

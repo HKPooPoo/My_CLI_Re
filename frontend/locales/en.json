@@ -103,7 +103,9 @@
     "loginRequired": "Please log in first.",
     "uploadFailed": "Upload failed.",
     "searchPlaceholder": "Search topics...",
-    "autoSyncReceived": "Synced from another device"
+    "autoSyncReceived": "Synced from another device",
+    "initFailed": "Failed to load board.",
+    "listFailed": "Failed to load topic list."
   },
   "walkieTypie": {
     "pageTitle": "Messages",
@@ -188,7 +190,8 @@
     "updateAvailable": "Update available"
   },
   "system": {
-    "loginRequired": "Please log in for this action."
+    "loginRequired": "Please log in for this action.",
+    "storageFull": "Storage full. Changes may not be saved."
   },
   "misc": {
     "pageTitle": "Settings",

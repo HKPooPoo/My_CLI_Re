@@ -11,7 +11,8 @@
       "verified": "已驗證",
       "selectBoard": "錯誤：請選擇留言板",
       "noSpeech": "錯誤：未偵測到語音",
-      "offline": "錯誤：離線"
+      "offline": "錯誤：離線",
+      "micDenied": "麥克風存取被拒"
     }
   }
 }

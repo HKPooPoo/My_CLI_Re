@@ -103,7 +103,9 @@
     "loginRequired": "ERROR: LOGIN REQUIRED",
     "uploadFailed": "ERROR: UPLOAD FAILED",
     "searchPlaceholder": "SEARCH BRANCHES...",
-    "autoSyncReceived": "SYNCED FROM DEVICE"
+    "autoSyncReceived": "SYNCED FROM DEVICE",
+    "initFailed": "ERROR: INIT FAILED",
+    "listFailed": "ERROR: BRANCH LIST FAILED"
   },
   "walkieTypie": {
     "pageTitle": "WALKIE-TYPIE CONTROLLER",
@@ -188,7 +190,8 @@
     "updateAvailable": "UPDATE AVAILABLE"
   },
   "system": {
-    "loginRequired": "LOGIN REQUIRED FOR THIS OPERATION."
+    "loginRequired": "LOGIN REQUIRED FOR THIS OPERATION.",
+    "storageFull": "ERROR: STORAGE FULL"
   },
   "hints": {
     "push": "PUSH — Navigate toward NEWER records. Creates a new blank page at the top.",

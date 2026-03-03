@@ -12,6 +12,8 @@
 
 import { ModService } from './services/mod-service.js';
 import { ModHooks } from './mod-hooks.js';
+import { BBMessage } from './blackboard-msg.js';
+import { t } from './i18n.js';
 
 /**
  * Late-bound context factory — set by mod-loader.js to break circular dependency.
@@ -541,6 +543,7 @@ export const ModState = {
             localStorage.setItem(INSTANCES_KEY, JSON.stringify(this._instances));
         } catch (e) {
             console.error('[mod-state] Failed to persist instances:', e);
+            BBMessage.error(t('system.storageFull'));
         }
     },
 
@@ -549,6 +552,7 @@ export const ModState = {
             localStorage.setItem(SHARED_CONFIG_KEY, JSON.stringify(this._sharedConfig));
         } catch (e) {
             console.error('[mod-state] Failed to persist shared config:', e);
+            BBMessage.error(t('system.storageFull'));
         }
     }
 };
