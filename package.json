@@ -1,0 +1,9 @@
+{
+  "private": true,
+  "scripts": {
+    "build:sw": "node scripts/build-sw.js"
+  },
+  "devDependencies": {
+    "workbox-build": "^7.3.0"
+  }
+}
