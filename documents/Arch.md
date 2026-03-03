@@ -354,38 +354,45 @@ erDiagram
 ```mermaid
 erDiagram
     blackboard {
-        compound_pk PK "[owner+branch_id+timestamp]"
-        string owner "sync state tag"
-        string branch_id "Date.now() ms"
-        bigint timestamp "ms"
+        string owner PK "compound PK 1 - sync state tag"
+        string branch_id PK "compound PK 2 - Date_now ms"
+        bigint timestamp PK "compound PK 3 - ms"
+        string branch "branch display name"
         string text "record content"
+        string file_hash "JSON attachment metadata"
     }
 
     walkie_typie {
-        compound_pk PK "[branch_id+timestamp]"
-        string branch_id "wt_{myId}_{partnerId}"
-        bigint timestamp "ms"
+        string branch_id PK "compound PK 1 - wt_myId_partnerId"
+        bigint timestamp PK "compound PK 2 - ms"
         string branch "WE or THEY"
         string text "record content"
+        string file_hash "JSON attachment metadata"
     }
 
     broadcast_boards {
-        compound_pk PK "[local_channel_id+timestamp]"
-        int local_channel_id "FK to broadcast_channels"
-        bigint timestamp "ms"
+        int local_channel_id PK "compound PK 1 - FK to channels"
+        bigint timestamp PK "compound PK 2 - ms"
         string text "record content"
+        string file_hash "JSON attachment metadata"
     }
 
     broadcast_channels {
         int local_id PK "auto-increment"
         string name "display name"
         int server_channel_id "nullable"
+        string owner_uid "channel creator uid"
+        bigint last_signal "ms - last activity"
     }
 
     file_blobs {
         string hash PK "SHA-256"
         blob blob "binary data"
-        string status "pending | synced"
+        string name "original filename"
+        string type "MIME type"
+        bigint size "bytes"
+        string status "local or synced"
+        bigint last_accessed "ms - LRU tracking"
     }
 ```
 
@@ -714,7 +721,7 @@ classDiagram
     WTCore --> EchoService : private channel
     BCChannel --> EchoService : public channel
     BCChannel --> IndexedDB : owner mode storage
-    AuthManager ..> WTCore : auth:updated event
+    AuthManager ..> WTCore : auth#colon;updated event
     ModState --> IndexedDB : via localStorage
 ```
 
@@ -898,8 +905,8 @@ stateDiagram-v2
 stateDiagram-v2
     [*] --> NotLoggedIn : App starts
 
-    NotLoggedIn --> LoggedIn : auth:updated (login success)
-    LoggedIn --> NotLoggedIn : auth:updated (logout)
+    NotLoggedIn --> LoggedIn : auth#colon;updated #40;login success#41;
+    LoggedIn --> NotLoggedIn : auth#colon;updated #40;logout#41;
 
     state LoggedIn {
         [*] --> NoConnection
@@ -936,35 +943,35 @@ stateDiagram-v2
 
     state Blackboard {
         [*] --> BB_Log
-        BB_Log : Sub-page: log (record view)
-        BB_Branches : Sub-page: branches list
-        BB_Misc : Sub-page: misc (settings, sync, about)
+        BB_Log : Sub-page#colon; log #40;record view#41;
+        BB_Branches : Sub-page#colon; branches list
+        BB_Misc : Sub-page#colon; misc #40;settings, sync, about#41;
         BB_Log --> BB_Branches
         BB_Branches --> BB_Misc
     }
 
     state WalkieTypie {
         [*] --> WT_Text
-        WT_Text : Sub-page: text (conversation)
-        WT_List : Sub-page: list (connections)
-        WT_Config : Sub-page: config
+        WT_Text : Sub-page#colon; text #40;conversation#41;
+        WT_List : Sub-page#colon; list #40;connections#41;
+        WT_Config : Sub-page#colon; config
         WT_Text --> WT_List
         WT_List --> WT_Config
     }
 
     state Broadcast {
         [*] --> BC_Channel
-        BC_Channel : Sub-page: channel (content view)
-        BC_List : Sub-page: list (all channels)
-        BC_Config : Sub-page: config
+        BC_Channel : Sub-page#colon; channel #40;content view#41;
+        BC_List : Sub-page#colon; list #40;all channels#41;
+        BC_Config : Sub-page#colon; config
         BC_Channel --> BC_List
         BC_List --> BC_Config
     }
 
     state MODs {
         [*] --> MOD_List
-        MOD_List : Sub-page: list (instances + catalog)
-        MOD_Config : Sub-page: config (shared + instance)
+        MOD_List : Sub-page#colon; list #40;instances + catalog#41;
+        MOD_Config : Sub-page#colon; config #40;shared + instance#41;
         MOD_List --> MOD_Config
     }
 ```
