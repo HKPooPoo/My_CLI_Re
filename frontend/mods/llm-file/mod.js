@@ -44,7 +44,7 @@ export default {
         const prompt = config.prompt;
         if (!prompt) { out.value = tFn('mods.llm.noPrompt'); return; }
 
-        const provider = config.provider || 'client';
+        const provider = config.provider || 'server';
         if (provider !== 'server') {
             out.value = tFn('mods.llmFile.serverOnly');
             return;
