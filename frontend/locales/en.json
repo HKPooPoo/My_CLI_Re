@@ -236,6 +236,7 @@
       "autoCleanBlanks": "Automatically delete blank entries when you move to another entry.",
       "updateTimestamp": "When you edit an old entry, move it to the top so it appears as the newest.",
       "autoSync": "Keep your entries in sync across devices automatically. You need to be logged in.",
+      "loopList": "When you scroll past the end of a list, jump back to the beginning.",
       "boardSwap": "Show your partner's messages at the top by default.",
       "screensaverTimeout": "How long to wait before the screensaver appears.",
       "crtBlendMode": "Make the screen lines less harsh by blending them more softly."
@@ -279,6 +280,7 @@
     "autoCleanBlanks": "Auto-delete Empty Entries",
     "updateTimestamp": "Move Edited Entry to Top",
     "autoSync": "Auto-Sync (Multi-Device)",
+    "loopList": "Loop List Navigation",
     "boardSwap": "Show Their Messages First",
     "showHints": "Button Hints",
     "screensaverTimeout": "Screensaver Delay (sec)",
@@ -290,6 +292,7 @@
     "pageTitle": "Extensions",
     "listTab": "BROWSE",
     "configTab": "CONFIG",
+    "miscTab": "MISC",
     "configDefault": "Select an extension from the list.",
     "catalogPreview": "Add this extension to start configuring.",
     "enabled": "ON",

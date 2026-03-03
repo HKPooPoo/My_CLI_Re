@@ -31,6 +31,7 @@ const WTConfig = {
             autoClean: createToggleControl(this.container, 'wt', 'autoCleanBlanks', 'config.autoCleanBlanks', 'hints.config.autoCleanBlanks'),
             updateTs: createToggleControl(this.container, 'wt', 'updateTimestamp', 'config.updateTimestamp', 'hints.config.updateTimestamp'),
             boardSwap: createToggleControl(this.container, 'wt', 'boardSwap', 'config.boardSwap', 'hints.config.boardSwap'),
+            loopList: createToggleControl(this.container, 'wt', 'loopList', 'config.loopList', 'hints.config.loopList'),
         };
     }
 };

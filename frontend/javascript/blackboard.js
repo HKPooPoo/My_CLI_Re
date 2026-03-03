@@ -15,7 +15,7 @@ import { BBCore, getHKTTimestamp } from "./blackboard-core.js";
 import { BBVCS } from "./blackboard-vcs.js";
 import { BBUI } from "./blackboard-ui.js";
 import { BBMessage } from "./blackboard-msg.js";
-import { initAllInfiniteLists } from "./blackboard-ui-list.js"
+import { initAllInfiniteLists, listInstances } from "./blackboard-ui-list.js"
 import db from "./indexedDB.js"
 import { MultiStepButton } from "./multiStepButton.js";
 import { BlackboardService } from "./services/blackboard-service.js";
@@ -645,6 +645,14 @@ window.addEventListener('settings:changed', (e) => {
     const d = e.detail;
     if (d.scope === 'bb' && d.key === 'maxSlot' || d.scope === 'all') {
         state.maxSlot = Settings.get('bb', 'maxSlot');
+    }
+    // React to loopList toggle — update all BB InfiniteList instances
+    if ((d.scope === 'bb' && d.key === 'loopList') || d.scope === 'all') {
+        const loop = Settings.get('bb', 'loopList');
+        document.querySelectorAll('.vcs-list-container').forEach(c => {
+            const inst = listInstances.get(c);
+            if (inst) inst.loop = loop;
+        });
     }
     // React to autoSync toggle
     if ((d.scope === 'bb' && d.key === 'autoSync') || d.scope === 'all') {

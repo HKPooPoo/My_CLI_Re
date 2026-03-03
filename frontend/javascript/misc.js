@@ -133,6 +133,7 @@ export const MISC = {
             autoClean: createToggleControl(container, 'bb', 'autoCleanBlanks', 'config.autoCleanBlanks', 'hints.config.autoCleanBlanks'),
             updateTs: createToggleControl(container, 'bb', 'updateTimestamp', 'config.updateTimestamp', 'hints.config.updateTimestamp'),
             autoSync: createToggleControl(container, 'bb', 'autoSync', 'config.autoSync', 'hints.config.autoSync'),
+            loopList: createToggleControl(container, 'bb', 'loopList', 'config.loopList', 'hints.config.loopList'),
             showHints: createToggleControl(container, 'global', 'showHints', 'config.showHints'),
             screensaverTimeout: createRangeControl(container, 'global', 'screensaverTimeout', 'config.screensaverTimeout', 10, 310, 10, 'hints.config.screensaverTimeout',
                 (v) => v >= 310 ? t('mods.disabled') : v),
@@ -161,6 +162,7 @@ export const MISC = {
             this.bbControls.autoClean.updateLabel();
             this.bbControls.updateTs.updateLabel();
             this.bbControls.autoSync?.updateLabel();
+            this.bbControls.loopList?.updateLabel();
             this.bbControls.showHints?.updateLabel();
             if (this.bbControls.screensaverTimeout) {
                 const v = Settings.getGlobal('screensaverTimeout');

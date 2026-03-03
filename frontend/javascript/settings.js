@@ -7,12 +7,13 @@
  * =================================================================
  */
 
-const SCOPES = ['bb', 'wt', 'bc'];
+const SCOPES = ['bb', 'wt', 'bc', 'mods'];
 
 const SCOPE_DEFAULTS = {
-    bb: { maxSlot: 10, maxFiles: 10, autoCleanBlanks: true, updateTimestamp: true, autoSync: false },
-    wt: { maxSlot: 10, maxFiles: 10, autoCleanBlanks: true, updateTimestamp: true },
-    bc: { maxSlot: 10, maxFiles: 10, autoCleanBlanks: false, updateTimestamp: false },
+    bb:   { maxSlot: 10, maxFiles: 10, autoCleanBlanks: true, updateTimestamp: true, autoSync: false, loopList: false },
+    wt:   { maxSlot: 10, maxFiles: 10, autoCleanBlanks: true, updateTimestamp: true, loopList: false },
+    bc:   { maxSlot: 10, maxFiles: 10, autoCleanBlanks: false, updateTimestamp: false, loopList: false },
+    mods: { loopList: false },
 };
 
 const GLOBAL_DEFAULTS = {
@@ -154,6 +155,7 @@ export function detectScope() {
     const page = activePage.dataset.page || '';
     if (page.startsWith('broadcast')) return 'bc';
     if (page.startsWith('walkie-typie')) return 'wt';
+    if (page.startsWith('mods')) return 'mods';
     return 'bb';
 }
 

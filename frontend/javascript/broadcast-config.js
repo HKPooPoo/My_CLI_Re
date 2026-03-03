@@ -30,6 +30,7 @@ const BCConfig = {
             maxFiles: createRangeControl(this.container, 'bc', 'maxFiles', 'config.maxFilesLabel', 1, 20, 1),
             autoClean: createToggleControl(this.container, 'bc', 'autoCleanBlanks', 'config.autoCleanBlanks', 'hints.config.autoCleanBlanks'),
             updateTs: createToggleControl(this.container, 'bc', 'updateTimestamp', 'config.updateTimestamp', 'hints.config.updateTimestamp'),
+            loopList: createToggleControl(this.container, 'bc', 'loopList', 'config.loopList', 'hints.config.loopList'),
         };
     }
 };

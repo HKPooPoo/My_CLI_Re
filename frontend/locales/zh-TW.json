@@ -229,6 +229,7 @@
       "autoCleanBlanks": "切換紀錄時自動刪除空白的項目。",
       "updateTimestamp": "編輯舊紀錄時將其移至最前方，而非保留原始位置。",
       "autoSync": "偵測到其他裝置的變更時自動同步。需要登入。",
+      "loopList": "捲動超過列表邊界時，游標跳至另一端。",
       "boardSwap": "預設將對方的訊息顯示在上方。",
       "screensaverTimeout": "閒置多少秒後啟動螢幕保護程式。",
       "crtBlendMode": "用混合模式柔化 CRT 掃描線，使畫面不那麼刺眼。"
@@ -272,6 +273,7 @@
     "autoCleanBlanks": "自動刪除空白紀錄",
     "updateTimestamp": "編輯後移至最前",
     "autoSync": "自動同步（多裝置）",
+    "loopList": "列表循環捲動",
     "boardSwap": "預設顯示對方訊息",
     "showHints": "按鈕提示",
     "screensaverTimeout": "螢幕保護延遲（秒）",
@@ -290,6 +292,7 @@
     "pageTitle": "模組管理器",
     "listTab": "列表",
     "configTab": "配置",
+    "miscTab": "設定",
     "configDefault": "請從列表中選擇模組。",
     "catalogPreview": "新增此模組以開始設定。",
     "enabled": "開啟",

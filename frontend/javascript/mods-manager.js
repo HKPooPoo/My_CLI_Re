@@ -16,6 +16,7 @@ import { BBMessage } from './blackboard-msg.js';
 import { playAudio } from './audio.js';
 import { t } from './i18n.js';
 import { registerFieldType, getRenderer } from './mod-field-registry.js';
+import * as Settings from './settings.js';
 
 let infiniteList = null;
 let selectionTimer = null;
@@ -118,9 +119,11 @@ function renderListPage(activeInstanceId, activeTemplateId) {
     }
 
     if (infiniteList) {
+        infiniteList.loop = Settings.get('mods', 'loopList');
         infiniteList.refresh();
     } else {
         infiniteList = new InfiniteList(container, '.mods-navigable');
+        infiniteList.loop = Settings.get('mods', 'loopList');
     }
 }
 
@@ -726,6 +729,13 @@ function evaluateShowWhen(accessor, field, schema) {
 // ===================== Events =====================
 
 function bindEvents() {
+    // Settings: loopList toggle
+    window.addEventListener('settings:changed', ({ detail }) => {
+        if ((detail.key === 'loopList' && detail.scope === 'mods') || detail.scope === 'all') {
+            if (infiniteList) infiniteList.loop = Settings.get('mods', 'loopList');
+        }
+    });
+
     // InfiniteList selection → bifurcate: instance vs catalog item
     window.addEventListener('list:selectionChanged', ({ detail }) => {
         if (!elements.listContainer?.contains(detail.item)) return;

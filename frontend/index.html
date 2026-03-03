@@ -156,6 +156,9 @@
                         <div class="sub-navi-item" data-sub-navi-item="mods-config">
                             <div class="sub-navi-item-text" data-i18n="mods.configTab">CONFIG</div>
                         </div>
+                        <div class="sub-navi-item" data-sub-navi-item="mods-misc">
+                            <div class="sub-navi-item-text" data-i18n="mods.miscTab">MISC</div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -466,6 +469,12 @@
                         style="display:none;">REFRESH</button>
                 </div>
             </div>
+            <div class="page" data-page="mods-misc">
+                <div class="misc-container">
+                    <div class="misc-title crt-text-orange" data-i18n="mods.miscTab">MISC</div>
+                    <div class="misc-list-container" id="mods-misc-container"></div>
+                </div>
+            </div>
             <!-- MOD System -->
             <script type="module">
                 import { ModState } from './javascript/mod-state.js';
@@ -486,6 +495,7 @@
                 window.addEventListener('mods:loaded', () => ThemeEngine.init());
             </script>
             <script type="module" src="./javascript/mods-manager.js"></script>
+            <script type="module" src="./javascript/mods-misc.js"></script>
             <div id="toast-container"></div>
         </div>
     </div>

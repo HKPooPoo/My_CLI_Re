@@ -4,7 +4,7 @@
  * 介紹：負責處理 UI 列表 (如 VCS 分支列表、Stash 列表) 的「無限滾動」與「游標導航」邏輯。
  * 職責：
  * 1. 同步：確保 JavaScript 快取中的列表項與當前 DOM 結構保持一致 (Refresh)。
- * 2. 導航：控制 Active 指標的移動，並實作循環選取 (向上溢出至底，向下溢出至頂)。
+ * 2. 導航：控制 Active 指標的移動，loop=true 時循環選取，loop=false 時邊界夾止。
  * 3. 滾動：接管容器的 Wheel 事件，將滾輪物理捲動轉換為邏輯項目移位。
  * 4. UX：確保選中的項目始終處於可視區域 (ScrollIntoView)。
  * 依賴：無
@@ -12,6 +12,7 @@
  */
 
 import { playAudio } from "./audio.js";
+import * as Settings from "./settings.js";
 
 export class InfiniteList {
     /**
@@ -23,6 +24,7 @@ export class InfiniteList {
         this.itemSelector = itemSelector;
         this.items = [];      // 用於快取 DOM 引用
         this.activeIndex = -1;
+        this.loop = false;    // 循環模式：false = 邊界夾止，true = 頭尾循環
 
         this.refresh();
         this.initEventListeners();
@@ -65,9 +67,14 @@ export class InfiniteList {
 
         let newIndex = this.activeIndex + direction;
 
-        // --- 循環處理 ---
-        if (newIndex >= this.items.length) newIndex = 0;              // 超過底部回到頂部
-        else if (newIndex < 0) newIndex = this.items.length - 1;     // 超過頂部回到底部
+        if (this.loop) {
+            // --- 循環處理 ---
+            if (newIndex >= this.items.length) newIndex = 0;
+            else if (newIndex < 0) newIndex = this.items.length - 1;
+        } else {
+            // --- 夾止處理 ---
+            if (newIndex >= this.items.length || newIndex < 0) return;
+        }
 
         this.setCursor(newIndex, false);
     }
@@ -125,20 +132,23 @@ export class InfiniteList {
 }
 
 // --- 實例工廠 ---
-const listInstances = new WeakMap(); // 使用 WeakMap 避免內存洩漏，讓 DOM 銷毀時對象也能自動釋放
+export const listInstances = new WeakMap(); // 使用 WeakMap 避免內存洩漏，讓 DOM 銷毀時對象也能自動釋放
 
 /**
  * 全域初始化入口
  * 用於頁面渲染完成後，自動掃描並賦予列表無限滾動能力。
  */
 export function initAllInfiniteLists() {
+    const loop = Settings.get('bb', 'loopList');
     const containers = document.querySelectorAll(".vcs-list-container");
     containers.forEach(container => {
         let instance = listInstances.get(container);
         if (!instance) {
             instance = new InfiniteList(container);
+            instance.loop = loop;
             listInstances.set(container, instance);
         } else {
+            instance.loop = loop;
             instance.refresh(); // 若已存在，則執行同步
         }
     });

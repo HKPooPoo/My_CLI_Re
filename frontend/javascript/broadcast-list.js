@@ -28,6 +28,7 @@ import { BBMessage } from './blackboard-msg.js';
 import { playAudio } from './audio.js';
 import { t } from './i18n.js';
 import { updateNaviPosition } from './navi.js';
+import * as Settings from './settings.js';
 
 // Sub-navi <---> text element — updated when channel is selected or renamed
 const $bcNaviText = document.querySelector(
@@ -135,6 +136,13 @@ export const BCList = {
             ch.lastSignal = lastSignal;
             this.sortChannels();
             this.render();
+        });
+
+        // Settings: loopList toggle
+        window.addEventListener('settings:changed', ({ detail }) => {
+            if ((detail.key === 'loopList' && detail.scope === 'bc') || detail.scope === 'all') {
+                if (this.infiniteList) this.infiniteList.loop = Settings.get('bc', 'loopList');
+            }
         });
 
         // --- PIN ---
@@ -479,12 +487,14 @@ export const BCList = {
 
         // Initialize or refresh InfiniteList — always position cursor at index 0
         if (this.infiniteList) {
+            this.infiniteList.loop = Settings.get('bc', 'loopList');
             this.infiniteList.refresh();
         } else if (this.channels.length > 0) {
             this.infiniteList = new InfiniteList(
                 this.elements.container,
                 '.broadcast-list-list-item'
             );
+            this.infiniteList.loop = Settings.get('bc', 'loopList');
         }
     },
 

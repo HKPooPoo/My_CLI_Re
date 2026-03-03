@@ -229,6 +229,7 @@
       "autoCleanBlanks": "Prune empty record when HEAD changes.",
       "updateTimestamp": "Rebase edited record to HEAD.",
       "autoSync": "Auto-fetch from remote when changes are detected. Requires auth.",
+      "loopList": "Wrap cursor to opposite end when scrolling past list boundary.",
       "boardSwap": "Show remote board on top by default.",
       "screensaverTimeout": "Idle time in seconds before screensaver activates.",
       "crtBlendMode": "Apply overlay blend to CRT scanline."
@@ -272,6 +273,7 @@
     "autoCleanBlanks": "AUTO PRUNE",
     "updateTimestamp": "REBASE ON EDIT",
     "autoSync": "AUTO FETCH",
+    "loopList": "CYCLE LIST",
     "boardSwap": "REMOTE FIRST",
     "showHints": "VERBOSE",
     "screensaverTimeout": "IDLE TIMEOUT (SEC)",
@@ -290,6 +292,7 @@
     "pageTitle": "MOD REGISTRY",
     "listTab": "LIST",
     "configTab": "CONFIG",
+    "miscTab": "MISC",
     "configDefault": "Select a MOD from the list.",
     "catalogPreview": "Add this MOD to start configuring.",
     "enabled": "ON",
