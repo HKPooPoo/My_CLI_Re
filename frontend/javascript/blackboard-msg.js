@@ -53,7 +53,7 @@ export const BBMessage = {
      */
     loading(text) {
         const prefix = "SYSTEM > ";
-        return wrapHandler(toast.addMessage(`${prefix}${text}`, 5000, 'info', true), prefix);
+        return wrapHandler(toast.addMessage(`${prefix}${text}`, 0, 'info', true), prefix);
     },
 
     /**

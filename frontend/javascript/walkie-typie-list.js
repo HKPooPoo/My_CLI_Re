@@ -68,16 +68,17 @@ export const WTList = {
                         return;
                     }
 
+                    const msg = BBMessage.loading(t('walkieTypie.connecting'));
                     try {
-                        BBMessage.info(t('walkieTypie.connecting'));
                         const result = await WalkieTypieService.createConnection({ uid });
                         if (result.connection) {
                             this.handleUpdate(result.connection);
                             this.elements.uidInput.value = "";
-                            BBMessage.success(t('walkieTypie.connected'));
+                            msg.update(t('walkieTypie.connected'));
                         }
                     } catch (e) {
                         console.error("CONNECT ERROR:", e);
+                        msg.close();
                         BBMessage.error(t('walkieTypie.connectFailed'));
                     }
                 }
@@ -98,9 +99,8 @@ export const WTList = {
                     const myBranchId = this.selectedConnection.my_branch_id;
                     const partnerBranchId = this.selectedConnection.partner_branch_id;
 
+                    const msg = BBMessage.loading(t('walkieTypie.cutting'));
                     try {
-                        BBMessage.info(t('walkieTypie.cutting'));
-
                         await WalkieTypieService.deleteConnection(partnerUid);
 
                         // Wipe local IndexedDB
@@ -118,9 +118,10 @@ export const WTList = {
 
                         this.selectedConnection = null;
                         this.render();
-                        BBMessage.success(t('walkieTypie.cutComplete'));
+                        msg.update(t('walkieTypie.cutComplete'));
                     } catch (e) {
                         console.error("CUT ERROR:", e);
+                        msg.close();
                         BBMessage.error(t('walkieTypie.cutFailed'));
                     }
                 }

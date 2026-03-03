@@ -445,15 +445,15 @@ if (checkoutBtnEl) {
         try {
             if (currentCheckoutAction === "checkout") {
                 // Re-download from server (always remote)
-                BBMessage.info(t('blackboard.loading'));
-                await BBVCS.checkout(state, selected.id, "remote");
-                BBMessage.success(t('blackboard.loadComplete'));
+                const msg = BBMessage.loading(t('blackboard.loading'));
+                await BBVCS.checkout(state, selected.id, "remote", { silent: true });
+                msg.update(t('blackboard.loadComplete'));
             } else {
                 // Switch to a different branch
-                BBMessage.info(t('blackboard.switching'));
+                const msg = BBMessage.loading(t('blackboard.switching'));
                 const targetOwner = selected.isLocal ? "local" : "remote";
-                await BBVCS.checkout(state, selected.id, targetOwner);
-                BBMessage.success(t('blackboard.switchComplete'));
+                await BBVCS.checkout(state, selected.id, targetOwner, { silent: true });
+                msg.update(t('blackboard.switchComplete'));
             }
 
             await syncView();
@@ -533,30 +533,31 @@ if (dropBtnEl) {
 
         playAudio("UIGeneralCancel.mp3");
 
+        let msg;
         try {
             if (currentDropAction === "clean") {
-                BBMessage.info(t('blackboard.cleaning'));
+                msg = BBMessage.loading(t('blackboard.cleaning'));
                 await BBCore.clearBranchRecords("local", selected.id);
                 // 若清理的是當前分支，需重置 Head
                 if (selected.id === state.branchId) {
                     state.currentHead = 0;
                     await syncView();
                 }
-                BBMessage.success(t('blackboard.cleanComplete'));
+                msg.update(t('blackboard.cleanComplete'));
             }
             else if (currentDropAction === "drop") {
-                BBMessage.info(t('blackboard.dropping'));
+                msg = BBMessage.loading(t('blackboard.dropping'));
                 await BlackboardService.deleteBranch(selected.id);
-                BBMessage.success(t('blackboard.dropComplete'));
+                msg.update(t('blackboard.dropComplete'));
             }
             else if (currentDropAction === "delete") {
-                BBMessage.info(t('blackboard.deleting'));
+                msg = BBMessage.loading(t('blackboard.deleting'));
                 await BBCore.deleteLocalBranch("local", selected.id);
 
                 if (selected.id === state.branchId) {
                     await initBoard();
                 }
-                BBMessage.success(t('blackboard.deleteComplete'));
+                msg.update(t('blackboard.deleteComplete'));
             }
 
             // 操作完成後刷新列表與按鈕狀態
@@ -564,6 +565,7 @@ if (dropBtnEl) {
             await updateDropButtonState();
         } catch (e) {
             console.error("DROP ACTION FAILED:", e);
+            if (msg) msg.close();
             BBMessage.error(t('blackboard.actionFailed'));
         }
     });
