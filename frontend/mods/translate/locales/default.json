@@ -1,8 +1,8 @@
 {
   "mods": {
     "translate": {
-      "name": "Translation",
-      "desc": "Translate text to another language using cloud API.",
+      "name": "TRANSLATION",
+      "desc": "MULTI-LANGUAGE TRANSLATION VIA GOOGLE CLOUD API.",
       "lang": {
         "zhTW": "繁中",
         "zhCN": "简中",
@@ -10,15 +10,15 @@
         "ja": "日"
       },
       "provider": {
-        "google": "Cloud (Google)"
+        "google": "GOOGLE CLOUD"
       },
       "config": {
-        "targetLang": "Target Language"
+        "targetLang": "TARGET LANGUAGE"
       },
-      "bufferEmpty": "Nothing to translate. Write something first.",
-      "decrypting": "Translating...",
-      "nullResult": "Translation returned empty.",
-      "criticalBreach": "Translation error: {error}"
+      "bufferEmpty": "PROTOCOL ERROR: BUFFER EMPTY. INPUT REQUIRED.",
+      "decrypting": "DECRYPTING LINGUISTICS... STANDBY.",
+      "nullResult": "RESULT: NULL. UNABLE TO DECODE.",
+      "criticalBreach": "CRITICAL BREACH: {error}"
     }
   }
 }

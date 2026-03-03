@@ -15,10 +15,10 @@
       "config": {
         "targetLang": "目標語言"
       },
-      "bufferEmpty": "協定錯誤：緩衝區為空，請輸入內容。",
-      "decrypting": "解密語言中... 請稍候。",
-      "nullResult": "結果：空值，無法解碼。",
-      "criticalBreach": "嚴重錯誤：{error}"
+      "bufferEmpty": "沒有可翻譯的內容，請先輸入文字。",
+      "decrypting": "翻譯中...",
+      "nullResult": "翻譯結果為空。",
+      "criticalBreach": "翻譯錯誤：{error}"
     }
   }
 }
