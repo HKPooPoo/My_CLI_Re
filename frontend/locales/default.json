@@ -13,7 +13,7 @@
     "broadcast": "BROADCAST",
     "account": "AUTH",
     "misc": "MISC",
-    "mods": "MODS",
+    "mods": "MOD",
     "wtConfig": "CONFIG",
     "bcConfig": "CONFIG"
   },
@@ -137,7 +137,7 @@
   },
   "broadcast": {
     "pageTitle": "CHANNEL MODULATION",
-    "listTab": "CHANNELS",
+    "listTab": "CHANNEL",
     "channelTab": "CHANNEL",
     "pinBtn": "PIN",
     "unpinBtn": "UNPIN",
@@ -171,7 +171,7 @@
     "renameFailed": "ERROR: RENAME FAILED",
     "syncFailed": "SYNC FAILED",
     "fetchFailed": "FETCH FAILED",
-    "searchPlaceholder": "SEARCH CHANNELS..."
+    "searchPlaceholder": "SEARCH CHANNEL..."
   },
   "files": {
     "dropZoneHint": "DROP FILES HERE",
@@ -218,72 +218,72 @@
       "delete": "DELETE — Permanently remove a channel you own."
     },
     "mods": {
-      "refresh": "Refresh server connection status for all MOD instances."
+      "refresh": "Probe remote status for all registered MOD instance."
     },
     "config": {
-      "maxSlot": "Maximum entries per branch. Older entries are removed when the limit is reached.",
-      "autoCleanBlanks": "Auto-remove entries with empty text when navigating away.",
-      "updateTimestamp": "Move edited entries to the newest position instead of keeping original order.",
-      "autoSync": "Auto-sync with server when remote changes are detected. Requires login.",
-      "boardSwap": "Show partner's board on top by default.",
-      "screensaverTimeout": "Seconds of inactivity before the screensaver activates.",
-      "crtBlendMode": "Apply overlay blend to CRT scanlines for a softer look."
+      "maxSlot": "Max record per branch. Excess record pruned from oldest.",
+      "autoCleanBlanks": "Prune empty record on HEAD change.",
+      "updateTimestamp": "Rebase edited record to HEAD position.",
+      "autoSync": "Auto-fetch from remote on change detection. Requires auth.",
+      "boardSwap": "Default view: remote board on top.",
+      "screensaverTimeout": "Idle duration (sec) before screensaver activation.",
+      "crtBlendMode": "Overlay blend mode on CRT scanline."
     },
     "llm": {
-      "button": "Run AI processing on the current text using your configured prompt.",
-      "provider": "Client = browser (WebGPU). Server = local Ollama. API Key = cloud (OpenAI/Anthropic).",
-      "clientModel": "Model downloaded and run in-browser via WebGPU. Larger = smarter but more memory.",
-      "apiProvider": "Cloud AI service to use with your API key.",
-      "apiModel": "Model ID for the cloud provider (e.g. gpt-4o-mini).",
-      "apiKey": "Your API key. Stored locally only — never sent to our server.",
-      "temperature": "0 = deterministic and focused. 1 = creative and varied."
+      "button": "Run LLM on current text with configured prompt.",
+      "provider": "client = WebGPU (browser). server = Ollama (local). apikey = cloud API.",
+      "clientModel": "In-browser model via WebGPU. Larger model = more VRAM.",
+      "apiProvider": "Cloud LLM provider for API key auth.",
+      "apiModel": "Model ID for cloud provider (e.g. gpt-4o-mini).",
+      "apiKey": "API key. Stored in localStorage only — never sent to server.",
+      "temperature": "0 = deterministic. 1 = creative."
     },
     "llmBb": {
-      "button": "Run AI analysis on blackboard branch records.",
-      "target": "Data scope: current branch from LOG page, from BRANCH page, or all branches."
+      "button": "Run LLM analysis on blackboard branch record.",
+      "target": "Scope: current branch (LOG), current branch (BRANCH), or all branch."
     },
     "llmBc": {
-      "button": "Run AI analysis on broadcast channel content.",
-      "target": "Analyze current text entry or full channel history."
+      "button": "Run LLM analysis on broadcast channel content.",
+      "target": "Scope: current record or full channel history."
     },
     "translate": {
-      "button": "Translate the current text to the configured language."
+      "button": "Translate current text to configured target language."
     },
     "stt": {
-      "button": "Record audio and convert speech to text."
+      "button": "Speech-to-text via microphone input."
     },
     "markdownPreview": {
       "button": "Render current text as formatted Markdown."
     },
     "aa": {
-      "matrixRain": "Falling character rain on the screensaver, like the Matrix.",
-      "perlinBg": "Animated Perlin noise behind page content — organic, cloud-like texture.",
-      "mouseLight": "Cursor flashlight glow, like scanning a CRT screen.",
-      "toastAnim": "Spinning braille characters on loading toasts."
+      "matrixRain": "Matrix-style character rain on screensaver.",
+      "perlinBg": "Animated Perlin noise texture behind content.",
+      "mouseLight": "Cursor-following light glow effect.",
+      "toastAnim": "Braille spinner on loading toast."
     }
   },
   "config": {
-    "maxSlotLabel": "MAX ENTRIES",
-    "maxFilesLabel": "MAX FILES",
-    "autoCleanBlanks": "AUTO-CLEAN BLANKS",
-    "updateTimestamp": "UPDATE TIMESTAMP",
-    "autoSync": "AUTO-SYNC (MULTI-DEVICE)",
-    "boardSwap": "BOARD SWAP DEFAULT",
-    "showHints": "BUTTON HINTS",
-    "screensaverTimeout": "SCREENSAVER DELAY (SEC)",
-    "crtBlendModeLabel": "SOFTEN CRT LINES",
-    "resetAll": "RESET ALL SETTINGS",
-    "resetComplete": "SETTINGS RESET TO DEFAULTS"
+    "maxSlotLabel": "log.maxRecord",
+    "maxFilesLabel": "blob.maxFile",
+    "autoCleanBlanks": "gc.autoPrune",
+    "updateTimestamp": "rebase.onEdit",
+    "autoSync": "remote.autoFetch",
+    "boardSwap": "remote.showFirst",
+    "showHints": "core.verbose",
+    "screensaverTimeout": "core.idleTimeout (sec)",
+    "crtBlendModeLabel": "ui.crtBlend",
+    "resetAll": "HARD RESET",
+    "resetComplete": "RESET COMPLETE"
   },
   "misc": {
-    "pageTitle": "MISC & SETTINGS",
+    "pageTitle": "MISC",
     "languageLabel": "LANGUAGE",
     "globalAudioLabel": "GLOBAL AUDIO",
     "sfxLabel": "SFX",
     "localeName": "GIT MODE"
   },
   "mods": {
-    "pageTitle": "MOD MANAGER",
+    "pageTitle": "MOD REGISTRY",
     "listTab": "LIST",
     "configTab": "CONFIG",
     "configDefault": "SELECT A MOD FROM THE LIST.",
@@ -294,8 +294,8 @@
     "refreshing": "SCANNING...",
     "refreshComplete": "SCAN COMPLETE",
     "statusLabel": "STATUS",
-    "catalog": "AVAILABLE MODS",
-    "active": "ACTIVE MODS",
+    "catalog": "AVAILABLE",
+    "active": "ACTIVE",
     "addBtn": "ADD",
     "moveUp": "UP",
     "moveDown": "DOWN",

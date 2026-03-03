@@ -285,7 +285,7 @@
   "mods": {
     "pageTitle": "Extensions",
     "listTab": "BROWSE",
-    "configTab": "SETTINGS",
+    "configTab": "CONFIG",
     "configDefault": "Select an extension from the list.",
     "catalogPreview": "Add this extension to start configuring.",
     "enabled": "ON",
