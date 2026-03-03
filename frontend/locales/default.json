@@ -52,7 +52,7 @@
     "uidRequired": "UID REQUIRED",
     "requesting": "REQUESTING...",
     "noEmail": "NO EMAIL REGISTERED",
-    "emailRequired": "INPUT REQUIRED",
+    "emailRequired": "EMAIL REQUIRED",
     "invalidEmail": "INVALID EMAIL FORMAT",
     "processing": "PROCESSING...",
     "offlineError": "OFFLINE"
@@ -127,8 +127,8 @@
     "cutComplete": "CUT COMPLETE",
     "cutFailed": "ERROR: CUT FAILED",
     "tagUpdateFailed": "ERROR: TAG UPDATE FAILED",
-    "contentUpdated": "Content updated",
-    "newMessage": "New message from {sender}",
+    "contentUpdated": "CONTENT UPDATED",
+    "newMessage": "NEW MESSAGE FROM {sender}",
     "signal": "SIGNAL: {uid}",
     "loginRequired": "LOGIN REQUIRED FOR COMMIT.",
     "noLocalData": "LOCAL DATA NOT FOUND OR EMPTY.",
@@ -137,7 +137,7 @@
   },
   "broadcast": {
     "pageTitle": "CHANNEL MODULATION",
-    "listTab": "CHANNEL",
+    "listTab": "LIST",
     "channelTab": "CHANNEL",
     "pinBtn": "PIN",
     "unpinBtn": "UNPIN",
@@ -222,7 +222,7 @@
       "delete": "DELETE — Permanently remove a channel you own."
     },
     "mods": {
-      "refresh": "Check remote status for all MOD instance."
+      "refresh": "Check remote status for all MOD instances."
     },
     "config": {
       "maxSlot": "Max record per branch. Oldest record pruned when limit is reached.",

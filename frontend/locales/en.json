@@ -74,7 +74,7 @@
     "statusLocal": "Local (latest)",
     "statusLocalOld": "Local",
     "statusAsynced": "Not uploaded",
-    "statusSynced": "synced",
+    "statusSynced": "Synced",
     "forking": "Duplicating...",
     "forkComplete": "Duplicated!",
     "forkFailed": "Duplicate failed.",
@@ -251,11 +251,11 @@
       "temperature": "How creative the AI should be. Low = precise, High = creative."
     },
     "llmBb": {
-      "button": "Analyze your blackboard entries with AI.",
+      "button": "Analyze your log entries with AI.",
       "target": "What to analyze: entries from this topic, or all topics combined."
     },
     "llmBc": {
-      "button": "Analyze broadcast channel messages with AI.",
+      "button": "Analyze channel messages with AI.",
       "target": "What to analyze: the current message, or all messages in the channel."
     },
     "translate": {
