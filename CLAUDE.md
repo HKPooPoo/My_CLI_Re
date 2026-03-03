@@ -66,7 +66,9 @@ docker exec my-cli-api php artisan migrate:fresh --seed
 docker exec my-cli-api php artisan test                        # Run all tests
 docker exec my-cli-api php artisan test --filter TestClassName # Run single test
 docker exec my-cli-api ./vendor/bin/pint                       # Lint (Laravel Pint)
+npm run build:sw                       # Rebuild SW precache manifest after frontend changes
 # First-time setup:
+npm install                            # Install workbox-build (dev tooling)
 docker exec my-cli-api sh -c "cp .env.example .env && php artisan key:generate && php artisan migrate --force"
 ```
 
@@ -249,12 +251,18 @@ Buttons that change label/behavior based on list selection context. Use raw `add
 
 **WT layers:** Whisper (50ms) → IndexedDB save (200ms) → Server commit (2s) + signal event → partner re-sync.
 
-### PWA & Service Worker
+### PWA & Service Worker (Workbox)
 
-- Stale-while-revalidate for static assets; `/api/` bypasses SW
-- Update: `updatefound` → toast → `SKIP_WAITING` → silent takeover (no forced reload)
-- **Always bump `CACHE_NAME` in `sw.js`** when modifying `index.html` or core framework files
-- **Do NOT add MOD files to `sw.js` ASSETS.** MOD files (mods/*, vendor libs, MOD-specific assets) are cached lazily by the SWR fetch handler on first page load. Only core framework files belong in ASSETS.
+**`sw.js` is auto-generated — never edit it directly.** Edit `sw-src.js` instead and run `npm run build:sw`.
+
+- **Build:** `npm run build:sw` runs `workbox-build.injectManifest()` → scans `frontend/` → injects versioned manifest (URL + content hash per file) into `sw-src.js` → outputs `sw.js`
+- **Precache:** Workbox `precacheAndRoute()` handles all core files (CSS, JS, locales, audio, images). Per-file revision hashes — only changed files are re-downloaded on update. No manual `CACHE_NAME` bumps needed.
+- **Navigation:** `NavigationRoute` serves cached `/index.html` for all SPA routes
+- **Runtime SWR:** Non-precached same-origin GET requests (MOD files, etc.) use `StaleWhileRevalidate` strategy with `runtime-swr` cache. `/api/` and cross-origin requests are excluded.
+- **Update flow:** `updatefound` → toast → `SKIP_WAITING` → silent takeover (no forced reload)
+- **MOD files are NOT precached.** `mods/mod-loader.js` is the only MOD entry point in the precache. All other MOD files (`mods/*/`) are cached lazily by the runtime SWR handler on first page load.
+- **Glob config** is in `scripts/build-sw.js`. `globIgnores` excludes `javascript/vendor/textmode.js` (large WebGL2 lib, ascii-animator MOD only).
+- **Legacy cleanup:** Activate handler deletes old `blackboard-*` caches from before Workbox migration.
 
 ## MOD System v2.1 (Instance-Based, ADD/DELETE Model)
 
@@ -342,7 +350,7 @@ When multiple templates in the same `group` need identical settings (e.g. LLM pr
 5. Add icon: CSS `.feature-btn[data-feature-btn="{btn-id}"]::after { mask-image: url(...) }` OR implement `getIconUrl(config)` in mod.js
 6. Optionally add `tools[]` and `hooks[]` in mod.js
 7. Refresh browser — MOD appears automatically in catalog (no manifest file to edit!)
-8. MOD files are cached automatically by SW's stale-while-revalidate — **do NOT add MOD files to `sw.js` ASSETS**
+8. MOD files are cached automatically by SW's runtime SWR — **do NOT add MOD files to the precache glob in `scripts/build-sw.js`**
 
 **Data/Code separation:** Each MOD folder contains `manifest.json` (pure data: id, configSchema, pages, etc.) and `mod.js` (pure code: functions, lifecycle methods). At boot, mod-loader merges `{ ...manifestData, ...modCode }` into a single template object. The `manifest.json.id` MUST match the folder name.
 
