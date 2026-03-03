@@ -15,7 +15,7 @@
 let _webllm = null;   // lazily imported module
 let _engine = null;    // MLCEngine instance
 let _currentModel = null;
-let _loading = false;
+let _loadingPromise = null;  // non-null while a model is being loaded
 
 /** Detect WASM engine corruption (freed tokenizer, unloaded model). */
 function _isEngineCorrupted(e) {
@@ -55,10 +55,14 @@ export const WebLlmService = {
      */
     async ensureModel(modelId, onProgress) {
         if (_currentModel === modelId && _engine) return;
-        if (_loading) throw new Error('Model is already loading');
 
-        _loading = true;
-        try {
+        // If already loading, piggyback on the existing promise instead of throwing
+        if (_loadingPromise) {
+            await _loadingPromise;
+            if (_currentModel === modelId && _engine) return;
+        }
+
+        _loadingPromise = (async () => {
             const webllm = await _importWebLLM();
 
             // If engine exists with a different model, reset it
@@ -75,8 +79,12 @@ export const WebLlmService = {
             });
 
             _currentModel = modelId;
+        })();
+
+        try {
+            await _loadingPromise;
         } finally {
-            _loading = false;
+            _loadingPromise = null;
         }
     },
 

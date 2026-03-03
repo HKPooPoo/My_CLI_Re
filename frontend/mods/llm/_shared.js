@@ -397,6 +397,9 @@ export async function runLlm(config, prompt, inputText, out, tFn) {
             });
             window.dispatchEvent(new CustomEvent('llm:progress', { detail: { status: 'ready', model } }));
 
+            // Transition message: model loaded, now running inference (prefill can take seconds)
+            out.value = tFn('mods.llm.generating');
+
             let tokens = 0;
             for await (const chunk of svc.chat(messages, { temperature: temp, signal: controller.signal })) {
                 if (controller.signal.aborted) return;

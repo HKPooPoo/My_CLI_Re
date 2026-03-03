@@ -56,6 +56,7 @@
       },
       "processing": "PROCESSING... STANDBY.",
       "loading": "LOADING MODEL...",
+      "generating": "GENERATING...",
       "connecting": "CONNECTING TO SERVER...",
       "thinking": "MODEL THINKING... ({seconds}s)",
       "empty": "NO INPUT TEXT.",

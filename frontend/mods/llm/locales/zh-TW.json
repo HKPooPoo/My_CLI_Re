@@ -56,6 +56,7 @@
       },
       "processing": "處理中... 請稍候。",
       "loading": "載入模型中...",
+      "generating": "生成中...",
       "connecting": "正在連線伺服器...",
       "thinking": "思考中... ({seconds}s)",
       "empty": "無輸入文字。",
