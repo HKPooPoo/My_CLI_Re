@@ -86,6 +86,7 @@ export const BCList = {
         // Auth change → refresh list + re-evaluate button visibility
         window.addEventListener('auth:updated', () => {
             this.lockTitleButtons();
+            this.selectedChannel = null; // Force selection reset — owner mode needs recalculation
             this.fetchAndRender();
         });
 
