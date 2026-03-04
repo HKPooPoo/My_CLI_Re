@@ -194,6 +194,8 @@ export const BCChannel = {
     bindEvents() {
         // Receive selected channel from broadcast-list
         window.addEventListener('broadcast:selected', (e) => {
+            // Skip redundant load if same channel re-selected (e.g. after re-render)
+            if (this.currentChannel?.localId === e.detail.localId) return;
             this.loadChannel(e.detail);
         });
 

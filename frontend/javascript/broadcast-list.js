@@ -412,11 +412,17 @@ export const BCList = {
     render() {
         if (!this.elements.container) return;
 
+        // Preserve current selection so InfiniteList.refresh() finds .active
+        const selectedLocalId = this.selectedChannel?.localId ?? null;
+
         this.elements.container.innerHTML = '';
 
         this.channels.forEach(ch => {
             const item = document.createElement('div');
             item.classList.add('broadcast-list-list-item');
+            if (selectedLocalId !== null && ch.localId === selectedLocalId) {
+                item.classList.add('active');
+            }
             item.dataset.localId = ch.localId;
 
             // Row 1: channel name (editable input)

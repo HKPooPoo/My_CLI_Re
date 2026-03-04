@@ -78,7 +78,11 @@ export const AuthManager = {
             this.updateUI(data.is_logged_in ? data : null);
         } catch (e) {
             const currentUser = localStorage.getItem("currentUser");
-            this.updateUI(currentUser && currentUser !== "local" ? { uid: currentUser } : null);
+            const currentTitle = localStorage.getItem("currentTitle");
+            const fallback = currentUser && currentUser !== "local"
+                ? { uid: currentUser, ...(currentTitle ? { title: currentTitle } : {}) }
+                : null;
+            this.updateUI(fallback);
         }
     },
 
