@@ -77,6 +77,11 @@
     color: var(--bg-primary);
 }
 
+.vcs-list-branch[readonly] {
+    opacity: 0.6;
+    cursor: default;
+}
+
 .vcs-btn {
     border: var(--border-line);
     padding: 8px 0;

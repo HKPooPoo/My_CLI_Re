@@ -105,20 +105,23 @@ export const BBUI = {
                 ownerDisplay = localLabel;
             }
 
+            const isReadonly = !branch.isLocal;
             item.innerHTML = `
-                <input type="text" class="vcs-list-branch" value="${safeName}" placeholder="${t('blackboard.namePlaceholder')}" name="vcs-list-branch" maxlength="64">
+                <input type="text" class="vcs-list-branch" value="${safeName}" placeholder="${t('blackboard.namePlaceholder')}" name="vcs-list-branch" maxlength="64" ${isReadonly ? 'readonly' : ''}>
                 <div class="vcs-list-timestamp">${this.escapeHTML(String(branch.displayTime ?? ''))}</div>
                 <div class="vcs-list-owner">${ownerDisplay}</div>
             `;
 
             // 改名監聽：由 UI 對象直接捕捉並向上廣播自定義事件，不處理具體資料邏輯
             const input = item.querySelector(".vcs-list-branch");
-            input.addEventListener("change", (e) => {
-                const newName = e.target.value.trim() || branch.name;
-                window.dispatchEvent(new CustomEvent("blackboard:branchRename", {
-                    detail: { branchId: branch.id, newName }
-                }));
-            });
+            if (!isReadonly) {
+                input.addEventListener("change", (e) => {
+                    const newName = e.target.value.trim() || branch.name;
+                    window.dispatchEvent(new CustomEvent("blackboard:branchRename", {
+                        detail: { branchId: branch.id, newName }
+                    }));
+                });
+            }
 
             fragment.appendChild(item);
         });
