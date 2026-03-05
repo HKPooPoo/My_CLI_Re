@@ -22,6 +22,9 @@
     "offline": "Offline",
     "error": "Error"
   },
+  "api": {
+    "rateLimited": "Too many requests — please slow down"
+  },
   "pressStart": {
     "label": "TAP TO START"
   },

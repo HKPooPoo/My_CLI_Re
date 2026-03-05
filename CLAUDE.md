@@ -106,7 +106,7 @@ nginx (static SPA + reverse proxy) · api (Laravel 12 PHP-FPM) · reverb (WebSoc
 
 Models: `User`, `File` only. Events (4): `BroadcastChannelUpdated`, `WalkieTypieConnectionUpdated`, `WalkieTypieContentUpdated`, `WalkieTypieSignal`. Mail: `ResetPasscodeMail`, `BindEmailMail`. Commands: `CleanOrphanedFiles`.
 
-**Rate limiting** (`routes/api.php`): AI endpoints 10/min · Writes/auth 30/min · Public reads 120/min · Auth commands 10/min · File reads 60/min
+**Rate limiting** (`routes/api.php`): AI endpoints 10/min · Auth login/register 30/min · Auth commands 10/min. All other endpoints (reads, writes, files, mods) are unthrottled — local single-user app with Redis caching. Client-side 429 handling: `api.js` dispatches `api:rateLimited` event (5s debounce), `blackboard-msg.js` listens and shows toast.
 
 ### Database Schema (10 migrations)
 
@@ -172,6 +172,7 @@ Two-level hierarchy: main navi (`data-navi-item`: blackboard, walkie-typie, broa
 | `screensaver:deactivated` | pressStart.js | — | Overlay dismissed by click |
 | `llm:progress` | llm/_shared.js | `{ status, text?, model? }` | WebLLM model loading/ready/error |
 | `theme:changed` | theme-engine.js | `{ themeId }` | Active theme MOD changed |
+| `api:rateLimited` | api.js | — | 429 response received (5s debounce) |
 
 **Gotcha:** `list:selectionChanged` fires from ALL InfiniteList instances — listeners MUST check `container.contains(detail.item)` to filter.
 

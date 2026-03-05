@@ -24,12 +24,10 @@ Route::middleware([/*'auth:sanctum',*/ 'throttle:10,1'])->group(function () {
     Route::post('/speech', [SpeechController::class, 'recognize']);
 });
 
-// Public reads — 120 req/min per IP
-Route::middleware('throttle:120,1')->group(function () {
-    Route::get('/status', [StatusController::class, 'check']);
-    Route::get('/broadcast/channels', [BroadcastChannelController::class, 'index']);
-    Route::get('/broadcast/channels/{channelId}/boards', [BroadcastChannelController::class, 'fetchBoards']);
-});
+// Public reads — no throttle (local single-user app, Redis absorbs polling)
+Route::get('/status', [StatusController::class, 'check']);
+Route::get('/broadcast/channels', [BroadcastChannelController::class, 'index']);
+Route::get('/broadcast/channels/{channelId}/boards', [BroadcastChannelController::class, 'fetchBoards']);
 
 // Auth operations — 30 req/min, no login required
 Route::middleware('throttle:30,1')->group(function () {
@@ -37,20 +35,16 @@ Route::middleware('throttle:30,1')->group(function () {
     Route::post('/register', [AuthController::class, 'register']);
 });
 
-// Write operations — 60 req/min, auth required (defense-in-depth)
-Route::middleware([/*'auth:sanctum',*/ 'throttle:60,1'])->group(function () {
+// Write operations — no throttle (local app, writes are user-initiated or auto-sync)
+Route::middleware([/*'auth:sanctum'*/])->group(function () {
     Route::post('/broadcast/channels/cast', [BroadcastChannelController::class, 'cast']);
     Route::patch('/broadcast/channels/{channelId}', [BroadcastChannelController::class, 'rename']);
     Route::delete('/broadcast/channels/{channelId}', [BroadcastChannelController::class, 'destroy']);
     Route::post('/blackboard/commit', [BlackboardController::class, 'commit']);
 });
 
-// File upload — 30 req/min, allows guest uploads (no auth)
-// Design decision: anonymous uploads support paste-to-share before login.
-// The SHA-256 hash acts as an unguessable access token for retrieval.
-Route::middleware('throttle:30,1')->group(function () {
-    Route::post('/files', [FileController::class, 'upload']);
-});
+// File upload — no throttle (local app, auto-sync needs burst capacity)
+Route::post('/files', [FileController::class, 'upload']);
 
 // Authentication — stateless helpers (low risk, no throttle needed)
 Route::post('/logout', [AuthController::class, 'logout']);
@@ -92,8 +86,8 @@ Route::middleware([/*'auth:sanctum'*/])->prefix('broadcast')->group(function () 
     Route::delete('/channels/{channelId}/pin', [BroadcastChannelController::class, 'unpin']);
 });
 
-// MOD endpoints — public, moderate throttle
-Route::middleware('throttle:30,1')->prefix('mods')->group(function () {
+// MOD endpoints — public
+Route::prefix('mods')->group(function () {
     Route::get('/llm/ollama/health', [LlmController::class, 'ollamaHealth']);
 });
 
@@ -103,8 +97,8 @@ Route::middleware([/*'auth:sanctum',*/ 'throttle:10,1'])->prefix('mods')->group(
     Route::post('/llm/chat/stream', [LlmController::class, 'chatStream']);
 });
 
-// File Download & Meta — throttled
-Route::middleware('throttle:60,1')->prefix('files')->group(function () {
+// File Download & Meta — no throttle (auto-sync file checks need burst capacity)
+Route::prefix('files')->group(function () {
     Route::get('/{hash}', [FileController::class, 'download']);
     Route::get('/{hash}/meta', [FileController::class, 'meta']);
     Route::get('/{hash}/exists', [FileController::class, 'exists']);

@@ -63,3 +63,8 @@ export const BBMessage = {
         return this.error(t('system.loginRequired'));
     }
 };
+
+// [429 UX]: Listen for rate-limit events from api.js and show user-facing toast
+window.addEventListener('api:rateLimited', () => {
+    BBMessage.error(t('api.rateLimited'));
+});

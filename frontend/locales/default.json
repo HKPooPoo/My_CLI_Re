@@ -22,6 +22,9 @@
     "offline": "OFFLINE",
     "error": "ERROR"
   },
+  "api": {
+    "rateLimited": "THROTTLED — TOO MANY REQUESTS"
+  },
   "pressStart": {
     "label": "PRESS START"
   },

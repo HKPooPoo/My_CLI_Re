@@ -22,6 +22,9 @@
     "offline": "離線",
     "error": "錯誤"
   },
+  "api": {
+    "rateLimited": "請求過於頻繁 — 請稍候再試"
+  },
   "pressStart": {
     "label": "按下開始"
   },

@@ -1,6 +1,6 @@
-
 const BASE_URL = '/api';
 const DEFAULT_TIMEOUT = 15000; // 15 seconds
+let _lastRateLimitEvent = 0;
 
 /**
  * Common API request handler
@@ -52,6 +52,15 @@ export async function apiRequest(endpoint, options = {}) {
         const data = await response.json();
 
         if (!response.ok) {
+            // [429 UX]: Dispatch debounced event so UI layer can show a toast
+            if (response.status === 429) {
+                const now = Date.now();
+                if (now - _lastRateLimitEvent > 5000) {
+                    _lastRateLimitEvent = now;
+                    window.dispatchEvent(new Event('api:rateLimited'));
+                }
+            }
+
             throw {
                 status: response.status,
                 message: data.message || 'API Request Failed',
