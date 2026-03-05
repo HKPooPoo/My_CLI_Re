@@ -317,7 +317,7 @@
     "sharedConfig": "ENGINE",
     "instanceConfig": "INSTANCE",
     "validationFailed": "MOD '{id}' FAILED VALIDATION — CHECK CONSOLE",
-    "loadFailed": "MOD CODE LOAD FAILED — CHECK CONSOLE",
+    "loadFailed": "MOD LOAD FAILED: {ids}",
     "status": {
       "unknown": "SCANNING...",
       "online": "ONLINE",

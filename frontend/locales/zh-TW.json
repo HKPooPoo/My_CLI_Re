@@ -317,7 +317,7 @@
     "sharedConfig": "引擎",
     "instanceConfig": "實例",
     "validationFailed": "模組 '{id}' 驗證失敗 — 請檢查主控台",
-    "loadFailed": "模組載入失敗 — 請檢查主控台",
+    "loadFailed": "模組載入失敗：{ids}",
     "status": {
       "unknown": "掃描中...",
       "online": "線上",

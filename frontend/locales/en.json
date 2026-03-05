@@ -317,7 +317,7 @@
     "sharedConfig": "ENGINE",
     "instanceConfig": "INSTANCE",
     "validationFailed": "Extension '{id}' failed to load — check console",
-    "loadFailed": "Extension failed to load — check console",
+    "loadFailed": "Failed to load: {ids}",
     "status": {
       "unknown": "Checking...",
       "online": "Available",

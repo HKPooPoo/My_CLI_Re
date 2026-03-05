@@ -41,14 +41,33 @@ window.addEventListener('i18n:ready', async () => {
 /**
  * Discover MOD folders via Nginx autoindex JSON.
  * Returns array of folder names (excluding _ prefixed and files).
+ * Retries once after 2s on failure to handle startup race conditions.
  */
 async function discoverModFolders() {
-    const res = await fetch('/mods/');
-    if (!res.ok) throw new Error(`MOD discovery failed: autoindex ${res.status}`);
-    const entries = await res.json();
-    return entries
-        .filter(e => e.type === 'directory' && !e.name.startsWith('_'))
-        .map(e => e.name);
+    for (let attempt = 0; attempt < 2; attempt++) {
+        try {
+            const res = await fetch('/mods/');
+            if (!res.ok) throw new Error(`autoindex ${res.status}`);
+            const entries = await res.json();
+            const folders = entries
+                .filter(e => e.type === 'directory' && !e.name.startsWith('_'))
+                .map(e => e.name);
+            if (folders.length > 0) return folders;
+            // Empty response — likely server not ready, retry
+            if (attempt === 0) {
+                console.warn('[mod-loader] Discovery returned 0 folders, retrying in 2s...');
+                await new Promise(r => setTimeout(r, 2000));
+            }
+        } catch (e) {
+            if (attempt === 0) {
+                console.warn('[mod-loader] Discovery failed, retrying in 2s...', e);
+                await new Promise(r => setTimeout(r, 2000));
+            } else {
+                throw new Error(`MOD discovery failed after 2 attempts: ${e.message}`);
+            }
+        }
+    }
+    return [];
 }
 
 // ===================== Manifest Loading =====================
@@ -239,7 +258,17 @@ export async function loadAllMods() {
             ModState.getInstances().map(inst => inst.templateId)
         )];
 
-        await Promise.allSettled(activeTemplateIds.map(id => ensureCodeLoaded(id)));
+        const codeResults = await Promise.allSettled(activeTemplateIds.map(id => ensureCodeLoaded(id)));
+
+        // Report failed MODs to user (not just console)
+        const failedMods = activeTemplateIds.filter((id, i) => {
+            const r = codeResults[i];
+            return r.status === 'rejected' || (r.status === 'fulfilled' && !r.value);
+        });
+        if (failedMods.length > 0) {
+            console.error('[mod-loader] Failed to load code for:', failedMods);
+            BBMessage.error(t('mods.loadFailed', { ids: failedMods.join(', ') }));
+        }
 
         // Create DOM elements (buttons from instances + shelves from templates)
         // Runs after code loaded, so getButtonDataId etc. are available
