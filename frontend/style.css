@@ -84,6 +84,7 @@ input {
     font-weight: bold;
     font-size: var(--font-size);
     background: transparent;
+    -webkit-tap-highlight-color: transparent;
 }
 
 @media (hover: hover) {

@@ -41,3 +41,8 @@ document.addEventListener('mouseleave', (e) => {
     if (e.relatedTarget && target.contains(e.relatedTarget)) return;
     panel.classList.remove('active');
 }, true);
+
+// Dismiss hint panel on click/touch (prevents blocking on mobile)
+panel.addEventListener('click', () => {
+    panel.classList.remove('active');
+});
