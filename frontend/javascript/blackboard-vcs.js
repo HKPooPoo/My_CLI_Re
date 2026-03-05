@@ -55,6 +55,13 @@ export const BBVCS = {
             if (currentText && currentText.trim()) {
                 await this.save(state, currentText);
             } else {
+                // [Fix]: Check if records exist before exiting virtual.
+                // Without this, empty branches oscillate: virtual → stuck head 0 → virtual.
+                const count = await BBCore.countRecords(state.owner, state.branchId);
+                if (count === 0) {
+                    state.isVirtual = true;
+                    return false;
+                }
                 return true;
             }
         }

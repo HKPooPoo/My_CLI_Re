@@ -325,7 +325,17 @@ export const BBCore = {
             .primaryKeys();
 
         if (emptyKeys.length > 0) {
-            await db.blackboard.bulkDelete(emptyKeys);
+            // [Fix]: Preserve at least one record so branch stays visible in getAllBranches.
+            // If ALL records are blank, keep the newest as a placeholder.
+            const totalCount = await this.countRecords(owner, branchId);
+            if (emptyKeys.length >= totalCount) {
+                // All records blank — keep newest (last in ascending timestamp order)
+                if (emptyKeys.length > 1) {
+                    await db.blackboard.bulkDelete(emptyKeys.slice(0, -1));
+                }
+            } else {
+                await db.blackboard.bulkDelete(emptyKeys);
+            }
         }
 
         // 2. 執行溢出清理
