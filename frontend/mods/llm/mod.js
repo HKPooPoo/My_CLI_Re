@@ -37,7 +37,8 @@ export default {
 
     async activate(ctx) {
         await runActivation(this, ctx, (c) => {
-            const text = c.board.getText().trim();
+            const selection = c.board.getSelection().text.trim();
+            const text = selection || c.board.getText().trim();
             return text ? { text } : null;
         });
     },

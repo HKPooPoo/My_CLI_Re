@@ -68,7 +68,8 @@ export default {
 
 async function _collectInput(ctx, scope, limits) {
     if (scope === 'text') {
-        return ctx.board.getText().trim();
+        const selection = ctx.board.getSelection().text.trim();
+        return selection || ctx.board.getText().trim();
     }
 
     if (scope === 'history') {

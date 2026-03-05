@@ -53,7 +53,8 @@ export default {
         const targetLang = ctx.config.targetLang || ctx.buttonId?.replace('translate-', '') || 'zh-TW';
         const t = ctx.i18n.t;
 
-        const text = ctx.board.getText().trim();
+        const selection = ctx.board.getSelection().text.trim();
+        const text = selection || ctx.board.getText().trim();
         if (!text) {
             if (this._outputEl) this._outputEl.value = t('mods.translate.bufferEmpty');
             return;
