@@ -1,5 +1,4 @@
 import { BBCore } from "./blackboard-core.js";
-import { BBMessage } from "./blackboard-msg.js";
 import db, { Dexie } from "./indexedDB.js";
 import { BlackboardService } from "./services/blackboard-service.js";
 import { FileService } from "./services/file-service.js";
@@ -168,7 +167,6 @@ export const BBVCS = {
         }
 
         if (uniqueHashes.size > 0) {
-            BBMessage.info(t('blackboard.syncingFiles'));
             for (const hash of uniqueHashes) {
                 try {
                     const exists = await FileService.exists(hash);
@@ -234,9 +232,8 @@ export const BBVCS = {
     /**
      * Checkout: 切換分支
      */
-    async checkout(state, targetBranchId, targetOwner, { silent = false } = {}) {
+    async checkout(state, targetBranchId, targetOwner) {
         if (targetOwner !== "local") {
-            if (!silent) BBMessage.info(t('blackboard.syncing'));
 
             try {
                 const data = await BlackboardService.fetchBranchDetails(targetBranchId);

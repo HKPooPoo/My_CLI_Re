@@ -446,13 +446,13 @@ if (checkoutBtnEl) {
             if (currentCheckoutAction === "checkout") {
                 // Re-download from server (always remote)
                 msg = BBMessage.loading(t('blackboard.loading'));
-                await BBVCS.checkout(state, selected.id, "remote", { silent: true });
+                await BBVCS.checkout(state, selected.id, "remote");
                 msg.update(t('blackboard.loadComplete'));
             } else {
                 // Switch to a different branch
                 msg = BBMessage.loading(t('blackboard.switching'));
                 const targetOwner = selected.isLocal ? "local" : "remote";
-                await BBVCS.checkout(state, selected.id, targetOwner, { silent: true });
+                await BBVCS.checkout(state, selected.id, targetOwner);
                 msg.update(t('blackboard.switchComplete'));
             }
 
