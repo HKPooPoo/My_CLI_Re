@@ -23,33 +23,21 @@ const CALC_CSS = `
 }
 
 .calc-display {
-    display: flex;
-    flex-direction: row;
-    align-items: baseline;
+    display: block;
     background: var(--bg-primary);
     border: var(--border-line);
     border-radius: var(--border-radius);
-    padding: 10px 14px;
-    min-height: 40px;
-    overflow: hidden;
-    font-family: 'Courier New', monospace;
-    font-size: 1.4em;
-    gap: 6px;
-}
-
-.calc-expression {
+    padding: 6px 10px;
     color: var(--text-green);
-    opacity: 0.5;
+    font-family: 'Courier New', monospace;
+    font-size: 1.6em;
+    text-align: right;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-}
-
-.calc-result {
-    color: var(--text-green);
-    font-weight: bold;
+    min-height: 1.8em;
+    line-height: 1.8em;
     text-shadow: 0 0 8px var(--text-green);
-    white-space: nowrap;
 }
 
 .calc-grid {
@@ -127,7 +115,7 @@ const CALC_CSS = `
     }
 }
 
-.theme-light .calc-result {
+.theme-light .calc-display {
     text-shadow: none;
 }
 `;
@@ -157,7 +145,7 @@ export default {
 
     /** Idempotent: build shelf DOM on first successful call, no-op after. */
     _buildShelf(ctx) {
-        if (this._expressionEl) return;
+        if (this._displayEl) return;
 
         const shelf = ctx.ui.getShelfElement();
         if (!shelf) return;
@@ -167,15 +155,6 @@ export default {
 
         const display = document.createElement('div');
         display.className = 'calc-display';
-
-        const exprEl = document.createElement('div');
-        exprEl.className = 'calc-expression';
-
-        const resultEl = document.createElement('div');
-        resultEl.className = 'calc-result';
-
-        display.appendChild(exprEl);
-        display.appendChild(resultEl);
 
         const grid = document.createElement('div');
         grid.className = 'calc-grid';
@@ -192,8 +171,7 @@ export default {
         wrapper.appendChild(grid);
         shelf.appendChild(wrapper);
 
-        this._expressionEl = exprEl;
-        this._resultEl = resultEl;
+        this._displayEl = display;
         this._expression = '';
         this._result = '';
         this._justEvaluated = false;
@@ -329,7 +307,10 @@ export default {
     },
 
     _updateDisplay() {
-        if (this._expressionEl) this._expressionEl.textContent = this._expression;
-        if (this._resultEl) this._resultEl.textContent = this._result ? '= ' + this._result : '';
+        if (!this._displayEl) return;
+        // Casio-style: show result after =, otherwise show expression
+        this._displayEl.textContent =
+            (this._justEvaluated && this._result) ? this._result
+            : this._expression || '0';
     },
 };
