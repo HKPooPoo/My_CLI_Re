@@ -1,7 +1,7 @@
 /**
  * Blackboard Auto-Sync (Multi-Device)
  * =================================================================
- * WhatsApp-style auto-sync: edits auto-commit after 5s debounce,
+ * WhatsApp-style auto-sync: edits auto-commit after 3s debounce,
  * other devices receive WebSocket notification and auto-checkout.
  * Self-echo filtered via per-tab deviceId (sessionStorage).
  * =================================================================
@@ -28,6 +28,7 @@ let _onBranchListUpdate = null;
 // --- Internal state ---
 let _commitTimer = null;
 let _isCommitting = false;
+let _pendingRemoteCheckout = false;
 let _echoChannel = null;
 let _currentUid = null;
 
@@ -161,6 +162,21 @@ export const BBSync = {
         } finally {
             _isCommitting = false;
         }
+
+        // Handle deferred remote checkout (remote event arrived while editing/committing)
+        if (_pendingRemoteCheckout) {
+            _pendingRemoteCheckout = false;
+            const st = _getState?.();
+            if (st) {
+                try {
+                    await BBVCS.checkout(st, st.branchId, 'remote');
+                    _onRemoteUpdate?.();
+                    BBMessage.info(t('blackboard.autoSyncReceived'));
+                } catch (err) {
+                    console.warn('[BBSync] Deferred remote checkout failed:', err);
+                }
+            }
+        }
     },
 
     _handleRemoteEvent(e) {
@@ -177,7 +193,16 @@ export const BBSync = {
         const incomingBranchId = parseInt(branch_id) || branch_id;
 
         if (state.branchId === incomingBranchId) {
-            // Current branch updated by another device — fetch from server
+            // [Race-condition guard]: If user has pending or in-progress edits,
+            // defer the checkout until after auto-commit completes.
+            // Without this, checkout would wipe IndexedDB before the commit fires,
+            // causing the user to lose whatever they typed.
+            if (_commitTimer || _isCommitting) {
+                _pendingRemoteCheckout = true;
+                return;
+            }
+
+            // No pending edits — safe to checkout immediately
             BBVCS.checkout(state, state.branchId, 'remote').then(() => {
                 _onRemoteUpdate?.();
                 BBMessage.info(t('blackboard.autoSyncReceived'));

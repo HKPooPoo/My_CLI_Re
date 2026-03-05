@@ -722,7 +722,7 @@ window.addEventListener('online', () => {
 });
 
 /**
- * 輪詢：每 5 秒刷新分支清單（輕量 GET）。
+ * 輪詢：每 500ms 刷新分支清單（輕量 GET）。
  * 即時內容同步靠 WebSocket (BBSync._handleRemoteEvent)。
  */
 let _pollBusy = false;
