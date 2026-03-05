@@ -43,7 +43,7 @@ window.addEventListener("focus", () => {
  * 步驟：1. 檢查是否具備互動條件 2. 觸發「關機」動畫 (視覺上是關掉 Overlay) 3. 恢復導航狀態
  */
 overlay.addEventListener("click", () => {
-    if (!overlay.style.display === "flex" || justGainedFocus) return;
+    if (overlay.style.display === "none" || justGainedFocus) return;
 
     window.dispatchEvent(new CustomEvent('screensaver:deactivated'));
 

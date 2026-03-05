@@ -14,6 +14,7 @@ import * as Settings from './settings.js';
 import { MultiStepButton } from './multiStepButton.js';
 import { BBMessage } from './blackboard-msg.js';
 import { PLATFORM_VERSION } from './version.js';
+import toastMessager from './toast.js';
 
 // --- Shared Config Helpers (exported for WT/BC config pages) ---
 
@@ -130,6 +131,7 @@ export const MISC = {
         globalAudioBtn: document.getElementById('misc-toggle-global-audio'),
         sfxBtn: document.getElementById('misc-toggle-sfx'),
         bbConfigContainer: document.getElementById('bb-config-container'),
+        clearToastBtn: document.getElementById('misc-clear-toast-btn'),
         resetBtn: document.getElementById('misc-reset-btn'),
     },
 
@@ -230,6 +232,14 @@ export const MISC = {
             Settings.setGlobal('sfx', next);
             this.updateUI();
         });
+
+        // Clear toast button
+        if (this.elements.clearToastBtn) {
+            this.elements.clearToastBtn.addEventListener('click', () => {
+                playAudio('UISelectOff.mp3');
+                toastMessager.clearAll();
+            });
+        }
 
         // Reset button — BB scope + globals (everything visible on this page)
         if (this.elements.resetBtn) {

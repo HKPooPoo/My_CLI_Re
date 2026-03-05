@@ -274,7 +274,7 @@ export const BBCore = {
     },
 
     /**
-     * 數據清洗：刪除空值紀錄並強制執行容量限制
+     * 數據清洗：去重、刪除空值紀錄並強制執行容量限制
      */
     async scrubBranch(owner, branchId, maxSlot) {
         let collection;
@@ -287,8 +287,40 @@ export const BBCore = {
                 .between([owner, branchId, Dexie.minKey], [owner, branchId, Dexie.maxKey]);
         }
 
-        // 1. 刪除空值紀錄 (text 為空或全空白)
-        const emptyKeys = await collection
+        // 0. 去重：刪除 owner 變體產生的重複紀錄 (同 branch_id+timestamp，不同 owner)
+        if (owner === "local") {
+            const all = await collection.toArray();
+            const seen = new Map();
+            const dupKeys = [];
+            for (const r of all) {
+                const key = r.timestamp;
+                const existing = seen.get(key);
+                if (existing) {
+                    // 保留 owner 較長者（較具體的同步標籤）
+                    const discard = r.owner.length >= existing.owner.length ? existing : r;
+                    dupKeys.push([discard.owner, discard.branch_id, discard.timestamp]);
+                    if (r.owner.length > existing.owner.length) seen.set(key, r);
+                } else {
+                    seen.set(key, r);
+                }
+            }
+            if (dupKeys.length > 0) {
+                await db.blackboard.bulkDelete(dupKeys);
+            }
+        }
+
+        // 1. 刪除空值紀錄 (text 為空或全空白) — 需重新查詢（去重後狀態已變）
+        let cleanCollection;
+        if (owner === "local") {
+            cleanCollection = db.blackboard.where('[branch_id+timestamp]')
+                .between([branchId, Dexie.minKey], [branchId, Dexie.maxKey])
+                .and(item => item.owner.startsWith('local'));
+        } else {
+            cleanCollection = db.blackboard.where('[owner+branch_id+timestamp]')
+                .between([owner, branchId, Dexie.minKey], [owner, branchId, Dexie.maxKey]);
+        }
+
+        const emptyKeys = await cleanCollection
             .filter(item => (!item.text || item.text.trim() === "") && !item.file_hash)
             .primaryKeys();
 

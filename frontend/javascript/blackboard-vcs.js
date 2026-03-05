@@ -1,6 +1,6 @@
 import { BBCore } from "./blackboard-core.js";
 import { BBMessage } from "./blackboard-msg.js";
-import db from "./indexedDB.js";
+import db, { Dexie } from "./indexedDB.js";
 import { BlackboardService } from "./services/blackboard-service.js";
 import { FileService } from "./services/file-service.js";
 import { t } from './i18n.js';
@@ -214,7 +214,7 @@ export const BBVCS = {
             await BlackboardService.commit(commitPayload);
 
             const syncedOwner = `local, online/${loggedInUser} [synced]`;
-            await db.blackboard.where('owner').equals('local')
+            await db.blackboard.where('owner').startsWith('local')
                 .and(item => item.branch_id === branchId)
                 .modify({ owner: syncedOwner });
 
@@ -265,6 +265,16 @@ export const BBVCS = {
                         file_hash: binData
                     };
                 });
+
+                // Delete existing local records for this branch before putting
+                // server records to prevent owner-variant duplicates
+                const oldKeys = await db.blackboard.where('[branch_id+timestamp]')
+                    .between([targetBranchId, Dexie.minKey], [targetBranchId, Dexie.maxKey])
+                    .and(item => item.owner.startsWith('local'))
+                    .primaryKeys();
+                if (oldKeys.length > 0) {
+                    await db.blackboard.bulkDelete(oldKeys);
+                }
 
                 await db.blackboard.bulkPut(downloadRecords);
                 if (Settings.get('bb', 'autoCleanBlanks')) {

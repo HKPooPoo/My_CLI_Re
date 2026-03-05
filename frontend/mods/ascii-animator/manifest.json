@@ -11,7 +11,7 @@
     "pages": {},
     "providers": [],
     "configSchema": [
-        { "key": "matrixRain", "type": "toggle", "labelKey": "mods.asciiAnimator.matrixRain", "hintKey": "hints.aa.matrixRain", "default": true },
+        { "key": "matrixRain", "type": "toggle", "labelKey": "mods.asciiAnimator.matrixRain", "hintKey": "hints.aa.matrixRain", "default": false },
         { "key": "rainSpeed", "type": "range", "labelKey": "mods.asciiAnimator.rainSpeed",
           "min": 1, "max": 10, "step": 1, "default": 5, "showWhen": { "key": "matrixRain", "value": true } },
         { "key": "rainDensity", "type": "range", "labelKey": "mods.asciiAnimator.rainDensity",

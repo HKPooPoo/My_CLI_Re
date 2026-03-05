@@ -287,7 +287,8 @@
     "languageLabel": "LOCALE",
     "globalAudioLabel": "AUDIO",
     "sfxLabel": "SFX",
-    "localeName": "GIT MODE"
+    "localeName": "GIT MODE",
+    "clearToast": "FLUSH LOG"
   },
   "mods": {
     "pageTitle": "MOD REGISTRY",

@@ -287,7 +287,8 @@
     "languageLabel": "介面語言",
     "globalAudioLabel": "全局音效",
     "sfxLabel": "操作音效",
-    "localeName": "繁體中文"
+    "localeName": "繁體中文",
+    "clearToast": "清除通知"
   },
   "mods": {
     "pageTitle": "模組管理器",

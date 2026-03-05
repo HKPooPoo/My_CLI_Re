@@ -8,10 +8,7 @@
     pointer-events: none;
 }
 
-/* Re-enable pointer events for mouse interaction on the overlay */
-#press-start-overlay #aa-matrix-rain {
-    pointer-events: auto;
-}
+/* Canvas is purely visual — never capture pointer events (blocks mobile touch) */
 
 /* Perlin Noise background — behind page content */
 #aa-perlin-bg {

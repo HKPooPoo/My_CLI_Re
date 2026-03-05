@@ -287,7 +287,8 @@
     "languageLabel": "Language",
     "globalAudioLabel": "Music",
     "sfxLabel": "Sound Effects",
-    "localeName": "English"
+    "localeName": "English",
+    "clearToast": "Clear Notifications"
   },
   "mods": {
     "pageTitle": "Extensions",

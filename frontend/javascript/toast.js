@@ -83,6 +83,15 @@ export class ToastMessager {
     }
 
     /**
+     * 清除所有 Toast
+     */
+    clearAll() {
+        if (!this.container) return;
+        const toasts = this.container.querySelectorAll('.toast');
+        toasts.forEach(toast => this.removeMessage(toast));
+    }
+
+    /**
      * 執行移除動畫
      */
     removeMessage(toast) {
