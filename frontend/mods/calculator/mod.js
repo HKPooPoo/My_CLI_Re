@@ -149,14 +149,25 @@ export default {
             document.head.appendChild(style);
         }
 
+        // Shelf may not exist yet at boot (init runs before createAllInstanceDOM).
+        // _buildShelf is idempotent — retried in activate() if needed.
+        this._buildShelf(ctx);
+    },
+
+    async activate(ctx) {
+        this._buildShelf(ctx);
+    },
+
+    /** Idempotent: build shelf DOM on first successful call, no-op after. */
+    _buildShelf(ctx) {
+        if (this._expressionEl) return;
+
         const shelf = ctx.ui.getShelfElement();
         if (!shelf) return;
 
-        // Wrapper
         const wrapper = document.createElement('div');
         wrapper.className = 'calc-wrapper';
 
-        // Display
         const display = document.createElement('div');
         display.className = 'calc-display';
 
@@ -169,7 +180,6 @@ export default {
         display.appendChild(exprEl);
         display.appendChild(resultEl);
 
-        // Button grid
         const grid = document.createElement('div');
         grid.className = 'calc-grid';
 
@@ -185,16 +195,11 @@ export default {
         wrapper.appendChild(grid);
         shelf.appendChild(wrapper);
 
-        // Store DOM refs on template object (singleton, maxInstances=1)
         this._expressionEl = exprEl;
         this._resultEl = resultEl;
         this._expression = '';
         this._result = '';
         this._justEvaluated = false;
-    },
-
-    async activate() {
-        // Calculator is stateful — shelf auto-opens, no reset needed
     },
 
     async checkHealth() { return 'online'; },
