@@ -88,7 +88,7 @@ let heartbeatIntervalId = null;
 function startHeartbeat() {
     if (heartbeatIntervalId) return;
     updateDatabaseStatus();
-    heartbeatIntervalId = setInterval(updateDatabaseStatus, 15000);
+    heartbeatIntervalId = setInterval(updateDatabaseStatus, 5000);
 }
 
 function stopHeartbeat() {
