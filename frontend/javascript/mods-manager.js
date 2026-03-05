@@ -752,7 +752,7 @@ function bindEvents() {
             selectionTimer = setTimeout(() => {
                 renderInstanceActions(instanceId);
                 window.dispatchEvent(new CustomEvent('mods:selected', { detail: { instanceId } }));
-            }, 500);
+            }, 200);
         } else if (templateId) {
             // CATALOG path — show preview, clear actions
             selectedInstanceId = null;
@@ -760,7 +760,7 @@ function bindEvents() {
             selectionTimer = setTimeout(() => {
                 renderCatalogPreview(templateId);
                 renderInstanceActions(null);
-            }, 500);
+            }, 200);
         }
     });
 

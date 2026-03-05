@@ -115,7 +115,7 @@ export const BCList = {
             this.selectionTimer = setTimeout(() => {
                 this.updateNaviText(ch.name);
                 window.dispatchEvent(new CustomEvent('broadcast:selected', { detail: ch }));
-            }, 500);
+            }, 200);
         });
 
         // Channel renamed → update navi + server if cast

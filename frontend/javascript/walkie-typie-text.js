@@ -624,14 +624,14 @@ export const WTText = {
      * Trigger a delayed commit (debounced).
      */
     triggerCommit(text) {
-        this.timers.schedule('commit', () => this.commitWE(text), 2000);
+        this.timers.schedule('commit', () => this.commitWE(text), 1000);
     },
 
     /**
      * Three-tier debounce pipeline:
      *   50ms  → whisper signal to partner (Client Event, no DB)
      *   200ms → WTVCS.save() to IndexedDB (local persistence)
-     *   2s    → commitWE() to PostgreSQL (server persistence)
+     *   1s    → commitWE() to PostgreSQL (server persistence)
      */
     handleMyInput(e) {
         if (!this.currentConnection) return;

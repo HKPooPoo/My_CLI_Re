@@ -157,7 +157,7 @@ export const WTList = {
                     window.dispatchEvent(new CustomEvent("walkie-typie:selected", {
                         detail: conn
                     }));
-                }, 500);
+                }, 200);
             }
         });
 

@@ -89,13 +89,13 @@ export const BBSync = {
     },
 
     /**
-     * Schedule an auto-commit after 5s debounce.
+     * Schedule an auto-commit after 3s debounce.
      * No-op if autoSync OFF or not logged in.
      */
     scheduleAutoCommit() {
         if (!_isAutoSyncEnabled() || !_isLoggedIn()) return;
         clearTimeout(_commitTimer);
-        _commitTimer = setTimeout(() => this._executeAutoCommit(), 5000);
+        _commitTimer = setTimeout(() => this._executeAutoCommit(), 3000);
     },
 
     cancelPendingCommit() {

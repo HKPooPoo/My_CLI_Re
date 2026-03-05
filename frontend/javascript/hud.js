@@ -88,7 +88,7 @@ let heartbeatIntervalId = null;
 function startHeartbeat() {
     if (heartbeatIntervalId) return;
     updateDatabaseStatus();
-    heartbeatIntervalId = setInterval(updateDatabaseStatus, 5000);
+    heartbeatIntervalId = setInterval(updateDatabaseStatus, 2000);
 }
 
 function stopHeartbeat() {
@@ -98,7 +98,7 @@ function stopHeartbeat() {
     }
 }
 
-setTimeout(startHeartbeat, 3000);
+setTimeout(startHeartbeat, 1000);
 
 document.addEventListener('visibilitychange', () => {
     if (document.hidden) {
