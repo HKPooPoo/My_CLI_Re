@@ -20,7 +20,11 @@ precacheAndRoute(self.__WB_MANIFEST);
 cleanupOutdatedCaches();
 
 // --- SPA navigation fallback: serve cached /index.html for all routes ---
-registerRoute(new NavigationRoute(createHandlerBoundToURL('/index.html')));
+// Denylist /pages/ so standalone pages are NOT hijacked back to main SPA
+registerRoute(new NavigationRoute(
+  createHandlerBoundToURL('/index.html'),
+  { denylist: [/\/pages\//] }
+));
 
 // --- Runtime SWR for non-precached same-origin requests (MOD files, etc.) ---
 registerRoute(

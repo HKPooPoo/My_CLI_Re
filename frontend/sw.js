@@ -20,7 +20,11 @@ precacheAndRoute([{"revision":"ddcdd86a3fe2344cbf96bd4de2688085","url":"index.ht
 cleanupOutdatedCaches();
 
 // --- SPA navigation fallback: serve cached /index.html for all routes ---
-registerRoute(new NavigationRoute(createHandlerBoundToURL('/index.html')));
+// Denylist /pages/ so standalone pages are NOT hijacked back to main SPA
+registerRoute(new NavigationRoute(
+  createHandlerBoundToURL('/index.html'),
+  { denylist: [/\/pages\//] }
+));
 
 // --- Runtime SWR for non-precached same-origin requests (MOD files, etc.) ---
 registerRoute(
