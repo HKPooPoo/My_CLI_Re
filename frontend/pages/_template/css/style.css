@@ -1,0 +1,6 @@
+/* Page-specific styles — extend as needed */
+
+/* Ensure first page is visible on load */
+.page[data-page="sub-navi-1"] {
+    /* Default active page */
+}
