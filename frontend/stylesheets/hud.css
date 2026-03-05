@@ -24,6 +24,7 @@
     display: inline-block;
     overflow: hidden;
     text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 /* Theme Change Button — hidden by default, shown by theme-engine.js when MODs need it */
