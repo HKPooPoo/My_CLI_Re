@@ -82,13 +82,12 @@ updateLoginStatus();
 
 replaceCrtTextColorBy("crt-text-orange"); // 最初顯示為 orange (CONNECTING...)
 
-// [Optimization]: 延遲首次檢測，避免頁面加載時的 NetworkError
 let heartbeatIntervalId = null;
 
 function startHeartbeat() {
     if (heartbeatIntervalId) return;
     updateDatabaseStatus();
-    heartbeatIntervalId = setInterval(updateDatabaseStatus, 2000);
+    heartbeatIntervalId = setInterval(updateDatabaseStatus, 1000);
 }
 
 function stopHeartbeat() {
@@ -98,7 +97,7 @@ function stopHeartbeat() {
     }
 }
 
-setTimeout(startHeartbeat, 1000);
+startHeartbeat();
 
 document.addEventListener('visibilitychange', () => {
     if (document.hidden) {

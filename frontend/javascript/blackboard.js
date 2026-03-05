@@ -738,7 +738,7 @@ setInterval(async () => {
         try { await updateBranchList(); } catch (_) {}
         _pollBusy = false;
     }
-}, 1_000);
+}, 500);
 
 // PWA logic extracted to pwa.js
 import "./pwa.js";
