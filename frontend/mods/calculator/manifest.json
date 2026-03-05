@@ -1,0 +1,18 @@
+{
+    "id": "calculator",
+    "group": "utilities",
+    "nameKey": "mods.calculator.name",
+    "descriptionKey": "mods.calculator.desc",
+    "version": "1.0.0",
+    "minApiVersion": 1,
+    "maxInstances": 1,
+    "shelfPanelId": "calculator",
+    "pages": {
+        "blackboard-log": {},
+        "walkie-typie-text": {},
+        "broadcast-channel": {}
+    },
+    "providers": [],
+    "configSchema": [],
+    "defaultInstances": [{ "config": {} }]
+}

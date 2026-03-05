@@ -1,0 +1,8 @@
+{
+    "mods": {
+        "calculator": {
+            "name": "Calculator",
+            "desc": "A simple on-screen calculator."
+        }
+    }
+}
