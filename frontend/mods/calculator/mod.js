@@ -23,36 +23,33 @@ const CALC_CSS = `
 }
 
 .calc-display {
+    display: flex;
+    flex-direction: row;
+    align-items: baseline;
     background: var(--bg-primary);
     border: var(--border-line);
     border-radius: var(--border-radius);
     padding: 10px 14px;
-    min-height: 60px;
+    min-height: 40px;
     overflow: hidden;
-}
-
-.calc-expression,
-.calc-result {
-    display: block;
     font-family: 'Courier New', monospace;
-    word-break: break-all;
+    font-size: 1.4em;
+    gap: 6px;
 }
 
 .calc-expression {
-    text-align: left;
     color: var(--text-green);
     opacity: 0.5;
-    font-size: 0.9em;
-    min-height: 1.2em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .calc-result {
-    text-align: right;
     color: var(--text-green);
-    font-size: 1.6em;
     font-weight: bold;
     text-shadow: 0 0 8px var(--text-green);
-    min-height: 1.5em;
+    white-space: nowrap;
 }
 
 .calc-grid {
@@ -333,6 +330,6 @@ export default {
 
     _updateDisplay() {
         if (this._expressionEl) this._expressionEl.textContent = this._expression;
-        if (this._resultEl) this._resultEl.textContent = this._result;
+        if (this._resultEl) this._resultEl.textContent = this._result ? '= ' + this._result : '';
     },
 };
