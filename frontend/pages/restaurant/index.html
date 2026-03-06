@@ -1,48 +1,30 @@
 <!DOCTYPE html>
-<html lang="zh-TW">
+<html lang="zh-TW" class="theme-light">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>臺灣冰點</title>
-    <meta name="theme-color" content="#000000">
-    <script>window.addEventListener('unhandledrejection', e => console.error('[Unhandled]', e.reason))</script>
+    <meta name="theme-color" content="#ffffff">
     <link rel="icon" href="/images/favicon.ico">
     <link rel="apple-touch-icon" href="/images/favicon.ico">
     <link rel="stylesheet" href="/style.css">
-    <link rel="stylesheet" href="/stylesheets/crt-vfx.css">
     <link rel="stylesheet" href="/stylesheets/navi.css">
     <link rel="stylesheet" href="/stylesheets/page.css">
     <link rel="stylesheet" href="/stylesheets/toast.css">
-    <!--注意@media放在尾！！！-->
-    <link rel="stylesheet" href="/stylesheets/@media.css">
     <link rel="stylesheet" href="/stylesheets/layer.css">
-    <link rel="stylesheet" href="/stylesheets/caret.css">
+    <link rel="stylesheet" href="/stylesheets/@media.css">
+    <link rel="stylesheet" href="/mods/light-theme/theme.css">
     <link rel="stylesheet" href="css/style.css">
-    <script>
-            (function () {
-                var theme = localStorage.getItem('restaurant-theme') || 'light';
-                if (theme === 'light') {
-                    document.documentElement.classList.add('theme-light');
-                    var link = document.createElement('link');
-                    link.rel = 'stylesheet';
-                    link.id = 'light-theme-css';
-                    link.href = '/mods/light-theme/theme.css';
-                    document.head.appendChild(link);
-                }
-            })();
-    </script>
+    <script>navigator.serviceWorker?.getRegistrations().then(rs=>rs.forEach(r=>r.unregister()))</script>
 </head>
 
 <body>
     <div class="header">
-        <img src="/images/banner.webp" class="header-img" alt="banner in header">
-        <button id="theme-change-btn" aria-label="Toggle theme"></button>
+        <img src="images/header.png" class="header-img" alt="臺味冰點">
     </div>
     <div class="body">
-        <div class="crt-scanner"></div>
-        <div class="crt-noise-layer"></div>
-        <nav class="navi-bar crt-text-green">
+        <nav class="navi-bar">
             <div class="navi-mask"></div>
             <div class="navi-item" data-navi-item="Order" data-sound-main="UIGeneralCancel.mp3"
                 data-sound-sub="UIGeneralFocus.mp3">
@@ -67,10 +49,87 @@
             </div>
         </nav>
         <div class="sub-navi-indicator-mask"></div>
-        <script type="module" src="js/app.js"></script>
+        <script type="module" src="/javascript/navi.js"></script>
         <div class="page-container" id="page-container">
             <div class="page" data-page="menu">
-
+                <div class="food-categorized-container">
+                    <div class="food-category-title">飯類</div>
+                    <!--grid-->
+                    <div class="food-item-item-container">
+                        <div class="food-item-container">
+                            <div class="food-item-img"></div>
+                            <div class="food-item-name">滷肉飯</div>
+                            <div class="food-item-price">$42</div>
+                        </div>
+                        <div class="food-item-container">
+                            <div class="food-item-img"></div>
+                            <div class="food-item-name">雞腿飯</div>
+                            <div class="food-item-price">$68</div>
+                        </div>
+                        <div class="food-item-container">
+                            <div class="food-item-img"></div>
+                            <div class="food-item-name">排骨飯</div>
+                            <div class="food-item-price">$62</div>
+                        </div>
+                        <div class="food-item-container">
+                            <div class="food-item-img"></div>
+                            <div class="food-item-name">牛肉燴飯</div>
+                            <div class="food-item-price">$72</div>
+                        </div>
+                        <div class="food-item-container">
+                            <div class="food-item-img"></div>
+                            <div class="food-item-name">咖哩飯</div>
+                            <div class="food-item-price">$58</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="food-categorized-container">
+                    <div class="food-category-title">麵類</div>
+                    <!--grid-->
+                    <div class="food-item-item-container">
+                        <div class="food-item-container">
+                            <div class="food-item-img"></div>
+                            <div class="food-item-name">牛肉麵</div>
+                            <div class="food-item-price">$78</div>
+                        </div>
+                        <div class="food-item-container">
+                            <div class="food-item-img"></div>
+                            <div class="food-item-name">擔仔麵</div>
+                            <div class="food-item-price">$48</div>
+                        </div>
+                        <div class="food-item-container">
+                            <div class="food-item-img"></div>
+                            <div class="food-item-name">陽春麵</div>
+                            <div class="food-item-price">$38</div>
+                        </div>
+                        <div class="food-item-container">
+                            <div class="food-item-img"></div>
+                            <div class="food-item-name">麻醬麵</div>
+                            <div class="food-item-price">$42</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="food-categorized-container">
+                    <div class="food-category-title">飲品</div>
+                    <!--grid-->
+                    <div class="food-item-item-container">
+                        <div class="food-item-container">
+                            <div class="food-item-img"></div>
+                            <div class="food-item-name">珍珠奶茶</div>
+                            <div class="food-item-price">$32</div>
+                        </div>
+                        <div class="food-item-container">
+                            <div class="food-item-img"></div>
+                            <div class="food-item-name">冬瓜茶</div>
+                            <div class="food-item-price">$22</div>
+                        </div>
+                        <div class="food-item-container">
+                            <div class="food-item-img"></div>
+                            <div class="food-item-name">紅茶</div>
+                            <div class="food-item-price">$18</div>
+                        </div>
+                    </div>
+                </div>
             </div>
             <div class="page" data-page="cart">
             </div>

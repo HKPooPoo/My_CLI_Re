@@ -221,26 +221,32 @@ function updatePage(subNaviItem) {
             $activePage = $page;
 
             // Push/Pull buttons: only on can-push-pull pages
-            if ($page.classList.contains("can-push-pull")) {
-                $pushBtn.style.transform = "translateY(0)";
-                $pullBtn.style.transform = "translateY(0)";
-            } else {
-                $pushBtn.style.transform = "translateY(-256%)";
-                $pullBtn.style.transform = "translateY(256%)";
+            if ($pushBtn && $pullBtn) {
+                if ($page.classList.contains("can-push-pull")) {
+                    $pushBtn.style.transform = "translateY(0)";
+                    $pullBtn.style.transform = "translateY(0)";
+                } else {
+                    $pushBtn.style.transform = "translateY(-256%)";
+                    $pullBtn.style.transform = "translateY(256%)";
+                }
             }
 
             // Feature container: visible on can-push-pull OR have-feature pages
-            if ($page.classList.contains("can-push-pull") || $page.classList.contains("have-feature")) {
-                $featureScaffold.style.transform = "translateX(0)";
-            } else {
-                $featureScaffold.style.transform = isIOS ? "translateX(256%)" : "translateX(256%)";
+            if ($featureScaffold) {
+                if ($page.classList.contains("can-push-pull") || $page.classList.contains("have-feature")) {
+                    $featureScaffold.style.transform = "translateX(0)";
+                } else {
+                    $featureScaffold.style.transform = isIOS ? "translateX(256%)" : "translateX(256%)";
+                }
             }
 
             // 分支指標位移 (iOS: scale(-1,-1) reverses X axis, so use positive value to hide left)
-            if ($page.classList.contains("show-branch")) {
-                $headIndicator.style.transform = "translateX(0)";
-            } else {
-                $headIndicator.style.transform = isIOS ? "translateX(256%)" : "translateX(-256%)";
+            if ($headIndicator) {
+                if ($page.classList.contains("show-branch")) {
+                    $headIndicator.style.transform = "translateX(0)";
+                } else {
+                    $headIndicator.style.transform = isIOS ? "translateX(256%)" : "translateX(-256%)";
+                }
             }
         } else {
             $page.classList.remove("active");

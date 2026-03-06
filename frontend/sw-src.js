@@ -31,6 +31,7 @@ registerRoute(
   ({ request, url }) => {
     if (request.method !== 'GET') return false;
     if (url.pathname.startsWith('/api/')) return false;
+    if (url.pathname.startsWith('/pages/')) return false;
     if (url.origin !== self.location.origin) return false;
     return true;
   },
