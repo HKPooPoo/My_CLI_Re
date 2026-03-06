@@ -270,6 +270,34 @@ $subNaviMask.addEventListener('touchend', (e) => {
     handleSubNaviSwipe(touchStartX, touchEndX);
 });
 
+// --- Page area swipe → change sub-navi (Mobile) ---
+const $pageContainer = document.getElementById('page-container');
+let pageSwipeStartX = 0;
+let pageSwipeStartY = 0;
+let pageSwipeStartTime = 0;
+
+$pageContainer.addEventListener('touchstart', (e) => {
+    const touch = e.changedTouches[0];
+    pageSwipeStartX = touch.screenX;
+    pageSwipeStartY = touch.screenY;
+    pageSwipeStartTime = Date.now();
+}, { passive: true });
+
+$pageContainer.addEventListener('touchend', (e) => {
+    if (e.target.closest('.feature-shelf-container')) return;
+
+    const touch = e.changedTouches[0];
+    const deltaX = Math.abs(pageSwipeStartX - touch.screenX);
+    const deltaY = Math.abs(pageSwipeStartY - touch.screenY);
+    const elapsed = Date.now() - pageSwipeStartTime;
+
+    if (elapsed > 400) return;
+    if (deltaX < 50) return;
+    if (deltaX < deltaY * 2) return;
+
+    handleSubNaviSwipe(pageSwipeStartX, touch.screenX);
+});
+
 function handleSubNaviSwipe(startX, endX) {
     if (!activeNaviItem) return;
     const threshold = 50;
