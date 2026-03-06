@@ -37,6 +37,7 @@
                         </div>
                         <div class="sub-navi-item" data-sub-navi-item="cart">
                             <div class="sub-navi-item-text" data-i18n="nav.cart">購物車</div>
+                            <span class="cart-badge" hidden></span>
                         </div>
                         <div class="sub-navi-item" data-sub-navi-item="recipt">
                             <div class="sub-navi-item-text" data-i18n="nav.receipt">訂單</div>
@@ -54,10 +55,13 @@
                     <div class="food-category-title">飯類</div>
                     <!--grid-->
                     <div class="food-item-item-container">
-                        <div class="food-item-container">
+                        <div class="food-item-container" data-name="滷肉飯" data-price="42">
                             <div class="food-item-img"></div>
                             <div class="food-item-name">滷肉飯</div>
-                            <div class="food-item-price">$42</div>
+                            <div class="food-item-bottom">
+                                <div class="food-item-price">$42</div>
+                                <button class="food-item-add" data-i18n="menu.add">+</button>
+                            </div>
                         </div>
                         <!-- <div class="food-item-container">
                             <div class="food-item-img"></div>

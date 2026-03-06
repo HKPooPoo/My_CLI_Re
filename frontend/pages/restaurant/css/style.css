@@ -59,12 +59,157 @@
     object-fit: cover;
 }
 
-.food-item-name,
-.food-item-price {
+.food-item-name {
     padding: 2px 8px;
     font-weight: bold;
 }
 
+.food-item-bottom {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    padding: 2px 8px 6px;
+}
+
 .food-item-price {
+    font-weight: bold;
     color: var(--text-orange-accent);
+}
+
+.food-item-add {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: var(--border-line);
+    background: var(--bg-primary);
+    color: var(--text-green);
+    font-size: 1.1rem;
+    font-weight: bold;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.15s, background 0.15s;
+    flex-shrink: 0;
+}
+
+.food-item-add:active,
+.food-item-add.added {
+    transform: scale(1.25);
+    background: var(--text-green);
+    color: var(--bg-primary);
+}
+
+/* ==================== Cart Badge ==================== */
+
+.cart-badge {
+    position: absolute;
+    top: 2px;
+    right: -6px;
+    min-width: 16px;
+    height: 16px;
+    border-radius: 8px;
+    background: var(--text-orange-accent);
+    color: var(--bg-primary);
+    font-size: 0.65rem;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 4px;
+}
+
+/* ==================== Cart Page ==================== */
+
+.cart-empty {
+    text-align: center;
+    padding: 48px 16px;
+    opacity: 0.5;
+    font-size: calc(var(--font-size) + 0.1rem);
+}
+
+.cart-list {
+    width: var(--container-width);
+    max-width: var(--container-max-width);
+    margin: 16px auto 0;
+    gap: 8px;
+}
+
+.cart-row {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 12px;
+    border: var(--border-line);
+    border-radius: var(--border-radius);
+    gap: 8px;
+}
+
+.cart-item-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.cart-item-name {
+    font-weight: bold;
+}
+
+.cart-item-price {
+    font-size: 0.85em;
+    opacity: 0.6;
+}
+
+.cart-item-controls {
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.cart-qty-btn {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    border: var(--border-line);
+    background: var(--bg-primary);
+    color: var(--text-green);
+    font-size: 1rem;
+    font-weight: bold;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.cart-qty-btn:active {
+    background: var(--text-green);
+    color: var(--bg-primary);
+}
+
+.cart-qty {
+    min-width: 20px;
+    text-align: center;
+    font-weight: bold;
+}
+
+.cart-item-subtotal {
+    min-width: 48px;
+    text-align: right;
+    font-weight: bold;
+    color: var(--text-orange-accent);
+}
+
+.cart-footer {
+    width: var(--container-width);
+    max-width: var(--container-max-width);
+    margin: 12px auto 0;
+}
+
+.cart-total {
+    flex-direction: row;
+    justify-content: space-between;
+    padding: 12px;
+    border-top: 2px solid var(--text-green);
+    font-weight: bold;
+    font-size: calc(var(--font-size) + 0.15rem);
 }
