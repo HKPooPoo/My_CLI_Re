@@ -1,8 +1,8 @@
 /**
- * Cart page — renders cart items, qty controls, total.
+ * Cart page — renders cart instances with single-choice options.
  */
 
-import { getItems, getTotal, getCount, updateQty, removeItem, clear } from './cart.js';
+import { getItems, getTotal, getCount, itemTotal, removeItem, setOption } from './cart.js';
 import { t } from './i18n.js';
 
 const cartPage = document.getElementById('cart-page');
@@ -16,6 +16,20 @@ function renderBadge() {
     }
 }
 
+function renderOptions(item) {
+    return item.options.map(opt => {
+        const buttons = opt.choices.map((ch, ci) => {
+            const active = item.selected[opt.key] === ci;
+            const extraText = ch.extra ? ` +$${ch.extra}` : '';
+            return `<button class="option-choice${active ? ' active' : ''}" data-item-id="${item.id}" data-key="${opt.key}" data-ci="${ci}">${ch.label}${extraText}</button>`;
+        }).join('');
+        return `<div class="option-row">
+            <span class="option-label">${opt.label}</span>
+            <div class="option-choices">${buttons}</div>
+        </div>`;
+    }).join('');
+}
+
 function renderCart() {
     const items = getItems();
     const total = getTotal();
@@ -27,17 +41,15 @@ function renderCart() {
     }
 
     const rows = items.map(item => `
-        <div class="cart-row" data-name="${item.name}">
-            <div class="cart-item-info">
+        <div class="cart-row" data-id="${item.id}">
+            <div class="cart-row-header">
                 <div class="cart-item-name">${item.name}</div>
-                <div class="cart-item-price">$${item.price}</div>
+                <div class="cart-item-total">$${itemTotal(item)}</div>
             </div>
-            <div class="cart-item-controls">
-                <button class="cart-qty-btn" data-delta="-1">&minus;</button>
-                <span class="cart-qty">${item.qty}</span>
-                <button class="cart-qty-btn" data-delta="1">+</button>
+            ${renderOptions(item)}
+            <div class="cart-row-footer">
+                <button class="cart-remove" data-id="${item.id}">${t('cart.remove')}</button>
             </div>
-            <div class="cart-item-subtotal">$${item.price * item.qty}</div>
         </div>
     `).join('');
 
@@ -53,18 +65,23 @@ function renderCart() {
     renderBadge();
 }
 
-// Event delegation for qty buttons
 cartPage.addEventListener('click', (e) => {
-    const qtyBtn = e.target.closest('.cart-qty-btn');
-    if (qtyBtn) {
-        const row = qtyBtn.closest('.cart-row');
-        const delta = Number(qtyBtn.dataset.delta);
-        updateQty(row.dataset.name, delta);
+    const choiceBtn = e.target.closest('.option-choice');
+    if (choiceBtn) {
+        setOption(
+            Number(choiceBtn.dataset.itemId),
+            choiceBtn.dataset.key,
+            Number(choiceBtn.dataset.ci)
+        );
+        return;
+    }
+
+    const removeBtn = e.target.closest('.cart-remove');
+    if (removeBtn) {
+        removeItem(Number(removeBtn.dataset.id));
         return;
     }
 });
 
 window.addEventListener('cart:updated', renderCart);
-
-// Initial render
 renderCart();

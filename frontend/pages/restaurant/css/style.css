@@ -44,7 +44,6 @@
     border: var(--border-line);
     border-radius: var(--border-radius);
     overflow: hidden;
-    cursor: pointer;
 }
 
 .food-item-img {
@@ -89,15 +88,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: transform 0.15s, background 0.15s;
     flex-shrink: 0;
-}
-
-.food-item-add:active,
-.food-item-add.added {
-    transform: scale(1.25);
-    background: var(--text-green);
-    color: var(--bg-primary);
 }
 
 /* ==================== Cart Badge ==================== */
@@ -136,68 +127,81 @@
 }
 
 .cart-row {
-    flex-direction: row;
-    align-items: center;
-    justify-content: space-between;
     padding: 10px 12px;
     border: var(--border-line);
     border-radius: var(--border-radius);
-    gap: 8px;
+    gap: 6px;
 }
 
-.cart-item-info {
-    flex: 1;
-    min-width: 0;
+.cart-row-header {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
 }
 
 .cart-item-name {
     font-weight: bold;
 }
 
-.cart-item-price {
-    font-size: 0.85em;
-    opacity: 0.6;
-}
-
-.cart-item-controls {
-    flex-direction: row;
-    align-items: center;
-    gap: 8px;
-    flex-shrink: 0;
-}
-
-.cart-qty-btn {
-    width: 26px;
-    height: 26px;
-    border-radius: 50%;
-    border: var(--border-line);
-    background: var(--bg-primary);
-    color: var(--text-green);
-    font-size: 1rem;
-    font-weight: bold;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.cart-qty-btn:active {
-    background: var(--text-green);
-    color: var(--bg-primary);
-}
-
-.cart-qty {
-    min-width: 20px;
-    text-align: center;
-    font-weight: bold;
-}
-
-.cart-item-subtotal {
-    min-width: 48px;
-    text-align: right;
+.cart-item-total {
     font-weight: bold;
     color: var(--text-orange-accent);
 }
+
+/* ---- Option rows ---- */
+
+.option-row {
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+}
+
+.option-label {
+    font-size: 0.85em;
+    opacity: 0.6;
+    flex-shrink: 0;
+    min-width: 36px;
+}
+
+.option-choices {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 4px;
+}
+
+.option-choice {
+    padding: 2px 10px;
+    border: var(--border-line);
+    border-radius: var(--border-radius);
+    background: var(--bg-primary);
+    font-size: 0.85em;
+    cursor: pointer;
+}
+
+.option-choice.active {
+    background: var(--text-green);
+    color: var(--bg-primary);
+    border-color: var(--text-green);
+}
+
+/* ---- Cart row footer ---- */
+
+.cart-row-footer {
+    flex-direction: row;
+    justify-content: flex-end;
+}
+
+.cart-remove {
+    padding: 2px 10px;
+    border: var(--border-line);
+    border-radius: var(--border-radius);
+    background: var(--bg-primary);
+    color: var(--text-red);
+    font-size: 0.8em;
+    cursor: pointer;
+}
+
+/* ---- Cart total ---- */
 
 .cart-footer {
     width: var(--container-width);
