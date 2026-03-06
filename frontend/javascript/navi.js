@@ -271,7 +271,6 @@ $subNaviMask.addEventListener('touchend', (e) => {
 });
 
 // --- Page area swipe → change sub-navi (Mobile) ---
-const $pageContainer = document.getElementById('page-container');
 let pageSwipeStartX = 0;
 let pageSwipeStartY = 0;
 let pageSwipeStartTime = 0;
