@@ -44,6 +44,7 @@ window.addEventListener("focus", () => {
  */
 overlay.addEventListener("click", () => {
     if (overlay.style.display === "none" || justGainedFocus) return;
+    overlay.dataset.handled = '1';
 
     window.dispatchEvent(new CustomEvent('screensaver:deactivated'));
 

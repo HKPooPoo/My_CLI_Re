@@ -83,6 +83,27 @@
         <div id="press-start-overlay">
             <div id="press-start-label" data-i18n="pressStart.label">PRESS START</div>
         </div>
+        <script>
+            // Inline fallback: if pressStart.js module fails to load (e.g. tunnel cold start),
+            // ensure the overlay is still dismissible so the user can enter the app.
+            (function() {
+                var el = document.getElementById('press-start-overlay');
+                if (!el) return;
+                el.addEventListener('click', function() {
+                    if (el.style.display === 'none') return;
+                    if (el.dataset.handled) return;
+                    el.dataset.handled = '1';
+                    el.classList.add('crt-switch-off');
+                    el.addEventListener('animationend', function() {
+                        el.classList.remove('crt-switch-off');
+                        el.style.display = 'none';
+                    }, { once: true });
+                    if (!localStorage.getItem('navi-item-head')) {
+                        localStorage.setItem('navi-item-head', 'blackboard');
+                    }
+                });
+            })();
+        </script>
         <script type="module" src="javascript/pressStart.js"></script>
         <!--navi.css-->
         <nav class="navi-bar crt-text-green">
