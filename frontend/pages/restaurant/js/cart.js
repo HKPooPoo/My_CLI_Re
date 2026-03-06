@@ -1,5 +1,6 @@
 /**
  * Cart state — instance-based array. Each add = new item.
+ * Options: type "select" (single choice, default) or "multi" (toggle multiple).
  * Dispatches 'cart:updated' on change.
  */
 
@@ -18,8 +19,11 @@ export function itemTotal(item) {
     for (const opt of item.options) {
         const sel = item.selected[opt.key];
         if (sel == null) continue;
-        const choice = opt.choices[sel];
-        if (choice) extra += choice.extra || 0;
+        if (Array.isArray(sel)) {
+            for (const ci of sel) extra += opt.choices[ci]?.extra || 0;
+        } else {
+            extra += opt.choices[sel]?.extra || 0;
+        }
     }
     return item.price + extra;
 }
@@ -27,7 +31,7 @@ export function itemTotal(item) {
 export function addItem(name, price, options = []) {
     const selected = {};
     for (const opt of options) {
-        selected[opt.key] = 0; // default to first choice
+        selected[opt.key] = opt.type === 'multi' ? [] : 0;
     }
     items.push({ id: nextId++, name, price, options, selected });
     emit('add');
@@ -41,10 +45,17 @@ export function removeItem(id) {
 
 export function setOption(id, key, choiceIndex) {
     const item = items.find(i => i.id === id);
-    if (item) {
+    if (!item) return;
+    const opt = item.options.find(o => o.key === key);
+    if (opt?.type === 'multi') {
+        const arr = item.selected[key];
+        const pos = arr.indexOf(choiceIndex);
+        if (pos === -1) arr.push(choiceIndex);
+        else arr.splice(pos, 1);
+    } else {
         item.selected[key] = choiceIndex;
-        emit();
     }
+    emit();
 }
 
 export function getItems() {

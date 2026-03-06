@@ -17,12 +17,16 @@ function renderBadge() {
     }
 }
 
+function isActive(sel, ci) {
+    return Array.isArray(sel) ? sel.includes(ci) : sel === ci;
+}
+
 function renderOptions(item) {
     return item.options.map(opt => {
+        const sel = item.selected[opt.key];
         const buttons = opt.choices.map((ch, ci) => {
-            const active = item.selected[opt.key] === ci;
             const extraText = ch.extra ? ` +$${ch.extra}` : '';
-            return `<button class="option-choice${active ? ' active' : ''}" data-item-id="${item.id}" data-key="${opt.key}" data-ci="${ci}">${ch.label}${extraText}</button>`;
+            return `<button class="option-choice${isActive(sel, ci) ? ' active' : ''}" data-item-id="${item.id}" data-key="${opt.key}" data-ci="${ci}">${ch.label}${extraText}</button>`;
         }).join('');
         return `<div class="option-row">
             <span class="option-label">${opt.label}</span>
