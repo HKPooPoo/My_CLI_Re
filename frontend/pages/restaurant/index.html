@@ -4,23 +4,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>台灣冰站</title>
+    <title>臺灣冰點</title>
     <meta name="theme-color" content="#000000">
     <script>window.addEventListener('unhandledrejection', e => console.error('[Unhandled]', e.reason))</script>
     <link rel="icon" href="/images/favicon.ico">
     <link rel="apple-touch-icon" href="/images/favicon.ico">
-    <!-- Shared CSS from main site -->
     <link rel="stylesheet" href="/style.css">
     <link rel="stylesheet" href="/stylesheets/crt-vfx.css">
     <link rel="stylesheet" href="/stylesheets/navi.css">
     <link rel="stylesheet" href="/stylesheets/page.css">
     <link rel="stylesheet" href="/stylesheets/toast.css">
+    <!--注意@media放在尾！！！-->
     <link rel="stylesheet" href="/stylesheets/@media.css">
     <link rel="stylesheet" href="/stylesheets/layer.css">
     <link rel="stylesheet" href="/stylesheets/caret.css">
-    <!-- Page-specific CSS -->
     <link rel="stylesheet" href="css/style.css">
-    <!-- Anti-FOUC: default light theme -->
     <script>
         (function () {
             var theme = localStorage.getItem('restaurant-theme') || 'light';
@@ -38,24 +36,17 @@
 
 <body>
     <div class="header">
-        <img src="/images/banner.webp" class="header-img" alt="banner">
-        <!-- HUD: branch info + table number -->
-        <div class="hud-bar">
-            <div class="hud-branch">台灣冰站 屯門店</div>
-            <div class="hud-sep">|</div>
-            <div class="hud-table">桌號: <span id="table-number">—</span></div>
-        </div>
-        <!-- Language toggle (reuses theme-change-btn position) -->
-        <button id="lang-btn" aria-label="Switch language">中/EN</button>
+        <img src="/images/banner.webp" class="header-img" alt="banner in header">
+        <button id="theme-change-btn" aria-label="Toggle theme"></button>
     </div>
     <div class="body">
         <div class="crt-scanner"></div>
         <div class="crt-noise-layer"></div>
         <nav class="navi-bar crt-text-green">
             <div class="navi-mask"></div>
-            <div class="navi-item" data-navi-item="restaurant"
-                data-sound-main="UIGeneralCancel.mp3" data-sound-sub="UIGeneralFocus.mp3">
-                <div class="navi-item-text">台灣冰站</div>
+            <div class="navi-item" data-navi-item="restaurant" data-sound-main="UIGeneralCancel.mp3"
+                data-sound-sub="UIGeneralFocus.mp3">
+                <div class="navi-item-text">臺灣冰點</div>
                 <div class="sub-navi-indicator"></div>
                 <div class="sub-navi-container">
                     <div class="sub-navi-track">
@@ -75,24 +66,17 @@
         <div class="sub-navi-indicator-mask"></div>
         <script type="module" src="js/app.js"></script>
         <div class="page-container" id="page-container">
-
-            <!-- ==================== MENU PAGE ==================== -->
             <div class="page" data-page="menu">
             </div>
-
-            <!-- ==================== CART PAGE ==================== -->
             <div class="page" data-page="cart">
             </div>
-
-            <!-- ==================== ORDER PAGE ==================== -->
             <div class="page" data-page="order">
             </div>
-
             <div id="toast-container"></div>
         </div>
     </div>
     <div class="footer">
-        <div class="footer-text">&copy; 2026 台灣冰站</div>
+        <div class="footer-text">&copy; 2026 臺灣冰點</div>
     </div>
 </body>
 
