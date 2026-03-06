@@ -170,7 +170,7 @@
 
 .option-row {
     flex-direction: row;
-    align-items: center;
+    align-items: flex-start;
     gap: 8px;
 }
 
@@ -179,6 +179,7 @@
     opacity: 0.6;
     flex-shrink: 0;
     min-width: 36px;
+    padding-top: 3px;
 }
 
 .option-choices {
