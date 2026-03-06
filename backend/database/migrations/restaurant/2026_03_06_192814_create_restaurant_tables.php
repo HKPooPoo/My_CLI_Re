@@ -12,8 +12,8 @@ return new class extends Migration
     {
         Schema::connection('restaurant')->create('menu_items', function (Blueprint $table) {
             $table->id();
-            $table->string('category');
-            $table->string('name');
+            $table->jsonb('category');         // {"zh-TW":"飯類","en":"Rice"}
+            $table->jsonb('name');             // {"zh-TW":"滷肉飯","en":"Braised Pork Rice"}
             $table->integer('price');
             $table->string('image')->nullable();
             $table->jsonb('options_schema')->default('[]');
@@ -35,7 +35,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('order_id')->constrained()->cascadeOnDelete();
             $table->foreignId('menu_item_id')->constrained('menu_items');
-            $table->string('name');
+            $table->string('name');            // snapshot, plain string at order time
             $table->integer('base_price');
             $table->integer('qty')->default(1);
             $table->jsonb('options')->default('{}');

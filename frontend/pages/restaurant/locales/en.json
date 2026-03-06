@@ -1,0 +1,18 @@
+{
+    "nav.dine-in": "Dine In",
+    "nav.menu": "Menu",
+    "nav.cart": "Cart",
+    "nav.receipt": "Orders",
+    "menu.add": "+",
+    "cart.empty": "Your cart is empty",
+    "cart.total": "Total",
+    "cart.checkout": "Checkout",
+    "cart.qty": "Qty",
+    "cart.subtotal": "Subtotal",
+    "cart.remove": "Remove",
+    "order.status.preparing": "Preparing",
+    "order.status.ready": "Ready",
+    "order.number": "Order #",
+    "order.empty": "No orders yet",
+    "footer.copyright": "© 2026 Taiwan Ice Station"
+}
