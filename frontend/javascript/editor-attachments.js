@@ -350,61 +350,48 @@ export const EditorAttachments = {
 
                 if (localFile?.blob) {
                     await db.file_blobs.update(hash, { last_accessed: Date.now() });
-                }
-
-                if (!localFile || !localFile.blob) {
-                    const loadingMsg = this._findChip(hash);
-                    if (loadingMsg) {
-                        const icon = loadingMsg.querySelector('.attachment-chip-icon');
-                        if (icon) icon.textContent = t('files.statusWait');
-                    }
-
-                    try {
-                        const blob = await FileService.download(hash);
-                        let meta = { name: 'downloaded_file', type: blob.type, size: blob.size };
-                        try {
-                            const serverMeta = await FileService.meta(hash);
-                            meta = { name: serverMeta.name, type: serverMeta.mime, size: serverMeta.size };
-                        } catch (e) { console.warn('EditorAttachments: meta fetch failed', e); }
-
-                        localFile = {
-                            hash: hash,
-                            blob: blob,
-                            name: meta.name,
-                            type: meta.type,
-                            size: meta.size,
-                            status: 'synced',
-                            last_accessed: Date.now()
-                        };
-
-                        await db.file_blobs.put(localFile);
-
-                        // Update chip status and name after download
-                        const chip = this._findChip(hash);
-                        if (chip) {
-                            chip.classList.remove('is-local');
-                            chip.classList.add('is-synced');
-                            const icon = chip.querySelector('.attachment-chip-icon');
-                            if (icon) icon.textContent = t('files.statusSync');
-                            const nameEl = chip.querySelector('.attachment-chip-name');
-                            if (nameEl && meta.name) {
-                                nameEl.textContent = meta.name;
-                                nameEl.title = meta.name;
-                            }
-                        }
-
-                    } catch (e) {
-                        console.error("Download failed", e);
-                        BBMessage.error(t('files.downloadFailed'));
-                        window.open(FileService.downloadUrl(hash), '_blank');
-                        return;
-                    }
-                }
-
-                if (localFile && localFile.blob) {
                     const url = URL.createObjectURL(localFile.blob);
                     window.open(url, '_blank');
                     setTimeout(() => URL.revokeObjectURL(url), 60000);
+                    return;
+                }
+
+                // Cloud file — download to local cache only, don't open
+                const loadingMsg = this._findChip(hash);
+                if (loadingMsg) {
+                    const icon = loadingMsg.querySelector('.attachment-chip-icon');
+                    if (icon) icon.textContent = t('files.statusWait');
+                }
+
+                try {
+                    const blob = await FileService.download(hash);
+                    let meta = { name: 'downloaded_file', type: blob.type, size: blob.size };
+                    try {
+                        const serverMeta = await FileService.meta(hash);
+                        meta = { name: serverMeta.name, type: serverMeta.mime, size: serverMeta.size };
+                    } catch (e) { console.warn('EditorAttachments: meta fetch failed', e); }
+
+                    await db.file_blobs.put({
+                        hash, blob,
+                        name: meta.name, type: meta.type, size: meta.size,
+                        status: 'synced', last_accessed: Date.now()
+                    });
+
+                    const chip = this._findChip(hash);
+                    if (chip) {
+                        chip.classList.remove('is-local');
+                        chip.classList.add('is-synced');
+                        const icon = chip.querySelector('.attachment-chip-icon');
+                        if (icon) icon.textContent = t('files.statusSync');
+                        const nameEl = chip.querySelector('.attachment-chip-name');
+                        if (nameEl && meta.name) {
+                            nameEl.textContent = meta.name;
+                            nameEl.title = meta.name;
+                        }
+                    }
+                } catch (e) {
+                    console.error("Download failed", e);
+                    BBMessage.error(t('files.downloadFailed'));
                 }
             },
 
