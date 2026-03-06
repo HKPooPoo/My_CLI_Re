@@ -283,7 +283,7 @@ $pageContainer.addEventListener('touchstart', (e) => {
 }, { passive: true });
 
 $pageContainer.addEventListener('touchend', (e) => {
-    if (e.target.closest('.feature-shelf-container')) return;
+    if (e.target.closest('.feature-shelf-container, .attachment-chips')) return;
 
     const touch = e.changedTouches[0];
     const deltaX = Math.abs(pageSwipeStartX - touch.screenX);
