@@ -8,8 +8,8 @@ let nextId = 1;
 /** @type {Array<{id: number, name: string, price: number, options: Array, selected: Object}>} */
 const items = [];
 
-function emit() {
-    window.dispatchEvent(new CustomEvent('cart:updated'));
+function emit(action = 'update') {
+    window.dispatchEvent(new CustomEvent('cart:updated', { detail: { action } }));
 }
 
 /** Compute item total: base price + selected option extras */
@@ -30,7 +30,7 @@ export function addItem(name, price, options = []) {
         selected[opt.key] = 0; // default to first choice
     }
     items.push({ id: nextId++, name, price, options, selected });
-    emit();
+    emit('add');
 }
 
 export function removeItem(id) {

@@ -6,7 +6,8 @@ import { getItems, getTotal, getCount, itemTotal, removeItem, setOption } from '
 import { t } from './i18n.js';
 
 const cartPage = document.getElementById('cart-page');
-const badge = document.querySelector('[data-sub-navi-item="cart"] .cart-badge');
+const cartNavi = document.querySelector('[data-sub-navi-item="cart"]');
+const badge = cartNavi?.querySelector('.cart-badge');
 
 function renderBadge() {
     const count = getCount();
@@ -83,5 +84,12 @@ cartPage.addEventListener('click', (e) => {
     }
 });
 
-window.addEventListener('cart:updated', renderCart);
+window.addEventListener('cart:updated', (e) => {
+    renderCart();
+    if (e.detail?.action === 'add' && cartNavi) {
+        cartNavi.classList.remove('cart-shake');
+        void cartNavi.offsetWidth; // reflow to restart animation
+        cartNavi.classList.add('cart-shake');
+    }
+});
 renderCart();
