@@ -1,18 +1,16 @@
 /**
- * Kitchen page — pending orders + history.
- * Pending: polls server every 5s, shows preparing orders with "完成" button.
- * History: shows completed orders (read-only).
+ * Kitchen page — instant sync via WebSocket (Reverb/Echo).
+ * Pending: preparing orders with "完成" button.
+ * History: completed orders (read-only).
  */
 
 import { t } from './i18n.js';
+import { getEcho } from './echo-service.js';
 import { ToastMessager } from '/javascript/toast.js';
 
 const pendingPage = document.getElementById('kitchen-orders-page');
 const historyPage = document.getElementById('kitchen-history-page');
 const toast = new ToastMessager();
-let pollTimer = null;
-let activePage = null;
-const POLL_INTERVAL = 5000;
 
 async function fetchOrders() {
     const res = await fetch('/api/restaurant/orders', {
@@ -110,34 +108,26 @@ pendingPage.addEventListener('click', async (e) => {
     try {
         await markReady(btn.dataset.order);
         toast.addMessage(`${btn.dataset.order} ${t('order.status.ready')}`, 2000, 'success');
-        await refresh();
     } catch (err) {
         toast.addMessage(err.message, 3000, 'error');
         btn.disabled = false;
     }
 });
 
-function startPolling() {
-    if (pollTimer) return;
-    refresh();
-    pollTimer = setInterval(refresh, POLL_INTERVAL);
-}
-
-function stopPolling() {
-    if (pollTimer) {
-        clearInterval(pollTimer);
-        pollTimer = null;
+// Subscribe to WebSocket for instant sync
+async function subscribe() {
+    try {
+        const echo = await getEcho();
+        echo.channel('restaurant-orders')
+            .listen('.restaurant.order.updated', () => {
+                refresh();
+            });
+    } catch (err) {
+        console.warn('Echo subscribe failed, falling back to polling:', err);
+        setInterval(refresh, 5000);
     }
 }
 
-window.addEventListener('navi:pageChanged', (e) => {
-    activePage = e.detail?.page;
-    if (activePage === 'kitchen-orders' || activePage === 'kitchen-history') {
-        startPolling();
-    } else {
-        stopPolling();
-    }
-});
-
-renderPending([]);
-renderHistory([]);
+// Initial load + subscribe
+refresh();
+subscribe();

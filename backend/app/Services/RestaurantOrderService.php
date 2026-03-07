@@ -4,6 +4,7 @@ namespace App\Services;
 
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
+use App\Events\RestaurantOrderUpdated;
 
 class RestaurantOrderService
 {
@@ -46,6 +47,8 @@ class RestaurantOrderService
             $this->db()->table('orders')
                 ->where('id', $orderId)
                 ->update(['total' => $total]);
+
+            event(new RestaurantOrderUpdated($orderNumber, 'created'));
 
             return (object) [
                 'id' => $orderId,
@@ -104,6 +107,8 @@ class RestaurantOrderService
         if (! $affected) {
             return null;
         }
+
+        event(new RestaurantOrderUpdated($orderNumber, 'status_changed'));
 
         return $this->db()->table('orders')
             ->where('order_number', $orderNumber)

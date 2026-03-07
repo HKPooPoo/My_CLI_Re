@@ -1,9 +1,11 @@
 /**
  * Receipt page — renders submitted orders from IndexedDB.
+ * Listens to WebSocket for status updates (preparing → ready).
  */
 
 import { t } from './i18n.js';
 import db from './db.js';
+import { getEcho } from './echo-service.js';
 
 const receiptPage = document.getElementById('recipt-page');
 
@@ -61,5 +63,30 @@ export async function render() {
     `).join('');
 }
 
+// When kitchen marks order ready, update local IDB and re-render
+async function onStatusChanged(data) {
+    const orderNumber = data.order_number;
+    const local = await db.orders.where('order_number').equals(orderNumber).first();
+    if (local && local.status !== 'ready') {
+        await db.orders.update(local.id, { status: 'ready' });
+        render();
+    }
+}
+
+async function subscribe() {
+    try {
+        const echo = await getEcho();
+        echo.channel('restaurant-orders')
+            .listen('.restaurant.order.updated', (data) => {
+                if (data.action === 'status_changed') {
+                    onStatusChanged(data);
+                }
+            });
+    } catch (err) {
+        console.warn('Echo subscribe failed for receipt:', err);
+    }
+}
+
 window.addEventListener('order:created', () => render());
 render();
+subscribe();
