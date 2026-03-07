@@ -7,6 +7,7 @@ import { t } from './i18n.js';
 import { submitOrder } from './order-api.js';
 import { saveOrder } from './receipt-page.js';
 import { ToastMessager } from '/javascript/toast.js';
+import { isCheckedIn } from './session.js';
 
 const cartPage = document.getElementById('cart-page');
 const cartNavi = document.querySelector('[data-sub-navi-item="cart"]');
@@ -107,6 +108,11 @@ cartPage.addEventListener('click', (e) => {
 
 async function handleCheckout(btn) {
     if (btn.disabled) return;
+
+    if (!isCheckedIn()) {
+        toast.addMessage(t('session.scan-qr'), 3000, 'error');
+        return;
+    }
 
     if (!armed) {
         armed = true;

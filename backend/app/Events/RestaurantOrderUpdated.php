@@ -10,11 +10,16 @@ class RestaurantOrderUpdated implements ShouldBroadcastNow
     public function __construct(
         public string $orderNumber,
         public string $action, // 'created' | 'status_changed'
+        public ?string $branchCode = null,
     ) {}
 
     public function broadcastOn(): Channel
     {
-        return new Channel('restaurant-orders');
+        $channel = $this->branchCode
+            ? 'restaurant-orders.' . $this->branchCode
+            : 'restaurant-orders';
+
+        return new Channel($channel);
     }
 
     public function broadcastAs(): string
@@ -27,6 +32,7 @@ class RestaurantOrderUpdated implements ShouldBroadcastNow
         return [
             'order_number' => $this->orderNumber,
             'action' => $this->action,
+            'branch_code' => $this->branchCode,
         ];
     }
 }

@@ -1,11 +1,12 @@
 /**
  * Receipt page — renders submitted orders from IndexedDB.
- * Listens to WebSocket for status updates (preparing → ready).
+ * Listens to branch-scoped WebSocket for status updates (preparing → ready).
  */
 
 import { t } from './i18n.js';
 import db from './db.js';
 import { getEcho } from './echo-service.js';
+import { getSession } from './session.js';
 
 const receiptPage = document.getElementById('recipt-page');
 
@@ -76,7 +77,12 @@ async function onStatusChanged(data) {
 async function subscribe() {
     try {
         const echo = await getEcho();
-        echo.channel('restaurant-orders')
+        const session = getSession();
+        const channelName = session?.branch_code
+            ? `restaurant-orders.${session.branch_code}`
+            : 'restaurant-orders';
+
+        echo.channel(channelName)
             .listen('.restaurant.order.updated', (data) => {
                 if (data.action === 'status_changed') {
                     onStatusChanged(data);

@@ -1,8 +1,10 @@
 /**
  * Order API — serialize cart items and submit to server.
+ * Includes session_token when checked in.
  */
 
 import { itemTotal } from './cart.js';
+import { getSession } from './session.js';
 
 export async function submitOrder(cartItems) {
     const items = cartItems.map(item => {
@@ -26,10 +28,16 @@ export async function submitOrder(cartItems) {
         };
     });
 
+    const body = { items };
+    const session = getSession();
+    if (session?.token) {
+        body.session_token = session.token;
+    }
+
     const res = await fetch('/api/restaurant/orders', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-        body: JSON.stringify({ items }),
+        body: JSON.stringify(body),
     });
 
     if (!res.ok) {

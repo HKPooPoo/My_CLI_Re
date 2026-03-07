@@ -14,9 +14,11 @@ class RestaurantOrderController extends Controller
         $this->orderService = $orderService;
     }
 
-    public function index()
+    public function index(Request $request)
     {
-        return response()->json($this->orderService->listTodayOrders());
+        $branchCode = $request->query('branch');
+
+        return response()->json($this->orderService->listTodayOrders($branchCode));
     }
 
     public function updateStatus(Request $request, string $orderNumber)
@@ -42,9 +44,13 @@ class RestaurantOrderController extends Controller
             'items.*.base_price' => 'required|integer|min:0',
             'items.*.subtotal' => 'required|integer|min:0',
             'items.*.options' => 'nullable|array',
+            'session_token' => 'nullable|string',
         ]);
 
-        $order = $this->orderService->createOrder($request->input('items'));
+        $order = $this->orderService->createOrder(
+            $request->input('items'),
+            $request->input('session_token'),
+        );
 
         return response()->json([
             'order_number' => $order->order_number,

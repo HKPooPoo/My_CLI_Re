@@ -10,6 +10,7 @@ use App\Http\Controllers\FileController;
 use App\Http\Controllers\BroadcastChannelController;
 use App\Http\Controllers\LlmController;
 use App\Http\Controllers\RestaurantOrderController;
+use App\Http\Controllers\RestaurantBranchController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Broadcast;
 
@@ -100,6 +101,10 @@ Route::middleware([/*'auth:sanctum',*/ 'throttle:10,1'])->prefix('mods')->group(
 
 // Restaurant — anonymous dine-in, no auth
 Route::prefix('restaurant')->group(function () {
+    Route::get('/branches', [RestaurantBranchController::class, 'index']);
+    Route::post('/branches', [RestaurantBranchController::class, 'store']);
+    Route::post('/sessions/check-in', [RestaurantBranchController::class, 'checkIn']);
+    Route::delete('/sessions/check-out', [RestaurantBranchController::class, 'checkOut']);
     Route::get('/orders', [RestaurantOrderController::class, 'index']);
     Route::post('/orders', [RestaurantOrderController::class, 'store']);
     Route::get('/orders/{orderNumber}', [RestaurantOrderController::class, 'show']);

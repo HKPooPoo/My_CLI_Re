@@ -1,5 +1,6 @@
 /**
  * Kitchen page — instant sync via WebSocket (Reverb/Echo).
+ * Branch-scoped: only shows orders for the bound branch.
  * Pending: preparing orders with "完成" button.
  * History: completed orders (read-only).
  */
@@ -12,8 +13,16 @@ const pendingPage = document.getElementById('kitchen-orders-page');
 const historyPage = document.getElementById('kitchen-history-page');
 const toast = new ToastMessager();
 
+function getKitchenBranch() {
+    return localStorage.getItem('kitchen-branch') || null;
+}
+
 async function fetchOrders() {
-    const res = await fetch('/api/restaurant/orders', {
+    const branch = getKitchenBranch();
+    const url = branch
+        ? `/api/restaurant/orders?branch=${encodeURIComponent(branch)}`
+        : '/api/restaurant/orders';
+    const res = await fetch(url, {
         headers: { 'Accept': 'application/json' },
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -48,10 +57,11 @@ function renderOptions(optionsJson) {
 }
 
 function renderOrderCard(order, showReadyBtn) {
+    const tableInfo = order.table_number ? ` · Table ${order.table_number}` : '';
     return `
         <div class="order-card kitchen-card ${order.status === 'ready' ? 'kitchen-done' : ''}">
             <div class="order-card-header">
-                <span class="order-number">${order.order_number}</span>
+                <span class="order-number">${order.order_number}${tableInfo}</span>
                 <span class="order-status status-${order.status}">${t('order.status.' + order.status)}</span>
             </div>
             <div class="order-card-time">${formatTime(order.created_at)}</div>
@@ -73,12 +83,17 @@ function renderOrderCard(order, showReadyBtn) {
 }
 
 function renderPending(orders) {
+    const branch = getKitchenBranch();
+    const titleHtml = branch
+        ? `<div class="kitchen-branch-title">${branch} ${t('nav.kitchen')}</div>`
+        : '';
+
     const pending = orders.filter(o => o.status === 'preparing');
     if (!pending.length) {
-        pendingPage.innerHTML = `<div class="cart-empty">${t('kitchen.empty')}</div>`;
+        pendingPage.innerHTML = titleHtml + `<div class="cart-empty">${t('kitchen.empty')}</div>`;
         return;
     }
-    pendingPage.innerHTML = pending.map(o => renderOrderCard(o, true)).join('');
+    pendingPage.innerHTML = titleHtml + pending.map(o => renderOrderCard(o, true)).join('');
 }
 
 function renderHistory(orders) {
@@ -114,11 +129,23 @@ pendingPage.addEventListener('click', async (e) => {
     }
 });
 
-// Subscribe to WebSocket for instant sync
+// Subscribe to branch-scoped WebSocket channel
+let currentChannel = null;
+
 async function subscribe() {
     try {
         const echo = await getEcho();
-        echo.channel('restaurant-orders')
+        const branch = getKitchenBranch();
+        const channelName = branch
+            ? `restaurant-orders.${branch}`
+            : 'restaurant-orders';
+
+        if (currentChannel) {
+            echo.leave(currentChannel);
+        }
+        currentChannel = channelName;
+
+        echo.channel(channelName)
             .listen('.restaurant.order.updated', () => {
                 refresh();
             });
@@ -127,6 +154,12 @@ async function subscribe() {
         setInterval(refresh, 5000);
     }
 }
+
+// Re-subscribe when kitchen branch changes
+window.addEventListener('kitchen:branchChanged', () => {
+    refresh();
+    subscribe();
+});
 
 // Initial load + subscribe
 refresh();

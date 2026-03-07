@@ -1,3 +1,117 @@
+/* ==================== Session Badge ==================== */
+
+.session-badge {
+    position: absolute;
+    bottom: 4px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.65);
+    color: #fff;
+    font-size: 0.75rem;
+    font-weight: bold;
+    padding: 2px 12px;
+    border-radius: 12px;
+    white-space: nowrap;
+    z-index: 10;
+}
+
+.session-badge[hidden] {
+    display: none;
+}
+
+/* ==================== Check-in Overlay ==================== */
+
+.checkin-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 50;
+    background: var(--bg-primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.checkin-overlay[hidden] {
+    display: none;
+}
+
+.checkin-overlay-text {
+    font-size: calc(var(--font-size) + 0.2rem);
+    font-weight: bold;
+    opacity: 0.6;
+    text-align: center;
+    padding: 32px;
+}
+
+/* ==================== Kitchen Branch Title ==================== */
+
+.kitchen-branch-title {
+    width: var(--container-width);
+    max-width: var(--container-max-width);
+    margin: 12px auto 0;
+    padding: 8px 12px;
+    font-weight: bold;
+    font-size: calc(var(--font-size) + 0.15rem);
+    background: var(--text-green);
+    color: var(--bg-primary);
+    border-radius: var(--border-radius);
+    text-align: center;
+}
+
+/* ==================== Console Sections ==================== */
+
+.console-section {
+    gap: 8px;
+    padding: 0 0 4px;
+}
+
+.console-field-row {
+    flex-direction: row;
+    gap: 8px;
+}
+
+.console-select,
+.console-input {
+    flex: 1;
+    padding: 8px 10px;
+    border: var(--border-line);
+    border-radius: var(--border-radius);
+    background: var(--bg-primary);
+    color: var(--text-green);
+    font-size: var(--font-size);
+}
+
+.console-info {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    border: var(--border-line);
+    border-radius: var(--border-radius);
+    background: var(--bg-primary);
+}
+
+.console-info-label {
+    opacity: 0.6;
+    font-size: 0.85em;
+}
+
+.console-info-value {
+    font-weight: bold;
+}
+
+.console-branch-list {
+    gap: 4px;
+}
+
+.console-branch-item {
+    padding: 6px 12px;
+    font-size: 0.9em;
+    opacity: 0.7;
+    border: var(--border-line);
+    border-radius: var(--border-radius);
+}
+
 /* ==================== Background ==================== */
 
 :root.theme-light .page-container {
