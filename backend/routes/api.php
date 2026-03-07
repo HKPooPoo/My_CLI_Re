@@ -100,8 +100,10 @@ Route::middleware([/*'auth:sanctum',*/ 'throttle:10,1'])->prefix('mods')->group(
 
 // Restaurant — anonymous dine-in, no auth
 Route::prefix('restaurant')->group(function () {
+    Route::get('/orders', [RestaurantOrderController::class, 'index']);
     Route::post('/orders', [RestaurantOrderController::class, 'store']);
     Route::get('/orders/{orderNumber}', [RestaurantOrderController::class, 'show']);
+    Route::patch('/orders/{orderNumber}/status', [RestaurantOrderController::class, 'updateStatus']);
 });
 
 // File Download & Meta — no throttle (auto-sync file checks need burst capacity)

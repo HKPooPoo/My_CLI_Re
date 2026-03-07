@@ -1,3 +1,12 @@
+/* ==================== Background ==================== */
+
+:root.theme-light .page-container {
+    background-image: url(/pages/restaurant/images/background.png);
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: cover;
+}
+
 /* ==================== Header ==================== */
 
 .header-img {
@@ -44,6 +53,7 @@
     border: var(--border-line);
     border-radius: var(--border-radius);
     overflow: hidden;
+    background: var(--bg-primary);
 }
 
 .food-item-img {
@@ -149,6 +159,7 @@
     border: var(--border-line);
     border-radius: var(--border-radius);
     gap: 6px;
+    background: var(--bg-primary);
 }
 
 .cart-row-header {
@@ -226,6 +237,9 @@
     width: var(--container-width);
     max-width: var(--container-max-width);
     margin: 12px auto 0;
+    background: var(--bg-primary);
+    border-radius: var(--border-radius);
+    padding: 0 12px 12px;
 }
 
 .cart-total {
@@ -273,6 +287,7 @@
     border: var(--border-line);
     border-radius: var(--border-radius);
     gap: 6px;
+    background: var(--bg-primary);
 }
 
 .order-card-header {
@@ -340,6 +355,34 @@
 
 .order-total-amount {
     color: var(--text-orange-accent);
+}
+
+/* ==================== Kitchen Page ==================== */
+
+.kitchen-card {
+    border-width: 3px;
+}
+
+.kitchen-done {
+    opacity: 0.5;
+}
+
+.kitchen-ready-btn {
+    width: 100%;
+    padding: 10px;
+    margin-top: 4px;
+    border: 2px solid var(--text-green);
+    border-radius: var(--border-radius);
+    background: var(--text-green);
+    color: var(--bg-primary);
+    font-size: calc(var(--font-size) + 0.1rem);
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.kitchen-ready-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
 }
 
 /* ==================== Console Page ==================== */

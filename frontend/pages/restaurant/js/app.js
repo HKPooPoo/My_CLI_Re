@@ -12,4 +12,5 @@ await initCart();
 import('./menu.js');
 import('./cart-page.js');
 import('./receipt-page.js');
+import('./kitchen-page.js');
 import('./console-page.js');

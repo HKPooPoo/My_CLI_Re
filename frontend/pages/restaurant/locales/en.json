@@ -20,6 +20,8 @@
     "order.status.ready": "Ready",
     "order.number": "Order #",
     "order.empty": "No orders yet",
+    "kitchen.empty": "No orders right now",
+    "kitchen.mark-ready": "Ready",
     "placeholder.coming-soon": "Coming Soon",
     "console.title": "Dev Tools",
     "console.add-test-item": "Add Test Item",

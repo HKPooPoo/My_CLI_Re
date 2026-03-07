@@ -14,6 +14,26 @@ class RestaurantOrderController extends Controller
         $this->orderService = $orderService;
     }
 
+    public function index()
+    {
+        return response()->json($this->orderService->listTodayOrders());
+    }
+
+    public function updateStatus(Request $request, string $orderNumber)
+    {
+        $request->validate([
+            'status' => 'required|string|in:preparing,ready',
+        ]);
+
+        $order = $this->orderService->updateStatus($orderNumber, $request->input('status'));
+
+        if (! $order) {
+            return response()->json(['message' => 'Order not found'], 404);
+        }
+
+        return response()->json($order);
+    }
+
     public function store(Request $request)
     {
         $request->validate([

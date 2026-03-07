@@ -73,6 +73,43 @@ class RestaurantOrderService
         return $order;
     }
 
+    public function listTodayOrders(): array
+    {
+        $today = Carbon::today()->toDateString();
+
+        $orders = $this->db()->table('orders')
+            ->whereDate('created_at', $today)
+            ->orderByRaw("CASE WHEN status = 'preparing' THEN 0 ELSE 1 END")
+            ->orderBy('created_at', 'asc')
+            ->get();
+
+        foreach ($orders as $order) {
+            $order->items = $this->db()->table('order_items')
+                ->where('order_id', $order->id)
+                ->get();
+        }
+
+        return $orders->toArray();
+    }
+
+    public function updateStatus(string $orderNumber, string $status): ?object
+    {
+        $affected = $this->db()->table('orders')
+            ->where('order_number', $orderNumber)
+            ->update([
+                'status' => $status,
+                'updated_at' => now(),
+            ]);
+
+        if (! $affected) {
+            return null;
+        }
+
+        return $this->db()->table('orders')
+            ->where('order_number', $orderNumber)
+            ->first();
+    }
+
     protected function generateOrderNumber(): string
     {
         $today = Carbon::today()->toDateString();

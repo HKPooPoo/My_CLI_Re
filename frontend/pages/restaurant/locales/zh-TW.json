@@ -20,6 +20,8 @@
     "order.status.ready": "完成",
     "order.number": "訂單編號",
     "order.empty": "沒有訂單",
+    "kitchen.empty": "目前沒有訂單",
+    "kitchen.mark-ready": "完成",
     "placeholder.coming-soon": "即將推出",
     "console.title": "開發工具",
     "console.add-test-item": "加入測試餐品",
