@@ -127,7 +127,7 @@ async function handleCheckout(btn) {
 
     try {
         const result = await submitOrder(getItems());
-        saveOrder({
+        await saveOrder({
             order_number: result.order_number,
             total: result.total,
             status: result.status,
@@ -147,7 +147,7 @@ async function handleCheckout(btn) {
                 return { name: item.name, subtotal: itemTotal(item), options };
             }),
         });
-        clear();
+        await clear();
         toast.addMessage(`${t('order.number')}${result.order_number}`, 4000, 'success');
         document.querySelector('[data-sub-navi-item="recipt"]')?.click();
     } catch (err) {

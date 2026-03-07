@@ -1,24 +1,18 @@
 /**
- * Receipt page — renders submitted orders from localStorage.
+ * Receipt page — renders submitted orders from IndexedDB.
  */
 
 import { t } from './i18n.js';
+import db from './db.js';
 
-const STORAGE_KEY = 'restaurant-orders';
 const receiptPage = document.getElementById('recipt-page');
 
-function getOrders() {
-    try {
-        return JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
-    } catch {
-        return [];
-    }
+async function getOrders() {
+    return (await db.orders.reverse().sortBy('time')).reverse();
 }
 
-export function saveOrder(order) {
-    const orders = getOrders();
-    orders.unshift(order);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(orders));
+export async function saveOrder(order) {
+    await db.orders.add(order);
     render();
 }
 
@@ -35,8 +29,8 @@ function renderOptions(options) {
     }).join('');
 }
 
-function render() {
-    const orders = getOrders();
+export async function render() {
+    const orders = await getOrders();
 
     if (orders.length === 0) {
         receiptPage.innerHTML = `<div class="cart-empty">${t('order.empty')}</div>`;

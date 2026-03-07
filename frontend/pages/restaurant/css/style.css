@@ -341,3 +341,51 @@
 .order-total-amount {
     color: var(--text-orange-accent);
 }
+
+/* ==================== Console Page ==================== */
+
+.console-container {
+    width: var(--container-width);
+    max-width: var(--container-max-width);
+    margin: 16px auto 0;
+    gap: 12px;
+}
+
+.console-title {
+    font-weight: bold;
+    font-size: calc(var(--font-size) + 0.2rem);
+    padding: 4px 0;
+    border-bottom: var(--border-line);
+}
+
+.console-buttons {
+    gap: 8px;
+}
+
+.dev-btn {
+    width: 100%;
+    padding: 12px;
+    border: var(--border-line);
+    border-radius: var(--border-radius);
+    background: var(--bg-primary);
+    color: var(--text-green);
+    font-size: var(--font-size);
+    font-weight: bold;
+    cursor: pointer;
+    transition: opacity 0.2s;
+}
+
+.dev-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.dev-btn-warn {
+    color: var(--text-orange-accent);
+    border-color: var(--text-orange-accent);
+}
+
+.dev-btn-danger {
+    color: var(--text-red);
+    border-color: var(--text-red);
+}

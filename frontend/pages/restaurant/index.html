@@ -26,7 +26,9 @@
     <div class="body">
         <nav class="navi-bar">
             <div class="navi-mask"></div>
-            <div class="navi-item" data-navi-item="Order" data-sound-main="UIGeneralCancel.mp3"
+
+            <!-- 堂食 -->
+            <div class="navi-item" data-navi-item="dine-in" data-sound-main="UIGeneralCancel.mp3"
                 data-sound-sub="UIGeneralFocus.mp3">
                 <div class="navi-item-text" data-i18n="nav.dine-in">堂食</div>
                 <div class="sub-navi-indicator"></div>
@@ -45,11 +47,61 @@
                     </div>
                 </div>
             </div>
+
+            <!-- 外賣 -->
+            <div class="navi-item" data-navi-item="takeaway" data-sound-main="UIGeneralCancel.mp3"
+                data-sound-sub="UIGeneralFocus.mp3">
+                <div class="navi-item-text" data-i18n="nav.takeaway">外賣</div>
+                <div class="sub-navi-indicator"></div>
+                <div class="sub-navi-container">
+                    <div class="sub-navi-track">
+                        <div class="sub-navi-item" data-sub-navi-item="takeaway-menu">
+                            <div class="sub-navi-item-text" data-i18n="nav.menu">菜單</div>
+                        </div>
+                        <div class="sub-navi-item" data-sub-navi-item="takeaway-cart">
+                            <div class="sub-navi-item-text" data-i18n="nav.cart">購物車</div>
+                        </div>
+                        <div class="sub-navi-item" data-sub-navi-item="takeaway-recipt">
+                            <div class="sub-navi-item-text" data-i18n="nav.receipt">訂單</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 厨房 -->
+            <div class="navi-item" data-navi-item="kitchen" data-sound-main="UIGeneralCancel.mp3"
+                data-sound-sub="UIGeneralFocus.mp3">
+                <div class="navi-item-text" data-i18n="nav.kitchen">厨房</div>
+                <div class="sub-navi-indicator"></div>
+                <div class="sub-navi-container">
+                    <div class="sub-navi-track">
+                        <div class="sub-navi-item" data-sub-navi-item="kitchen-orders">
+                            <div class="sub-navi-item-text" data-i18n="nav.kitchen-orders">待處理</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 控制臺 -->
+            <div class="navi-item" data-navi-item="console" data-sound-main="UIGeneralCancel.mp3"
+                data-sound-sub="UIGeneralFocus.mp3">
+                <div class="navi-item-text" data-i18n="nav.console">控制臺</div>
+                <div class="sub-navi-indicator"></div>
+                <div class="sub-navi-container">
+                    <div class="sub-navi-track">
+                        <div class="sub-navi-item" data-sub-navi-item="dev-tools">
+                            <div class="sub-navi-item-text" data-i18n="nav.dev-tools">工具</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </nav>
         <div class="sub-navi-indicator-mask"></div>
         <script type="module" src="/javascript/navi.js"></script>
         <script type="module" src="js/app.js"></script>
         <div class="page-container" id="page-container">
+
+            <!-- ====== 堂食 pages ====== -->
             <div class="page" data-page="menu" id="menu-page">
                 <div class="food-categorized-container">
                     <div class="food-category-title">飯類</div>
@@ -64,26 +116,6 @@
                                 <button class="food-item-add" data-i18n="menu.add">+</button>
                             </div>
                         </div>
-                        <!-- <div class="food-item-container">
-                            <div class="food-item-img"></div>
-                            <div class="food-item-name">雞腿飯</div>
-                            <div class="food-item-price">$68</div>
-                        </div>
-                        <div class="food-item-container">
-                            <div class="food-item-img"></div>
-                            <div class="food-item-name">排骨飯</div>
-                            <div class="food-item-price">$62</div>
-                        </div>
-                        <div class="food-item-container">
-                            <div class="food-item-img"></div>
-                            <div class="food-item-name">牛肉燴飯</div>
-                            <div class="food-item-price">$72</div>
-                        </div>
-                        <div class="food-item-container">
-                            <div class="food-item-img"></div>
-                            <div class="food-item-name">咖哩飯</div>
-                            <div class="food-item-price">$58</div>
-                        </div> -->
                     </div>
                 </div>
                 <div class="food-categorized-container">
@@ -150,56 +182,32 @@
                         </div>
                     </div>
                 </div>
-                <!-- <div class="food-categorized-container">
-                    <div class="food-category-title">麵類</div>
-                    <div class="food-item-item-container">
-                        <div class="food-item-container">
-                            <div class="food-item-img"></div>
-                            <div class="food-item-name">牛肉麵</div>
-                            <div class="food-item-price">$78</div>
-                        </div>
-                        <div class="food-item-container">
-                            <div class="food-item-img"></div>
-                            <div class="food-item-name">擔仔麵</div>
-                            <div class="food-item-price">$48</div>
-                        </div>
-                        <div class="food-item-container">
-                            <div class="food-item-img"></div>
-                            <div class="food-item-name">陽春麵</div>
-                            <div class="food-item-price">$38</div>
-                        </div>
-                        <div class="food-item-container">
-                            <div class="food-item-img"></div>
-                            <div class="food-item-name">麻醬麵</div>
-                            <div class="food-item-price">$42</div>
-                        </div>
-                    </div>
-                </div>
-                <div class="food-categorized-container">
-                    <div class="food-category-title">飲品</div>
-                    <div class="food-item-item-container">
-                        <div class="food-item-container">
-                            <div class="food-item-img"></div>
-                            <div class="food-item-name">珍珠奶茶</div>
-                            <div class="food-item-price">$32</div>
-                        </div>
-                        <div class="food-item-container">
-                            <div class="food-item-img"></div>
-                            <div class="food-item-name">冬瓜茶</div>
-                            <div class="food-item-price">$22</div>
-                        </div>
-                        <div class="food-item-container">
-                            <div class="food-item-img"></div>
-                            <div class="food-item-name">紅茶</div>
-                            <div class="food-item-price">$18</div>
-                        </div>
-                    </div>
-                </div> -->
             </div>
             <div class="page" data-page="cart" id="cart-page">
             </div>
             <div class="page" data-page="recipt" id="recipt-page">
             </div>
+
+            <!-- ====== 外賣 pages (placeholder) ====== -->
+            <div class="page" data-page="takeaway-menu" id="takeaway-menu-page">
+                <div class="cart-empty" data-i18n="placeholder.coming-soon">即將推出</div>
+            </div>
+            <div class="page" data-page="takeaway-cart" id="takeaway-cart-page">
+                <div class="cart-empty" data-i18n="placeholder.coming-soon">即將推出</div>
+            </div>
+            <div class="page" data-page="takeaway-recipt" id="takeaway-recipt-page">
+                <div class="cart-empty" data-i18n="placeholder.coming-soon">即將推出</div>
+            </div>
+
+            <!-- ====== 厨房 pages ====== -->
+            <div class="page" data-page="kitchen-orders" id="kitchen-orders-page">
+                <div class="cart-empty" data-i18n="placeholder.coming-soon">即將推出</div>
+            </div>
+
+            <!-- ====== 控制臺 pages ====== -->
+            <div class="page" data-page="dev-tools" id="dev-tools-page">
+            </div>
+
             <div id="toast-container"></div>
         </div>
     </div>
