@@ -1,13 +1,17 @@
 /**
- * Kitchen page — polls server for today's orders, allows marking as ready.
+ * Kitchen page — pending orders + history.
+ * Pending: polls server every 5s, shows preparing orders with "完成" button.
+ * History: shows completed orders (read-only).
  */
 
 import { t } from './i18n.js';
 import { ToastMessager } from '/javascript/toast.js';
 
-const page = document.getElementById('kitchen-orders-page');
+const pendingPage = document.getElementById('kitchen-orders-page');
+const historyPage = document.getElementById('kitchen-history-page');
 const toast = new ToastMessager();
 let pollTimer = null;
+let activePage = null;
 const POLL_INTERVAL = 5000;
 
 async function fetchOrders() {
@@ -45,13 +49,8 @@ function renderOptions(optionsJson) {
     }).join('');
 }
 
-function render(orders) {
-    if (!orders.length) {
-        page.innerHTML = `<div class="cart-empty">${t('kitchen.empty')}</div>`;
-        return;
-    }
-
-    page.innerHTML = orders.map(order => `
+function renderOrderCard(order, showReadyBtn) {
+    return `
         <div class="order-card kitchen-card ${order.status === 'ready' ? 'kitchen-done' : ''}">
             <div class="order-card-header">
                 <span class="order-number">${order.order_number}</span>
@@ -71,23 +70,39 @@ function render(orders) {
                 <span>${t('cart.total')}</span>
                 <span class="order-total-amount">$${order.total}</span>
             </div>
-            ${order.status === 'preparing' ? `
-                <button class="kitchen-ready-btn" data-order="${order.order_number}">${t('kitchen.mark-ready')}</button>
-            ` : ''}
-        </div>
-    `).join('');
+            ${showReadyBtn ? `<button class="kitchen-ready-btn" data-order="${order.order_number}">${t('kitchen.mark-ready')}</button>` : ''}
+        </div>`;
+}
+
+function renderPending(orders) {
+    const pending = orders.filter(o => o.status === 'preparing');
+    if (!pending.length) {
+        pendingPage.innerHTML = `<div class="cart-empty">${t('kitchen.empty')}</div>`;
+        return;
+    }
+    pendingPage.innerHTML = pending.map(o => renderOrderCard(o, true)).join('');
+}
+
+function renderHistory(orders) {
+    const done = orders.filter(o => o.status === 'ready');
+    if (!done.length) {
+        historyPage.innerHTML = `<div class="cart-empty">${t('kitchen.history-empty')}</div>`;
+        return;
+    }
+    historyPage.innerHTML = done.reverse().map(o => renderOrderCard(o, false)).join('');
 }
 
 async function refresh() {
     try {
         const orders = await fetchOrders();
-        render(orders);
+        renderPending(orders);
+        renderHistory(orders);
     } catch (err) {
         console.warn('Kitchen fetch failed:', err);
     }
 }
 
-page.addEventListener('click', async (e) => {
+pendingPage.addEventListener('click', async (e) => {
     const btn = e.target.closest('.kitchen-ready-btn');
     if (!btn || btn.disabled) return;
 
@@ -102,7 +117,6 @@ page.addEventListener('click', async (e) => {
     }
 });
 
-// Start polling when kitchen page becomes visible
 function startPolling() {
     if (pollTimer) return;
     refresh();
@@ -117,12 +131,13 @@ function stopPolling() {
 }
 
 window.addEventListener('navi:pageChanged', (e) => {
-    if (e.detail?.page === 'kitchen-orders') {
+    activePage = e.detail?.page;
+    if (activePage === 'kitchen-orders' || activePage === 'kitchen-history') {
         startPolling();
     } else {
         stopPolling();
     }
 });
 
-// Initial render
-render([]);
+renderPending([]);
+renderHistory([]);
