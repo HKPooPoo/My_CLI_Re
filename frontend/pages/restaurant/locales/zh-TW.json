@@ -10,6 +10,7 @@
     "cart.qty": "數量",
     "cart.subtotal": "小計",
     "cart.remove": "移除",
+    "cart.confirm_checkout": "確認結帳",
     "order.status.preparing": "準備中",
     "order.status.ready": "完成",
     "order.number": "訂單編號",

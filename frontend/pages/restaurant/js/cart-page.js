@@ -2,12 +2,19 @@
  * Cart page — renders cart instances with single-choice options.
  */
 
-import { getItems, getTotal, getCount, itemTotal, removeItem, setOption } from './cart.js';
+import { getItems, getTotal, getCount, itemTotal, removeItem, setOption, clear } from './cart.js';
 import { t } from './i18n.js';
+import { submitOrder } from './order-api.js';
+import { saveOrder } from './receipt-page.js';
+import { ToastMessager } from '/javascript/toast.js';
 
 const cartPage = document.getElementById('cart-page');
 const cartNavi = document.querySelector('[data-sub-navi-item="cart"]');
 const badge = cartNavi?.querySelector('.cart-badge');
+const toast = new ToastMessager();
+
+let armed = false;
+let armTimer = null;
 
 function renderBadge() {
     const count = getCount();
@@ -58,6 +65,9 @@ function renderCart() {
         </div>
     `).join('');
 
+    armed = false;
+    clearTimeout(armTimer);
+
     cartPage.innerHTML = `
         <div class="cart-list">${rows}</div>
         <div class="cart-footer">
@@ -65,6 +75,7 @@ function renderCart() {
                 <span>${t('cart.total')}</span>
                 <span>$${total}</span>
             </div>
+            <button class="checkout-btn">${t('cart.checkout')}</button>
         </div>
     `;
     renderBadge();
@@ -86,7 +97,66 @@ cartPage.addEventListener('click', (e) => {
         removeItem(Number(removeBtn.dataset.id));
         return;
     }
+
+    const checkoutBtn = e.target.closest('.checkout-btn');
+    if (checkoutBtn) {
+        handleCheckout(checkoutBtn);
+        return;
+    }
 });
+
+async function handleCheckout(btn) {
+    if (btn.disabled) return;
+
+    if (!armed) {
+        armed = true;
+        btn.classList.add('armed');
+        btn.textContent = `${t('cart.confirm_checkout')} $${getTotal()}`;
+        armTimer = setTimeout(() => {
+            armed = false;
+            btn.classList.remove('armed');
+            btn.textContent = t('cart.checkout');
+        }, 3000);
+        return;
+    }
+
+    armed = false;
+    clearTimeout(armTimer);
+    btn.disabled = true;
+    btn.textContent = '...';
+
+    try {
+        const result = await submitOrder(getItems());
+        saveOrder({
+            order_number: result.order_number,
+            total: result.total,
+            status: result.status,
+            time: new Date().toISOString(),
+            items: getItems().map(item => {
+                const options = {};
+                for (const opt of item.options) {
+                    const sel = item.selected[opt.key];
+                    if (sel == null) continue;
+                    if (Array.isArray(sel)) {
+                        const labels = sel.map(ci => opt.choices[ci]?.label).filter(Boolean);
+                        if (labels.length) options[opt.key] = labels;
+                    } else {
+                        options[opt.key] = opt.choices[sel]?.label ?? null;
+                    }
+                }
+                return { name: item.name, subtotal: itemTotal(item), options };
+            }),
+        });
+        clear();
+        toast.addMessage(`${t('order.number')}${result.order_number}`, 4000, 'success');
+        document.querySelector('[data-sub-navi-item="recipt"]')?.click();
+    } catch (err) {
+        toast.addMessage(err.message, 4000, 'error');
+        btn.disabled = false;
+        btn.classList.remove('armed');
+        btn.textContent = t('cart.checkout');
+    }
+}
 
 window.addEventListener('cart:updated', (e) => {
     renderCart();

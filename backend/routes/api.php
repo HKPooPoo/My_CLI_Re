@@ -9,6 +9,7 @@ use App\Http\Controllers\WalkieTypieController;
 use App\Http\Controllers\FileController;
 use App\Http\Controllers\BroadcastChannelController;
 use App\Http\Controllers\LlmController;
+use App\Http\Controllers\RestaurantOrderController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Broadcast;
 
@@ -95,6 +96,12 @@ Route::prefix('mods')->group(function () {
 Route::middleware([/*'auth:sanctum',*/ 'throttle:10,1'])->prefix('mods')->group(function () {
     Route::post('/llm/chat', [LlmController::class, 'chat']);
     Route::post('/llm/chat/stream', [LlmController::class, 'chatStream']);
+});
+
+// Restaurant — anonymous dine-in, no auth
+Route::prefix('restaurant')->group(function () {
+    Route::post('/orders', [RestaurantOrderController::class, 'store']);
+    Route::get('/orders/{orderNumber}', [RestaurantOrderController::class, 'show']);
 });
 
 // File Download & Meta — no throttle (auto-sync file checks need burst capacity)

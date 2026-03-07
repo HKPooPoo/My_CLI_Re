@@ -34,7 +34,7 @@ return new class extends Migration
         Schema::connection('restaurant')->create('order_items', function (Blueprint $table) {
             $table->id();
             $table->foreignId('order_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('menu_item_id')->constrained('menu_items');
+            $table->foreignId('menu_item_id')->nullable()->constrained('menu_items');
             $table->string('name');            // snapshot, plain string at order time
             $table->integer('base_price');
             $table->integer('qty')->default(1);

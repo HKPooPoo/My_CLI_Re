@@ -236,3 +236,108 @@
     font-weight: bold;
     font-size: calc(var(--font-size) + 0.15rem);
 }
+
+/* ---- Checkout button ---- */
+
+.checkout-btn {
+    width: 100%;
+    padding: 12px;
+    margin-top: 8px;
+    border: 2px solid var(--text-green);
+    border-radius: var(--border-radius);
+    background: var(--text-green);
+    color: var(--bg-primary);
+    font-size: calc(var(--font-size) + 0.1rem);
+    font-weight: bold;
+    cursor: pointer;
+    transition: background 0.2s, border-color 0.2s;
+}
+
+.checkout-btn.armed {
+    background: var(--text-orange-accent);
+    border-color: var(--text-orange-accent);
+}
+
+.checkout-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* ==================== Receipt Page ==================== */
+
+.order-card {
+    width: var(--container-width);
+    max-width: var(--container-max-width);
+    margin: 12px auto 0;
+    padding: 12px;
+    border: var(--border-line);
+    border-radius: var(--border-radius);
+    gap: 6px;
+}
+
+.order-card-header {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.order-number {
+    font-weight: bold;
+    font-size: calc(var(--font-size) + 0.1rem);
+}
+
+.order-status {
+    padding: 2px 8px;
+    border-radius: var(--border-radius);
+    font-size: 0.8em;
+    font-weight: bold;
+}
+
+.status-preparing {
+    background: var(--text-orange-accent);
+    color: var(--bg-primary);
+}
+
+.status-ready {
+    background: var(--text-green);
+    color: var(--bg-primary);
+}
+
+.order-card-time {
+    font-size: 0.8em;
+    opacity: 0.5;
+}
+
+.order-items {
+    gap: 2px;
+}
+
+.order-item-row {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.order-item-options {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 4px;
+    padding-left: 8px;
+}
+
+.order-item-option {
+    font-size: 0.8em;
+    opacity: 0.6;
+}
+
+.order-card-footer {
+    flex-direction: row;
+    justify-content: space-between;
+    padding-top: 6px;
+    border-top: 1px solid var(--text-green-10);
+    font-weight: bold;
+}
+
+.order-total-amount {
+    color: var(--text-orange-accent);
+}

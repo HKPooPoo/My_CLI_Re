@@ -10,6 +10,7 @@
     "cart.qty": "Qty",
     "cart.subtotal": "Subtotal",
     "cart.remove": "Remove",
+    "cart.confirm_checkout": "Confirm",
     "order.status.preparing": "Preparing",
     "order.status.ready": "Ready",
     "order.number": "Order #",

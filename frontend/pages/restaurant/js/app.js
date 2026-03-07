@@ -9,3 +9,4 @@ await initI18n();
 
 import('./menu.js');
 import('./cart-page.js');
+import('./receipt-page.js');

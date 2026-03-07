@@ -63,6 +63,7 @@ services:
       REVERB_SCHEME: http
       OLLAMA_HOST: ${OLLAMA_HOST:-ollama}
       OLLAMA_PORT: ${OLLAMA_PORT:-11434}
+      RESTAURANT_DB: ${RESTAURANT_DB:-my-cli-db}
     depends_on:
       - db
       - redis
