@@ -366,22 +366,15 @@ export async function runActivation(templateObj, ctx, collectFn) {
  * Collapsed group — click to expand in DevTools.
  */
 function _logRequest(provider, model, messages, temperature, extra) {
-    const tag = `[llm] ${provider}/${model} T=${temperature}`;
-    console.groupCollapsed(`${tag}  (${messages.length} msg, ${_charCount(messages)} chars)`);
+    const chars = messages.reduce((s, m) => s + (m.content || '').length, 0);
+    console.group(`[llm] ${provider}/${model} T=${temperature}  (${messages.length} msg, ${chars} chars)`);
     for (const msg of messages) {
-        const preview = (msg.content || '').slice(0, 200);
-        const suffix = (msg.content || '').length > 200 ? '...' : '';
-        console.log(`%c[${msg.role}]%c ${preview}${suffix}`,
+        console.log(`%c[${msg.role}]%c\n${msg.content || ''}`,
             'color: #0af; font-weight: bold', 'color: inherit');
         if (msg.images) console.log(`  images: ${msg.images.length} base64`);
     }
     if (extra) console.log('extra:', extra);
-    console.log('full messages:', structuredClone(messages));
     console.groupEnd();
-}
-
-function _charCount(messages) {
-    return messages.reduce((sum, m) => sum + (m.content || '').length, 0);
 }
 
 // ===================== Provider execution =====================
