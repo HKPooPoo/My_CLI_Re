@@ -214,12 +214,33 @@ let _activeInstanceId = null;
 let _promptHandler = null;
 let _configListenerBound = false;
 
+// BYPASS: Direct DOM queries for shared shelf elements — all LLM templates share one shelf panel
+// via shelfPanelId: 'llm'. No ctx.ui API for cross-template shelf element lookup.
+
+/**
+ * Get or create the shared #llm-prompt textarea in the shelf.
+ * Lazy — safe to call before or after shelf DOM is created.
+ */
+export function ensurePromptEl() {
+    let el = document.getElementById('llm-prompt');
+    if (el) return el;
+
+    const shelf = document.querySelector('[data-feature-shelf="llm"]');
+    if (!shelf) return null;
+
+    el = document.createElement('textarea');
+    el.id = 'llm-prompt';
+    el.className = 'mod-shelf-prompt';
+    el.rows = 2;
+    el.placeholder = t('mods.llm.config.prompt');
+    shelf.prepend(el);
+    return el;
+}
+
 /**
  * Get or create the shared #llm-output textarea in the shelf.
  * All LLM templates share one shelf panel via shelfPanelId: 'llm'.
  */
-// BYPASS: Direct DOM queries for shared shelf elements — all LLM templates share one shelf panel
-// via shelfPanelId: 'llm'. No ctx.ui API for cross-template shelf element lookup.
 export function ensureOutputEl(templateObj) {
     if (templateObj._outputEl && templateObj._outputEl.isConnected) return templateObj._outputEl;
     templateObj._outputEl = document.getElementById('llm-output');
@@ -237,33 +258,9 @@ export function ensureOutputEl(templateObj) {
     return templateObj._outputEl;
 }
 
-/** Shared init — set up prompt + output elements from the shelf context. */
+/** Shared init — bind config→shelf sync listener. Shelf DOM may not exist yet. */
 export function initShelf(templateObj, ctx) {
-    const shelf = ctx.ui.getShelfElement();
-    if (!shelf) return;
-
-    // Prompt textarea (editable, shared across LLM templates)
-    if (!shelf.querySelector('#llm-prompt')) {
-        const prompt = document.createElement('textarea');
-        prompt.id = 'llm-prompt';
-        prompt.className = 'mod-shelf-prompt';
-        prompt.rows = 2;
-        prompt.placeholder = t('mods.llm.config.prompt');
-        shelf.prepend(prompt);
-    }
-
-    // Output textarea (read-only)
-    const existing = shelf.querySelector('#llm-output');
-    if (existing) {
-        templateObj._outputEl = existing;
-    } else {
-        const el = document.createElement('textarea');
-        el.id = 'llm-output';
-        el.className = 'mod-shelf-output';
-        el.readOnly = true;
-        shelf.appendChild(el);
-        templateObj._outputEl = el;
-    }
+    // Shelf elements are created lazily by ensurePromptEl/ensureOutputEl on first activate.
 
     // BYPASS: Direct window.addEventListener — one-time persistent listener for config→shelf sync,
     // shared across all LLM templates. No ctx.events.onPersistent() API.
@@ -284,7 +281,7 @@ export function initShelf(templateObj, ctx) {
  * Preserves user edits: only loads config when switching to a different instance.
  */
 export function activateShelfPrompt(ctx) {
-    const el = document.getElementById('llm-prompt');
+    const el = ensurePromptEl();
     if (!el) return;
 
     // Remove previous change handler
@@ -325,7 +322,7 @@ export async function runActivation(templateObj, ctx, collectFn) {
     const tFn = ctx.i18n.t;
 
     // Read prompt from shelf textarea (live edit support)
-    const promptEl = document.getElementById('llm-prompt');
+    const promptEl = ensurePromptEl();
     const prompt = (promptEl ? promptEl.value : ctx.config.prompt || '').trim();
 
     if (!prompt) { out.value = tFn('mods.llm.noPrompt'); return; }
