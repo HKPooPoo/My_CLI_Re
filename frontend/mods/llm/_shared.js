@@ -171,6 +171,7 @@ export async function runLlmWithImages(config, prompt, images, out, tFn) {
 
     const temp = parseFloat(config.temperature) || 0.3;
     const messages = buildMessagesWithImages(prompt, images);
+    _logRequest('server', SERVER_MODEL, messages, temp, { images: images.length });
 
     try {
         out.dataset.loading = 'true';
@@ -361,6 +362,31 @@ export async function runActivation(templateObj, ctx, collectFn) {
     }
 }
 
+// ===================== Debug Logging =====================
+
+/**
+ * Log the full LLM request context to the console for developer inspection.
+ * Collapsed group — click to expand in DevTools.
+ */
+function _logRequest(provider, model, messages, temperature, extra) {
+    const tag = `[llm] ${provider}/${model} T=${temperature}`;
+    console.groupCollapsed(`${tag}  (${messages.length} msg, ${_charCount(messages)} chars)`);
+    for (const msg of messages) {
+        const preview = (msg.content || '').slice(0, 200);
+        const suffix = (msg.content || '').length > 200 ? '...' : '';
+        console.log(`%c[${msg.role}]%c ${preview}${suffix}`,
+            'color: #0af; font-weight: bold', 'color: inherit');
+        if (msg.images) console.log(`  images: ${msg.images.length} base64`);
+    }
+    if (extra) console.log('extra:', extra);
+    console.log('full messages:', structuredClone(messages));
+    console.groupEnd();
+}
+
+function _charCount(messages) {
+    return messages.reduce((sum, m) => sum + (m.content || '').length, 0);
+}
+
 // ===================== Provider execution =====================
 
 /**
@@ -376,6 +402,11 @@ export async function runLlm(config, prompt, inputText, out, tFn) {
     const provider = config.provider || 'client';
     const temp = parseFloat(config.temperature) || 0.3;
     const messages = buildMessages(prompt, inputText, provider);
+
+    const model = provider === 'client' ? (config.clientModel || CLIENT_MODEL)
+        : provider === 'server' ? SERVER_MODEL
+        : (config.apiModel || 'gpt-4o-mini');
+    _logRequest(provider, model, messages, temp);
 
     try {
         out.dataset.loading = 'true';
