@@ -15,9 +15,9 @@ import {
 // ===================== Runtime Constants =====================
 
 const TARGETS = {
-    'branch-log':      { page: 'blackboard-log',    scope: 'branch' },
-    'branch-overview': { page: 'blackboard-branch',  scope: 'branch' },
-    'all':             { page: 'blackboard-branch',  scope: 'all' },
+    'branch-log':      { pages: ['blackboard-log'],                       scope: 'branch' },
+    'branch-overview': { pages: ['blackboard-log', 'blackboard-branch'],  scope: 'branch' },
+    'all':             { pages: ['blackboard-log', 'blackboard-branch'],  scope: 'all' },
 };
 
 // ===================== Template =====================
@@ -37,7 +37,7 @@ export default {
 
     getDeployPages(config) {
         const target = TARGETS[config.target || 'branch-log'];
-        return target ? [target.page] : [];
+        return target ? target.pages : [];
     },
 
     _outputEl: null,
