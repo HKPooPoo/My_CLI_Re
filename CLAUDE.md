@@ -104,7 +104,7 @@ nginx (static SPA + reverse proxy) · api (Laravel 12 PHP-FPM) · reverb (WebSoc
 | Status | `StatusController` | — |
 | MOD Health | `ModController` | — |
 
-Models: `User`, `File` only. Events (4): `BroadcastChannelUpdated`, `WalkieTypieConnectionUpdated`, `WalkieTypieContentUpdated`, `WalkieTypieSignal`. Mail: `ResetPasscodeMail`, `BindEmailMail`. Commands: `CleanOrphanedFiles`.
+Models: `User`, `File` only. Events (6): `BlackboardUpdated`, `BroadcastChannelUpdated`, `RestaurantOrderUpdated`, `WalkieTypieConnectionUpdated`, `WalkieTypieContentUpdated`, `WalkieTypieSignal`. Mail: `ResetPasscodeMail`, `BindEmailMail`. Commands: `CleanOrphanedFiles`.
 
 **Rate limiting** (`routes/api.php`): AI endpoints 10/min · Auth login/register 30/min · Auth commands 10/min. All other endpoints (reads, writes, files, mods) are unthrottled — local single-user app with Redis caching. Client-side 429 handling: `api.js` dispatches `api:rateLimited` event (5s debounce), `blackboard-msg.js` listens and shows toast.
 
@@ -128,8 +128,6 @@ Multi-section SPA — pure HTML, CSS, ES modules. No framework.
 **Key directories:** `javascript/` (42 modules + `services/` 11 + `vendor/` 4) · `mods/` (manifest + loader + 3 templates) · `stylesheets/` (18 CSS files) · `locales/` (en.json, zh-TW.json, default.json) · `images/` (14 files) · `audio/` (10 MP3s)
 
 **Architectural patterns:** Event-driven (`window.dispatchEvent`) · Hybrid storage (IndexedDB local + PostgreSQL via API) · Real-time via Laravel Echo/Reverb · Service layer abstracts all HTTP calls · Debounce lifecycle via `TimerGroup` (`timer-group.js`) — named timer scheduling with `cancel/cancelAll/flush`; used by BB, BC, WT for input debounce management
-
-**Legacy file:** `mod-registry.js` — v1 MOD registry remnant, exports `MOD_TYPES`. Not actively used by v2 system.
 
 ### Navigation System (`navi.js`)
 
