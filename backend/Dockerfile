@@ -7,6 +7,7 @@ RUN apt-get update && apt-get install -y \
     libpq-dev \
     libcurl4-openssl-dev \
     unzip \
+    postgresql-client \
     && pecl install redis \
     && docker-php-ext-install pdo pdo_pgsql curl pcntl \
     && docker-php-ext-enable redis \

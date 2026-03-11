@@ -9,3 +9,4 @@ Artisan::command('inspire', function () {
 })->purpose('Display an inspiring quote');
 
 Schedule::command('files:clean-orphaned')->hourly();
+Schedule::command('app:backup')->dailyAt('03:00');
