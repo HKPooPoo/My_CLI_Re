@@ -116,39 +116,23 @@ docker exec my-cli-api php artisan test --filter TestClassName # Run single test
 
 ## Data Backup & Restore
 
-### PostgreSQL Backup
+Automated PostgreSQL backup via `pg_dump`, scheduled through Laravel's task scheduler. Backups stored in `backend/storage/backups/`. The `postgresql-client` package is installed in the PHP Docker image (`Dockerfile`).
 
 ```bash
-# Full database dump (run from host)
-docker exec my-cli-db pg_dump -U yu my-cli-db > backup_$(date +%Y%m%d_%H%M%S).sql
+# Manual backup (from host)
+docker exec my-cli-api php artisan app:backup
 
-# Tables-only backup (data only, no schema)
-docker exec my-cli-db pg_dump -U yu --data-only my-cli-db > backup_data.sql
+# List existing backups
+docker exec my-cli-api ls storage/backups/
 
-# Single table backup
-docker exec my-cli-db pg_dump -U yu -t blackboards my-cli-db > backup_blackboards.sql
+# Restore (interactive confirmation)
+docker exec -it my-cli-api php artisan app:backup --restore=backup_2026-03-11_163949.sql
+
+# Restore (scripted, skip confirmation)
+docker exec my-cli-api php artisan app:backup --restore=backup_2026-03-11_163949.sql --force
 ```
 
-### PostgreSQL Restore
-
-```bash
-# Full restore (WARNING: drops existing data)
-docker exec -i my-cli-db psql -U yu my-cli-db < backup.sql
-
-# Data-only restore (schema must already exist)
-docker exec -i my-cli-db psql -U yu my-cli-db < backup_data.sql
-
-# Restore after migrate:fresh (schema recreated, then load data)
-docker exec my-cli-api php artisan migrate:fresh
-docker exec -i my-cli-db psql -U yu my-cli-db < backup_data.sql
-```
-
-### When to Backup
-
-- **Before running tests for the first time** on a new setup
-- Before any `migrate:fresh` or destructive database operation
-- Before major refactoring that changes database schema
-- Periodically for important data (no auto-backup exists)
+**Schedule:** Daily at 03:00 AM via `routes/console.php`. Auto-prunes to keep last 7 backups. Command: `DatabaseBackup` (`app/Console/Commands/DatabaseBackup.php`).
 
 ## Architecture
 
