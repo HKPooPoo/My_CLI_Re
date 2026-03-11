@@ -721,7 +721,7 @@ window.addEventListener('online', () => {
 });
 
 /**
- * 輪詢：每 500ms 刷新分支清單（輕量 GET）。
+ * 輪詢：每 5s 刷新分支清單（輕量 GET）。
  * 即時內容同步靠 WebSocket (BBSync._handleRemoteEvent)。
  */
 let _pollBusy = false;
@@ -737,7 +737,7 @@ setInterval(async () => {
         try { await updateBranchList(); } catch (_) {}
         _pollBusy = false;
     }
-}, 500);
+}, 5000);
 
 // PWA logic extracted to pwa.js
 import "./pwa.js";

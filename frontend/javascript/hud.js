@@ -83,11 +83,19 @@ updateLoginStatus();
 replaceCrtTextColorBy("crt-text-orange"); // 最初顯示為 orange (CONNECTING...)
 
 let heartbeatIntervalId = null;
+let _heartbeatBusy = false;
+
+async function guardedHeartbeat() {
+    if (_heartbeatBusy) return;
+    _heartbeatBusy = true;
+    try { await updateDatabaseStatus(); } catch (_) {}
+    _heartbeatBusy = false;
+}
 
 function startHeartbeat() {
     if (heartbeatIntervalId) return;
-    updateDatabaseStatus();
-    heartbeatIntervalId = setInterval(updateDatabaseStatus, 1000);
+    guardedHeartbeat();
+    heartbeatIntervalId = setInterval(guardedHeartbeat, 30000);
 }
 
 function stopHeartbeat() {
