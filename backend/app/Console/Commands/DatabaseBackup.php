@@ -54,6 +54,11 @@ class DatabaseBackup extends Command
 
     private function restore(string $file): int
     {
+        if ($file !== basename($file)) {
+            $this->error('Invalid filename: must not contain path separators.');
+            return self::FAILURE;
+        }
+
         $dir = storage_path('backups');
         $filepath = $dir . '/' . $file;
 
