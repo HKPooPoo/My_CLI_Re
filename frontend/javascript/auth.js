@@ -165,11 +165,10 @@ export const AuthManager = {
                 sound: "UISelectOff.mp3",
                 action: async () => {
                     try {
+                        await BBCore.wipeSyncedData();
                         this.updateUI(null);
                         BBMessage.success(t('auth.logoutComplete'));
-                        // 非阻塞：後端登出 + 清除本地同步資料
                         AuthService.logout().catch(() => {});
-                        BBCore.wipeSyncedData().catch(() => {});
                     } catch (e) {
                         console.error("LOGOUT ERROR:", e);
                         this.updateUI(null);
