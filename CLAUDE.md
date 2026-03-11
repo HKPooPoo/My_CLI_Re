@@ -98,17 +98,21 @@ nginx (static SPA + reverse proxy) · api (Laravel 12 PHP-FPM) · reverb (WebSoc
 | Broadcast | `BroadcastChannelController` | `BroadcastChannelService` |
 | Files | `FileController` | `FileService` |
 | Auth | `AuthController` | `AuthService` |
-| Settings | `SettingsController` | `SettingsService` |
 | Translation | `TranslationController` | — (in controller) |
 | Speech | `SpeechController` | — (in controller) |
 | Status | `StatusController` | — |
+| LLM (MOD) | `LlmController` | — (in controller) |
 | MOD Health | `ModController` | — |
+| Restaurant Orders | `RestaurantOrderController` | `RestaurantOrderService` |
+| Restaurant Branch | `RestaurantBranchController` | `RestaurantBranchService`, `RestaurantSessionService` |
 
 Models: `User`, `File` only. Events (6): `BlackboardUpdated`, `BroadcastChannelUpdated`, `RestaurantOrderUpdated`, `WalkieTypieConnectionUpdated`, `WalkieTypieContentUpdated`, `WalkieTypieSignal`. Mail: `ResetPasscodeMail`, `BindEmailMail`. Commands: `CleanOrphanedFiles`.
 
 **Rate limiting** (`routes/api.php`): AI endpoints 10/min · Auth login/register 30/min · Auth commands 10/min. All other endpoints (reads, writes, files, mods) are unthrottled — local single-user app with Redis caching. Client-side 429 handling: `api.js` dispatches `api:rateLimited` event (5s debounce), `blackboard-msg.js` listens and shows toast.
 
-### Database Schema (10 migrations)
+### Database Schema (11 main + 2 restaurant migrations)
+
+**Main DB (PostgreSQL `my-cli-db`):**
 
 - **users** — uid (unique), passcode, title, email, settings (JSONB nullable)
 - **blackboards** — user_id FK, branch_id (varchar), branch_name, timestamp (bigint ms), text, file_hash (text); UNIQUE(user_id, branch_id, timestamp)
@@ -119,13 +123,21 @@ Models: `User`, `File` only. Events (6): `BlackboardUpdated`, `BroadcastChannelU
 - **broadcast_pins** — user_id FK cascade, channel_id FK cascade; UNIQUE(user_id, channel_id)
 - **files** — hash (unique), user_id FK, original_name, mime_type, size (bigint), disk_path, status (default 'staged')
 
-`file_hash` migrated from varchar(512) to text for JSON array serialization. File status lifecycle: `staged` → `committed` → `orphaned` (cleaned after 24h). Stale `staged` files (uploaded but never committed within 24h) are also marked `orphaned` by the hourly cron and cleaned in the next cycle.
+`file_hash` migrated from varchar(512) to text for JSON array serialization. File status lifecycle: `staged` → `committed` → `orphaned` (cleaned after 24h). Stale `staged` files (uploaded but never committed within 24h) are also marked `orphaned` by the hourly cron and cleaned in the next cycle. Performance indexes migration adds composite indexes for frequent query patterns.
+
+**Restaurant DB (separate PostgreSQL connection `restaurant`):**
+
+- **menu_items** — category (JSONB i18n), name (JSONB i18n), price, image, options_schema (JSONB), timeslots (JSONB), sort_order, available (bool)
+- **orders** — order_number (unique), status (default 'preparing'), total, branch_id FK nullable, table_number, session_token
+- **order_items** — order_id FK cascade, menu_item_id FK nullable, name (snapshot), base_price, qty, options (JSONB), subtotal
+- **branches** — code (unique), name; seeded with TM (Tuen Mun), TSW (Tin Shui Wai)
+- **restaurant_sessions** — branch_id FK cascade, table_number, token (unique), status (default 'active'), expires_at
 
 ### Frontend (`frontend/`)
 
 Multi-section SPA — pure HTML, CSS, ES modules. No framework.
 
-**Key directories:** `javascript/` (42 modules + `services/` 11 + `vendor/` 4) · `mods/` (manifest + loader + 3 templates) · `stylesheets/` (18 CSS files) · `locales/` (en.json, zh-TW.json, default.json) · `images/` (14 files) · `audio/` (10 MP3s)
+**Key directories:** `javascript/` (47 modules + `services/` 12 + `vendor/` 5) · `mods/` (mod-loader + 12 template folders) · `stylesheets/` (19 CSS files) · `locales/` (en.json, zh-TW.json, default.json) · `images/` (21 files) · `audio/` (10 MP3s)
 
 **Architectural patterns:** Event-driven (`window.dispatchEvent`) · Hybrid storage (IndexedDB local + PostgreSQL via API) · Real-time via Laravel Echo/Reverb · Service layer abstracts all HTTP calls · Debounce lifecycle via `TimerGroup` (`timer-group.js`) — named timer scheduling with `cancel/cancelAll/flush`; used by BB, BC, WT for input debounce management
 
@@ -241,7 +253,9 @@ Buttons that change label/behavior based on list selection context. Use raw `add
 
 | Event | `broadcastAs()` | Channel | Payload |
 |-------|-----------------|---------|---------|
+| `BlackboardUpdated` | `blackboard.updated` | Private `App.Models.User.{uid}` | `{ branch_id, device_id }` |
 | `BroadcastChannelUpdated` | `broadcast.channel.updated` | Public `broadcast-channel.{id}` | `{ channel_id, name, owner_uid, last_signal, action }` |
+| `RestaurantOrderUpdated` | `restaurant.order.updated` | Public `restaurant-orders.{branchCode}` | `{ order_number, action, branch_code }` |
 | `WalkieTypieConnectionUpdated` | `walkie-typie.updated` | Private `App.Models.User.{uid}` | `{ connection_data }` |
 | `WalkieTypieContentUpdated` | `walkie-typie.content` | Private `App.Models.User.{uid}` | `{ content_data: { text, branch_id, sender_uid } }` |
 | `WalkieTypieSignal` | `walkie-typie.content` | Private `App.Models.User.{partnerUid}` | `{ content_data: { branch_id, sender_uid, timestamp, text: null } }` |
@@ -410,7 +424,7 @@ when built-in types genuinely don't cover the use case.
 
 **Template version** — `template.version` (SemVer string). Displayed in mods-manager list and config pages.
 
-### Current Templates (11)
+### Current Templates (12)
 
 | ID | Group | maxInstances | Providers | Tools |
 |----|-------|-------------|-----------|-------|
@@ -418,6 +432,7 @@ when built-in types genuinely don't cover the use case.
 | `speech-to-text` | linguistics | 1 | google-speech | — |
 | `markdown-preview` | utilities | 1 | marked (client) | — |
 | `file-attach` | utilities | 2 | — | — |
+| `calculator` | utilities | 1 | — | — |
 | `llm` | llm | unlimited | client (WebLLM), server (Ollama), apikey (cloud) | — |
 | `llm-bb` | llm | unlimited | (shared with llm) | — |
 | `llm-bc` | llm | unlimited | (shared with llm) | — |
@@ -488,7 +503,7 @@ Local dev & deployment: Intel i7-13th Gen · RTX 4080 · 64GB RAM · Windows 11 
 # Context7 — real-time library documentation
 claude mcp add context7 -- npx -y @upstash/context7-mcp@latest
 # dbhub — direct PostgreSQL access
-claude mcp add my-db -- npx -y @bytebase/dbhub --dsn "postgresql://yu:prejudice720917q@localhost:5431/my-cli-db"
+claude mcp add my-db -- npx -y @bytebase/dbhub --dsn "postgresql://<POSTGRES_USER>:<POSTGRES_PASSWORD>@localhost:5431/<POSTGRES_DB>"
 ```
 
 ## Custom Audit Agents (`.claude/agents/`)
