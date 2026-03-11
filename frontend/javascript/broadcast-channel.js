@@ -529,6 +529,10 @@ export const BCChannel = {
     updateIndicators(headOverride) {
         if (!this.currentChannel) return;
 
+        // Guard: only write shared indicators when a BC page is active
+        const activePage = document.querySelector('.page.active');
+        if (!activePage || !activePage.dataset.page?.startsWith('broadcast-')) return;
+
         const name = this.currentChannel.name || t('broadcast.headFallback');
         if ($branchName) {
             $branchName.textContent = name;
@@ -558,6 +562,10 @@ export const BCChannel = {
     },
 
     clearIndicators() {
+        // Guard: only clear shared indicators when a BC page is active
+        const activePage = document.querySelector('.page.active');
+        if (!activePage || !activePage.dataset.page?.startsWith('broadcast-')) return;
+
         if ($branchName)  $branchName.textContent  = t('broadcast.headFallback');
         if ($branchHead)  $branchHead.textContent  = t('broadcast.headFallback');
         if ($savedStatus) $savedStatus.textContent = t('broadcast.headFallback');
