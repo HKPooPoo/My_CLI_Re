@@ -81,6 +81,75 @@ docker exec my-cli-api sh -c "cp .env.example .env && php artisan key:generate &
 | Reverb (WS) | `ws://localhost:8081` |
 | PostgreSQL | `localhost:5431` |
 
+## Testing
+
+### CRITICAL: Docker SQLite Isolation
+
+**Tests MUST use SQLite in-memory, NEVER production PostgreSQL.** Docker sets `DB_CONNECTION=pgsql` as an OS-level env var. PHPUnit's `phpunit.xml <env>` tags **cannot override OS-level env vars** even with `force="true"`. Without proper isolation, `RefreshDatabase` runs `migrate:fresh` which **drops all production tables**.
+
+**How it works:** `TestCase::setUp()` calls `putenv('DB_CONNECTION=sqlite')` + `$_ENV` + `$_SERVER` overrides BEFORE `parent::setUp()` creates the Laravel app and runs migrations. This ensures `RefreshDatabase` targets SQLite in-memory, not PostgreSQL.
+
+**Database-agnostic migrations:** Any migration using PostgreSQL-specific SQL (e.g. `ALTER TABLE ... ALTER COLUMN ... TYPE text`) MUST be guarded with `if (DB::getDriverName() === 'pgsql')`. SQLite stores all strings as TEXT natively, so column type changes are unnecessary there.
+
+```bash
+docker exec my-cli-api php artisan test                        # Run all tests (safe — uses SQLite)
+docker exec my-cli-api php artisan test --filter TestClassName # Run single test class
+```
+
+### Test Suite (85 tests, 158 assertions)
+
+| Test Class | Tests | What it covers |
+|------------|-------|----------------|
+| `AuthServiceTest` | 19 | register, login, /passwd, /bind, requestPasswordReset |
+| `BlackboardServiceTest` | 19 | LWW commit, blank skip, dedup, cache, events, CRUD |
+| `BroadcastChannelServiceTest` | 19 | cast (DELETE+INSERT), rename, destroy, pin/unpin, title guard |
+| `WalkieTypieBoardServiceTest` | 12 | LWW commit, partner signal, connection access control |
+| `FileServiceTest` | 14 | upload dedup, markCommitted, markOrphaned, cleanupOrphaned |
+
+### Test Conventions
+
+- Use `#[Test]` attribute (NOT `/** @test */` doc-comment — deprecated in PHPUnit 12)
+- `Cache::flush()` in `setUp()` when service uses `Cache::remember()` (array cache persists across tests)
+- Timestamp manipulation: set `$model->timestamps = false` before `save()` to prevent Eloquent auto-overriding `created_at`/`updated_at`
+- Event assertions: `Event::fake([EventClass::class])` before calling service methods that broadcast
+- File tests: `Storage::fake('local')` in setUp to avoid real disk writes
+
+## Data Backup & Restore
+
+### PostgreSQL Backup
+
+```bash
+# Full database dump (run from host)
+docker exec my-cli-db pg_dump -U yu my-cli-db > backup_$(date +%Y%m%d_%H%M%S).sql
+
+# Tables-only backup (data only, no schema)
+docker exec my-cli-db pg_dump -U yu --data-only my-cli-db > backup_data.sql
+
+# Single table backup
+docker exec my-cli-db pg_dump -U yu -t blackboards my-cli-db > backup_blackboards.sql
+```
+
+### PostgreSQL Restore
+
+```bash
+# Full restore (WARNING: drops existing data)
+docker exec -i my-cli-db psql -U yu my-cli-db < backup.sql
+
+# Data-only restore (schema must already exist)
+docker exec -i my-cli-db psql -U yu my-cli-db < backup_data.sql
+
+# Restore after migrate:fresh (schema recreated, then load data)
+docker exec my-cli-api php artisan migrate:fresh
+docker exec -i my-cli-db psql -U yu my-cli-db < backup_data.sql
+```
+
+### When to Backup
+
+- **Before running tests for the first time** on a new setup
+- Before any `migrate:fresh` or destructive database operation
+- Before major refactoring that changes database schema
+- Periodically for important data (no auto-backup exists)
+
 ## Architecture
 
 ### Docker Services (11)
