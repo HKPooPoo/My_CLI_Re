@@ -166,13 +166,12 @@ export const AuthManager = {
                 action: async () => {
                     try {
                         await BBCore.wipeSyncedData();
-                        this.updateUI(null);
-                        BBMessage.success(t('auth.logoutComplete'));
-                        AuthService.logout().catch(() => {});
                     } catch (e) {
-                        console.error("LOGOUT ERROR:", e);
-                        this.updateUI(null);
+                        console.error("LOGOUT WIPE ERROR:", e);
                     }
+                    this.updateUI(null);
+                    BBMessage.success(t('auth.logoutComplete'));
+                    AuthService.logout().catch(() => {});
                 }
             });
         }
