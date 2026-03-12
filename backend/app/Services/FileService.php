@@ -75,6 +75,35 @@ class FileService
     }
 
     /**
+     * Normalize a file_hash from client payload for DB storage.
+     *
+     * Client sends file_hash as: PHP array, JSON string, or plain hash string.
+     * Returns [dbValue, individualHashes] where dbValue is ready for DB insert
+     * and individualHashes is a flat array of hash strings for markCommittedBatch.
+     *
+     * @return array{0: string|null, 1: string[]}
+     */
+    public static function normalizeFileHash(mixed $fileHash): array
+    {
+        if (!$fileHash) {
+            return [null, []];
+        }
+
+        if (is_array($fileHash)) {
+            return [json_encode($fileHash), $fileHash];
+        }
+
+        if (is_string($fileHash) && str_starts_with($fileHash, '[')) {
+            $decoded = json_decode($fileHash, true);
+            if (is_array($decoded)) {
+                return [$fileHash, $decoded];
+            }
+        }
+
+        return [$fileHash, [$fileHash]];
+    }
+
+    /**
      * Mark file as committed (referenced by a record).
      */
     public function markCommitted(string $hash): void
@@ -108,17 +137,11 @@ class FileService
             ->merge(DB::table('walkie_typie_boards')->whereNotNull('file_hash')->pluck('file_hash'))
             ->merge(DB::table('broadcast_boards')->whereNotNull('file_hash')->pluck('file_hash'));
 
-        // Extract individual hashes (handle both plain strings and JSON arrays)
+        // Extract individual hashes (reuse normalizeFileHash for both plain and JSON-array values)
         $referencedHashes = [];
         foreach ($referencedRaw as $raw) {
-            if (str_starts_with($raw, '[')) {
-                $decoded = json_decode($raw, true);
-                if (is_array($decoded)) {
-                    foreach ($decoded as $h) $referencedHashes[$h] = true;
-                    continue;
-                }
-            }
-            $referencedHashes[$raw] = true;
+            [, $hashes] = self::normalizeFileHash($raw);
+            foreach ($hashes as $h) $referencedHashes[$h] = true;
         }
 
         // Find committed files not in the referenced set

@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Cache;
 use App\Events\BroadcastChannelUpdated;
 use App\Models\User;
+use App\Services\FileService;
 
 class BroadcastChannelService
 {
@@ -104,20 +105,8 @@ class BroadcastChannelService
                     continue;
                 }
 
-                $fileHash = $record['file_hash'] ?? null;
-                if ($fileHash) {
-                    if (is_array($fileHash)) {
-                        $fileHashes = array_merge($fileHashes, $fileHash);
-                        $fileHash = json_encode($fileHash);
-                    } elseif (is_string($fileHash) && str_starts_with($fileHash, '[')) {
-                        $decoded = json_decode($fileHash, true);
-                        if (is_array($decoded)) {
-                            $fileHashes = array_merge($fileHashes, $decoded);
-                        }
-                    } else {
-                        $fileHashes[] = $fileHash;
-                    }
-                }
+                [$fileHash, $hashes] = FileService::normalizeFileHash($record['file_hash'] ?? null);
+                $fileHashes = array_merge($fileHashes, $hashes);
 
                 $insertData[] = [
                     'channel_id'  => $channelId,
