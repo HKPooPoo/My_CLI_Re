@@ -35,21 +35,8 @@ class BlackboardService
                     continue;
                 }
 
-                $fileHash = $record['file_hash'] ?? null;
-                if ($fileHash) {
-                    // Multi-file: file_hash may be a JSON array or a single hash string
-                    if (is_array($fileHash)) {
-                        $fileHashes = array_merge($fileHashes, $fileHash);
-                        $fileHash = json_encode($fileHash);
-                    } elseif (is_string($fileHash) && str_starts_with($fileHash, '[')) {
-                        $decoded = json_decode($fileHash, true);
-                        if (is_array($decoded)) {
-                            $fileHashes = array_merge($fileHashes, $decoded);
-                        }
-                    } else {
-                        $fileHashes[] = $fileHash;
-                    }
-                }
+                [$fileHash, $hashes] = FileService::normalizeFileHash($record['file_hash'] ?? null);
+                $fileHashes = array_merge($fileHashes, $hashes);
 
                 $insertData[] = [
                     'user_id' => $user->id,
