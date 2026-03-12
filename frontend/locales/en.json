@@ -227,16 +227,16 @@
       "delete": "Permanently delete this channel and all its entries (local and cloud). Only the creator can do this. Cannot be undone."
     },
     "mods": {
-      "refresh": "Re-check all extensions and update their status."
+      "refresh": "Re-check all extensions and update their availability."
     },
     "config": {
       "maxSlot": "Max entries per topic. Oldest removed automatically when full.",
       "autoCleanBlanks": "Remove blank entries automatically when you navigate. Keeps things tidy.",
       "updateTimestamp": "Move an edited entry to the top (newest). OFF = it stays where it was.",
-      "autoSync": "Sync automatically when another device makes changes. Requires login.",
+      "autoSync": "Automatically upload your changes and download when another device updates. Requires login.",
       "loopList": "Wrap around: scrolling past the end jumps to the start, and vice versa.",
       "boardSwap": "Show your partner's messages at the top by default.",
-      "screensaverTimeout": "Seconds of inactivity before the screensaver. Set to max to disable.",
+      "screensaverTimeout": "Seconds after you leave this tab before the screensaver appears. Set to max to disable.",
       "crtBlendMode": "Soften the screen lines. Makes the retro look less harsh."
     },
     "llm": {
@@ -269,7 +269,7 @@
       "matrixRain": "Falling green characters on the idle screen, Matrix-style. Pure decoration.",
       "perlinBg": "A gentle flowing texture behind your content. Subtle atmosphere.",
       "mouseLight": "A soft glow that follows your cursor, like a flashlight on screen.",
-      "toastAnim": "A spinning animation on loading messages. Shows that something is processing."
+      "toastAnim": "A spinning animation on pop-up notifications. Shows that something is processing."
     }
   },
   "config": {

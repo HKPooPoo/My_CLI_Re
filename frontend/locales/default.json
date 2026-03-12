@@ -227,17 +227,17 @@
       "delete": "Permanently destroy this channel and all its records (local + cloud). Owner only. Cannot be undone."
     },
     "mods": {
-      "refresh": "Re-scan all MOD templates and update connection status."
+      "refresh": "Re-scan all MOD templates and check availability."
     },
     "config": {
       "maxSlot": "Max records per branch. Oldest auto-removed when full.",
       "autoCleanBlanks": "Auto-remove blank records when navigating. Keeps history clean.",
       "updateTimestamp": "Move edited record to newest position. OFF = stays in place.",
-      "autoSync": "Auto-pull from cloud when another device pushes changes. Requires login.",
+      "autoSync": "Two-way sync: auto-commit after 3s idle, auto-checkout on remote changes. Requires login.",
       "loopList": "Wrap around: past the last item → first, and vice versa.",
       "boardSwap": "Show partner's board on top by default.",
-      "screensaverTimeout": "Idle seconds before screensaver. Max value effectively disables it.",
-      "crtBlendMode": "Soften CRT scanlines with overlay blending."
+      "screensaverTimeout": "Seconds after leaving the tab before screensaver activates. Max value disables it.",
+      "crtBlendMode": "Soften CRT scanlines. Less harsh, more readable."
     },
     "llm": {
       "button": "Send current text to AI. Output appears in the panel below.",
@@ -269,7 +269,7 @@
       "matrixRain": "Matrix-style falling characters on the screensaver. Pure decoration.",
       "perlinBg": "Flowing noise texture behind content. Subtle atmosphere.",
       "mouseLight": "Cursor glow — like a flashlight on the CRT screen.",
-      "toastAnim": "Spinner animation on loading toasts. Visual progress indicator."
+      "toastAnim": "Spinner animation on pop-up notifications while operations are in progress."
     }
   },
   "config": {
