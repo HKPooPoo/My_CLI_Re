@@ -211,7 +211,7 @@
     "dropDrop": "刪除此主題的雲端副本。本機紀錄不受影響。",
     "dropDelete": "從本機永久移除此空白主題。無法復原。",
     "themeToggle": "切換深色/淺色主題。需要安裝 Light Theme MOD。",
-    "shelfHandle": "雙擊關閉，拖曳調整寬度。",
+    "shelfHandle": "擴充功能面板把手。向左拖展開更多，向右拖縮小。雙擊關閉。",
     "wt": {
       "theyPush": "查看對方板上較新的紀錄（唯讀）。",
       "theyPull": "查看對方板上較舊的紀錄（唯讀）。",

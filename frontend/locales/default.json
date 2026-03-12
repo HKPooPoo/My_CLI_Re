@@ -211,7 +211,7 @@
     "dropDrop": "Delete the cloud copy of this branch. Local records stay untouched.",
     "dropDelete": "Permanently remove this empty branch from your device. Cannot be undone.",
     "themeToggle": "Toggle dark/light theme. Requires the Light Theme MOD.",
-    "shelfHandle": "Double-click to close. Drag to resize.",
+    "shelfHandle": "Extension panel grip. Drag left to expand, right to shrink. Double-click to close.",
     "wt": {
       "theyPush": "View a newer record on your partner's board (read-only).",
       "theyPull": "View an older record on your partner's board (read-only).",

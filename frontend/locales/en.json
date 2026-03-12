@@ -211,7 +211,7 @@
     "dropDrop": "Remove the cloud copy of this topic. Your local entries stay untouched.",
     "dropDelete": "Permanently delete this empty topic. Cannot be undone.",
     "themeToggle": "Switch between dark and light theme. Requires the Light Theme extension.",
-    "shelfHandle": "Double-click to close. Drag to resize.",
+    "shelfHandle": "Extension panel handle. Drag left to see more, right to see less. Double-click to close.",
     "wt": {
       "theyPush": "View a newer entry on your partner's board (read-only).",
       "theyPull": "View an older entry on your partner's board (read-only).",
