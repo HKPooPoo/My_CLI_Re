@@ -235,7 +235,7 @@
       "updateTimestamp": "Move an edited entry to the top (newest). OFF = it stays where it was.",
       "autoSync": "Automatically upload your changes and download when another device updates. Requires login.",
       "loopList": "Wrap around: scrolling past the end jumps to the start, and vice versa.",
-      "boardSwap": "Show your partner's messages at the top by default.",
+      "boardSwap": "Put your board on top, partner's below. Default: partner's messages are on top.",
       "screensaverTimeout": "Seconds after you leave this tab before the screensaver appears. Set to max to disable.",
       "crtBlendMode": "Soften the screen lines. Makes the retro look less harsh."
     },
@@ -279,7 +279,7 @@
     "updateTimestamp": "Move Edited Entry to Top",
     "autoSync": "Auto-Sync (Multi-Device)",
     "loopList": "Loop List Navigation",
-    "boardSwap": "Show Their Messages First",
+    "boardSwap": "Show My Messages First",
     "showHints": "Button Hints",
     "screensaverTimeout": "Screensaver Delay (sec)",
     "crtBlendModeLabel": "Soften CRT Lines",

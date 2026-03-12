@@ -235,7 +235,7 @@
       "updateTimestamp": "Move edited record to newest position. OFF = stays in place.",
       "autoSync": "Two-way sync: auto-commit after 3s idle, auto-checkout on remote changes. Requires login.",
       "loopList": "Wrap around: past the last item → first, and vice versa.",
-      "boardSwap": "Show partner's board on top by default.",
+      "boardSwap": "Your board on top, partner below. OFF = partner on top (default).",
       "screensaverTimeout": "Seconds after leaving the tab before screensaver activates. Max value disables it.",
       "crtBlendMode": "Soften CRT scanlines. Less harsh, more readable."
     },
@@ -279,7 +279,7 @@
     "updateTimestamp": "REBASE ON EDIT",
     "autoSync": "AUTO FETCH",
     "loopList": "CYCLE LIST",
-    "boardSwap": "REMOTE FIRST",
+    "boardSwap": "LOCAL FIRST",
     "showHints": "VERBOSE",
     "screensaverTimeout": "IDLE TIMEOUT (SEC)",
     "crtBlendModeLabel": "CRT BLEND",
