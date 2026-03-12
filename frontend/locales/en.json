@@ -234,7 +234,7 @@
       "autoCleanBlanks": "Remove blank entries automatically when you navigate. Keeps things tidy.",
       "updateTimestamp": "Move an edited entry to the top (newest). OFF = it stays where it was.",
       "autoSync": "Automatically upload your changes and download when another device updates. Requires login.",
-      "loopList": "Wrap around: scrolling past the end jumps to the start, and vice versa.",
+      "loopList": "Affects the branch / contact / channel list: scrolling past the last item wraps back to the first, and vice versa.",
       "boardSwap": "Put your board on top, partner's below. Default: partner's messages are on top.",
       "screensaverTimeout": "Seconds after you leave this tab before the screensaver appears. Set to max to disable.",
       "crtBlendMode": "Soften the screen lines. Makes the retro look less harsh."
