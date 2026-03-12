@@ -201,73 +201,75 @@
     "criticalPrefix": "CRITICAL > "
   },
   "hints": {
-    "push": "PUSH — Navigate toward NEWER records. Creates a new blank page at the top.",
-    "pull": "PULL — Navigate toward OLDER records in this branch.",
-    "commit": "COMMIT — Upload ALL local records of the selected branch to server.",
-    "checkout": "CHECKOUT — Download the selected branch from server to local.",
-    "switch": "SWITCH — Switch to the selected local branch without downloading.",
-    "fork": "FORK — Duplicate all records of the selected branch into a new independent branch.",
-    "dropClean": "CLEAN — Wipe all records in this branch, leaving one empty placeholder.",
-    "dropDrop": "DROP — Delete the server-side copy of this branch.",
-    "dropDelete": "DELETE — Permanently remove this empty branch from local storage.",
+    "push": "PUSH — Step forward to a newer record. Records are stacked newest-on-top. If you're already at the newest, PUSH opens a blank page — type anything and it becomes a new record.",
+    "pull": "PULL — Step back to an older record. If you're on a blank page and typed text, PULL saves it first, then moves back.",
+    "commit": "COMMIT — Upload ALL records of the selected branch to the cloud. Replaces the entire cloud copy with your local version — if another device uploaded first, yours overwrites it. Attached files are uploaded too.",
+    "checkout": "CHECKOUT — Re-download this branch from the cloud. Overwrites your local copy with the latest cloud version.",
+    "switch": "SWITCH — Jump to a different branch. If it only exists on the cloud, it will be downloaded to your device first.",
+    "fork": "FORK — Copy every record from the selected branch into a brand-new branch. The original and the copy are fully independent — edits to one never affect the other.",
+    "dropClean": "CLEAN — Erase all records in this branch but keep the branch itself. One blank placeholder remains so the branch stays in your list.",
+    "dropDrop": "DROP — Delete the cloud backup of this branch. Your local records on this device remain untouched.",
+    "dropDelete": "DELETE — Permanently remove this empty branch from your device. Cannot be undone.",
+    "themeToggle": "Toggle between the default dark CRT theme and the light theme. Only available when a Light Theme MOD is installed.",
+    "shelfHandle": "Panel handle. Double-click to close. Drag left/right to resize the panel width.",
     "wt": {
-      "theyPush": "Navigate to NEWER entries on their board.",
-      "theyPull": "Navigate to OLDER entries on their board.",
-      "wePush": "Navigate to NEWER entries on our shared board.",
-      "wePull": "Navigate to OLDER entries on our shared board.",
-      "add": "ADD — Connect to another user by entering their UID.",
-      "cut": "CUT — Disconnect from the selected partner."
+      "theyPush": "View a newer record on your partner's board. Their board is read-only — you can browse but not edit.",
+      "theyPull": "View an older record on your partner's board.",
+      "wePush": "Step forward to a newer record on your board (your partner sees this board in real-time). At the newest, opens a blank page for a new record.",
+      "wePull": "Step back to an older record on your board. Saves your current text before moving.",
+      "add": "ADD — Connect with another user by entering their UID. Both of you get a paired board: you write on yours, they write on theirs, and each side sees the other's board in real-time.",
+      "cut": "CUT — Disconnect the selected partner. Removes the link and erases all records for this pair on both sides."
     },
     "bc": {
-      "pin": "PIN — Subscribe to this channel for quick access.",
-      "cast": "CAST — Publish current text as a new entry.",
-      "create": "CREATE — Start a new public broadcast channel.",
-      "delete": "DELETE — Permanently remove a channel you own."
+      "pin": "PIN — Bookmark this channel. Pinned channels always appear at the top of your list for quick access.",
+      "cast": "CAST — Publish ALL your local records to this channel. Replaces the channel's entire cloud content with your local version (full upload, not just the current record).",
+      "create": "CREATE — Start a new local channel. Write records locally, then CAST to make them public. Requires a title (set via /title command).",
+      "delete": "DELETE — Permanently destroy this channel and all its records, both local and cloud. Only the channel owner can do this. Cannot be undone."
     },
     "mods": {
-      "refresh": "Check remote status for all MOD instances."
+      "refresh": "Re-scan all MOD templates and refresh their connection status."
     },
     "config": {
-      "maxSlot": "Max record per branch. Oldest record pruned when limit is reached.",
-      "autoCleanBlanks": "Prune empty record when HEAD changes.",
-      "updateTimestamp": "Rebase edited record to HEAD.",
-      "autoSync": "Auto-fetch from remote when changes are detected. Requires auth.",
-      "loopList": "Wrap cursor to opposite end when scrolling past list boundary.",
-      "boardSwap": "Show remote board on top by default.",
-      "screensaverTimeout": "Idle time in seconds before screensaver activates.",
-      "crtBlendMode": "Apply overlay blend to CRT scanline."
+      "maxSlot": "Maximum records kept per branch. When full, the oldest record is auto-pruned on PUSH or PULL.",
+      "autoCleanBlanks": "Auto-delete empty (blank) records whenever you PUSH or PULL. Keeps your history clean.",
+      "updateTimestamp": "When editing an older record, move it to the newest position (HEAD). OFF = edit stays in its original position.",
+      "autoSync": "Auto-fetch from the cloud when another device pushes changes. Requires login.",
+      "loopList": "Wrap around: scrolling past the last item jumps to the first, and vice versa.",
+      "boardSwap": "Swap board order: show the remote (partner's) board on top by default.",
+      "screensaverTimeout": "Seconds of inactivity before the screensaver activates. Set to max (310) to effectively disable.",
+      "crtBlendMode": "Apply overlay blend mode to CRT scanlines. Softens the retro glow effect."
     },
     "llm": {
-      "button": "Run LLM on current text with your configured prompt.",
-      "provider": "client = WebGPU in browser. server = local Ollama. apikey = cloud API.",
-      "clientModel": "In-browser model via WebGPU. Larger model requires more VRAM.",
-      "apiProvider": "Cloud LLM provider to use with your API key.",
-      "apiModel": "Model ID for cloud provider (e.g. gpt-4o-mini).",
-      "apiKey": "Your API key. Stored in localStorage only — never sent to server.",
-      "temperature": "0 = deterministic and focused. 1 = creative and varied."
+      "button": "Send the current text to AI with your configured prompt. Output appears in the panel below.",
+      "provider": "Where AI runs — client: in your browser via WebGPU (offline, private). server: local Ollama instance. apikey: cloud API (needs internet + API key).",
+      "clientModel": "AI model downloaded and run inside your browser via WebGPU. Larger models are smarter but need more GPU memory (VRAM).",
+      "apiProvider": "Which cloud AI service to use (OpenAI, Anthropic, etc.).",
+      "apiModel": "The specific model ID from your cloud provider (e.g. gpt-4o-mini, claude-sonnet-4-5-20250514).",
+      "apiKey": "Your secret API key for the cloud provider. Stored in browser localStorage only — never sent to our server.",
+      "temperature": "Controls AI randomness. 0 = precise and deterministic. 1 = creative and varied. 0.3–0.7 is a good middle ground."
     },
     "llmBb": {
-      "button": "Run LLM analysis on blackboard branch record.",
-      "target": "Scope: current branch from LOG, from BRANCH, or all branch."
+      "button": "Feed blackboard records to AI for analysis (summarize, extract, transform, etc.).",
+      "target": "What to analyze: records from the current branch (LOG view), the BRANCH list view, or all branches combined."
     },
     "llmBc": {
-      "button": "Run LLM analysis on broadcast channel content.",
-      "target": "Scope: current record or full channel history."
+      "button": "Feed broadcast channel content to AI for analysis.",
+      "target": "What to analyze: the current record only, or the channel's entire history."
     },
     "translate": {
-      "button": "Translate current text to the configured target language."
+      "button": "Translate the current text into your configured target language. Result appears in the panel below."
     },
     "stt": {
-      "button": "Record audio and convert speech to text."
+      "button": "Start recording from your microphone. When you stop, speech is converted to text and inserted into the editor."
     },
     "markdownPreview": {
-      "button": "Render current text as formatted Markdown."
+      "button": "Render the current text as formatted Markdown in the panel below (headings, bold, lists, code blocks, etc.)."
     },
     "aa": {
-      "matrixRain": "Falling character rain on the screensaver, Matrix-style.",
-      "perlinBg": "Animated Perlin noise texture behind page content.",
-      "mouseLight": "Cursor-following light glow on the screen.",
-      "toastAnim": "Braille spinner animation on loading toast."
+      "matrixRain": "Falling green characters on the screensaver, Matrix-style. Pure visual decoration — no performance impact when idle.",
+      "perlinBg": "Animated flowing noise texture behind page content. Subtle background atmosphere effect.",
+      "mouseLight": "A soft glow that follows your cursor, like a flashlight sweeping across the CRT screen.",
+      "toastAnim": "Braille-pattern spinner animation on loading notifications. Adds a visual indicator while operations are in progress."
     }
   },
   "config": {
