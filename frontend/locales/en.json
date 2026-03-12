@@ -201,75 +201,75 @@
     "criticalPrefix": "Error: "
   },
   "hints": {
-    "push": "Go forward to a newer entry. If you're already at the newest, a blank page appears — just start typing and it becomes a new entry.",
-    "pull": "Go back to view an older entry. If you were on a blank page and typed something, it's saved first before moving back.",
-    "commit": "Upload ALL entries of this topic to the cloud at once. Replaces whatever was stored in the cloud with your local version. If another device uploaded before you, your version wins.",
-    "checkout": "Download the latest version of this topic from the cloud, replacing your local copy.",
-    "switch": "Switch to a different topic. If it only exists in the cloud, it will be downloaded to your device first.",
-    "fork": "Create an independent copy of this entire topic. The copy and the original are completely separate — changes to one never affect the other.",
-    "dropClean": "Erase all entries in this topic but keep the topic itself. One blank placeholder remains so it stays in your list.",
-    "dropDrop": "Remove the cloud copy of this topic. Your local entries on this device stay untouched.",
-    "dropDelete": "Permanently delete this empty topic from your device. This cannot be undone.",
-    "themeToggle": "Switch between the dark retro theme and the light theme. Only available when a Light Theme MOD is installed.",
-    "shelfHandle": "Panel handle. Double-click to close. Drag left or right to resize.",
+    "push": "Go forward to a newer entry. If you're already at the newest, a blank page appears — type anything and it becomes a new entry.",
+    "pull": "Go back to an older entry. If you typed something on a blank page, it's saved first.",
+    "commit": "Upload ALL entries from the selected topic to the cloud, replacing the entire cloud copy. If another device uploaded first, your version wins. File attachments included.",
+    "checkout": "Download the selected topic from the cloud, replacing your local copy.",
+    "switch": "Jump to a different topic. If it only exists in the cloud, it's downloaded first.",
+    "fork": "Copy every entry from the selected topic into a new independent topic. The original and copy are fully separate — changes to one never affect the other.",
+    "dropClean": "Erase all entries in this topic but keep the topic itself. One blank placeholder remains.",
+    "dropDrop": "Remove the cloud copy of this topic. Your local entries stay untouched.",
+    "dropDelete": "Permanently delete this empty topic. Cannot be undone.",
+    "themeToggle": "Switch between dark and light theme. Requires the Light Theme extension.",
+    "shelfHandle": "Double-click to close. Drag to resize.",
     "wt": {
-      "theyPush": "View a newer entry on your partner's board. Their board is read-only — you can browse but not edit.",
-      "theyPull": "View an older entry on your partner's board.",
-      "wePush": "Go forward to a newer entry on your board (your partner sees this in real-time). At the newest, opens a blank page for a new message.",
-      "wePull": "Go back to an older entry on your board. Your current text is saved before moving.",
-      "add": "Connect with someone by entering their user ID. Both of you get a paired board: you write on yours, they write on theirs, and each side can see the other in real-time.",
-      "cut": "Remove the connection with your selected partner. All message history for this pair is erased on both sides."
+      "theyPush": "View a newer entry on your partner's board (read-only).",
+      "theyPull": "View an older entry on your partner's board (read-only).",
+      "wePush": "Go forward to a newer entry on your board. Your partner sees changes in real-time. At the newest, a blank page opens for a new message.",
+      "wePull": "Go back to an older entry on your board. Your text is saved first.",
+      "add": "Connect with someone by entering their username. You each get your own board — you write on yours, they write on theirs, and both sides are visible in real-time.",
+      "cut": "Disconnect your selected partner and erase all message history for this pair on both sides."
     },
     "bc": {
-      "pin": "Save this channel to your favourites. Pinned channels always appear at the top of your list.",
-      "cast": "Upload ALL your local entries to this channel. Replaces the channel's cloud content entirely — this is a full upload, not just the current entry.",
-      "create": "Create a new local channel. Write entries first, then Publish to make them public. Requires a display name (set via /title).",
-      "delete": "Permanently delete this channel and all its entries, both local and cloud. Only the channel creator can do this. Cannot be undone."
+      "pin": "Save this channel to your favourites. Pinned channels stay at the top of your list.",
+      "cast": "Upload ALL your local entries to this channel, replacing its entire cloud content. This uploads everything, not just what's on screen.",
+      "create": "Start a new local channel. Write entries first, then use Publish to make them public.",
+      "delete": "Permanently delete this channel and all its entries (local and cloud). Only the creator can do this. Cannot be undone."
     },
     "mods": {
-      "refresh": "Re-check all MOD templates and refresh their connection status."
+      "refresh": "Re-check all extensions and update their status."
     },
     "config": {
-      "maxSlot": "How many entries to keep per topic. When full, the oldest entry is automatically removed.",
-      "autoCleanBlanks": "Automatically delete blank entries when you move between entries. Keeps your history tidy.",
-      "updateTimestamp": "When you edit an older entry, move it to the top so it appears as the newest. OFF = the entry stays where it was.",
-      "autoSync": "Automatically sync your entries across devices when changes are detected. You need to be logged in.",
-      "loopList": "When you scroll past the end of a list, jump back to the beginning (and vice versa).",
+      "maxSlot": "Max entries per topic. Oldest removed automatically when full.",
+      "autoCleanBlanks": "Remove blank entries automatically when you navigate. Keeps things tidy.",
+      "updateTimestamp": "Move an edited entry to the top (newest). OFF = it stays where it was.",
+      "autoSync": "Sync automatically when another device makes changes. Requires login.",
+      "loopList": "Wrap around: scrolling past the end jumps to the start, and vice versa.",
       "boardSwap": "Show your partner's messages at the top by default.",
-      "screensaverTimeout": "How many seconds of inactivity before the screensaver appears. Set to max to effectively disable.",
-      "crtBlendMode": "Soften the screen lines by applying a blend effect. Makes the retro look less harsh."
+      "screensaverTimeout": "Seconds of inactivity before the screensaver. Set to max to disable.",
+      "crtBlendMode": "Soften the screen lines. Makes the retro look less harsh."
     },
     "llm": {
-      "button": "Send the text on your screen to AI. The result appears in the panel below.",
-      "provider": "Where the AI runs — in your browser (offline, private), on a local server, or in the cloud (needs internet + API key).",
-      "clientModel": "The AI model that downloads and runs in your browser. Bigger models are smarter but need more graphics memory.",
-      "apiProvider": "Which cloud AI service to connect to (OpenAI, Anthropic, etc.).",
-      "apiModel": "The specific AI model to use from your cloud provider (e.g. gpt-4o-mini).",
-      "apiKey": "Your secret key for the cloud AI. It stays on your device only — never sent to our server.",
-      "temperature": "How creative the AI should be. Low = precise and focused. High = creative and varied. 0.3–0.7 is a good middle ground."
+      "button": "Send your text to AI. The result appears in the panel below.",
+      "provider": "Where AI runs — in your browser (offline, private), on a local server, or in the cloud (needs internet + API key).",
+      "clientModel": "AI model that runs in your browser. Bigger = smarter, but needs more graphics memory.",
+      "apiProvider": "Which cloud AI service to use (OpenAI, Anthropic, etc.).",
+      "apiModel": "The specific model from your cloud provider (e.g. gpt-4o-mini).",
+      "apiKey": "Your secret API key. Stored on your device only — never sent to our server.",
+      "temperature": "How creative the AI is. Low = focused. High = varied. 0.3–0.7 is a good middle ground."
     },
     "llmBb": {
-      "button": "Have AI analyze your log entries (summarize, extract info, transform, etc.).",
-      "target": "What to analyze: entries from the current topic, the topic list view, or all topics combined."
+      "button": "Have AI analyze your entries (summarize, extract, transform).",
+      "target": "What to analyze: entries from the current topic, the topic list, or all topics combined."
     },
     "llmBc": {
-      "button": "Have AI analyze the channel messages.",
-      "target": "What to analyze: the current entry only, or all entries in the channel."
+      "button": "Have AI analyze the channel content.",
+      "target": "What to analyze: the current entry, or all entries in the channel."
     },
     "translate": {
-      "button": "Translate the text on your screen to another language. Result appears in the panel below."
+      "button": "Translate your text to another language. Result appears in the panel below."
     },
     "stt": {
-      "button": "Start recording from your microphone. When you stop, your speech is converted to text and inserted into the editor."
+      "button": "Record from your microphone. Speech is converted to text and inserted into the editor."
     },
     "markdownPreview": {
-      "button": "See a formatted preview of your text in the panel below (headings, bold, lists, code blocks, etc.)."
+      "button": "See your text as formatted Markdown in the panel below (headings, bold, lists, etc.)."
     },
     "aa": {
-      "matrixRain": "Animated falling characters on the idle screen, inspired by The Matrix. Pure decoration.",
-      "perlinBg": "A gentle flowing texture behind your content, like shifting clouds. Subtle atmosphere effect.",
-      "mouseLight": "A soft glow that follows your cursor, like a flashlight sweeping the screen.",
-      "toastAnim": "A spinning animation on loading messages. Adds visual feedback while things are processing."
+      "matrixRain": "Falling green characters on the idle screen, Matrix-style. Pure decoration.",
+      "perlinBg": "A gentle flowing texture behind your content. Subtle atmosphere.",
+      "mouseLight": "A soft glow that follows your cursor, like a flashlight on screen.",
+      "toastAnim": "A spinning animation on loading messages. Shows that something is processing."
     }
   },
   "config": {
