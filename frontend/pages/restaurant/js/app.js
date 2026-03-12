@@ -60,7 +60,8 @@ function updateGate() {
     if (!overlay) return;
     const onGatedPage = gatedPages.includes(currentPage);
     overlay.hidden = !onGatedPage || isCheckedIn();
-    overlay.querySelector('.checkin-overlay-text').textContent = t('session.scan-qr');
+    const el = overlay.querySelector('.checkin-overlay-text');
+    if (el) el.textContent = t('session.scan-qr');
 }
 
 window.addEventListener('session:changed', () => {

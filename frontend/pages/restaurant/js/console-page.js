@@ -233,7 +233,7 @@ page.addEventListener('click', async (e) => {
                 const session = getSession();
                 if (session?.token) {
                     await fetch('/api/restaurant/sessions/check-out', {
-                        method: 'DELETE',
+                        method: 'POST',
                         headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
                         body: JSON.stringify({ token: session.token }),
                     });

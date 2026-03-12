@@ -74,6 +74,8 @@ async function onStatusChanged(data) {
     }
 }
 
+let currentChannel = null;
+
 async function subscribe() {
     try {
         const echo = await getEcho();
@@ -81,6 +83,10 @@ async function subscribe() {
         const channelName = session?.branch_code
             ? `restaurant-orders.${session.branch_code}`
             : 'restaurant-orders';
+
+        if (currentChannel === channelName) return;
+        if (currentChannel) echo.leave(currentChannel);
+        currentChannel = channelName;
 
         echo.channel(channelName)
             .listen('.restaurant.order.updated', (data) => {
@@ -93,6 +99,8 @@ async function subscribe() {
     }
 }
 
+// Re-subscribe when session changes (check-in may happen after boot)
+window.addEventListener('session:changed', () => subscribe());
 window.addEventListener('order:created', () => render());
 render();
 subscribe();

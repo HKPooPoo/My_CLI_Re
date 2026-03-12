@@ -104,7 +104,7 @@ Route::prefix('restaurant')->group(function () {
     Route::get('/branches', [RestaurantBranchController::class, 'index']);
     Route::post('/branches', [RestaurantBranchController::class, 'store']);
     Route::post('/sessions/check-in', [RestaurantBranchController::class, 'checkIn']);
-    Route::delete('/sessions/check-out', [RestaurantBranchController::class, 'checkOut']);
+    Route::post('/sessions/check-out', [RestaurantBranchController::class, 'checkOut']);
     Route::get('/orders', [RestaurantOrderController::class, 'index']);
     Route::post('/orders', [RestaurantOrderController::class, 'store']);
     Route::get('/orders/{orderNumber}', [RestaurantOrderController::class, 'show']);
