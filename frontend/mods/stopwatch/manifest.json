@@ -1,0 +1,18 @@
+{
+    "id": "stopwatch",
+    "group": "utilities",
+    "nameKey": "mods.stopwatch.name",
+    "descriptionKey": "mods.stopwatch.desc",
+    "version": "1.0.0",
+    "minApiVersion": 1,
+    "maxInstances": 1,
+    "shelfPanelId": "stopwatch",
+    "pages": {
+        "blackboard-log":    {},
+        "walkie-typie-text": {},
+        "broadcast-channel": {}
+    },
+    "providers": [],
+    "configSchema": [],
+    "defaultInstances": []
+}

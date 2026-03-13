@@ -1,0 +1,12 @@
+{
+    "mods": {
+        "stopwatch": {
+            "name": "Stopwatch",
+            "desc": "Simple timer with lap recording",
+            "start": "Start",
+            "stop": "Stop",
+            "lap": "Lap",
+            "reset": "Reset"
+        }
+    }
+}
