@@ -25,7 +25,7 @@ function _deactivatePrevious() {
     const templates = getAllTemplates();
     const tpl = templates.find(t => t.id === _lastActivatedCtx.templateId);
     if (tpl && typeof tpl.deactivate === 'function') {
-        try { tpl.deactivate(_lastActivatedCtx); } catch(e) {
+        try { tpl.deactivate(_lastActivatedCtx); } catch (e) {
             console.error('[feature-shelf] deactivate error:', e);
         }
     }
@@ -301,7 +301,7 @@ function handleDragEnd() {
 
 function snapToNearestPosition() {
     const screenWidth = getScreenWidth();
-    const snapRatios = [0, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0];
+    const snapRatios = [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0];
     const snapPositions = snapRatios.map(ratio => -1 * ratio * screenWidth);
 
     let closestPosition = 0;

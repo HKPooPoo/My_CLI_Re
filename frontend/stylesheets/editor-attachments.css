@@ -208,10 +208,11 @@
 
 /* --- BB Context Specifics --- */
 
-/* In BB, the editor-wrapper is inside .page[data-page="blackboard-log"],
-   and the textarea inside uses #log-textarea which already has styles
-   in page-blackboard-log.css. No changes needed to those styles;
-   the textarea margin and font-size remain the same. */
+/* When chips are visible, they already sit below the push button,
+   so the textarea's top margin (which reserves push-button clearance) is redundant. */
+.attachment-chips.has-items ~ #log-textarea {
+    margin-top: 0;
+}
 
 /* --- WT Context Specifics --- */
 
