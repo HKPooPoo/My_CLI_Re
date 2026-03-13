@@ -29,6 +29,9 @@ function _deactivatePrevious() {
             console.error('[feature-shelf] deactivate error:', e);
         }
     }
+    if (typeof _lastActivatedCtx._cleanup === 'function') {
+        _lastActivatedCtx._cleanup();
+    }
     _lastActivatedCtx = null;
 }
 
