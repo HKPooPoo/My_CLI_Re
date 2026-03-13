@@ -19,10 +19,11 @@ return Application::configure(basePath: dirname(__DIR__))
             \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
         ]);
 
+        // EncryptCookies, AddQueuedCookiesToResponse, StartSession are already
+        // provided by Sanctum's EnsureFrontendRequestsAreStateful pipeline.
+        // Duplicating them here causes double-encrypt on response / decrypt-fail
+        // on request, corrupting the session cookie on every page refresh.
         $middleware->api(append: [
-            \Illuminate\Cookie\Middleware\EncryptCookies::class,
-            \Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse::class,
-            \Illuminate\Session\Middleware\StartSession::class,
             \Illuminate\View\Middleware\ShareErrorsFromSession::class,
         ]);
 
