@@ -163,6 +163,19 @@ export const EditorAttachments = {
                         }
                     });
 
+                    // --- Paste Images from Clipboard ---
+                    dropZone.addEventListener('paste', async (e) => {
+                        const items = e.clipboardData?.items;
+                        if (!items) return;
+                        for (const item of items) {
+                            if (item.kind === 'file') {
+                                e.preventDefault();
+                                const file = item.getAsFile();
+                                if (file) await this.handleFile(file);
+                            }
+                        }
+                    });
+
                     // --- File Input (button trigger) ---
                     if (fileInput) {
                         fileInput.addEventListener('change', async (e) => {

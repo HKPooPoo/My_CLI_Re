@@ -36,6 +36,15 @@ export const ICONS = [
 
 let _currentAbortController = null;
 
+/** Start 1s interval timer on output element, returns stop(). */
+function _startTimer(out, labelFn) {
+    const t0 = Date.now();
+    const id = setInterval(() => {
+        out.value = labelFn(Math.floor((Date.now() - t0) / 1000));
+    }, 1000);
+    return () => clearInterval(id);
+}
+
 let _webLlmSvc = null;
 async function _getWebLlm() {
     if (!_webLlmSvc) {
@@ -175,27 +184,23 @@ export async function runLlmWithImages(config, prompt, images, out, tFn) {
 
     try {
         out.dataset.loading = 'true';
-        out.value = tFn('mods.llm.connecting');
+        const stopVisionTimer = _startTimer(out, s => tFn('mods.llm.thinking', { seconds: s }));
 
-        const t0 = Date.now();
         let tokens = 0;
         for await (const chunk of LlmService.chatStream({
             provider: 'ollama', model: SERVER_MODEL, messages,
             temperature: temp,
         }, { signal: controller.signal })) {
-            if (chunk.status) {
-                const sec = Math.floor((Date.now() - t0) / 1000);
-                out.value = tFn('mods.llm.thinking', { seconds: sec });
-                continue;
-            }
-            if (chunk.error) throw new Error(chunk.error);
+            if (chunk.status) continue;
+            if (chunk.error) { stopVisionTimer(); throw new Error(chunk.error); }
             if (chunk.done) break;
             const text = cleanDelta(chunk.delta, tokens === 0);
             if (!text) continue;
-            if (tokens === 0) out.value = '';
+            if (tokens === 0) { stopVisionTimer(); out.value = ''; }
             out.value += text;
             tokens++;
         }
+        stopVisionTimer();
 
         if (!out.value.trim()) out.value = tFn('mods.llm.noOutput');
     } catch (e) {
@@ -419,42 +424,39 @@ export async function runLlm(config, prompt, inputText, out, tFn) {
             window.dispatchEvent(new CustomEvent('llm:progress', { detail: { status: 'ready', model } }));
 
             // Transition message: model loaded, now running inference (prefill can take seconds)
-            out.value = tFn('mods.llm.generating');
+            const stopGenTimer = _startTimer(out, s => tFn('mods.llm.generating') + ` (${s}s)`);
 
             let tokens = 0;
             for await (const chunk of svc.chat(messages, { temperature: temp, signal: controller.signal })) {
-                if (controller.signal.aborted) return;
+                if (controller.signal.aborted) { stopGenTimer(); return; }
                 if (chunk.done) break;
                 const text = cleanDelta(chunk.delta, tokens === 0);
                 if (!text) continue;
-                if (tokens === 0) out.value = '';
+                if (tokens === 0) { stopGenTimer(); out.value = ''; }
                 out.value += text;
                 tokens++;
             }
+            stopGenTimer();
 
             if (!out.value.trim()) out.value = tFn('mods.llm.noOutput');
         } else if (provider === 'server') {
-            out.value = tFn('mods.llm.connecting');
+            const stopSrvTimer = _startTimer(out, s => tFn('mods.llm.thinking', { seconds: s }));
 
-            const t0 = Date.now();
             let tokens = 0;
             for await (const chunk of LlmService.chatStream({
                 provider: 'ollama', model: SERVER_MODEL, messages,
                 temperature: temp,
             }, { signal: controller.signal })) {
-                if (chunk.status) {
-                    const sec = Math.floor((Date.now() - t0) / 1000);
-                    out.value = tFn('mods.llm.thinking', { seconds: sec });
-                    continue;
-                }
-                if (chunk.error) throw new Error(chunk.error);
+                if (chunk.status) continue;
+                if (chunk.error) { stopSrvTimer(); throw new Error(chunk.error); }
                 if (chunk.done) break;
                 const text = cleanDelta(chunk.delta, tokens === 0);
                 if (!text) continue;
-                if (tokens === 0) out.value = '';
+                if (tokens === 0) { stopSrvTimer(); out.value = ''; }
                 out.value += text;
                 tokens++;
             }
+            stopSrvTimer();
 
             if (!out.value.trim()) out.value = tFn('mods.llm.noOutput');
         } else {
@@ -463,14 +465,18 @@ export async function runLlm(config, prompt, inputText, out, tFn) {
                 return;
             }
 
-            out.value = tFn('mods.llm.processing');
-            const result = await LlmService.chat({
-                provider: config.apiProvider || 'openai',
-                model: config.apiModel || 'gpt-4o-mini',
-                messages, temperature: temp,
-                apiKey: config.apiKey,
-            }, { signal: controller.signal });
-            out.value = result.content || tFn('mods.llm.noOutput');
+            const stopApiTimer = _startTimer(out, s => tFn('mods.llm.processing') + ` (${s}s)`);
+            try {
+                const result = await LlmService.chat({
+                    provider: config.apiProvider || 'openai',
+                    model: config.apiModel || 'gpt-4o-mini',
+                    messages, temperature: temp,
+                    apiKey: config.apiKey,
+                }, { signal: controller.signal });
+                out.value = result.content || tFn('mods.llm.noOutput');
+            } finally {
+                stopApiTimer();
+            }
         }
     } catch (e) {
         if (controller.signal.aborted) return; // Aborted by newer request — silent exit
