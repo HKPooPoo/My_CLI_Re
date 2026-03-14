@@ -197,7 +197,10 @@ async function syncView() {
  * 刷新分支清單 (Local + Remote 混合)
  * 步驟：1. 抓取本地分支 2. 抓取遠端分支 3. 透過 Map 進行 ID 合併 4. 判斷 IsDirty 狀態 5. 排序並渲染
  */
+let _listBusy = false;
 async function updateBranchList() {
+    if (_listBusy) return;
+    _listBusy = true;
     try {
         const localBranches = await BBCore.getAllBranches("local");
         const loggedInUser = localStorage.getItem("currentUser");
@@ -280,6 +283,8 @@ async function updateBranchList() {
     } catch (criticalError) {
         console.error("CRITICAL: Failed to update branch list", criticalError);
         BBMessage.error(t('blackboard.listFailed'));
+    } finally {
+        _listBusy = false;
     }
 }
 
@@ -609,10 +614,10 @@ BBUI.elements.textarea?.addEventListener("input", () => {
     BBSync.scheduleAutoCommit();
 });
 
-// 監聽分支更名事件
-// [Fix]: Don't re-render the full list on rename — the input already has the
-// correct value. Full re-render destroys and recreates the input, causing a
-// visual flash ("jump"). Just update IndexedDB + DOM dataset + state.
+// 監聯分支更名事件
+// Flow: renameBranch() updates IndexedDB FIRST, then updateBranchList() re-renders.
+// The _listBusy guard prevents the 5s poll from racing and rendering stale data.
+// Focus protection prevents re-render during typing (change only fires on blur/Enter).
 window.addEventListener("blackboard:branchRename", async (e) => {
     const { branchId, newName } = e.detail;
     await BBCore.renameBranch("local", branchId, newName);
@@ -620,9 +625,7 @@ window.addEventListener("blackboard:branchRename", async (e) => {
         state.branch = newName;
         BBUI.updateIndicators(state.branch || t('blackboard.branchNameFallback'), state.currentHead, true);
     }
-    // Update dataset on the DOM item without full re-render
-    const item = document.querySelector(`.vcs-list-item[data-branch-id="${branchId}"]`);
-    if (item) item.dataset.branchName = newName;
+    await updateBranchList();
     BBSync.scheduleAutoCommit();
 });
 
