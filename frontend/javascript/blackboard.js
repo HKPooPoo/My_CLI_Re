@@ -198,10 +198,6 @@ async function syncView() {
  * 步驟：1. 抓取本地分支 2. 抓取遠端分支 3. 透過 Map 進行 ID 合併 4. 判斷 IsDirty 狀態 5. 排序並渲染
  */
 async function updateBranchList() {
-    // [Focus Protection]: If user is typing in the list, skip update to prevent focus loss/overwrite
-    const isTyping = document.activeElement && document.activeElement.classList.contains('vcs-list-branch');
-    if (isTyping) return;
-
     try {
         const localBranches = await BBCore.getAllBranches("local");
         const loggedInUser = localStorage.getItem("currentUser");
@@ -259,6 +255,12 @@ async function updateBranchList() {
                 console.error("FAILED TO LOAD CLOUD BRANCHES", e);
             }
         }
+
+        // [Focus Protection]: Re-check JUST before render, not at function start.
+        // The async fetches above can take 100ms+; user may start typing in a
+        // branch name input during that window. Old check at top was too early.
+        const isTyping = document.activeElement && document.activeElement.classList.contains('vcs-list-branch');
+        if (isTyping) return;
 
         const combinedBranches = Array.from(branchMap.values());
 
