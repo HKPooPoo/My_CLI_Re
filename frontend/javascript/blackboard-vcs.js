@@ -270,17 +270,20 @@ export const BBVCS = {
                     };
                 });
 
-                // Delete existing local records for this branch before putting
-                // server records to prevent owner-variant duplicates
-                const oldKeys = await db.blackboard.where('[branch_id+timestamp]')
-                    .between([targetBranchId, Dexie.minKey], [targetBranchId, Dexie.maxKey])
-                    .and(item => item.owner.startsWith('local'))
-                    .primaryKeys();
-                if (oldKeys.length > 0) {
-                    await db.blackboard.bulkDelete(oldKeys);
+                // [Guard]: Only replace local records if server actually has data.
+                // Without this, remote checkout on a local-only branch (e.g. freshly
+                // forked, never committed) nukes all local records because server
+                // returns empty — triggered by BBSync.recover() on visibilitychange.
+                if (downloadRecords.length > 0) {
+                    const oldKeys = await db.blackboard.where('[branch_id+timestamp]')
+                        .between([targetBranchId, Dexie.minKey], [targetBranchId, Dexie.maxKey])
+                        .and(item => item.owner.startsWith('local'))
+                        .primaryKeys();
+                    if (oldKeys.length > 0) {
+                        await db.blackboard.bulkDelete(oldKeys);
+                    }
+                    await db.blackboard.bulkPut(downloadRecords);
                 }
-
-                await db.blackboard.bulkPut(downloadRecords);
                 if (Settings.get('bb', 'autoCleanBlanks')) {
                     await BBCore.scrubBranch("local", targetBranchId, state.maxSlot || 10);
                 } else {
