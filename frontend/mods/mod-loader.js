@@ -284,6 +284,44 @@ export async function loadAllMods() {
 }
 
 /**
+ * Re-scan for NEW MOD folders and register their templates.
+ * Existing templates are left untouched (avoids breaking active instances).
+ * Returns the count of newly discovered templates.
+ */
+export async function rescanTemplates() {
+    const folders = await discoverModFolders();
+    const newFolders = folders.filter(f => !_templates[f]);
+    if (newFolders.length === 0) return 0;
+
+    const results = await Promise.allSettled(newFolders.map(loadManifest));
+    const manifests = results
+        .filter(r => r.status === 'fulfilled' && r.value)
+        .map(r => r.value);
+
+    let count = 0;
+    for (const tpl of manifests) {
+        const errors = validateManifest(tpl);
+        if (errors.length > 0) {
+            console.warn(`[mod-loader] Rescan: manifest validation failed for "${tpl.id}":`, errors);
+            continue;
+        }
+        ModState.registerTemplate(tpl.id, tpl);
+        _templates[tpl.id] = tpl;
+        count++;
+    }
+
+    // Load locales for new templates
+    if (count > 0) {
+        const locale = getActiveLocale();
+        await Promise.allSettled(manifests
+            .filter(tpl => _templates[tpl.id])
+            .map(tpl => loadModLocale(tpl, locale)));
+    }
+
+    return count;
+}
+
+/**
  * Fetch and merge a template's locale file.
  * Falls back: locale → en → default → skip.
  */

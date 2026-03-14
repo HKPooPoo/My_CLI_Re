@@ -227,7 +227,7 @@
       "delete": "Permanently destroy this channel and all its records (local + cloud). Owner only. Cannot be undone."
     },
     "mods": {
-      "refresh": "Ping all MOD provider endpoints and update online/offline status."
+      "refresh": "Re-scan all MOD templates and check availability."
     },
     "config": {
       "maxSlot": "Max records per branch. Oldest auto-removed when full.",

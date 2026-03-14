@@ -9,7 +9,7 @@
 
 import { getAllTemplates, getTemplate, getInstances, getInstancesByTemplate,
          rebuildInstanceButtons, removeInstanceButton, updateInstanceButton,
-         ensureCodeLoaded } from '../mods/mod-loader.js';
+         ensureCodeLoaded, rescanTemplates } from '../mods/mod-loader.js';
 import { ModState } from './mod-state.js';
 import { InfiniteList } from './blackboard-ui-list.js';
 import { BBMessage } from './blackboard-msg.js';
@@ -774,6 +774,11 @@ function bindEvents() {
         playAudio('UIGeneralFocus.mp3');
         const msg = BBMessage.loading(t('mods.refreshing'));
         try {
+            // Phase 1: Re-scan for new MOD folders
+            const newCount = await rescanTemplates();
+            if (newCount > 0) renderListPage(selectedInstanceId, selectedTemplateId);
+
+            // Phase 2: Refresh health status for all instances
             await ModState.refreshAllServerStatuses();
             updateServerIndicators();
             msg.update(t('mods.refreshComplete'));
