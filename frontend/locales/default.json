@@ -277,7 +277,7 @@
     "maxFilesLabel": "BLOB LIMIT",
     "autoCleanBlanks": "AUTO PRUNE",
     "updateTimestamp": "REBASE ON EDIT",
-    "autoSync": "AUTO FETCH",
+    "autoSync": "AUTO SYNC",
     "loopList": "CYCLE LIST",
     "boardSwap": "LOCAL FIRST",
     "showHints": "VERBOSE",
