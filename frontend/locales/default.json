@@ -206,7 +206,7 @@
     "commit": "Upload ALL records from the selected branch to the cloud, replacing the entire cloud copy. Last write wins — your version overwrites whatever was there. File attachments included.",
     "checkout": "Re-download the selected branch from the cloud, overwriting your local copy.",
     "switch": "Change to a different branch. If it only exists on the cloud, it's downloaded first.",
-    "fork": "Duplicate every record from the selected branch into a new independent branch. The original and copy are fully separate — edits to one never affect the other.",
+    "fork": "Duplicate every record from the selected branch into a new unnamed branch. The original and copy are fully separate — edits to one never affect the other.",
     "dropClean": "Erase all records in this branch but keep the branch itself. One blank placeholder remains.",
     "dropDrop": "Delete the cloud copy of this branch. Local records stay untouched.",
     "dropDelete": "Permanently remove this empty branch from your device. Cannot be undone.",
@@ -227,14 +227,14 @@
       "delete": "Permanently destroy this channel and all its records (local + cloud). Owner only. Cannot be undone."
     },
     "mods": {
-      "refresh": "Re-scan all MOD templates and check availability."
+      "refresh": "Ping all MOD provider endpoints and update online/offline status."
     },
     "config": {
       "maxSlot": "Max records per branch. Oldest auto-removed when full.",
       "autoCleanBlanks": "Auto-remove blank records when navigating. Keeps history clean.",
       "updateTimestamp": "Move edited record to newest position. OFF = stays in place.",
-      "autoSync": "Two-way sync: auto-commit after 3s idle, auto-checkout on remote changes. Requires login.",
-      "loopList": "Affects branch/contact/channel list: past the last item → first, and vice versa.",
+      "autoSync": "Two-way sync for the CURRENT branch only: auto-commit after 3s idle, auto-checkout on remote changes. Other branches sync when you switch to them. Requires login.",
+      "loopList": "Wrap around: past the last item → first, and vice versa.",
       "boardSwap": "Your board on top, partner below. OFF = partner on top (default).",
       "screensaverTimeout": "Seconds after leaving the tab before screensaver activates. Max value disables it.",
       "crtBlendMode": "Soften CRT scanlines. Less harsh, more readable."
@@ -269,7 +269,7 @@
       "matrixRain": "Matrix-style falling characters on the screensaver. Pure decoration.",
       "perlinBg": "Flowing noise texture behind content. Subtle atmosphere.",
       "mouseLight": "Cursor glow — like a flashlight on the CRT screen.",
-      "toastAnim": "Spinner animation on pop-up notifications while operations are in progress."
+      "toastAnim": "Spinner animation on notifications and text panels while operations are in progress."
     }
   },
   "config": {

@@ -206,7 +206,7 @@
     "commit": "Upload ALL entries from the selected topic to the cloud, replacing the entire cloud copy. If another device uploaded first, your version wins. File attachments included.",
     "checkout": "Download the selected topic from the cloud, replacing your local copy.",
     "switch": "Jump to a different topic. If it only exists in the cloud, it's downloaded first.",
-    "fork": "Copy every entry from the selected topic into a new independent topic. The original and copy are fully separate — changes to one never affect the other.",
+    "fork": "Copy every entry from the selected topic into a new unnamed topic. The original and copy are fully separate — changes to one never affect the other.",
     "dropClean": "Erase all entries in this topic but keep the topic itself. One blank placeholder remains.",
     "dropDrop": "Remove the cloud copy of this topic. Your local entries stay untouched.",
     "dropDelete": "Permanently delete this empty topic. Cannot be undone.",
@@ -233,8 +233,8 @@
       "maxSlot": "Max entries per topic. Oldest removed automatically when full.",
       "autoCleanBlanks": "Remove blank entries automatically when you navigate. Keeps things tidy.",
       "updateTimestamp": "Move an edited entry to the top (newest). OFF = it stays where it was.",
-      "autoSync": "Automatically upload your changes and download when another device updates. Requires login.",
-      "loopList": "Affects the branch / contact / channel list: scrolling past the last item wraps back to the first, and vice versa.",
+      "autoSync": "Automatically upload and download the current topic only. Other topics sync when you switch to them. Requires login.",
+      "loopList": "Wrap around: scrolling past the last item goes back to the first, and vice versa.",
       "boardSwap": "Put your board on top, partner's below. Default: partner's messages are on top.",
       "screensaverTimeout": "Seconds after you leave this tab before the screensaver appears. Set to max to disable.",
       "crtBlendMode": "Soften the screen lines. Makes the retro look less harsh."
@@ -269,7 +269,7 @@
       "matrixRain": "Falling green characters on the idle screen, Matrix-style. Pure decoration.",
       "perlinBg": "A gentle flowing texture behind your content. Subtle atmosphere.",
       "mouseLight": "A soft glow that follows your cursor, like a flashlight on screen.",
-      "toastAnim": "A spinning animation on pop-up notifications. Shows that something is processing."
+      "toastAnim": "A spinning animation on notifications and text panels. Shows that something is processing."
     }
   },
   "config": {
