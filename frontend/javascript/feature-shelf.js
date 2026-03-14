@@ -138,7 +138,15 @@ function updateFeatureButtons(page) {
                 || (page && templatePages[page] !== undefined); // page listed → show
         }
 
-        $btn.style.display = templateAllowed ? '' : 'none';
+        if (templateAllowed) {
+            $btn.style.opacity = '';
+            $btn.style.transform = '';
+            $btn.style.pointerEvents = '';
+        } else {
+            $btn.style.opacity = '0';
+            $btn.style.transform = 'translateX(128%)';
+            $btn.style.pointerEvents = 'none';
+        }
     });
 }
 

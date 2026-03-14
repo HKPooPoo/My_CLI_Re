@@ -235,9 +235,11 @@ function updatePage(subNaviItem) {
             if ($featureScaffold) {
                 if ($page.classList.contains("can-push-pull") || $page.classList.contains("have-feature")) {
                     $featureScaffold.style.transform = "translateX(0)";
-                } else {
-                    $featureScaffold.style.transform = isIOS ? "translateX(256%)" : "translateX(256%)";
                 }
+                // Initially invisible — no need to hide via translateX
+                // else {
+                //     $featureScaffold.style.transform = isIOS ? "translateX(256%)" : "translateX(256%)";
+                // }
             }
 
             // 分支指標位移 (iOS: scale(-1,-1) reverses X axis, so use positive value to hide left)

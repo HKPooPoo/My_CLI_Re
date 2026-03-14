@@ -12,7 +12,7 @@ const SW_CSS = `
     min-height: 0;
     width: 100%;
     gap: 6px;
-    align-items: center;
+    align-items: flex-start;
     justify-content: center;
 }
 
@@ -32,15 +32,12 @@ const SW_CSS = `
 }
 
 .sw-controls {
-    flex-direction: row;
-    gap: 8px;
-    justify-content: center;
+    gap: 6px;
     width: 100%;
 }
 
 .sw-btn {
-    flex: 1;
-    padding: 8px 0;
+    padding: 8px 12px;
     border: var(--border-line);
     border-radius: var(--border-radius);
     background: var(--bg-secondary);
@@ -50,7 +47,7 @@ const SW_CSS = `
     cursor: pointer;
     user-select: none;
     -webkit-user-select: none;
-    text-align: center;
+    text-align: left;
 }
 
 .sw-btn:active {
@@ -89,8 +86,7 @@ const SW_CSS = `
 }
 
 .sw-laps {
-    flex: 1;
-    min-height: 0;
+    flex: 0 0 25vh;
     overflow-y: auto;
     width: 100%;
     gap: 0;
