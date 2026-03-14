@@ -264,9 +264,11 @@ async function updateBranchList() {
 
         const combinedBranches = Array.from(branchMap.values());
 
-        // [Fix]: 移除將當前分支強制置頂的排序邏輯，僅依時間排序
+        // Stable sort: by lastUpdate desc, then branchId desc as tiebreaker.
+        // Without tiebreaker, branches with identical timestamps (e.g. after fork)
+        // swap positions between renders, causing visual instability.
         combinedBranches.sort((a, b) => {
-            return b.lastUpdate - a.lastUpdate;
+            return (b.lastUpdate - a.lastUpdate) || (b.id - a.id);
         });
 
         // [Fix]: 嘗試保留當前選中的分支，若無 (首次加載) 則可考慮預設為當前分支
@@ -608,6 +610,9 @@ BBUI.elements.textarea?.addEventListener("input", () => {
 });
 
 // 監聽分支更名事件
+// [Fix]: Don't re-render the full list on rename — the input already has the
+// correct value. Full re-render destroys and recreates the input, causing a
+// visual flash ("jump"). Just update IndexedDB + DOM dataset + state.
 window.addEventListener("blackboard:branchRename", async (e) => {
     const { branchId, newName } = e.detail;
     await BBCore.renameBranch("local", branchId, newName);
@@ -615,7 +620,9 @@ window.addEventListener("blackboard:branchRename", async (e) => {
         state.branch = newName;
         BBUI.updateIndicators(state.branch || t('blackboard.branchNameFallback'), state.currentHead, true);
     }
-    await updateBranchList();
+    // Update dataset on the DOM item without full re-render
+    const item = document.querySelector(`.vcs-list-item[data-branch-id="${branchId}"]`);
+    if (item) item.dataset.branchName = newName;
     BBSync.scheduleAutoCommit();
 });
 
