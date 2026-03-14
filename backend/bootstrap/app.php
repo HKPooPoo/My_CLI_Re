@@ -19,13 +19,12 @@ return Application::configure(basePath: dirname(__DIR__))
             \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
         ]);
 
-        // EncryptCookies, AddQueuedCookiesToResponse, StartSession are already
-        // provided by Sanctum's EnsureFrontendRequestsAreStateful pipeline.
-        // Duplicating them here causes double-encrypt on response / decrypt-fail
-        // on request, corrupting the session cookie on every page refresh.
-        $middleware->api(append: [
-            \Illuminate\View\Middleware\ShareErrorsFromSession::class,
-        ]);
+        // ShareErrorsFromSession removed — it's a web/Blade middleware that shares
+        // form validation $errors with views. This is a pure API app (no Blade).
+        // More critically: when requests arrive from non-stateful domains (e.g.
+        // my-cli.uk via Cloudflare tunnel), Sanctum's fromFrontend() returns false
+        // and skips StartSession → ShareErrorsFromSession crashes with
+        // "Session store not set on request" → 500 on every API endpoint.
 
         $middleware->validateCsrfTokens(except: [
             'api/*',
