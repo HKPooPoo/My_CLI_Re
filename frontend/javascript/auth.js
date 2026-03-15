@@ -164,11 +164,6 @@ export const AuthManager = {
             new MultiStepButton(this.elements.logoutBtn, {
                 sound: "UISelectOff.mp3",
                 action: async () => {
-                    try {
-                        await BBCore.wipeSyncedData();
-                    } catch (e) {
-                        console.error("LOGOUT WIPE ERROR:", e);
-                    }
                     this.updateUI(null);
                     BBMessage.success(t('auth.logoutComplete'));
                     AuthService.logout().catch(() => {});
