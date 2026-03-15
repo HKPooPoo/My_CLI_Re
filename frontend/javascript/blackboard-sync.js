@@ -28,6 +28,7 @@ let _onBranchListUpdate = null;
 // --- Internal state ---
 let _commitTimer = null;
 let _isCommitting = false;
+let _commitPromise = null;
 let _pendingRemoteCheckout = false;
 let _echoChannel = null;
 let _currentUid = null;
@@ -96,7 +97,11 @@ export const BBSync = {
     scheduleAutoCommit() {
         if (!_isAutoSyncEnabled() || !_isLoggedIn()) return;
         clearTimeout(_commitTimer);
-        _commitTimer = setTimeout(() => this._executeAutoCommit(), 3000);
+        _commitTimer = setTimeout(() => {
+            _commitTimer = null;
+            _commitPromise = this._executeAutoCommit()
+                .finally(() => { _commitPromise = null; });
+        }, 3000);
     },
 
     cancelPendingCommit() {
@@ -105,13 +110,18 @@ export const BBSync = {
     },
 
     /**
-     * Immediately commit if a commit is pending.
+     * Immediately commit if a commit is pending or in-flight.
+     * Waits for any in-flight commit to complete before returning.
      */
     async flush() {
         if (_commitTimer) {
             clearTimeout(_commitTimer);
             _commitTimer = null;
-            await this._executeAutoCommit();
+            _commitPromise = this._executeAutoCommit()
+                .finally(() => { _commitPromise = null; });
+        }
+        if (_commitPromise) {
+            await _commitPromise;
         }
     },
 
