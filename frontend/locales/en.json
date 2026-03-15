@@ -237,7 +237,7 @@
       "loopList": "Wrap around: scrolling past the last item goes back to the first, and vice versa.",
       "boardSwap": "Put your board on top, partner's below. Default: partner's messages are on top.",
       "screensaverTimeout": "Seconds after you leave this tab before the screensaver appears. Set to max to disable.",
-      "crtBlendMode": "Blend screen lines with content — lighter on text, darker on backgrounds. OFF = uniform lines."
+      "crtBlendMode": "Full CRT screen lines. OFF = lines blend with content and fade on text."
     },
     "llm": {
       "button": "Send your text to AI. The result appears in the panel below.",

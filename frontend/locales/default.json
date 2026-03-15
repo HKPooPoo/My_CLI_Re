@@ -237,7 +237,7 @@
       "loopList": "Wrap around: past the last item → first, and vice versa.",
       "boardSwap": "Your board on top, partner below. OFF = partner on top (default).",
       "screensaverTimeout": "Seconds after leaving the tab before screensaver activates. Max value disables it.",
-      "crtBlendMode": "Blend scanlines with content — fades on text, deepens on dark areas. OFF = uniform scanlines."
+      "crtBlendMode": "Full CRT scanlines. OFF = scanlines blend with content and fade on text."
     },
     "llm": {
       "button": "Send current text to AI. Output appears in the panel below.",
