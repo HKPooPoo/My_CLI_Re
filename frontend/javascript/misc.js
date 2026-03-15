@@ -262,7 +262,7 @@ MISC.init();
 // --- CRT Blend Mode Effect ---
 function applyCrtBlendMode(enabled) {
     const scanner = document.querySelector('.crt-scanner');
-    if (scanner) scanner.style.mixBlendMode = enabled ? 'overlay' : '';
+    if (scanner) scanner.style.mixBlendMode = enabled ? '' : 'overlay';
 }
 applyCrtBlendMode(Settings.getGlobal('crtBlendMode'));
 window.addEventListener('settings:changed', ({ detail }) => {
