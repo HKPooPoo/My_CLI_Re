@@ -83,7 +83,7 @@ class LlmController extends Controller
             'messages'   => $validated['messages'],
             'stream'     => true,
             'think'      => false,
-            'keep_alive' => '2m',
+            'keep_alive' => '24h',
             'options'    => [
                 'temperature'  => $validated['temperature'] ?? 0.3,
                 'num_ctx'      => 4096,
@@ -217,7 +217,7 @@ class LlmController extends Controller
             'messages'   => $messages,
             'stream'     => false,
             'think'      => false,
-            'keep_alive' => '2m',
+            'keep_alive' => '24h',
             'options'    => [
                 'temperature'  => $temperature,
                 'num_ctx'      => 4096,
