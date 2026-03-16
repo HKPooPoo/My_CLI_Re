@@ -293,7 +293,7 @@ export const BCChannel = {
 
         const me = localStorage.getItem('currentUser');
         const hasTitle = !!localStorage.getItem('currentTitle');
-        this.isOwnerMode = !!(me && hasTitle && channel.ownerUid === me);
+        this.isOwnerMode = !!(me && hasTitle && channel.ownerUid === me && channel.isLocal);
 
         if (this.isOwnerMode) {
             await this.loadOwnerMode(channel);
