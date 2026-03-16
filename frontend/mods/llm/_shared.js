@@ -186,21 +186,24 @@ export async function runLlmWithImages(config, prompt, images, out, tFn) {
         out.dataset.loading = 'true';
         const stopVisionTimer = _startTimer(out, s => tFn('mods.llm.thinking', { seconds: s }));
 
-        let tokens = 0;
-        for await (const chunk of LlmService.chatStream({
-            provider: 'ollama', model: SERVER_MODEL, messages,
-            temperature: temp,
-        }, { signal: controller.signal })) {
-            if (chunk.status) continue;
-            if (chunk.error) { stopVisionTimer(); throw new Error(chunk.error); }
-            if (chunk.done) break;
-            const text = cleanDelta(chunk.delta, tokens === 0);
-            if (!text) continue;
-            if (tokens === 0) { stopVisionTimer(); out.value = ''; }
-            out.value += text;
-            tokens++;
+        try {
+            let tokens = 0;
+            for await (const chunk of LlmService.chatStream({
+                provider: 'ollama', model: SERVER_MODEL, messages,
+                temperature: temp,
+            }, { signal: controller.signal })) {
+                if (chunk.status) continue;
+                if (chunk.error) throw new Error(chunk.error);
+                if (chunk.done) break;
+                const text = cleanDelta(chunk.delta, tokens === 0);
+                if (!text) continue;
+                if (tokens === 0) { stopVisionTimer(); out.value = ''; }
+                out.value += text;
+                tokens++;
+            }
+        } finally {
+            stopVisionTimer();
         }
-        stopVisionTimer();
 
         if (!out.value.trim()) out.value = tFn('mods.llm.noOutput');
     } catch (e) {
@@ -426,37 +429,43 @@ export async function runLlm(config, prompt, inputText, out, tFn) {
             // Transition message: model loaded, now running inference (prefill can take seconds)
             const stopGenTimer = _startTimer(out, s => tFn('mods.llm.generating') + ` (${s}s)`);
 
-            let tokens = 0;
-            for await (const chunk of svc.chat(messages, { temperature: temp, signal: controller.signal })) {
-                if (controller.signal.aborted) { stopGenTimer(); return; }
-                if (chunk.done) break;
-                const text = cleanDelta(chunk.delta, tokens === 0);
-                if (!text) continue;
-                if (tokens === 0) { stopGenTimer(); out.value = ''; }
-                out.value += text;
-                tokens++;
+            try {
+                let tokens = 0;
+                for await (const chunk of svc.chat(messages, { temperature: temp, signal: controller.signal })) {
+                    if (controller.signal.aborted) return;
+                    if (chunk.done) break;
+                    const text = cleanDelta(chunk.delta, tokens === 0);
+                    if (!text) continue;
+                    if (tokens === 0) { stopGenTimer(); out.value = ''; }
+                    out.value += text;
+                    tokens++;
+                }
+            } finally {
+                stopGenTimer();
             }
-            stopGenTimer();
 
             if (!out.value.trim()) out.value = tFn('mods.llm.noOutput');
         } else if (provider === 'server') {
             const stopSrvTimer = _startTimer(out, s => tFn('mods.llm.thinking', { seconds: s }));
 
-            let tokens = 0;
-            for await (const chunk of LlmService.chatStream({
-                provider: 'ollama', model: SERVER_MODEL, messages,
-                temperature: temp,
-            }, { signal: controller.signal })) {
-                if (chunk.status) continue;
-                if (chunk.error) { stopSrvTimer(); throw new Error(chunk.error); }
-                if (chunk.done) break;
-                const text = cleanDelta(chunk.delta, tokens === 0);
-                if (!text) continue;
-                if (tokens === 0) { stopSrvTimer(); out.value = ''; }
-                out.value += text;
-                tokens++;
+            try {
+                let tokens = 0;
+                for await (const chunk of LlmService.chatStream({
+                    provider: 'ollama', model: SERVER_MODEL, messages,
+                    temperature: temp,
+                }, { signal: controller.signal })) {
+                    if (chunk.status) continue;
+                    if (chunk.error) throw new Error(chunk.error);
+                    if (chunk.done) break;
+                    const text = cleanDelta(chunk.delta, tokens === 0);
+                    if (!text) continue;
+                    if (tokens === 0) { stopSrvTimer(); out.value = ''; }
+                    out.value += text;
+                    tokens++;
+                }
+            } finally {
+                stopSrvTimer();
             }
-            stopSrvTimer();
 
             if (!out.value.trim()) out.value = tFn('mods.llm.noOutput');
         } else {

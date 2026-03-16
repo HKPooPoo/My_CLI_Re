@@ -245,7 +245,7 @@ services:
     deploy:
       resources:
         limits:
-          memory: 8g
+          memory: 12g
         reservations:
           memory: 2g
           devices:
