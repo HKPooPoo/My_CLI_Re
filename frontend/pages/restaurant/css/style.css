@@ -1,117 +1,3 @@
-/* ==================== Session Badge ==================== */
-
-.session-badge {
-    position: absolute;
-    bottom: 4px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: rgba(0, 0, 0, 0.65);
-    color: #fff;
-    font-size: 0.75rem;
-    font-weight: bold;
-    padding: 2px 12px;
-    border-radius: 12px;
-    white-space: nowrap;
-    z-index: 10;
-}
-
-.session-badge[hidden] {
-    display: none;
-}
-
-/* ==================== Check-in Overlay ==================== */
-
-.checkin-overlay {
-    position: absolute;
-    inset: 0;
-    z-index: 50;
-    background: var(--bg-primary);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.checkin-overlay[hidden] {
-    display: none;
-}
-
-.checkin-overlay-text {
-    font-size: calc(var(--font-size) + 0.2rem);
-    font-weight: bold;
-    opacity: 0.6;
-    text-align: center;
-    padding: 32px;
-}
-
-/* ==================== Kitchen Branch Title ==================== */
-
-.kitchen-branch-title {
-    width: var(--container-width);
-    max-width: var(--container-max-width);
-    margin: 12px auto 0;
-    padding: 8px 12px;
-    font-weight: bold;
-    font-size: calc(var(--font-size) + 0.15rem);
-    background: var(--text-green);
-    color: var(--bg-primary);
-    border-radius: var(--border-radius);
-    text-align: center;
-}
-
-/* ==================== Console Sections ==================== */
-
-.console-section {
-    gap: 8px;
-    padding: 0 0 4px;
-}
-
-.console-field-row {
-    flex-direction: row;
-    gap: 8px;
-}
-
-.console-select,
-.console-input {
-    flex: 1;
-    padding: 8px 10px;
-    border: var(--border-line);
-    border-radius: var(--border-radius);
-    background: var(--bg-primary);
-    color: var(--text-green);
-    font-size: var(--font-size);
-}
-
-.console-info {
-    flex-direction: row;
-    justify-content: space-between;
-    align-items: center;
-    padding: 8px 12px;
-    border: var(--border-line);
-    border-radius: var(--border-radius);
-    background: var(--bg-primary);
-}
-
-.console-info-label {
-    opacity: 0.6;
-    font-size: 0.85em;
-}
-
-.console-info-value {
-    font-weight: bold;
-}
-
-.console-branch-list {
-    gap: 4px;
-}
-
-.console-branch-item {
-    padding: 6px 12px;
-    font-size: 0.9em;
-    opacity: 0.7;
-    border: var(--border-line);
-    border-radius: var(--border-radius);
-}
-
 /* ==================== Background ==================== */
 
 :root.theme-light .page-container {
@@ -170,6 +56,19 @@
     border-radius: var(--border-radius);
     overflow: hidden;
     background: var(--bg-primary);
+    transition: opacity 0.2s;
+}
+
+.food-item-container.item-unavailable {
+    opacity: 0.35;
+    pointer-events: none;
+}
+
+.food-item-container.item-unavailable .food-item-bottom::after {
+    content: attr(data-unavailable-text);
+    font-size: 0.75em;
+    color: var(--text-red);
+    font-weight: bold;
 }
 
 .food-item-img {
@@ -217,6 +116,11 @@
     flex-shrink: 0;
 }
 
+.food-item-add:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+
 /* ==================== Cart Badge ==================== */
 
 .cart-badge {
@@ -239,8 +143,6 @@
 .cart-badge[hidden] {
     display: none;
 }
-
-/* ---- Cart shake on add ---- */
 
 @keyframes shake {
     0%, 100% { transform: translateX(0); }
@@ -355,24 +257,98 @@
     margin: 12px auto 0;
     background: var(--bg-primary);
     border-radius: var(--border-radius);
-    padding: 0 12px 12px;
+    padding: 0 12px;
 }
 
 .cart-total {
     flex-direction: row;
     justify-content: space-between;
-    padding: 12px;
+    padding: 12px 0;
     border-top: 2px solid var(--text-green);
     font-weight: bold;
     font-size: calc(var(--font-size) + 0.15rem);
 }
 
-/* ---- Checkout button ---- */
+/* ==================== Checkout Form ==================== */
+
+.checkout-form {
+    width: var(--container-width);
+    max-width: var(--container-max-width);
+    margin: 12px auto 16px;
+    padding: 12px;
+    border: var(--border-line);
+    border-radius: var(--border-radius);
+    background: var(--bg-primary);
+    gap: 10px;
+}
+
+.checkout-title {
+    font-weight: bold;
+    font-size: calc(var(--font-size) + 0.1rem);
+    padding-bottom: 4px;
+    border-bottom: var(--border-line);
+}
+
+.checkout-field {
+    gap: 4px;
+}
+
+.checkout-label {
+    font-size: 0.85em;
+    opacity: 0.6;
+}
+
+.checkout-input {
+    width: 100%;
+    padding: 8px 10px;
+    border: var(--border-line);
+    border-radius: var(--border-radius);
+    background: var(--bg-primary);
+    color: var(--text-green);
+    font-size: var(--font-size);
+    box-sizing: border-box;
+}
+
+.checkout-input:focus {
+    border-color: var(--text-green);
+    outline: none;
+}
+
+/* ---- Fee display ---- */
+
+.checkout-fee {
+    padding: 8px 0;
+    border-top: var(--border-line);
+    gap: 4px;
+}
+
+.fee-row {
+    flex-direction: row;
+    justify-content: space-between;
+    font-size: 0.9em;
+}
+
+.fee-total {
+    font-weight: bold;
+    font-size: calc(var(--font-size) + 0.1rem);
+    padding-top: 4px;
+    border-top: var(--border-line);
+}
+
+/* ---- Checkout error ---- */
+
+.checkout-error {
+    color: var(--text-red);
+    font-size: 0.85em;
+    font-weight: bold;
+    padding: 4px 0;
+}
+
+/* ---- Checkout / Place Order button ---- */
 
 .checkout-btn {
     width: 100%;
     padding: 12px;
-    margin-top: 8px;
     border: 2px solid var(--text-green);
     border-radius: var(--border-radius);
     background: var(--text-green);
@@ -393,7 +369,47 @@
     cursor: not-allowed;
 }
 
-/* ==================== Receipt Page ==================== */
+/* ==================== Order Status Badges ==================== */
+
+.order-status {
+    padding: 2px 8px;
+    border-radius: var(--border-radius);
+    font-size: 0.8em;
+    font-weight: bold;
+}
+
+.status-pending {
+    background: var(--text-cyan, #4dd0e1);
+    color: var(--bg-primary);
+}
+
+.status-preparing {
+    background: var(--text-orange-accent);
+    color: var(--bg-primary);
+}
+
+.status-ready {
+    background: var(--text-green);
+    color: var(--bg-primary);
+}
+
+.status-delivering {
+    background: var(--text-yellow, #ffd54f);
+    color: var(--bg-primary);
+}
+
+.status-delivered {
+    background: var(--text-green);
+    color: var(--bg-primary);
+    opacity: 0.6;
+}
+
+.status-rejected {
+    background: var(--text-red);
+    color: var(--bg-primary);
+}
+
+/* ==================== Order Cards (History + Kitchen) ==================== */
 
 .order-card {
     width: var(--container-width);
@@ -417,26 +433,26 @@
     font-size: calc(var(--font-size) + 0.1rem);
 }
 
-.order-status {
-    padding: 2px 8px;
-    border-radius: var(--border-radius);
-    font-size: 0.8em;
-    font-weight: bold;
-}
-
-.status-preparing {
-    background: var(--text-orange-accent);
-    color: var(--bg-primary);
-}
-
-.status-ready {
-    background: var(--text-green);
-    color: var(--bg-primary);
-}
-
 .order-card-time {
     font-size: 0.8em;
     opacity: 0.5;
+}
+
+.order-card-delivery,
+.order-card-contact {
+    font-size: 0.85em;
+    opacity: 0.7;
+}
+
+.order-card-est {
+    font-size: 0.85em;
+    color: var(--text-cyan, #4dd0e1);
+}
+
+.order-card-reject {
+    font-size: 0.85em;
+    color: var(--text-red);
+    font-weight: bold;
 }
 
 .order-items {
@@ -483,10 +499,26 @@
     opacity: 0.5;
 }
 
-.kitchen-ready-btn {
-    width: 100%;
-    padding: 10px;
+.kitchen-section-title {
+    width: var(--container-width);
+    max-width: var(--container-max-width);
+    margin: 16px auto 0;
+    padding: 8px 12px;
+    font-weight: bold;
+    font-size: calc(var(--font-size) + 0.15rem);
+    opacity: 0.6;
+    border-bottom: var(--border-line);
+}
+
+.kitchen-actions {
+    flex-direction: row;
+    gap: 8px;
     margin-top: 4px;
+}
+
+.kitchen-btn {
+    flex: 1;
+    padding: 10px;
     border: 2px solid var(--text-green);
     border-radius: var(--border-radius);
     background: var(--text-green);
@@ -496,9 +528,268 @@
     cursor: pointer;
 }
 
-.kitchen-ready-btn:disabled {
+.kitchen-btn:disabled {
     opacity: 0.4;
     cursor: not-allowed;
+}
+
+.kitchen-accept-btn {
+    background: var(--text-green);
+    border-color: var(--text-green);
+}
+
+.kitchen-reject-btn {
+    background: var(--bg-primary);
+    border-color: var(--text-red);
+    color: var(--text-red);
+}
+
+.kitchen-ready-btn {
+    width: 100%;
+    margin-top: 4px;
+}
+
+/* ---- QR Token display ---- */
+
+.kitchen-qr-section {
+    margin-top: 4px;
+    padding: 8px;
+    border: 2px dashed var(--text-green);
+    border-radius: var(--border-radius);
+    text-align: center;
+    gap: 4px;
+}
+
+.kitchen-qr-label {
+    font-size: 0.8em;
+    opacity: 0.6;
+}
+
+.kitchen-qr-code {
+    font-size: 1.4rem;
+    font-weight: bold;
+    letter-spacing: 0.2em;
+    font-family: monospace;
+    color: var(--text-green);
+}
+
+/* ==================== Kitchen Menu Control ==================== */
+
+.kitchen-menu-list {
+    width: var(--container-width);
+    max-width: var(--container-max-width);
+    margin: 16px auto 0;
+    gap: 0;
+}
+
+.kitchen-menu-item {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 12px;
+    border: var(--border-line);
+    border-top: none;
+    background: var(--bg-primary);
+}
+
+.kitchen-menu-item:first-of-type {
+    border-top: var(--border-line);
+    border-radius: var(--border-radius) var(--border-radius) 0 0;
+}
+
+.kitchen-menu-item:last-of-type {
+    border-radius: 0 0 var(--border-radius) var(--border-radius);
+}
+
+.kitchen-menu-item.item-off {
+    opacity: 0.5;
+}
+
+.kitchen-menu-item-info {
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+}
+
+.kitchen-menu-item-name {
+    font-weight: bold;
+}
+
+.kitchen-menu-item-price {
+    font-size: 0.85em;
+    opacity: 0.6;
+}
+
+.kitchen-toggle-btn {
+    padding: 4px 12px;
+    border: 2px solid;
+    border-radius: var(--border-radius);
+    font-size: 0.8em;
+    font-weight: bold;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.toggle-on {
+    border-color: var(--text-green);
+    background: var(--text-green);
+    color: var(--bg-primary);
+}
+
+.toggle-off {
+    border-color: var(--text-red);
+    background: var(--bg-primary);
+    color: var(--text-red);
+}
+
+/* ==================== Delivery Page ==================== */
+
+.delivery-form {
+    width: var(--container-width);
+    max-width: var(--container-max-width);
+    margin: 24px auto 0;
+    padding: 16px;
+    border: var(--border-line);
+    border-radius: var(--border-radius);
+    background: var(--bg-primary);
+    gap: 12px;
+}
+
+.delivery-form-title {
+    font-weight: bold;
+    font-size: calc(var(--font-size) + 0.2rem);
+    text-align: center;
+    padding-bottom: 8px;
+    border-bottom: var(--border-line);
+}
+
+.delivery-error {
+    color: var(--text-red);
+    font-size: 0.85em;
+    font-weight: bold;
+    text-align: center;
+}
+
+.delivery-verify-btn {
+    margin-top: 4px;
+}
+
+/* ---- Delivery info card ---- */
+
+.delivery-info-card {
+    width: var(--container-width);
+    max-width: var(--container-max-width);
+    margin: 16px auto 0;
+    padding: 16px;
+    border: 3px solid var(--text-green);
+    border-radius: var(--border-radius);
+    background: var(--bg-primary);
+    gap: 10px;
+}
+
+.delivery-info-header {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.delivery-steps {
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 8px 0;
+    flex-wrap: wrap;
+}
+
+.delivery-step {
+    padding: 4px 8px;
+    border-radius: var(--border-radius);
+    font-size: 0.8em;
+    font-weight: bold;
+    border: var(--border-line);
+    opacity: 0.4;
+}
+
+.delivery-step.step-active {
+    background: var(--text-green);
+    color: var(--bg-primary);
+    border-color: var(--text-green);
+    opacity: 1;
+}
+
+.delivery-step.step-done {
+    opacity: 0.6;
+    text-decoration: line-through;
+}
+
+.delivery-step-arrow {
+    opacity: 0.3;
+    font-size: 0.8em;
+}
+
+.delivery-info-section {
+    gap: 2px;
+}
+
+.delivery-info-label {
+    font-size: 0.8em;
+    opacity: 0.5;
+}
+
+.delivery-info-value {
+    font-weight: bold;
+}
+
+.delivery-phone {
+    font-family: monospace;
+    font-size: 1.1em;
+    letter-spacing: 0.1em;
+}
+
+/* ---- Map placeholder ---- */
+
+.delivery-map-placeholder {
+    width: 100%;
+    height: 120px;
+    border: 2px dashed var(--text-green-10);
+    border-radius: var(--border-radius);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.delivery-map-text {
+    opacity: 0.3;
+    font-size: 0.85em;
+}
+
+/* ---- Delivery items summary ---- */
+
+.delivery-items-summary {
+    padding: 8px 0;
+    border-top: var(--border-line);
+    gap: 2px;
+}
+
+/* ---- Delivery action buttons ---- */
+
+.delivery-action-btn {
+    margin-top: 8px;
+}
+
+.delivery-complete {
+    text-align: center;
+    font-weight: bold;
+    color: var(--text-green);
+    font-size: calc(var(--font-size) + 0.1rem);
+    padding: 8px 0;
+}
+
+.delivery-done-btn {
+    background: var(--bg-primary);
+    color: var(--text-green);
+    border-color: var(--text-green);
 }
 
 /* ==================== Console Page ==================== */
@@ -521,6 +812,48 @@
 
 .console-buttons {
     gap: 8px;
+}
+
+.console-section {
+    gap: 8px;
+    padding: 0 0 4px;
+}
+
+.console-field-row {
+    flex-direction: row;
+    gap: 8px;
+}
+
+.console-select,
+.console-input {
+    flex: 1;
+    padding: 8px 10px;
+    border: var(--border-line);
+    border-radius: var(--border-radius);
+    background: var(--bg-primary);
+    color: var(--text-green);
+    font-size: var(--font-size);
+}
+
+.console-info {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    border: var(--border-line);
+    border-radius: var(--border-radius);
+    background: var(--bg-primary);
+}
+
+.console-info-label {
+    opacity: 0.6;
+    font-size: 0.85em;
+}
+
+.console-info-value {
+    font-weight: bold;
+    font-family: monospace;
+    letter-spacing: 0.1em;
 }
 
 .dev-btn {

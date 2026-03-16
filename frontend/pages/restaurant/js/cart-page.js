@@ -1,18 +1,25 @@
 /**
- * Cart page — renders cart instances with single-choice options.
+ * Cart page — renders cart items with options + in-page checkout form.
+ * Checkout includes: delivery zone, address, name, phone, fee calc, armed confirm.
  */
 
 import { getItems, getTotal, getCount, itemTotal, removeItem, setOption, clear } from './cart.js';
-import { t } from './i18n.js';
-import { submitOrder } from './order-api.js';
-import { saveOrder } from './receipt-page.js';
+import { createOrder } from './order-store.js';
+import { t, localize } from './i18n.js';
 import { ToastMessager } from '/javascript/toast.js';
-import { isCheckedIn } from './session.js';
 
 const cartPage = document.getElementById('cart-page');
 const cartNavi = document.querySelector('[data-sub-navi-item="cart"]');
 const badge = cartNavi?.querySelector('.cart-badge');
 const toast = new ToastMessager();
+
+const DELIVERY_ZONES = [
+    { id: 'center', name: { 'zh-TW': '屯門市中心', en: 'Tuen Mun Central' }, distanceKm: 1.5, fee: 0 },
+    { id: 'north', name: { 'zh-TW': '屯門北', en: 'Tuen Mun North' }, distanceKm: 3.0, fee: 15 },
+    { id: 'tsw', name: { 'zh-TW': '天水圍', en: 'Tin Shui Wai' }, distanceKm: 4.5, fee: 25 },
+    { id: 'yl', name: { 'zh-TW': '元朗', en: 'Yuen Long' }, distanceKm: 6.0, fee: -1 },
+];
+const MIN_ORDER = 50;
 
 let armed = false;
 let armTimer = null;
@@ -45,7 +52,7 @@ function renderOptions(item) {
 
 function renderCart() {
     const items = getItems();
-    const total = getTotal();
+    const subtotal = getTotal();
 
     if (items.length === 0) {
         cartPage.innerHTML = `<div class="cart-empty">${t('cart.empty')}</div>`;
@@ -66,6 +73,12 @@ function renderCart() {
         </div>
     `).join('');
 
+    const zoneOptions = DELIVERY_ZONES.map(z => {
+        const label = localize(z.name);
+        const feeText = z.fee === -1 ? `(${t('cart.out-of-range')})` : z.fee === 0 ? `(${t('cart.free')})` : `(+$${z.fee})`;
+        return `<option value="${z.id}" ${z.fee === -1 ? 'data-out-of-range' : ''}>${label} ${z.distanceKm}km ${feeText}</option>`;
+    }).join('');
+
     armed = false;
     clearTimeout(armTimer);
 
@@ -73,14 +86,119 @@ function renderCart() {
         <div class="cart-list">${rows}</div>
         <div class="cart-footer">
             <div class="cart-total">
-                <span>${t('cart.total')}</span>
-                <span>$${total}</span>
+                <span>${t('cart.subtotal')}</span>
+                <span>$${subtotal}</span>
             </div>
-            <button class="checkout-btn">${t('cart.checkout')}</button>
+        </div>
+        <div class="checkout-form">
+            <div class="checkout-title">${t('cart.delivery-info')}</div>
+            <div class="checkout-field">
+                <label class="checkout-label">${t('cart.delivery-zone')}</label>
+                <select id="delivery-zone" class="checkout-input">
+                    <option value="">${t('cart.select-zone')}</option>
+                    ${zoneOptions}
+                </select>
+            </div>
+            <div class="checkout-field">
+                <label class="checkout-label">${t('cart.delivery-address')}</label>
+                <input type="text" id="delivery-address" class="checkout-input" placeholder="${t('cart.address-placeholder')}">
+            </div>
+            <div class="checkout-field">
+                <label class="checkout-label">${t('cart.customer-name')}</label>
+                <input type="text" id="customer-name" class="checkout-input" placeholder="${t('cart.name-placeholder')}">
+            </div>
+            <div class="checkout-field">
+                <label class="checkout-label">${t('cart.customer-phone')}</label>
+                <input type="tel" id="customer-phone" class="checkout-input" placeholder="${t('cart.phone-placeholder')}">
+            </div>
+            <div id="fee-display" class="checkout-fee" hidden>
+                <div class="fee-row">
+                    <span>${t('cart.subtotal')}</span>
+                    <span id="fee-subtotal">$${subtotal}</span>
+                </div>
+                <div class="fee-row">
+                    <span>${t('cart.delivery-fee')}</span>
+                    <span id="fee-delivery">$0</span>
+                </div>
+                <div class="fee-row fee-total">
+                    <span>${t('cart.grand-total')}</span>
+                    <span id="fee-total">$${subtotal}</span>
+                </div>
+            </div>
+            <div id="checkout-error" class="checkout-error" hidden></div>
+            <button class="checkout-btn" id="place-order-btn" disabled>${t('cart.place-order')}</button>
         </div>
     `;
     renderBadge();
 }
+
+function getSelectedZone() {
+    const sel = document.getElementById('delivery-zone');
+    if (!sel || !sel.value) return null;
+    return DELIVERY_ZONES.find(z => z.id === sel.value) || null;
+}
+
+function validateCheckout() {
+    const zone = getSelectedZone();
+    const address = document.getElementById('delivery-address')?.value.trim();
+    const name = document.getElementById('customer-name')?.value.trim();
+    const phone = document.getElementById('customer-phone')?.value.trim();
+    const subtotal = getTotal();
+    const btn = document.getElementById('place-order-btn');
+    const errEl = document.getElementById('checkout-error');
+    const feeDisplay = document.getElementById('fee-display');
+
+    if (!btn) return;
+
+    let error = '';
+    let canOrder = true;
+
+    if (!zone) {
+        canOrder = false;
+    } else if (zone.fee === -1) {
+        error = t('cart.out-of-range');
+        canOrder = false;
+    } else if (subtotal < MIN_ORDER) {
+        error = t('cart.min-order-msg').replace('{amount}', MIN_ORDER);
+        canOrder = false;
+    } else if (!address) {
+        canOrder = false;
+    } else if (!name) {
+        canOrder = false;
+    } else if (!phone) {
+        canOrder = false;
+    }
+
+    // Update fee display
+    if (zone && zone.fee !== -1) {
+        feeDisplay.hidden = false;
+        document.getElementById('fee-subtotal').textContent = `$${subtotal}`;
+        document.getElementById('fee-delivery').textContent = zone.fee === 0 ? t('cart.free') : `$${zone.fee}`;
+        document.getElementById('fee-total').textContent = `$${subtotal + zone.fee}`;
+    } else {
+        feeDisplay.hidden = !zone;
+        if (zone) {
+            feeDisplay.hidden = false;
+            document.getElementById('fee-subtotal').textContent = `$${subtotal}`;
+            document.getElementById('fee-delivery').textContent = '—';
+            document.getElementById('fee-total').textContent = '—';
+        }
+    }
+
+    if (errEl) {
+        errEl.textContent = error;
+        errEl.hidden = !error;
+    }
+    btn.disabled = !canOrder;
+}
+
+cartPage.addEventListener('input', (e) => {
+    if (e.target.closest('.checkout-form')) validateCheckout();
+});
+
+cartPage.addEventListener('change', (e) => {
+    if (e.target.id === 'delivery-zone') validateCheckout();
+});
 
 cartPage.addEventListener('click', (e) => {
     const choiceBtn = e.target.closest('.option-choice');
@@ -99,29 +217,26 @@ cartPage.addEventListener('click', (e) => {
         return;
     }
 
-    const checkoutBtn = e.target.closest('.checkout-btn');
-    if (checkoutBtn) {
-        handleCheckout(checkoutBtn);
+    const orderBtn = e.target.closest('#place-order-btn');
+    if (orderBtn) {
+        handlePlaceOrder(orderBtn);
         return;
     }
 });
 
-async function handleCheckout(btn) {
+async function handlePlaceOrder(btn) {
     if (btn.disabled) return;
-
-    if (!isCheckedIn()) {
-        toast.addMessage(t('session.scan-qr'), 3000, 'error');
-        return;
-    }
 
     if (!armed) {
         armed = true;
         btn.classList.add('armed');
-        btn.textContent = `${t('cart.confirm_checkout')} $${getTotal()}`;
+        const zone = getSelectedZone();
+        const total = getTotal() + (zone?.fee || 0);
+        btn.textContent = `${t('cart.confirm-order')} $${total}`;
         armTimer = setTimeout(() => {
             armed = false;
             btn.classList.remove('armed');
-            btn.textContent = t('cart.checkout');
+            btn.textContent = t('cart.place-order');
         }, 3000);
         return;
     }
@@ -132,35 +247,41 @@ async function handleCheckout(btn) {
     btn.textContent = '...';
 
     try {
-        const result = await submitOrder(getItems());
-        await saveOrder({
-            order_number: result.order_number,
-            total: result.total,
-            status: result.status,
-            time: new Date().toISOString(),
-            items: getItems().map(item => {
-                const options = {};
-                for (const opt of item.options) {
-                    const sel = item.selected[opt.key];
-                    if (sel == null) continue;
-                    if (Array.isArray(sel)) {
-                        const labels = sel.map(ci => opt.choices[ci]?.label).filter(Boolean);
-                        if (labels.length) options[opt.key] = labels;
-                    } else {
-                        options[opt.key] = opt.choices[sel]?.label ?? null;
-                    }
+        const zone = getSelectedZone();
+        const items = getItems().map(item => {
+            const options = {};
+            for (const opt of item.options) {
+                const sel = item.selected[opt.key];
+                if (sel == null) continue;
+                if (Array.isArray(sel)) {
+                    const labels = sel.map(ci => opt.choices[ci]?.label).filter(Boolean);
+                    if (labels.length) options[opt.key] = labels;
+                } else {
+                    options[opt.key] = opt.choices[sel]?.label ?? null;
                 }
-                return { name: item.name, subtotal: itemTotal(item), options };
-            }),
+            }
+            return { name: item.name, subtotal: itemTotal(item), options };
         });
+
+        const order = await createOrder({
+            items,
+            deliveryZone: localize(zone.name),
+            deliveryAddress: document.getElementById('delivery-address').value.trim(),
+            deliveryFee: zone.fee,
+            distanceKm: zone.distanceKm,
+            customerName: document.getElementById('customer-name').value.trim(),
+            customerPhone: document.getElementById('customer-phone').value.trim(),
+            subtotal: getTotal(),
+        });
+
         await clear();
-        toast.addMessage(`${t('order.number')}${result.order_number}`, 4000, 'success');
-        document.querySelector('[data-sub-navi-item="recipt"]')?.click();
+        toast.addMessage(`${t('order.number')}${order.orderNumber}`, 4000, 'success');
+        document.querySelector('[data-sub-navi-item="history"]')?.click();
     } catch (err) {
         toast.addMessage(err.message, 4000, 'error');
         btn.disabled = false;
         btn.classList.remove('armed');
-        btn.textContent = t('cart.checkout');
+        btn.textContent = t('cart.place-order');
     }
 }
 
@@ -168,7 +289,7 @@ window.addEventListener('cart:updated', (e) => {
     renderCart();
     if (e.detail?.action === 'add' && cartNavi) {
         cartNavi.classList.remove('cart-shake');
-        void cartNavi.offsetWidth; // reflow to restart animation
+        void cartNavi.offsetWidth;
         cartNavi.classList.add('cart-shake');
     }
 });

@@ -22,16 +22,15 @@
 <body>
     <div class="header">
         <img src="images/header.png" class="header-img" alt="臺味冰點">
-        <div id="session-badge" class="session-badge" hidden></div>
     </div>
     <div class="body">
         <nav class="navi-bar">
             <div class="navi-mask"></div>
 
-            <!-- 堂食 -->
-            <div class="navi-item" data-navi-item="dine-in" data-sound-main="UIGeneralCancel.mp3"
+            <!-- 點餐 -->
+            <div class="navi-item" data-navi-item="order" data-sound-main="UIGeneralCancel.mp3"
                 data-sound-sub="UIGeneralFocus.mp3">
-                <div class="navi-item-text" data-i18n="nav.dine-in">堂食</div>
+                <div class="navi-item-text" data-i18n="nav.order">點餐</div>
                 <div class="sub-navi-indicator"></div>
                 <div class="sub-navi-container">
                     <div class="sub-navi-track">
@@ -42,45 +41,39 @@
                             <div class="sub-navi-item-text" data-i18n="nav.cart">購物車</div>
                             <span class="cart-badge" hidden></span>
                         </div>
-                        <div class="sub-navi-item" data-sub-navi-item="recipt">
-                            <div class="sub-navi-item-text" data-i18n="nav.receipt">訂單</div>
+                        <div class="sub-navi-item" data-sub-navi-item="history">
+                            <div class="sub-navi-item-text" data-i18n="nav.history">歷史</div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- 外賣 -->
-            <div class="navi-item" data-navi-item="takeaway" data-sound-main="UIGeneralCancel.mp3"
-                data-sound-sub="UIGeneralFocus.mp3">
-                <div class="navi-item-text" data-i18n="nav.takeaway">外賣</div>
-                <div class="sub-navi-indicator"></div>
-                <div class="sub-navi-container">
-                    <div class="sub-navi-track">
-                        <div class="sub-navi-item" data-sub-navi-item="takeaway-menu">
-                            <div class="sub-navi-item-text" data-i18n="nav.menu">菜單</div>
-                        </div>
-                        <div class="sub-navi-item" data-sub-navi-item="takeaway-cart">
-                            <div class="sub-navi-item-text" data-i18n="nav.cart">購物車</div>
-                        </div>
-                        <div class="sub-navi-item" data-sub-navi-item="takeaway-recipt">
-                            <div class="sub-navi-item-text" data-i18n="nav.receipt">訂單</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 厨房 -->
+            <!-- 廚房 -->
             <div class="navi-item" data-navi-item="kitchen" data-sound-main="UIGeneralCancel.mp3"
                 data-sound-sub="UIGeneralFocus.mp3">
-                <div class="navi-item-text" data-i18n="nav.kitchen">厨房</div>
+                <div class="navi-item-text" data-i18n="nav.kitchen">廚房</div>
                 <div class="sub-navi-indicator"></div>
                 <div class="sub-navi-container">
                     <div class="sub-navi-track">
                         <div class="sub-navi-item" data-sub-navi-item="kitchen-orders">
-                            <div class="sub-navi-item-text" data-i18n="nav.kitchen-orders">待處理</div>
+                            <div class="sub-navi-item-text" data-i18n="nav.kitchen-orders">訂單</div>
                         </div>
-                        <div class="sub-navi-item" data-sub-navi-item="kitchen-history">
-                            <div class="sub-navi-item-text" data-i18n="nav.kitchen-history">歷史</div>
+                        <div class="sub-navi-item" data-sub-navi-item="kitchen-menu">
+                            <div class="sub-navi-item-text" data-i18n="nav.kitchen-menu">菜單管理</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 外送 -->
+            <div class="navi-item" data-navi-item="delivery" data-sound-main="UIGeneralCancel.mp3"
+                data-sound-sub="UIGeneralFocus.mp3">
+                <div class="navi-item-text" data-i18n="nav.delivery">外送</div>
+                <div class="sub-navi-indicator"></div>
+                <div class="sub-navi-container">
+                    <div class="sub-navi-track">
+                        <div class="sub-navi-item" data-sub-navi-item="delivery-scan">
+                            <div class="sub-navi-item-text" data-i18n="nav.delivery-scan">掃碼</div>
                         </div>
                     </div>
                 </div>
@@ -102,21 +95,13 @@
         </nav>
         <div class="sub-navi-indicator-mask"></div>
         <script type="module" src="/javascript/navi.js"></script>
-        <script src="/javascript/vendor/pusher.min.js"></script>
-        <script src="/javascript/vendor/echo.iife.js"></script>
         <script type="module" src="js/app.js"></script>
         <div class="page-container" id="page-container">
 
-            <!-- Check-in gate overlay -->
-            <div id="checkin-overlay" class="checkin-overlay" hidden>
-                <div class="checkin-overlay-text" data-i18n="session.scan-qr">請先掃描桌上QR碼入座</div>
-            </div>
-
-            <!-- ====== 堂食 pages ====== -->
+            <!-- ====== 點餐 pages ====== -->
             <div class="page" data-page="menu" id="menu-page">
                 <div class="food-categorized-container">
                     <div class="food-category-title">飯類</div>
-                    <!--grid-->
                     <div class="food-item-item-container">
                         <div class="food-item-container" data-name="滷肉飯" data-price="42"
                             data-options='[{"key":"drink","label":"飲品","choices":[{"label":"咖啡","extra":0},{"label":"朱古力","extra":0},{"label":"可口可樂","extra":2},{"label":"茉香綠茶","extra":3},{"label":"金桔綠茶","extra":3},{"label":"青蘋菓綠茶","extra":3},{"label":"荔枝綠茶","extra":3},{"label":"檸檬可樂","extra":4},{"label":"鴛鴦","extra":4}]},{"key":"topping","label":"加料","choices":[{"label":"無","extra":0},{"label":"珍珠","extra":2}]},{"key":"extra","label":"加餸","type":"multi","choices":[{"label":"加汁","extra":5},{"label":"加肉燥","extra":12},{"label":"加白飯","extra":12}]}]'>
@@ -196,24 +181,17 @@
             </div>
             <div class="page" data-page="cart" id="cart-page">
             </div>
-            <div class="page" data-page="recipt" id="recipt-page">
+            <div class="page" data-page="history" id="history-page">
             </div>
 
-            <!-- ====== 外賣 pages (placeholder) ====== -->
-            <div class="page" data-page="takeaway-menu" id="takeaway-menu-page">
-                <div class="cart-empty" data-i18n="placeholder.coming-soon">即將推出</div>
-            </div>
-            <div class="page" data-page="takeaway-cart" id="takeaway-cart-page">
-                <div class="cart-empty" data-i18n="placeholder.coming-soon">即將推出</div>
-            </div>
-            <div class="page" data-page="takeaway-recipt" id="takeaway-recipt-page">
-                <div class="cart-empty" data-i18n="placeholder.coming-soon">即將推出</div>
-            </div>
-
-            <!-- ====== 厨房 pages ====== -->
+            <!-- ====== 廚房 pages ====== -->
             <div class="page" data-page="kitchen-orders" id="kitchen-orders-page">
             </div>
-            <div class="page" data-page="kitchen-history" id="kitchen-history-page">
+            <div class="page" data-page="kitchen-menu" id="kitchen-menu-page">
+            </div>
+
+            <!-- ====== 外送 pages ====== -->
+            <div class="page" data-page="delivery-scan" id="delivery-scan-page">
             </div>
 
             <!-- ====== 控制臺 pages ====== -->

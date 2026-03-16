@@ -13,4 +13,9 @@ db.version(1).stores({
     orders: '++id, order_number, status, time',
 });
 
+db.version(2).stores({
+    cartItems: '++id, name',
+    orders: '++id, orderNumber, status, createdAt',
+}).upgrade(tx => tx.table('orders').clear());
+
 export default db;
