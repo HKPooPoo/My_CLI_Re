@@ -77,8 +77,13 @@ $featureShelfBackBtn?.addEventListener('dblclick', () => {
     closeShelf();
 });
 
-// Resize compensation
+// Resize compensation — width-only guard prevents mobile keyboard
+// open/close (height change) from re-snapping the shelf and stealing focus
+let _lastScreenWidth = getScreenWidth();
 window.addEventListener('resize', () => {
+    const w = getScreenWidth();
+    if (w === _lastScreenWidth) return;
+    _lastScreenWidth = w;
     if (currentTranslateX === 0) return;
     snapToNearestPosition();
 });
@@ -235,6 +240,7 @@ function handleFeatureBtnClick($clickedBtn) {
  * Update shelf transform position.
  */
 function updateShelfTransform(translateX) {
+    if (translateX === currentTranslateX) return;
     currentTranslateX = translateX;
     $featureShelfContainer.style.transform = `translate3d(${translateX}px, 0, 0)`;
 }
