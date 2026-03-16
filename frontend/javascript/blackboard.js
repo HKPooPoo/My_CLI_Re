@@ -11,7 +11,7 @@
  * =================================================================
  */
 
-import { BBCore, getHKTTimestamp } from "./blackboard-core.js";
+import { BBCore, getHKTTimestamp, extractHashes } from "./blackboard-core.js";
 import { BBVCS } from "./blackboard-vcs.js";
 import { BBUI } from "./blackboard-ui.js";
 import { BBMessage } from "./blackboard-msg.js";
@@ -184,13 +184,8 @@ async function syncView() {
     // Sync attachment chip display (multi-file aware)
     const binData = entry?.file_hash;
     state.currentFileHash = binData ?? null;
-    if (Array.isArray(binData)) {
-        const hashes = binData.map(f => (typeof f === 'object') ? f.hash : f).filter(Boolean);
-        bbAttach?.setFromRecord(hashes);
-    } else {
-        const hash = (typeof binData === 'object') ? binData?.hash : binData;
-        bbAttach?.setFromRecord(hash || null);
-    }
+    const hashes = extractHashes(binData);
+    bbAttach?.setFromRecord(hashes.length > 0 ? hashes : null);
 }
 
 /**
@@ -399,6 +394,8 @@ if (BBUI.elements.commitBtn) {
 
                 await BBVCS.commit({ branchId: selected.id, branch: selected.name }, BBSync.deviceId);
                 msg.update(t('blackboard.syncComplete'));
+                // P2: Refresh chips immediately so file status shows 'synced' after commit
+                if (selected.id === state.branchId) await syncView();
                 await updateBranchList();
             } catch (e) {
                 console.error("SYNC ERROR:", e);
@@ -604,11 +601,15 @@ BBUI.elements.textarea?.addEventListener("input", () => {
     if (BBUI.elements.savedStatus) BBUI.elements.savedStatus.textContent = t('blackboard.statusUnsaved');
 
     timers.schedule('save', async () => {
-        await BBVCS.save(state, BBUI.getTextareaValue());
-
-        // [Fix]: 狀態更新後，依據是否仍為虛擬狀態顯示指標
-        const headIndicator = state.isVirtual ? "NEW" : state.currentHead;
-        BBUI.updateIndicators(state.branch || t('blackboard.branchNameFallback'), headIndicator, true);
+        try {
+            await BBVCS.save(state, BBUI.getTextareaValue());
+            const headIndicator = state.isVirtual ? "NEW" : state.currentHead;
+            BBUI.updateIndicators(state.branch || t('blackboard.branchNameFallback'), headIndicator, true);
+        } catch (e) {
+            // P11: Recover indicator so UNSAVED doesn't stick forever
+            BBUI.updateIndicators(undefined, undefined, false);
+            console.warn('[BB] Save failed:', e.message);
+        }
     }, 200);
 
     BBSync.scheduleAutoCommit();
@@ -671,6 +672,7 @@ window.addEventListener('settings:changed', (e) => {
     if ((d.scope === 'bb' && d.key === 'autoSync') || d.scope === 'all') {
         if (Settings.get('bb', 'autoSync') && localStorage.getItem('currentUser')) {
             BBSync.startListening();
+            BBSync.scheduleAutoCommit(); // P10: Catch up on pending unsaved changes
         } else {
             BBSync.stopListening();
         }

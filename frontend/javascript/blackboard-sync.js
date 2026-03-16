@@ -29,7 +29,8 @@ let _onBranchListUpdate = null;
 let _commitTimer = null;
 let _isCommitting = false;
 let _commitPromise = null;
-let _pendingRemoteCheckout = false;
+let _pendingRemoteCheckout = null; // P6: null | { branchId } (scoped, not boolean)
+let _checkoutChain = Promise.resolve(); // P5: serializes overlapping remote checkouts
 let _echoChannel = null;
 let _currentUid = null;
 
@@ -158,6 +159,7 @@ export const BBSync = {
         if (state.isVirtual && (!text || !text.trim())) return;
 
         _isCommitting = true;
+        let commitOk = false;
         try {
             // Save current textarea content first
             await BBVCS.save(state, text);
@@ -166,25 +168,35 @@ export const BBSync = {
                 { branchId: state.branchId, branch: state.branch },
                 this.deviceId
             );
+            commitOk = true;
+
+            // P1: Refresh branch list + chips so status shows "synced" immediately
+            _onRemoteUpdate?.();
+            _onBranchListUpdate?.();
         } catch (err) {
-            // Silent fail for auto-sync — don't spam user with errors
+            // P3: Show toast so user knows auto-commit failed (instead of silent swallow)
             console.warn('[BBSync] Auto-commit failed:', err.message);
+            BBMessage.info(t('blackboard.autoSyncFailed'));
         } finally {
             _isCommitting = false;
         }
 
-        // Handle deferred remote checkout (remote event arrived while editing/committing)
+        // P6: Handle deferred remote checkout — scoped by branch ID
         if (_pendingRemoteCheckout) {
-            _pendingRemoteCheckout = false;
+            const target = _pendingRemoteCheckout;
+            _pendingRemoteCheckout = null;
             const st = _getState?.();
-            if (st) {
-                try {
-                    await BBVCS.checkout(st, st.branchId, 'remote');
-                    _onRemoteUpdate?.();
-                    BBMessage.info(t('blackboard.autoSyncReceived'));
-                } catch (err) {
-                    console.warn('[BBSync] Deferred remote checkout failed:', err);
-                }
+            // Only execute if user is still on the same branch that triggered the deferral
+            if (st && st.branchId === target.branchId) {
+                _checkoutChain = _checkoutChain.then(async () => {
+                    try {
+                        await BBVCS.checkout(st, target.branchId, 'remote');
+                        _onRemoteUpdate?.();
+                        BBMessage.info(t('blackboard.autoSyncReceived'));
+                    } catch (err) {
+                        console.warn('[BBSync] Deferred remote checkout failed:', err);
+                    }
+                });
             }
         }
     },
@@ -205,19 +217,21 @@ export const BBSync = {
         if (state.branchId === incomingBranchId) {
             // [Race-condition guard]: If user has pending or in-progress edits,
             // defer the checkout until after auto-commit completes.
-            // Without this, checkout would wipe IndexedDB before the commit fires,
-            // causing the user to lose whatever they typed.
             if (_commitTimer || _isCommitting) {
-                _pendingRemoteCheckout = true;
+                // P6: Store target branch ID so deferred checkout validates scope
+                _pendingRemoteCheckout = { branchId: incomingBranchId };
                 return;
             }
 
-            // No pending edits — safe to checkout immediately
-            BBVCS.checkout(state, state.branchId, 'remote').then(() => {
-                _onRemoteUpdate?.();
-                BBMessage.info(t('blackboard.autoSyncReceived'));
-            }).catch(err => {
-                console.warn('[BBSync] Remote checkout failed:', err);
+            // P5: Serialize overlapping checkouts via promise chain
+            _checkoutChain = _checkoutChain.then(async () => {
+                try {
+                    await BBVCS.checkout(state, state.branchId, 'remote');
+                    _onRemoteUpdate?.();
+                    BBMessage.info(t('blackboard.autoSyncReceived'));
+                } catch (err) {
+                    console.warn('[BBSync] Remote checkout failed:', err);
+                }
             });
         } else {
             // Different branch — just refresh the branch list

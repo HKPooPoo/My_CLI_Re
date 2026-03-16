@@ -1,4 +1,5 @@
-import { BBCore } from "./blackboard-core.js";
+import { BBCore, extractHashes, makeSyncedOwner } from "./blackboard-core.js";
+import { BBMessage } from "./blackboard-msg.js";
 import db, { Dexie } from "./indexedDB.js";
 import { BlackboardService } from "./services/blackboard-service.js";
 import { FileService } from "./services/file-service.js";
@@ -158,15 +159,15 @@ export const BBVCS = {
         // Deduplicate hashes first — same file may appear in multiple records.
         const uniqueHashes = new Set();
         for (const r of records) {
-            if (!r.file_hash) continue;
-            const items = Array.isArray(r.file_hash) ? r.file_hash : [r.file_hash];
-            for (const item of items) {
-                const hash = (item && typeof item === 'object') ? item.hash : item;
-                if (hash) uniqueHashes.add(hash);
+            for (const hash of extractHashes(r.file_hash)) {
+                uniqueHashes.add(hash);
             }
         }
 
+        // Best-effort: attempt ALL uploads before deciding to fail.
+        // Prevents partial orphan state where file 1 uploads but file 2 fails.
         if (uniqueHashes.size > 0) {
+            const failedHashes = [];
             for (const hash of uniqueHashes) {
                 try {
                     const exists = await FileService.exists(hash);
@@ -175,6 +176,7 @@ export const BBVCS = {
                     const fileData = await db.file_blobs.get(hash);
                     if (!fileData || !fileData.blob) {
                         console.warn(`Local file missing for hash ${hash}, skipping upload.`);
+                        failedHashes.push(hash);
                         continue;
                     }
 
@@ -182,8 +184,11 @@ export const BBVCS = {
                     await db.file_blobs.update(hash, { status: 'synced' });
                 } catch (err) {
                     console.error(`Failed to sync file ${hash}:`, err);
-                    throw new Error(t('blackboard.fileSyncFailed'));
+                    failedHashes.push(hash);
                 }
+            }
+            if (failedHashes.length > 0) {
+                throw new Error(t('blackboard.fileSyncFailed'));
             }
         }
 
@@ -199,13 +204,10 @@ export const BBVCS = {
             });
 
             const payloadRecords = uniqueRecords.map(r => {
-                let fh = r.file_hash;
-                if (Array.isArray(fh)) {
-                    fh = fh.map(item => (item && typeof item === 'object') ? item.hash : item).filter(Boolean);
-                    fh = fh.length > 0 ? JSON.stringify(fh) : null;
-                } else if (fh && typeof fh === 'object') {
-                    fh = fh.hash;
-                }
+                const hashes = extractHashes(r.file_hash);
+                let fh = null;
+                if (hashes.length === 1) fh = hashes[0];
+                else if (hashes.length > 1) fh = JSON.stringify(hashes);
                 return { ...r, file_hash: fh };
             });
 
@@ -218,10 +220,9 @@ export const BBVCS = {
 
             await BlackboardService.commit(commitPayload);
 
-            const syncedOwner = `local, online/${loggedInUser} [synced]`;
             await db.blackboard.where('owner').startsWith('local')
                 .and(item => item.branch_id === branchId)
-                .modify({ owner: syncedOwner });
+                .modify({ owner: makeSyncedOwner(loggedInUser) });
 
             return true;
         } catch (e) {
@@ -244,24 +245,24 @@ export const BBVCS = {
                     let binData = r.file_hash;
 
                     // Try parsing as JSON array (multi-file)
-                    if (typeof binData === 'string' && binData.startsWith('[')) {
-                        try {
-                            const parsed = JSON.parse(binData);
-                            if (Array.isArray(parsed)) {
-                                binData = parsed.map(h => ({ hash: h }));
-                            }
-                        } catch (e) { /* not JSON, keep as-is */ }
-                    } else if (binData && r.file_name) {
+                    const hashes = extractHashes(binData);
+                    if (hashes.length > 1) {
+                        binData = hashes.map(h => ({ hash: h }));
+                    } else if (hashes.length === 1 && r.file_name) {
                         binData = {
-                            hash: r.file_hash,
+                            hash: hashes[0],
                             name: r.file_name,
                             size: r.file_size,
                             mime: r.file_mime
                         };
+                    } else if (hashes.length === 1) {
+                        binData = hashes[0];
+                    } else {
+                        binData = null;
                     }
 
                     return {
-                        owner: `local, online/${r.uid} [synced]`,
+                        owner: makeSyncedOwner(r.uid),
                         branch_id: parseInt(r.branch_id),
                         branch: r.branch_name,
                         timestamp: parseInt(r.timestamp),
@@ -291,6 +292,7 @@ export const BBVCS = {
                 }
             } catch (e) {
                 console.warn("CLOUD SYNC FAILED. USING LOCAL CACHE.", e);
+                BBMessage.info(t('blackboard.usingLocalCache'));
             }
         }
 

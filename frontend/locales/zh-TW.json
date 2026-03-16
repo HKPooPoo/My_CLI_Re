@@ -107,6 +107,8 @@
     "uploadFailed": "上傳失敗",
     "searchPlaceholder": "搜尋主題...",
     "autoSyncReceived": "已從其他裝置同步",
+    "autoSyncFailed": "自動同步失敗 — 下次編輯時重試",
+    "usingLocalCache": "離線模式 — 顯示本地快取",
     "initFailed": "載入面板失敗",
     "listFailed": "載入主題列表失敗"
   },

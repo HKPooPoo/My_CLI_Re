@@ -2,6 +2,39 @@ import db, { Dexie } from "./indexedDB.js";
 export { getHKTTimestamp } from "./utils.js";
 import { getHKTTimestamp } from "./utils.js";
 
+/**
+ * Extract plain hash strings from any file_hash format.
+ * Input:  null | "hash" | {hash} | ["hash1", {hash:"hash2"}] | '["h1","h2"]' (JSON string)
+ * Output: string[] (empty array for null/undefined)
+ */
+export function extractHashes(fileHash) {
+    if (!fileHash) return [];
+    // JSON string from server: '["hash1","hash2"]'
+    if (typeof fileHash === 'string' && fileHash.startsWith('[')) {
+        try { return JSON.parse(fileHash).filter(Boolean); } catch { /* not JSON */ }
+    }
+    // Plain hash string
+    if (typeof fileHash === 'string') return [fileHash];
+    // Single object { hash: "..." }
+    if (!Array.isArray(fileHash) && typeof fileHash === 'object') {
+        return fileHash.hash ? [fileHash.hash] : [];
+    }
+    // Array of mixed: ["hash", {hash:"..."}]
+    return fileHash
+        .map(item => (item && typeof item === 'object') ? item.hash : item)
+        .filter(Boolean);
+}
+
+/** Build synced owner tag: "local, online/{uid} [synced]" */
+export function makeSyncedOwner(uid) {
+    return `local, online/${uid} [synced]`;
+}
+
+/** Transition owner tag: [synced] → [asynced] if applicable, otherwise unchanged */
+export function markAsynced(owner) {
+    return owner.includes('[synced]') ? owner.replace('[synced]', '[asynced]') : owner;
+}
+
 export const BBCore = {
     /**
      * 讀取特定索引的紀錄 (兼容本地與同步標籤)
@@ -49,10 +82,7 @@ export const BBCore = {
                 .and(item => item.owner.startsWith('local'))
                 .first();
             if (!record) return;
-            let finalOwner = record.owner;
-            if (finalOwner.includes("[synced]")) {
-                finalOwner = finalOwner.replace("[synced]", "[asynced]");
-            }
+            const finalOwner = markAsynced(record.owner);
             await db.blackboard.update([record.owner, branchId, timestamp], { text, owner: finalOwner });
         } else {
             await db.blackboard.update([owner, branchId, timestamp], { text });
@@ -83,10 +113,7 @@ export const BBCore = {
         const newTimestamp = Math.max(Date.now(), oldTimestamp + 1);
 
         // 保持原始 owner 標籤，但如果原本是 [synced]，則改為 [asynced]
-        let finalOwner = oldRecord.owner;
-        if (finalOwner.includes("[synced]")) {
-            finalOwner = finalOwner.replace("[synced]", "[asynced]");
-        }
+        const finalOwner = markAsynced(oldRecord.owner);
 
         await db.blackboard.add({
             ...oldRecord,

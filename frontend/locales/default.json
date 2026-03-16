@@ -107,6 +107,8 @@
     "uploadFailed": "ERROR: UPLOAD FAILED",
     "searchPlaceholder": "SEARCH BRANCHES...",
     "autoSyncReceived": "SYNCED FROM DEVICE",
+    "autoSyncFailed": "AUTO-COMMIT FAILED — WILL RETRY",
+    "usingLocalCache": "OFFLINE — SHOWING LOCAL CACHE",
     "initFailed": "ERROR: INIT FAILED",
     "listFailed": "ERROR: BRANCH LIST FAILED"
   },

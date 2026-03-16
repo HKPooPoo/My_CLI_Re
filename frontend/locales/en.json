@@ -107,6 +107,8 @@
     "uploadFailed": "Upload failed.",
     "searchPlaceholder": "Search topics...",
     "autoSyncReceived": "Synced from another device",
+    "autoSyncFailed": "Auto-save to cloud failed — will retry",
+    "usingLocalCache": "Offline — showing saved copy",
     "initFailed": "Failed to load board.",
     "listFailed": "Failed to load topic list."
   },
