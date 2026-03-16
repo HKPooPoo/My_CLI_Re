@@ -135,7 +135,12 @@ export function blobToBase64(blob) {
     });
 }
 
-/** Render all pages of a PDF to base64 JPEG images via pdf.js CDN. */
+// Safety limits — keep payloads within Ollama's comfortable range
+export const MAX_IMAGES = 4;
+const MAX_PDF_PAGES = 4;
+const PDF_RENDER_SCALE = 1.5;
+
+/** Render pages of a PDF to base64 JPEG images via pdf.js CDN. Capped to MAX_PDF_PAGES. */
 export async function renderPdfToImages(blob) {
     const pdfjsLib = await import('https://cdn.jsdelivr.net/npm/pdfjs-dist@4.9.155/build/pdf.min.mjs');
     pdfjsLib.GlobalWorkerOptions.workerSrc =
@@ -144,15 +149,16 @@ export async function renderPdfToImages(blob) {
     const data = new Uint8Array(await blob.arrayBuffer());
     const pdf = await pdfjsLib.getDocument({ data }).promise;
     const images = [];
+    const pageCount = Math.min(pdf.numPages, MAX_PDF_PAGES);
 
-    for (let i = 1; i <= pdf.numPages; i++) {
+    for (let i = 1; i <= pageCount; i++) {
         const page = await pdf.getPage(i);
-        const viewport = page.getViewport({ scale: 2.0 });
+        const viewport = page.getViewport({ scale: PDF_RENDER_SCALE });
         const canvas = document.createElement('canvas');
         canvas.width = viewport.width;
         canvas.height = viewport.height;
         await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
-        images.push(canvas.toDataURL('image/jpeg', 0.85).split(',')[1]);
+        images.push(canvas.toDataURL('image/jpeg', 0.8).split(',')[1]);
     }
 
     return images;

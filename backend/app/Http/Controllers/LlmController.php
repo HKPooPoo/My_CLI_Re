@@ -9,6 +9,11 @@ use Illuminate\Support\Facades\Log;
 
 class LlmController extends Controller
 {
+    // Safety limits — prevent oversized payloads from crashing Ollama / WSL2
+    private const MAX_CONTENT_CHARS = 16000;  // ~4K tokens
+    private const MAX_IMAGES = 4;
+    private const MAX_IMAGE_BASE64_BYTES = 1_500_000;  // ~1.1MB decoded
+
     /**
      * POST /api/mods/llm/chat
      *
@@ -19,11 +24,11 @@ class LlmController extends Controller
         $validated = $request->validate([
             'provider' => 'required|string|in:ollama,openai,anthropic',
             'model' => 'required|string|max:100',
-            'messages' => 'required|array|min:1',
+            'messages' => 'required|array|min:1|max:10',
             'messages.*.role' => 'required|string|in:system,user,assistant',
-            'messages.*.content' => 'required|string',
-            'messages.*.images' => 'sometimes|array',
-            'messages.*.images.*' => 'sometimes|string',
+            'messages.*.content' => 'required|string|max:' . self::MAX_CONTENT_CHARS,
+            'messages.*.images' => 'sometimes|array|max:' . self::MAX_IMAGES,
+            'messages.*.images.*' => 'sometimes|string|max:' . self::MAX_IMAGE_BASE64_BYTES,
             'temperature' => 'sometimes|numeric|min:0|max:2',
             'apiKey' => 'sometimes|nullable|string|max:200',
         ]);
@@ -64,11 +69,11 @@ class LlmController extends Controller
         $validated = $request->validate([
             'provider'           => 'required|string|in:ollama',
             'model'              => 'required|string|max:100',
-            'messages'           => 'required|array|min:1',
+            'messages'           => 'required|array|min:1|max:10',
             'messages.*.role'    => 'required|string|in:system,user,assistant',
-            'messages.*.content' => 'required|string',
-            'messages.*.images'  => 'sometimes|array',
-            'messages.*.images.*' => 'sometimes|string',
+            'messages.*.content' => 'required|string|max:' . self::MAX_CONTENT_CHARS,
+            'messages.*.images'  => 'sometimes|array|max:' . self::MAX_IMAGES,
+            'messages.*.images.*' => 'sometimes|string|max:' . self::MAX_IMAGE_BASE64_BYTES,
             'temperature'        => 'sometimes|numeric|min:0|max:2',
         ]);
 
@@ -102,7 +107,7 @@ class LlmController extends Controller
                 CURLOPT_POSTFIELDS     => $payload,
                 CURLOPT_HTTPHEADER     => ['Content-Type: application/json'],
                 CURLOPT_CONNECTTIMEOUT => 10,
-                CURLOPT_TIMEOUT        => 300,
+                CURLOPT_TIMEOUT        => 120,
                 CURLOPT_WRITEFUNCTION => function ($ch, $data) use (&$thinkCount) {
                     if (connection_aborted()) {
                         return 0; // Abort cURL transfer → frees worker + GPU

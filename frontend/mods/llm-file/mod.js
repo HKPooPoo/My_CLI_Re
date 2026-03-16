@@ -6,7 +6,7 @@
 
 import {
     initShelf, runActivation,
-    blobToBase64, renderPdfToImages,
+    blobToBase64, renderPdfToImages, MAX_IMAGES,
     checkHealth, getInfoValue, onAction,
     getInstanceName, getIconUrl,
     migrateToSharedConfig, initPrewarm, onSharedConfigChange,
@@ -46,13 +46,16 @@ export default {
             let enrichedPrompt = prompt;
 
             for (const att of attachments) {
+                if (images.length >= MAX_IMAGES) break;
                 const blob = await c.file.readContent(att.hash);
                 const mime = att.mime || blob.type || '';
 
                 if (IMAGE_MIMES.has(mime)) {
                     images.push(await blobToBase64(blob));
                 } else if (mime === 'application/pdf') {
-                    images.push(...await renderPdfToImages(blob));
+                    const pages = await renderPdfToImages(blob);
+                    const room = MAX_IMAGES - images.length;
+                    images.push(...pages.slice(0, room));
                 } else {
                     const text = await blob.text();
                     if (text.trim()) {
