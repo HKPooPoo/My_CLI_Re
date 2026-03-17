@@ -184,6 +184,8 @@
     "limitReached": "已達檔案上限",
     "storageFull": "儲存空間已滿",
     "attachFailed": "附加失敗",
+    "downloading": "下載中...",
+    "downloadSuccess": "下載完成",
     "downloadFailed": "下載失敗",
     "statusLocal": "[本機]",
     "statusSync": "[同步]",

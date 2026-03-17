@@ -184,6 +184,8 @@
     "limitReached": "FILE LIMIT REACHED",
     "storageFull": "STORAGE FULL",
     "attachFailed": "ATTACH FAILED",
+    "downloading": "DOWNLOADING...",
+    "downloadSuccess": "DOWNLOAD COMPLETE",
     "downloadFailed": "DOWNLOAD FAILED",
     "statusLocal": "[LOCAL]",
     "statusSync": "[SYNC]",

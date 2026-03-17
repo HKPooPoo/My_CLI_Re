@@ -370,11 +370,13 @@ export const EditorAttachments = {
                 }
 
                 // Cloud file — download to local cache only, don't open
-                const loadingMsg = this._findChip(hash);
-                if (loadingMsg) {
-                    const icon = loadingMsg.querySelector('.attachment-chip-icon');
+                const loadingChip = this._findChip(hash);
+                if (loadingChip) {
+                    const icon = loadingChip.querySelector('.attachment-chip-icon');
                     if (icon) icon.textContent = t('files.statusWait');
                 }
+
+                const toastHandle = BBMessage.loading(t('files.downloading'));
 
                 try {
                     const blob = await FileService.download(hash);
@@ -402,9 +404,11 @@ export const EditorAttachments = {
                             nameEl.title = meta.name;
                         }
                     }
+
+                    toastHandle.update(t('files.downloadSuccess'));
                 } catch (e) {
                     console.error("Download failed", e);
-                    BBMessage.error(t('files.downloadFailed'));
+                    toastHandle.update(t('files.downloadFailed'));
                 }
             },
 
