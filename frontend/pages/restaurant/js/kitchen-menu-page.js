@@ -7,6 +7,7 @@ import { t } from './i18n.js';
 import { getUnavailableItems, toggleAvailability } from './order-store.js';
 
 const page = document.getElementById('kitchen-menu-page');
+if (!page) console.warn('kitchen-menu-page.js: #kitchen-menu-page not found');
 
 const MENU_ITEMS = [
     { name: '滷肉飯', price: 42 },
@@ -26,6 +27,7 @@ function getMenuItems() {
 }
 
 function render() {
+    if (!page) return;
     const items = getMenuItems();
     const unavailable = getUnavailableItems();
 
@@ -54,7 +56,7 @@ function render() {
     `;
 }
 
-page.addEventListener('click', (e) => {
+page?.addEventListener('click', (e) => {
     const btn = e.target.closest('.kitchen-toggle-btn');
     if (!btn) return;
     toggleAvailability(btn.dataset.name);
