@@ -254,6 +254,12 @@
     cursor: pointer;
 }
 
+.option-choice.choice-unavailable {
+    opacity: 0.3;
+    text-decoration: line-through;
+    cursor: not-allowed;
+}
+
 .option-choice.active {
     background: var(--text-green);
     color: var(--bg-primary);

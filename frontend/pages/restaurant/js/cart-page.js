@@ -4,7 +4,7 @@
  */
 
 import { getItems, getTotal, getCount, itemTotal, removeItem, setOption, clear } from './cart.js';
-import { createOrder } from './order-store.js';
+import { createOrder, getUnavailableItems } from './order-store.js';
 import { t, localize } from './i18n.js';
 import { ToastMessager } from '/javascript/toast.js';
 
@@ -37,11 +37,13 @@ function isActive(sel, ci) {
 }
 
 function renderOptions(item) {
+    const unavailable = getUnavailableItems();
     return item.options.map(opt => {
         const sel = item.selected[opt.key];
         const buttons = opt.choices.map((ch, ci) => {
+            const isOff = unavailable.includes(ch.label);
             const extraText = ch.extra ? ` +$${ch.extra}` : '';
-            return `<button class="option-choice${isActive(sel, ci) ? ' active' : ''}" data-item-id="${item.id}" data-key="${opt.key}" data-ci="${ci}">${ch.label}${extraText}</button>`;
+            return `<button class="option-choice${isActive(sel, ci) ? ' active' : ''}${isOff ? ' choice-unavailable' : ''}" data-item-id="${item.id}" data-key="${opt.key}" data-ci="${ci}" ${isOff ? 'disabled' : ''}>${ch.label}${extraText}</button>`;
         }).join('');
         return `<div class="option-row">
             <span class="option-label">${opt.label}</span>
