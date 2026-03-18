@@ -20,7 +20,8 @@ function detectLocale() {
 export async function initI18n() {
     locale = detectLocale();
     try {
-        const res = await fetch(`locales/${locale}.json`);
+        const base = new URL('../locales', import.meta.url).href;
+        const res = await fetch(`${base}/${locale}.json`);
         strings = await res.json();
     } catch {
         strings = {};

@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="zh-TW" class="theme-light">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>臺味冰點 — 點餐</title>
+    <meta name="theme-color" content="#ffffff">
+    <link rel="icon" href="/images/favicon.ico">
+    <link rel="apple-touch-icon" href="/images/favicon.ico">
+    <link rel="stylesheet" href="/style.css">
+    <link rel="stylesheet" href="/stylesheets/navi.css">
+    <link rel="stylesheet" href="/stylesheets/page.css">
+    <link rel="stylesheet" href="/stylesheets/toast.css">
+    <link rel="stylesheet" href="/stylesheets/layer.css">
+    <link rel="stylesheet" href="/stylesheets/@media.css">
+    <link rel="stylesheet" href="/mods/light-theme/theme.css">
+    <link rel="stylesheet" href="/pages/restaurant/css/style.css">
+    <script>navigator.serviceWorker?.getRegistrations().then(rs => rs.forEach(r => r.unregister()))</script>
+</head>
+
+<body>
+    <div class="header">
+        <img src="/pages/restaurant/images/header.png" class="header-img" alt="臺味冰點">
+    </div>
+    <div class="body">
+        <nav class="navi-bar">
+            <div class="navi-mask"></div>
+
+            <!-- 點餐 -->
+            <div class="navi-item" data-navi-item="order" data-sound-main="UIGeneralCancel.mp3"
+                data-sound-sub="UIGeneralFocus.mp3">
+                <div class="navi-item-text" data-i18n="nav.order">點餐</div>
+                <div class="sub-navi-indicator"></div>
+                <div class="sub-navi-container">
+                    <div class="sub-navi-track">
+                        <div class="sub-navi-item" data-sub-navi-item="menu">
+                            <div class="sub-navi-item-text" data-i18n="nav.menu">菜單</div>
+                        </div>
+                        <div class="sub-navi-item" data-sub-navi-item="cart">
+                            <div class="sub-navi-item-text" data-i18n="nav.cart">購物車</div>
+                            <span class="cart-badge" hidden></span>
+                        </div>
+                        <div class="sub-navi-item" data-sub-navi-item="history">
+                            <div class="sub-navi-item-text" data-i18n="nav.history">歷史</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 控制臺 -->
+            <div class="navi-item" data-navi-item="console" data-sound-main="UIGeneralCancel.mp3"
+                data-sound-sub="UIGeneralFocus.mp3">
+                <div class="navi-item-text" data-i18n="nav.console">控制臺</div>
+                <div class="sub-navi-indicator"></div>
+                <div class="sub-navi-container">
+                    <div class="sub-navi-track">
+                        <div class="sub-navi-item" data-sub-navi-item="dev-tools">
+                            <div class="sub-navi-item-text" data-i18n="nav.dev-tools">工具</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </nav>
+        <div class="sub-navi-indicator-mask"></div>
+        <script type="module" src="/javascript/navi.js"></script>
+        <script type="module">
+            import { initI18n } from '../js/i18n.js';
+            import { initCart } from '../js/cart.js';
+            await initI18n();
+            await initCart();
+            import('../js/menu.js');
+            import('../js/cart-page.js');
+            import('../js/history-page.js');
+            import('../js/console-page.js');
+        </script>
+        <div class="page-container" id="page-container">
+
+            <!-- ====== 點餐 pages ====== -->
+            <div class="page" data-page="menu" id="menu-page">
+                <div class="food-categorized-container">
+                    <div class="food-category-title">飯類</div>
+                    <div class="food-item-item-container">
+                        <div class="food-item-container" data-name="滷肉飯" data-price="42"
+                            data-options='[{"key":"drink","label":"飲品","choices":[{"label":"咖啡","extra":0},{"label":"朱古力","extra":0},{"label":"可口可樂","extra":2},{"label":"茉香綠茶","extra":3},{"label":"金桔綠茶","extra":3},{"label":"青蘋菓綠茶","extra":3},{"label":"荔枝綠茶","extra":3},{"label":"檸檬可樂","extra":4},{"label":"鴛鴦","extra":4}]},{"key":"topping","label":"加料","choices":[{"label":"無","extra":0},{"label":"珍珠","extra":2}]},{"key":"extra","label":"加餸","type":"multi","choices":[{"label":"加汁","extra":5},{"label":"加肉燥","extra":12},{"label":"加白飯","extra":12}]}]'>
+                            <div class="food-item-img"></div>
+                            <div class="food-item-name">滷肉飯</div>
+                            <div class="food-item-bottom">
+                                <div class="food-item-price">$42</div>
+                                <button class="food-item-add" data-i18n="menu.add">+</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="food-categorized-container">
+                    <div class="food-category-title">凍綠茶</div>
+                    <div class="food-item-item-container">
+                        <div class="food-item-container" data-name="茉香綠茶" data-price="18"
+                            data-options='[{"key":"topping","label":"加料","choices":[{"label":"無","extra":0},{"label":"珍珠","extra":2}]}]'>
+                            <div class="food-item-img"></div>
+                            <div class="food-item-name">茉香綠茶</div>
+                            <div class="food-item-bottom">
+                                <div class="food-item-price">$18</div>
+                                <button class="food-item-add" data-i18n="menu.add">+</button>
+                            </div>
+                        </div>
+                        <div class="food-item-container" data-name="金桔綠茶" data-price="18"
+                            data-options='[{"key":"topping","label":"加料","choices":[{"label":"無","extra":0},{"label":"珍珠","extra":2}]}]'>
+                            <div class="food-item-img"></div>
+                            <div class="food-item-name">金桔綠茶</div>
+                            <div class="food-item-bottom">
+                                <div class="food-item-price">$18</div>
+                                <button class="food-item-add" data-i18n="menu.add">+</button>
+                            </div>
+                        </div>
+                        <div class="food-item-container" data-name="青蘋菓綠茶" data-price="18"
+                            data-options='[{"key":"topping","label":"加料","choices":[{"label":"無","extra":0},{"label":"珍珠","extra":2}]}]'>
+                            <div class="food-item-img"></div>
+                            <div class="food-item-name">青蘋菓綠茶</div>
+                            <div class="food-item-bottom">
+                                <div class="food-item-price">$18</div>
+                                <button class="food-item-add" data-i18n="menu.add">+</button>
+                            </div>
+                        </div>
+                        <div class="food-item-container" data-name="荔枝綠茶" data-price="18"
+                            data-options='[{"key":"topping","label":"加料","choices":[{"label":"無","extra":0},{"label":"珍珠","extra":2}]}]'>
+                            <div class="food-item-img"></div>
+                            <div class="food-item-name">荔枝綠茶</div>
+                            <div class="food-item-bottom">
+                                <div class="food-item-price">$18</div>
+                                <button class="food-item-add" data-i18n="menu.add">+</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="food-categorized-container">
+                    <div class="food-category-title">特飲</div>
+                    <div class="food-item-item-container">
+                        <div class="food-item-container" data-name="檸檬可樂" data-price="20"
+                            data-options='[{"key":"topping","label":"加料","choices":[{"label":"無","extra":0},{"label":"珍珠","extra":2}]}]'>
+                            <div class="food-item-img"></div>
+                            <div class="food-item-name">檸檬可樂</div>
+                            <div class="food-item-bottom">
+                                <div class="food-item-price">$20</div>
+                                <button class="food-item-add" data-i18n="menu.add">+</button>
+                            </div>
+                        </div>
+                        <div class="food-item-container" data-name="鴛鴦" data-price="20"
+                            data-options='[{"key":"topping","label":"加料","choices":[{"label":"無","extra":0},{"label":"珍珠","extra":2}]}]'>
+                            <div class="food-item-img"></div>
+                            <div class="food-item-name">鴛鴦</div>
+                            <div class="food-item-bottom">
+                                <div class="food-item-price">$20</div>
+                                <button class="food-item-add" data-i18n="menu.add">+</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="page" data-page="cart" id="cart-page"></div>
+            <div class="page" data-page="history" id="history-page"></div>
+
+            <!-- ====== 控制臺 pages ====== -->
+            <div class="page" data-page="dev-tools" id="dev-tools-page"></div>
+
+            <div id="toast-container"></div>
+        </div>
+    </div>
+    <div class="footer">
+        <div class="footer-text" data-i18n="footer.copyright">&copy; 2026 臺味冰點</div>
+    </div>
+</body>
+
+</html>
