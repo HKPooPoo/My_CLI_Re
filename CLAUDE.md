@@ -156,14 +156,11 @@ nginx (static SPA + reverse proxy) · api (Laravel 12 PHP-FPM) · reverb (WebSoc
 | Status | `StatusController` | — |
 | LLM (MOD) | `LlmController` | — (in controller) |
 | MOD Health | `ModController` | — |
-| Restaurant Orders | `RestaurantOrderController` | `RestaurantOrderService` |
-| Restaurant Branch | `RestaurantBranchController` | `RestaurantBranchService`, `RestaurantSessionService` |
-
-Models: `User`, `File` only. Events (6): `BlackboardUpdated`, `BroadcastChannelUpdated`, `RestaurantOrderUpdated`, `WalkieTypieConnectionUpdated`, `WalkieTypieContentUpdated`, `WalkieTypieSignal`. Mail: `ResetPasscodeMail`, `BindEmailMail`. Commands: `CleanOrphanedFiles`.
+Models: `User`, `File` only. Events (5): `BlackboardUpdated`, `BroadcastChannelUpdated`, `WalkieTypieConnectionUpdated`, `WalkieTypieContentUpdated`, `WalkieTypieSignal`. Mail: `ResetPasscodeMail`, `BindEmailMail`. Commands: `CleanOrphanedFiles`.
 
 **Rate limiting** (`routes/api.php`): AI endpoints 10/min · Auth login/register 30/min · Auth commands 10/min. All other endpoints (reads, writes, files, mods) are unthrottled — local single-user app with Redis caching. Client-side 429 handling: `api.js` dispatches `api:rateLimited` event (5s debounce), `blackboard-msg.js` listens and shows toast.
 
-### Database Schema (11 main + 2 restaurant migrations)
+### Database Schema (11 main tables)
 
 **Main DB (PostgreSQL `my-cli-db`):**
 
@@ -177,14 +174,6 @@ Models: `User`, `File` only. Events (6): `BlackboardUpdated`, `BroadcastChannelU
 - **files** — hash (unique), user_id FK, original_name, mime_type, size (bigint), disk_path, status (default 'staged')
 
 `file_hash` migrated from varchar(512) to text for JSON array serialization. File status lifecycle: `staged` → `committed` → `orphaned` (cleaned after 24h). Stale `staged` files (uploaded but never committed within 24h) are also marked `orphaned` by the hourly cron and cleaned in the next cycle. Performance indexes migration adds composite indexes for frequent query patterns.
-
-**Restaurant DB (separate PostgreSQL connection `restaurant`):**
-
-- **menu_items** — category (JSONB i18n), name (JSONB i18n), price, image, options_schema (JSONB), timeslots (JSONB), sort_order, available (bool)
-- **orders** — order_number (unique), status (default 'preparing'), total, branch_id FK nullable, table_number, session_token
-- **order_items** — order_id FK cascade, menu_item_id FK nullable, name (snapshot), base_price, qty, options (JSONB), subtotal
-- **branches** — code (unique), name; seeded with TM (Tuen Mun), TSW (Tin Shui Wai)
-- **restaurant_sessions** — branch_id FK cascade, table_number, token (unique), status (default 'active'), expires_at
 
 ### Frontend (`frontend/`)
 
@@ -308,7 +297,6 @@ Buttons that change label/behavior based on list selection context. Use raw `add
 |-------|-----------------|---------|---------|
 | `BlackboardUpdated` | `blackboard.updated` | Private `App.Models.User.{uid}` | `{ branch_id, device_id }` |
 | `BroadcastChannelUpdated` | `broadcast.channel.updated` | Public `broadcast-channel.{id}` | `{ channel_id, name, owner_uid, last_signal, action }` |
-| `RestaurantOrderUpdated` | `restaurant.order.updated` | Public `restaurant-orders.{branchCode}` | `{ order_number, action, branch_code }` |
 | `WalkieTypieConnectionUpdated` | `walkie-typie.updated` | Private `App.Models.User.{uid}` | `{ connection_data }` |
 | `WalkieTypieContentUpdated` | `walkie-typie.content` | Private `App.Models.User.{uid}` | `{ content_data: { text, branch_id, sender_uid } }` |
 | `WalkieTypieSignal` | `walkie-typie.content` | Private `App.Models.User.{partnerUid}` | `{ content_data: { branch_id, sender_uid, timestamp, text: null } }` |
@@ -566,3 +554,34 @@ claude mcp add my-db -- npx -y @bytebase/dbhub --dsn "postgresql://<POSTGRES_USE
 | **css-auditor** | CRT theme, flex layout, dark/light mode | After CSS changes |
 | **i18n-checker** | Locale key parity, hardcoded strings | After adding UI text |
 | **event-flow-tracer** | Race conditions, orphaned events | After changing event dispatch/listeners |
+
+---
+
+# ═══════════════════════════════════════════════════════════════
+# NON-MAIN MODULE: Restaurant
+# This section is ISOLATED from the main MyCLI platform above.
+# When working on main features, IGNORE this section entirely.
+# When working on restaurant features, refer to BOTH the shared
+# infrastructure above (Docker, testing, i18n) AND this section.
+# ═══════════════════════════════════════════════════════════════
+
+## Restaurant Module
+
+Standalone ordering system embedded in the MyCLI platform. Uses a **separate PostgreSQL connection** (`restaurant`) — completely independent from the main `my-cli-db`.
+
+### Backend
+
+| Feature | Controller | Service |
+|---------|-----------|---------|
+| Orders | `RestaurantOrderController` | `RestaurantOrderService` |
+| Branch & Sessions | `RestaurantBranchController` | `RestaurantBranchService`, `RestaurantSessionService` |
+
+**Event:** `RestaurantOrderUpdated` — `broadcastAs('restaurant.order.updated')` on public channel `restaurant-orders.{branchCode}`, payload `{ order_number, action, branch_code }`.
+
+### Database Schema (separate PostgreSQL connection `restaurant`)
+
+- **menu_items** — category (JSONB i18n), name (JSONB i18n), price, image, options_schema (JSONB), timeslots (JSONB), sort_order, available (bool)
+- **orders** — order_number (unique), status (default 'preparing'), total, branch_id FK nullable, table_number, session_token
+- **order_items** — order_id FK cascade, menu_item_id FK nullable, name (snapshot), base_price, qty, options (JSONB), subtotal
+- **branches** — code (unique), name; seeded with TM (Tuen Mun), TSW (Tin Shui Wai)
+- **restaurant_sessions** — branch_id FK cascade, table_number, token (unique), status (default 'active'), expires_at
