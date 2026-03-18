@@ -1,6 +1,6 @@
 /**
  * Kitchen menu control — toggle item availability.
- * Reads items from the menu page DOM, manages availability via localStorage.
+ * Uses hardcoded item list (kitchen is a separate page, can't scrape menu DOM).
  */
 
 import { t } from './i18n.js';
@@ -8,15 +8,21 @@ import { getUnavailableItems, toggleAvailability } from './order-store.js';
 
 const page = document.getElementById('kitchen-menu-page');
 
+const MENU_ITEMS = [
+    { name: '滷肉飯', price: 42 },
+    { name: '炒飯', price: 40 },
+    { name: '肥牛炒烏冬', price: 48 },
+    { name: '肉醬意粉', price: 45 },
+    { name: '茉香綠茶', price: 18 },
+    { name: '金桔綠茶', price: 18 },
+    { name: '青蘋菓綠茶', price: 18 },
+    { name: '荔枝綠茶', price: 18 },
+    { name: '檸檬可樂', price: 20 },
+    { name: '鴛鴦', price: 20 },
+];
+
 function getMenuItems() {
-    const items = [];
-    document.querySelectorAll('#menu-page .food-item-container').forEach(card => {
-        items.push({
-            name: card.dataset.name,
-            price: Number(card.dataset.price),
-        });
-    });
-    return items;
+    return MENU_ITEMS;
 }
 
 function render() {
