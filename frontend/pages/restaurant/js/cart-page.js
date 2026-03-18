@@ -194,6 +194,27 @@ function validateCheckout() {
     btn.disabled = !canOrder;
 }
 
+function saveFormState() {
+    return {
+        zone: document.getElementById('delivery-zone')?.value || '',
+        address: document.getElementById('delivery-address')?.value || '',
+        name: document.getElementById('customer-name')?.value || '',
+        phone: document.getElementById('customer-phone')?.value || '',
+    };
+}
+
+function restoreFormState(s) {
+    const zone = document.getElementById('delivery-zone');
+    const address = document.getElementById('delivery-address');
+    const name = document.getElementById('customer-name');
+    const phone = document.getElementById('customer-phone');
+    if (zone && s.zone) zone.value = s.zone;
+    if (address) address.value = s.address;
+    if (name) name.value = s.name;
+    if (phone) phone.value = s.phone;
+    validateCheckout();
+}
+
 cartPage.addEventListener('input', (e) => {
     if (e.target.closest('.checkout-form')) validateCheckout();
 });
@@ -288,7 +309,9 @@ async function handlePlaceOrder(btn) {
 }
 
 window.addEventListener('cart:updated', (e) => {
+    const saved = saveFormState();
     renderCart();
+    restoreFormState(saved);
     if (e.detail?.action === 'add' && cartNavi) {
         cartNavi.classList.remove('cart-shake');
         void cartNavi.offsetWidth;
