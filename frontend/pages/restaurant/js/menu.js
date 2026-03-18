@@ -32,8 +32,4 @@ menuPage.addEventListener('click', (e) => {
 });
 
 window.addEventListener('menu:availabilityChanged', updateAvailability);
-// Cross-tab: kitchen toggles availability in another tab
-window.addEventListener('storage', (e) => {
-    if (e.key === 'menu-unavailable') updateAvailability();
-});
 updateAvailability();

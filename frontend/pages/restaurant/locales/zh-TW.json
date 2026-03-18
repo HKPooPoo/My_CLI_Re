@@ -89,9 +89,5 @@
     "console.pin-invalid": "PIN 必須為 4 位數字",
     "console.tokens-title": "待取餐訂單（QR Token）",
     "console.no-ready": "沒有待取餐的訂單",
-    "landing.order-desc": "瀏覽菜單、下單、查看訂單歷史",
-    "landing.kitchen-desc": "接單、備餐、管理菜單",
-    "landing.delivery-desc": "掃碼取餐、配送追蹤",
-    "landing.console-desc": "開發測試工具",
     "footer.copyright": "© 2026 臺味冰點"
 }

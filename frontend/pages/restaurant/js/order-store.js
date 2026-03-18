@@ -10,18 +10,6 @@
 
 import db from './db.js';
 
-/* ── BroadcastChannel for cross-tab sync ── */
-
-const channel = new BroadcastChannel('restaurant-orders');
-channel.onmessage = (e) => {
-    window.dispatchEvent(new CustomEvent(e.data.type, { detail: e.data.detail }));
-};
-
-function broadcast(type, detail) {
-    window.dispatchEvent(new CustomEvent(type, { detail }));
-    channel.postMessage({ type, detail });
-}
-
 /* ── Order number generator ── */
 
 let counter = Number(localStorage.getItem('order-counter') || '0');
@@ -65,7 +53,7 @@ export async function createOrder({ items, deliveryZone, deliveryAddress, delive
         createdAt: new Date().toISOString(),
     };
     order.id = await db.orders.add(order);
-    broadcast('order:created', order);
+    window.dispatchEvent(new CustomEvent('order:created', { detail: order }));
     return order;
 }
 
@@ -99,7 +87,7 @@ export async function updateStatus(orderNumber, status, rejectReason) {
 
     await db.orders.update(order.id, patch);
     Object.assign(order, patch);
-    broadcast('order:statusChanged', order);
+    window.dispatchEvent(new CustomEvent('order:statusChanged', { detail: order }));
     return order;
 }
 
@@ -107,7 +95,7 @@ export async function clearOrders() {
     await db.orders.clear();
     localStorage.removeItem('order-counter');
     counter = 0;
-    broadcast('order:statusChanged', null);
+    window.dispatchEvent(new CustomEvent('order:statusChanged', { detail: null }));
 }
 
 /* ── Delivery PIN ── */
