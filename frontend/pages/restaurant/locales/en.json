@@ -89,5 +89,9 @@
     "console.pin-invalid": "PIN must be 4 digits",
     "console.tokens-title": "Ready Orders (QR Tokens)",
     "console.no-ready": "No orders ready for pickup",
+    "landing.order-desc": "Browse menu, place orders, view history",
+    "landing.kitchen-desc": "Accept orders, prepare food, manage menu",
+    "landing.delivery-desc": "Scan receipt, delivery tracking",
+    "landing.console-desc": "Development test tools",
     "footer.copyright": "© 2026 Taiwan Ice Station"
 }

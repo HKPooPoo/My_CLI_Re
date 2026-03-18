@@ -1,6 +1,6 @@
 /**
  * Kitchen menu control — toggle item availability.
- * Reads items from the menu page DOM, manages availability via localStorage.
+ * Uses hardcoded item list (can't scrape DOM from separate menu page).
  */
 
 import { t } from './i18n.js';
@@ -8,30 +8,23 @@ import { getUnavailableItems, toggleAvailability } from './order-store.js';
 
 const page = document.getElementById('kitchen-menu-page');
 
-function getMenuItems() {
-    const items = [];
-    document.querySelectorAll('#menu-page .food-item-container').forEach(card => {
-        items.push({
-            name: card.dataset.name,
-            price: Number(card.dataset.price),
-        });
-    });
-    return items;
-}
+const MENU_ITEMS = [
+    { name: '滷肉飯', price: 42 },
+    { name: '茉香綠茶', price: 18 },
+    { name: '金桔綠茶', price: 18 },
+    { name: '青蘋菓綠茶', price: 18 },
+    { name: '荔枝綠茶', price: 18 },
+    { name: '檸檬可樂', price: 20 },
+    { name: '鴛鴦', price: 20 },
+];
 
 function render() {
-    const items = getMenuItems();
     const unavailable = getUnavailableItems();
-
-    if (!items.length) {
-        page.innerHTML = `<div class="cart-empty">${t('kitchen.no-items')}</div>`;
-        return;
-    }
 
     page.innerHTML = `
         <div class="kitchen-menu-list">
             <div class="kitchen-section-title">${t('kitchen.menu-title')}</div>
-            ${items.map(item => {
+            ${MENU_ITEMS.map(item => {
                 const isOff = unavailable.includes(item.name);
                 return `
                 <div class="kitchen-menu-item ${isOff ? 'item-off' : ''}">
