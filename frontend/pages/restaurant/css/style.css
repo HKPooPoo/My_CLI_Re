@@ -1,3 +1,17 @@
+/* ==================== Restaurant Palette ==================== */
+/* Derived from background.png (lavender-blue) and header.png (warm cream) */
+
+:root.theme-light {
+    --bg-primary: rgba(255, 255, 255, 0.78);
+    --bg-secondary: rgba(245, 241, 236, 0.6);
+}
+
+:root.theme-light body,
+:root.theme-light .header,
+:root.theme-light .footer {
+    background-color: #d4dff0;
+}
+
 /* ==================== Background ==================== */
 
 :root.theme-light .page-container {
