@@ -27,6 +27,30 @@
     width: 100%;
 }
 
+/* ==================== Menu Search ==================== */
+
+.menu-search-bar {
+    width: var(--container-width);
+    max-width: var(--container-max-width);
+    margin: 12px auto 0;
+}
+
+.menu-search-input {
+    width: 100%;
+    padding: 10px 12px;
+    border: var(--border-line);
+    border-radius: var(--border-radius);
+    background: var(--bg-primary);
+    color: var(--text-green);
+    font-size: var(--font-size);
+    box-sizing: border-box;
+}
+
+.menu-search-input:focus {
+    border-color: var(--text-green);
+    outline: none;
+}
+
 /* ==================== Menu ==================== */
 
 .food-categorized-container {

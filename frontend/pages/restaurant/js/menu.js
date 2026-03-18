@@ -31,5 +31,23 @@ menuPage.addEventListener('click', (e) => {
     addItem(name, price, options);
 });
 
+// ── Search ──
+
+const searchInput = document.getElementById('menu-search');
+if (searchInput) {
+    searchInput.addEventListener('input', () => {
+        const q = searchInput.value.trim().toLowerCase();
+        menuPage.querySelectorAll('.food-categorized-container').forEach(cat => {
+            let anyVisible = false;
+            cat.querySelectorAll('.food-item-container').forEach(card => {
+                const match = !q || card.dataset.name.toLowerCase().includes(q);
+                card.style.display = match ? '' : 'none';
+                if (match) anyVisible = true;
+            });
+            cat.style.display = anyVisible ? '' : 'none';
+        });
+    });
+}
+
 window.addEventListener('menu:availabilityChanged', updateAvailability);
 updateAvailability();
