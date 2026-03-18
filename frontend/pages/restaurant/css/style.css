@@ -82,7 +82,8 @@
     font-weight: bold;
     font-size: calc(var(--font-size) + 0.2rem);
     padding: 4px 8px;
-    border-bottom: var(--border-line);
+    border: var(--border-line);
+    border-bottom: none;
     background: var(--bg-primary);
     border-radius: var(--border-radius) var(--border-radius) 0 0;
 }
