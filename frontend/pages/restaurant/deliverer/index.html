@@ -57,7 +57,7 @@
         <div class="sub-navi-indicator-mask"></div>
         <script type="module" src="/javascript/navi.js"></script>
         <script type="module">
-            import { initI18n } from '../js/i18n.js';
+            import { initI18n } from '/pages/restaurant/js/i18n.js';
             await initI18n();
 
             const v = Date.now();
@@ -69,14 +69,14 @@
                 document.querySelector('.sub-navi-indicator-mask').style.display = 'none';
                 document.getElementById('page-container').style.display = 'none';
                 document.getElementById('delivery-login-gate').style.display = '';
-                import(`../js/lang-toggle.js?v=${v}`).then(m => m.initLangToggle());
-                import(`../js/delivery-login.js?v=${v}`);
+                import(`/pages/restaurant/js/lang-toggle.js?v=${v}`).then(m => m.initLangToggle());
+                import(`/pages/restaurant/js/delivery-login.js?v=${v}`);
             } else {
-                import(`../js/lang-toggle.js?v=${v}`).then(m => m.initLangToggle());
-                import(`../js/restaurant-echo.js?v=${v}`).then(m => m.initRestaurantEcho());
-                import(`../js/delivery-page.js?v=${v}`);
-                import(`../js/delivery-task-page.js?v=${v}`);
-                import(`../js/delivery-history-page.js?v=${v}`);
+                import(`/pages/restaurant/js/lang-toggle.js?v=${v}`).then(m => m.initLangToggle());
+                import(`/pages/restaurant/js/restaurant-echo.js?v=${v}`).then(m => m.initRestaurantEcho());
+                import(`/pages/restaurant/js/delivery-page.js?v=${v}`);
+                import(`/pages/restaurant/js/delivery-task-page.js?v=${v}`);
+                import(`/pages/restaurant/js/delivery-history-page.js?v=${v}`);
             }
         </script>
         <div class="page-container" id="page-container">

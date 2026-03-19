@@ -65,16 +65,16 @@
         <div class="sub-navi-indicator-mask"></div>
         <script type="module" src="/javascript/navi.js"></script>
         <script type="module">
-            import { initI18n } from '../js/i18n.js';
-            import { initCart } from '../js/cart.js';
+            import { initI18n } from '/pages/restaurant/js/i18n.js';
+            import { initCart } from '/pages/restaurant/js/cart.js';
             await initI18n();
             await initCart();
             const v = Date.now();
-            import(`../js/lang-toggle.js?v=${v}`).then(m => m.initLangToggle());
-            import(`../js/menu.js?v=${v}`);
-            import(`../js/cart-page.js?v=${v}`);
-            import(`../js/history-page.js?v=${v}`);
-            import(`../js/console-page.js?v=${v}`);
+            import(`/pages/restaurant/js/lang-toggle.js?v=${v}`).then(m => m.initLangToggle());
+            import(`/pages/restaurant/js/menu.js?v=${v}`);
+            import(`/pages/restaurant/js/cart-page.js?v=${v}`);
+            import(`/pages/restaurant/js/history-page.js?v=${v}`);
+            import(`/pages/restaurant/js/console-page.js?v=${v}`);
         </script>
         <div class="page-container" id="page-container">
 

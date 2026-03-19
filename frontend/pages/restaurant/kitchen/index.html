@@ -86,13 +86,13 @@
         <div class="sub-navi-indicator-mask"></div>
         <script type="module" src="/javascript/navi.js"></script>
         <script type="module">
-            import { initI18n } from '../js/i18n.js';
-            import { initCart } from '../js/cart.js';
+            import { initI18n } from '/pages/restaurant/js/i18n.js';
+            import { initCart } from '/pages/restaurant/js/cart.js';
             await initI18n();
             await initCart();
 
             const v = Date.now();
-            const { BRANCH } = await import(`../js/branch.js?v=${v}`);
+            const { BRANCH } = await import(`/pages/restaurant/js/branch.js?v=${v}`);
             window.__kitchenBranch = BRANCH;
 
             let session = null;
@@ -104,17 +104,17 @@
                 document.querySelector('.sub-navi-indicator-mask').style.display = 'none';
                 document.getElementById('page-container').style.display = 'none';
                 document.getElementById('kitchen-login-gate').style.display = '';
-                import(`../js/lang-toggle.js?v=${v}`).then(m => m.initLangToggle());
-                import(`../js/kitchen-login.js?v=${v}`);
+                import(`/pages/restaurant/js/lang-toggle.js?v=${v}`).then(m => m.initLangToggle());
+                import(`/pages/restaurant/js/kitchen-login.js?v=${v}`);
             } else {
-                import(`../js/lang-toggle.js?v=${v}`).then(m => m.initLangToggle());
-                import(`../js/restaurant-echo.js?v=${v}`).then(m => m.initRestaurantEcho());
-                import(`../js/kitchen-page.js?v=${v}`);
-                import(`../js/kitchen-history-page.js?v=${v}`);
-                import(`../js/kitchen-menu-page.js?v=${v}`);
-                import(`../js/kitchen-deliverer-page.js?v=${v}`);
-                import(`../js/kitchen-register-page.js?v=${v}`);
-                import(`../js/kitchen-console-page.js?v=${v}`);
+                import(`/pages/restaurant/js/lang-toggle.js?v=${v}`).then(m => m.initLangToggle());
+                import(`/pages/restaurant/js/restaurant-echo.js?v=${v}`).then(m => m.initRestaurantEcho());
+                import(`/pages/restaurant/js/kitchen-page.js?v=${v}`);
+                import(`/pages/restaurant/js/kitchen-history-page.js?v=${v}`);
+                import(`/pages/restaurant/js/kitchen-menu-page.js?v=${v}`);
+                import(`/pages/restaurant/js/kitchen-deliverer-page.js?v=${v}`);
+                import(`/pages/restaurant/js/kitchen-register-page.js?v=${v}`);
+                import(`/pages/restaurant/js/kitchen-console-page.js?v=${v}`);
             }
         </script>
         <div class="page-container" id="page-container">
