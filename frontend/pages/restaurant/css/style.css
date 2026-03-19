@@ -735,6 +735,19 @@
     margin-top: 4px;
 }
 
+.scan-mock-btn {
+    background: var(--bg-secondary);
+    color: var(--text-green);
+    border-style: dashed;
+}
+
+.scan-divider {
+    text-align: center;
+    font-size: 0.8em;
+    opacity: 0.5;
+    padding: 4px 0;
+}
+
 /* ---- Delivery info card ---- */
 
 .delivery-info-card {
