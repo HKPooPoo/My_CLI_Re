@@ -21,7 +21,7 @@ db.version(2).stores({
 db.version(3).stores({
     cartItems: '++id, name',
     orders: '++id, orderNumber, status, createdAt, delivererId',
-    deliverers: '++id, code, name, status',
+    deliverers: '++id, phone, name, status',
 });
 
 export default db;

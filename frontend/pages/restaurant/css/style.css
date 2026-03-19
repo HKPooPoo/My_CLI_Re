@@ -962,11 +962,9 @@
     align-items: center;
 }
 
-.deliverer-card-code {
+.deliverer-card-name {
     font-weight: bold;
-    font-family: monospace;
     font-size: calc(var(--font-size) + 0.1rem);
-    letter-spacing: 0.05em;
 }
 
 .deliverer-card-info {

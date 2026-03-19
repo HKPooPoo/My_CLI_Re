@@ -15,7 +15,7 @@ function render(error) {
     const errorHtml = error ? `<div class="delivery-error">${error}</div>` : '';
     page.innerHTML = `
         <div class="delivery-session-bar">
-            <span class="delivery-session-name">${session?.code} · ${session?.name}</span>
+            <span class="delivery-session-name">${session?.name} · ${session?.phone}</span>
             <button class="cart-remove delivery-logout-btn">${t('deliverer.logout')}</button>
         </div>
         <div class="delivery-form">

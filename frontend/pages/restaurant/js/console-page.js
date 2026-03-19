@@ -89,7 +89,6 @@ const devButtons = [
         async action() {
             await db.delete();
             localStorage.removeItem('order-counter');
-            localStorage.removeItem('deliverer-counter');
             localStorage.removeItem('menu-unavailable');
             localStorage.removeItem('delivery-info');
             localStorage.removeItem('deliverer-session');

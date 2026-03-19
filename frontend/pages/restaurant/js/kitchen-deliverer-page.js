@@ -32,11 +32,10 @@ async function render() {
             ${deliverers.map(d => `
                 <div class="deliverer-card">
                     <div class="deliverer-card-header">
-                        <span class="deliverer-card-code">${d.code}</span>
+                        <span class="deliverer-card-name">${d.name}</span>
                         <span class="order-status ${STATUS_BADGE[d.status] || ''}">${t('deliverer.status.' + d.status)}</span>
                     </div>
                     <div class="deliverer-card-info">
-                        <span>${d.name}</span>
                         <span class="deliverer-card-phone">${d.phone}</span>
                     </div>
                     <div class="deliverer-card-actions">

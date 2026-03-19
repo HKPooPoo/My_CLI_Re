@@ -1,5 +1,5 @@
 /**
- * Deliverer login page — authenticates with code + PIN + password.
+ * Deliverer login page — authenticates with phone + password.
  * On success, saves session to localStorage and reloads.
  */
 
@@ -14,12 +14,8 @@ function render(error) {
         <div class="delivery-form delivery-login-form">
             <div class="delivery-form-title">${t('deliverer.login-title')}</div>
             <div class="checkout-field">
-                <label class="checkout-label">${t('deliverer.code')}</label>
-                <input type="text" id="login-code" class="checkout-input" placeholder="D001" autocomplete="off">
-            </div>
-            <div class="checkout-field">
-                <label class="checkout-label">${t('deliverer.pin')}</label>
-                <input type="password" id="login-pin" class="checkout-input" maxlength="4" placeholder="****" inputmode="numeric">
+                <label class="checkout-label">${t('deliverer.phone')}</label>
+                <input type="tel" id="login-phone" class="checkout-input" placeholder="91234567" inputmode="tel">
             </div>
             <div class="checkout-field">
                 <label class="checkout-label">${t('deliverer.password')}</label>
@@ -35,11 +31,10 @@ page.addEventListener('click', async (e) => {
     const btn = e.target.closest('#login-submit');
     if (!btn || btn.disabled) return;
 
-    const code = document.getElementById('login-code')?.value.trim().toUpperCase();
-    const pin = document.getElementById('login-pin')?.value.trim();
+    const phone = document.getElementById('login-phone')?.value.trim();
     const password = document.getElementById('login-password')?.value.trim();
 
-    if (!code || !pin || !password) {
+    if (!phone || !password) {
         render(t('deliverer.login-fill-all'));
         return;
     }
@@ -47,7 +42,7 @@ page.addEventListener('click', async (e) => {
     btn.disabled = true;
     btn.textContent = '...';
 
-    const deliverer = await authenticateDeliverer(code, pin, password);
+    const deliverer = await authenticateDeliverer(phone, password);
     if (!deliverer) {
         render(t('deliverer.login-error'));
         return;

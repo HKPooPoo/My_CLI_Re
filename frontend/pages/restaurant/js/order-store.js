@@ -115,20 +115,12 @@ export async function clearOrders() {
    Deliverer CRUD
    ══════════════════════════════════════ */
 
-let delivererCounter = Number(localStorage.getItem('deliverer-counter') || '0');
-
-function nextDelivererCode() {
-    delivererCounter++;
-    localStorage.setItem('deliverer-counter', String(delivererCounter));
-    return 'D' + String(delivererCounter).padStart(3, '0');
-}
-
-export async function addDeliverer({ name, phone, pin, password }) {
+export async function addDeliverer({ name, phone, password }) {
+    const existing = await getDelivererByPhone(phone);
+    if (existing) throw new Error('Phone already registered');
     const deliverer = {
-        code: nextDelivererCode(),
         name,
         phone,
-        pin,
         password,
         status: 'idle',
         createdAt: new Date().toISOString(),
@@ -142,10 +134,10 @@ export async function getDeliverers() {
     return db.deliverers.orderBy('id').toArray();
 }
 
-export async function getDelivererByCode(code) {
-    if (!code) return null;
+export async function getDelivererByPhone(phone) {
+    if (!phone) return null;
     const all = await db.deliverers.toArray();
-    return all.find(d => d.code === code) || null;
+    return all.find(d => d.phone === phone) || null;
 }
 
 export async function getDelivererById(id) {
@@ -163,10 +155,10 @@ export async function deleteDeliverer(id) {
     window.dispatchEvent(new CustomEvent('deliverer:changed'));
 }
 
-export async function authenticateDeliverer(code, pin, password) {
-    const d = await getDelivererByCode(code);
+export async function authenticateDeliverer(phone, password) {
+    const d = await getDelivererByPhone(phone);
     if (!d) return null;
-    if (d.pin !== pin || d.password !== password) return null;
+    if (d.password !== password) return null;
     return d;
 }
 
@@ -192,7 +184,7 @@ export function getDelivererSession() {
 export function setDelivererSession(deliverer) {
     localStorage.setItem('deliverer-session', JSON.stringify({
         id: deliverer.id,
-        code: deliverer.code,
+        phone: deliverer.phone,
         name: deliverer.name,
     }));
 }
