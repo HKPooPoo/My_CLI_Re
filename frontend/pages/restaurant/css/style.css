@@ -1050,6 +1050,15 @@
     font-family: monospace;
 }
 
+.delivery-form .delivery-session-bar {
+    width: auto;
+    margin: 0;
+    border: none;
+    border-bottom: var(--border-line);
+    border-radius: 0;
+    padding: 0 0 8px;
+}
+
 /* ==================== Armed delete button ==================== */
 
 .cart-remove.armed {

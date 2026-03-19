@@ -13,7 +13,7 @@ function render(error) {
     page.innerHTML = `
         <div class="delivery-form delivery-login-form">
             <div class="delivery-form-title">${t('kitchen.login-title')}</div>
-            <div class="delivery-session-bar" style="margin:0">
+            <div class="delivery-session-bar">
                 <span class="delivery-session-name">${t('kitchen.branch-code')}: ${BRANCH || '—'}</span>
             </div>
             <div class="checkout-field">
