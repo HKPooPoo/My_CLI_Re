@@ -9,7 +9,7 @@ import { ToastMessager } from '/javascript/toast.js';
 const page = document.getElementById('dev-tools-page');
 const toast = new ToastMessager();
 
-function getBranch() { return window.__kitchenBranch || null; }
+import { BRANCH } from './branch.js';
 
 function getSession() {
     try { return JSON.parse(localStorage.getItem('kitchen-session')); }
@@ -18,7 +18,7 @@ function getSession() {
 
 async function render() {
     const session = getSession();
-    const branch = getBranch();
+    const branch = BRANCH;
 
     let printedHtml = '';
     try {

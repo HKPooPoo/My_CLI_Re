@@ -92,10 +92,14 @@
             await initCart();
 
             const v = Date.now();
+            const { BRANCH } = await import(`../js/branch.js?v=${v}`);
+            window.__kitchenBranch = BRANCH;
+
             let session = null;
             try { session = JSON.parse(localStorage.getItem('kitchen-session')); } catch {}
 
-            if (!session) {
+            if (!session || session.code !== BRANCH) {
+                localStorage.removeItem('kitchen-session');
                 document.getElementById('kitchen-nav').style.display = 'none';
                 document.querySelector('.sub-navi-indicator-mask').style.display = 'none';
                 document.getElementById('page-container').style.display = 'none';
@@ -103,8 +107,6 @@
                 import(`../js/lang-toggle.js?v=${v}`).then(m => m.initLangToggle());
                 import(`../js/kitchen-login.js?v=${v}`);
             } else {
-                // Store branch globally for page modules to read
-                window.__kitchenBranch = session.code;
                 import(`../js/lang-toggle.js?v=${v}`).then(m => m.initLangToggle());
                 import(`../js/restaurant-echo.js?v=${v}`).then(m => m.initRestaurantEcho());
                 import(`../js/kitchen-page.js?v=${v}`);

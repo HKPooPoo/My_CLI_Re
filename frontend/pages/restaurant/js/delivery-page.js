@@ -3,7 +3,8 @@
  */
 
 import { t } from './i18n.js';
-import { fetchOrderByPickupCode, updateOrderStatus, updateDelivererStatus, logoutDeliverer } from './restaurant-api.js';
+import { BRANCH } from './branch.js';
+import { fetchOrders, updateOrderStatus, updateDelivererStatus, logoutDeliverer } from './restaurant-api.js';
 import { ToastMessager } from '/javascript/toast.js';
 
 const page = document.getElementById('delivery-scan-page');

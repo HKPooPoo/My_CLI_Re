@@ -4,6 +4,7 @@
  */
 
 import { t } from './i18n.js';
+import { BRANCH } from './branch.js';
 import { fetchOrders } from './restaurant-api.js';
 
 const page = document.getElementById('kitchen-history-page');
@@ -13,11 +14,9 @@ function formatTime(iso) {
     return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
 
-function getBranch() { return window.__kitchenBranch || null; }
-
 async function render() {
     try {
-        const orders = await fetchOrders(getBranch());
+        const orders = await fetchOrders(BRANCH);
         const history = orders.filter(o => o.status !== 'pending');
 
         if (!history.length) {

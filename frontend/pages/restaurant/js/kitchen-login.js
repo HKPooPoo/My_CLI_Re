@@ -1,9 +1,9 @@
 /**
- * Kitchen login page — authenticates with branch code + password.
- * On success, saves branch session to localStorage and reloads.
+ * Kitchen login — password only. Branch code read from URL path.
  */
 
 import { t } from './i18n.js';
+import { BRANCH } from './branch.js';
 import { authenticateBranch } from './restaurant-api.js';
 
 const page = document.getElementById('kitchen-login-page');
@@ -13,9 +13,8 @@ function render(error) {
     page.innerHTML = `
         <div class="delivery-form delivery-login-form">
             <div class="delivery-form-title">${t('kitchen.login-title')}</div>
-            <div class="checkout-field">
-                <label class="checkout-label">${t('kitchen.branch-code')}</label>
-                <input type="text" id="login-branch" class="checkout-input" placeholder="TM" autocomplete="off">
+            <div class="delivery-session-bar" style="margin:0">
+                <span class="delivery-session-name">${t('kitchen.branch-code')}: ${BRANCH || '—'}</span>
             </div>
             <div class="checkout-field">
                 <label class="checkout-label">${t('deliverer.password')}</label>
@@ -31,10 +30,13 @@ page.addEventListener('click', async (e) => {
     const btn = e.target.closest('#login-submit');
     if (!btn || btn.disabled) return;
 
-    const code = document.getElementById('login-branch')?.value.trim().toUpperCase();
-    const password = document.getElementById('login-password')?.value.trim();
+    if (!BRANCH) {
+        render(t('kitchen.no-branch'));
+        return;
+    }
 
-    if (!code || !password) {
+    const password = document.getElementById('login-password')?.value.trim();
+    if (!password) {
         render(t('deliverer.login-fill-all'));
         return;
     }
@@ -43,7 +45,7 @@ page.addEventListener('click', async (e) => {
     btn.textContent = '...';
 
     try {
-        const branch = await authenticateBranch(code, password);
+        const branch = await authenticateBranch(BRANCH, password);
         localStorage.setItem('kitchen-session', JSON.stringify({
             id: branch.id,
             code: branch.code,

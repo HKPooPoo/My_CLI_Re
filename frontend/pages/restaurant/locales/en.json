@@ -64,6 +64,7 @@
     "kitchen.history": "Completed",
     "kitchen.login-title": "Kitchen Login",
     "kitchen.branch-code": "Branch Code",
+    "kitchen.no-branch": "No branch code in URL",
     "kitchen.print": "Print",
     "kitchen.printed": "Printed!",
     "kitchen.no-history": "No history yet",
