@@ -107,3 +107,4 @@ page.addEventListener('click', async (e) => {
 
 window.addEventListener('restaurant:orderUpdated', render);
 render();
+setInterval(render, 2000);

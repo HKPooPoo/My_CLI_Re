@@ -96,7 +96,7 @@ page.addEventListener('click', async (e) => {
     }
 });
 
-// Real-time: re-fetch on any order event
 window.addEventListener('restaurant:orderCreated', render);
 window.addEventListener('restaurant:orderUpdated', render);
 render();
+setInterval(render, 2000);
