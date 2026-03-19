@@ -70,6 +70,7 @@
             await initI18n();
             await initCart();
             const v = Date.now();
+            import(`../js/lang-toggle.js?v=${v}`).then(m => m.initLangToggle());
             import(`../js/menu.js?v=${v}`);
             import(`../js/cart-page.js?v=${v}`);
             import(`../js/history-page.js?v=${v}`);
@@ -212,6 +213,7 @@
     </div>
     <div class="footer">
         <div class="footer-text" data-i18n="footer.copyright">&copy; 2026 臺味冰點</div>
+        <button id="lang-toggle" class="lang-toggle-btn"></button>
     </div>
 </body>
 

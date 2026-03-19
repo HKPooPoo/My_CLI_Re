@@ -1031,3 +1031,20 @@
     color: var(--bg-primary);
     border-color: var(--text-red);
 }
+
+/* ==================== Language Toggle ==================== */
+
+.lang-toggle-btn {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    padding: 2px 10px;
+    border: var(--border-line);
+    border-radius: var(--border-radius);
+    background: var(--bg-primary);
+    color: var(--text-green);
+    font-size: 0.75em;
+    font-weight: bold;
+    cursor: pointer;
+}
