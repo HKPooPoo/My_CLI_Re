@@ -15,6 +15,9 @@ if (!menuPage) console.warn('menu.js: #menu-page not found');
 const MORNING_CUTOFF = 11; // Before 11:00 = morning
 
 function getCurrentSlot() {
+    // Kitchen console can override timeslot via localStorage
+    const override = localStorage.getItem('timeslot-override');
+    if (override === 'morning' || override === 'regular') return override;
     return new Date().getHours() < MORNING_CUTOFF ? 'morning' : 'regular';
 }
 
@@ -100,6 +103,7 @@ if (searchInput) {
 window.addEventListener('menu:availabilityChanged', updateAvailability);
 window.addEventListener('storage', (e) => {
     if (e.key === 'menu-unavailable') updateAvailability();
+    if (e.key === 'timeslot-override') updateTimeslot();
 });
 
 updateTimeslot();

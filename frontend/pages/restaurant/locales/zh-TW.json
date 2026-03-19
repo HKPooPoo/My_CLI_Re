@@ -155,5 +155,8 @@
     "console.branch": "分店",
     "console.danger-zone": "危險區域",
     "console.confirm-action": "確認？",
+    "console.timeslot-title": "菜單時段",
+    "console.slot-auto": "自動（依時鐘）",
+    "console.slot-changed": "時段已切換：",
     "footer.copyright": "© 2026 臺味冰點"
 }

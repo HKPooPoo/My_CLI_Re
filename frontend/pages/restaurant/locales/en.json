@@ -155,5 +155,8 @@
     "console.branch": "Branch",
     "console.danger-zone": "Danger Zone",
     "console.confirm-action": "Confirm?",
+    "console.timeslot-title": "Menu Timeslot",
+    "console.slot-auto": "Auto (by clock)",
+    "console.slot-changed": "Timeslot changed:",
     "footer.copyright": "© 2026 Taiwan Ice Station"
 }

@@ -30,6 +30,8 @@ async function render() {
     rendering = true;
     const session = getSession();
 
+    const currentSlot = localStorage.getItem('timeslot-override') || 'auto';
+
     // Fetch stats
     let orderCount = 0;
     let printedOrders = [];
@@ -85,6 +87,17 @@ async function render() {
         </div>
 
         <div class="console-container">
+            <div class="console-title">${t('console.timeslot-title')}</div>
+            <div class="console-section">
+                <div class="timeslot-controls">
+                    <button class="dev-btn timeslot-btn ${currentSlot === 'auto' ? 'timeslot-active' : ''}" data-slot="auto">${t('console.slot-auto')}</button>
+                    <button class="dev-btn timeslot-btn ${currentSlot === 'morning' ? 'timeslot-active' : ''}" data-slot="morning">${t('menu.slot-morning')}</button>
+                    <button class="dev-btn timeslot-btn ${currentSlot === 'regular' ? 'timeslot-active' : ''}" data-slot="regular">${t('menu.slot-regular')}</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="console-container">
             <div class="console-title">${t('console.danger-zone')}</div>
             <div class="console-buttons">
                 <button class="dev-btn dev-btn-warn" data-action="clear-orders">${t('console.clear-orders')}</button>
@@ -101,6 +114,20 @@ page.addEventListener('click', async (e) => {
     if (e.target.closest('.kitchen-logout-btn')) {
         localStorage.removeItem('kitchen-session');
         location.reload();
+        return;
+    }
+
+    // Timeslot override
+    const slotBtn = e.target.closest('.timeslot-btn');
+    if (slotBtn) {
+        const slot = slotBtn.dataset.slot;
+        if (slot === 'auto') {
+            localStorage.removeItem('timeslot-override');
+        } else {
+            localStorage.setItem('timeslot-override', slot);
+        }
+        toast.addMessage(`${t('console.slot-changed')} ${slotBtn.textContent.trim()}`, 2000, 'success');
+        render();
         return;
     }
 

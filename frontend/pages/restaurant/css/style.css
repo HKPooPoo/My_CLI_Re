@@ -125,6 +125,24 @@
     color: #1565c0;
 }
 
+/* ---- Timeslot controls (kitchen console) ---- */
+
+.timeslot-controls {
+    flex-direction: row;
+    gap: 8px;
+}
+
+.timeslot-btn {
+    flex: 1;
+    text-align: center;
+}
+
+.timeslot-btn.timeslot-active {
+    background: var(--text-green);
+    color: var(--bg-primary);
+    border-color: var(--text-green);
+}
+
 /* ==================== Menu ==================== */
 
 .food-categorized-container {
