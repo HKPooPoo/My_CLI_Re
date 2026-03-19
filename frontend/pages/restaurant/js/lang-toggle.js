@@ -9,7 +9,7 @@ export function initLangToggle() {
     const el = document.getElementById('lang-toggle');
     if (!el) return;
     const current = getLocale();
-    el.textContent = current === 'zh-TW' ? 'EN' : '中文';
+    el.textContent = current === 'zh-TW' ? '中文' : 'EN';
     el.addEventListener('click', () => {
         localStorage.setItem('restaurant-locale', current === 'zh-TW' ? 'en' : 'zh-TW');
         location.reload();
