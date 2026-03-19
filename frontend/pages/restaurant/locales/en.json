@@ -62,6 +62,8 @@
     "order.status.rejected": "Rejected",
     "kitchen.empty": "No orders right now",
     "kitchen.history": "Completed",
+    "kitchen.login-title": "Kitchen Login",
+    "kitchen.branch-code": "Branch Code",
     "kitchen.print": "Print",
     "kitchen.printed": "Printed!",
     "kitchen.no-history": "No history yet",

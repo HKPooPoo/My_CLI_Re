@@ -23,8 +23,20 @@ class RestaurantOrderService
             $tableNumber = null;
             $branchCode = null;
 
+            // Branch from direct code (delivery orders)
+            if (! empty($data['branch_code'])) {
+                $branch = $this->db()->table('branches')
+                    ->where('code', strtoupper($data['branch_code']))
+                    ->first();
+                if ($branch) {
+                    $branchId = $branch->id;
+                    $branchCode = $branch->code;
+                }
+            }
+
+            // Branch from session token (dine-in orders)
             $sessionToken = $data['session_token'] ?? null;
-            if ($sessionToken) {
+            if ($sessionToken && ! $branchId) {
                 $session = $this->db()->table('restaurant_sessions')
                     ->join('branches', 'restaurant_sessions.branch_id', '=', 'branches.id')
                     ->where('restaurant_sessions.token', $sessionToken)

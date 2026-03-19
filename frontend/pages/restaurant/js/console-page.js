@@ -96,6 +96,7 @@ const devButtons = [
             localStorage.removeItem('menu-unavailable');
             localStorage.removeItem('delivery-info');
             localStorage.removeItem('deliverer-session');
+            localStorage.removeItem('kitchen-session');
             window.dispatchEvent(new CustomEvent('menu:availabilityChanged'));
             toast.addMessage(t('console.all-cleared'), 2000, 'info');
         }
@@ -109,6 +110,7 @@ const devButtons = [
             localStorage.removeItem('menu-unavailable');
             localStorage.removeItem('delivery-info');
             localStorage.removeItem('deliverer-session');
+            localStorage.removeItem('kitchen-session');
             toast.addMessage(t('console.db-reset'), 2000, 'info');
             setTimeout(() => location.reload(), 1000);
         }

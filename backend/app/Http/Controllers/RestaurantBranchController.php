@@ -33,6 +33,29 @@ class RestaurantBranchController extends Controller
         return response()->json($branch, 201);
     }
 
+    public function authenticate(Request $request)
+    {
+        $request->validate([
+            'code' => 'required|string',
+            'password' => 'required|string',
+        ]);
+
+        $branch = $this->branchService->authenticate(
+            $request->input('code'),
+            $request->input('password'),
+        );
+
+        if (! $branch) {
+            return response()->json(['message' => 'Invalid credentials'], 401);
+        }
+
+        return response()->json([
+            'id' => $branch->id,
+            'code' => $branch->code,
+            'name' => $branch->name,
+        ]);
+    }
+
     public function checkIn(Request $request)
     {
         $request->validate([

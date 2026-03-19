@@ -14,6 +14,9 @@ const cartNavi = document.querySelector('[data-sub-navi-item="cart"]');
 const badge = cartNavi?.querySelector('.cart-badge');
 const toast = new ToastMessager();
 
+// Branch from URL: ?branch=TM → pickup code prefix = TM
+const BRANCH = new URLSearchParams(window.location.search).get('branch') || '';
+
 const DELIVERY_ZONES = [
     { id: 'center', name: { 'zh-TW': '屯門市中心', en: 'Tuen Mun Central' }, distanceKm: 1.5, fee: 0 },
     { id: 'north', name: { 'zh-TW': '屯門北', en: 'Tuen Mun North' }, distanceKm: 3.0, fee: 15 },
@@ -380,6 +383,7 @@ async function handlePlaceOrder(btn) {
                 customer_phone: customerPhone,
                 customer_email: customerEmail || undefined,
                 comment: orderComment,
+                branch_code: BRANCH || undefined,
             });
             // Save API order number to local record for status polling
             await updateOrderFields(order.id, { apiOrderNumber: apiOrder.order_number });

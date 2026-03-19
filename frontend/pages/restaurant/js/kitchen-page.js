@@ -64,9 +64,12 @@ function renderOrderCard(order) {
     </div>`;
 }
 
+function getBranch() { return window.__kitchenBranch || null; }
+
 async function render() {
     try {
-        const orders = await fetchOrders();
+        const branch = getBranch();
+        const orders = await fetchOrders(branch);
         const pending = orders.filter(o => o.status === 'pending');
 
         if (!pending.length) {

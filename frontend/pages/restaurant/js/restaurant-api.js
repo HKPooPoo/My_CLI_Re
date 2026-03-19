@@ -18,6 +18,17 @@ async function request(path, options = {}) {
 }
 
 /* ══════════════════════════════════════
+   Branches
+   ══════════════════════════════════════ */
+
+export function authenticateBranch(code, password) {
+    return request('/branches/auth', {
+        method: 'POST',
+        body: JSON.stringify({ code, password }),
+    });
+}
+
+/* ══════════════════════════════════════
    Orders
    ══════════════════════════════════════ */
 

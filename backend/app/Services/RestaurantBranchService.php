@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 
 class RestaurantBranchService
 {
@@ -36,5 +37,17 @@ class RestaurantBranchService
         return $this->db()->table('branches')
             ->where('code', strtoupper($code))
             ->first();
+    }
+
+    public function authenticate(string $code, string $password): ?object
+    {
+        $branch = $this->findByCode($code);
+        if (! $branch || ! $branch->password) {
+            return null;
+        }
+        if (! Hash::check($password, $branch->password)) {
+            return null;
+        }
+        return $branch;
     }
 }

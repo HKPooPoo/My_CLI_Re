@@ -13,9 +13,11 @@ function formatTime(iso) {
     return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
 
+function getBranch() { return window.__kitchenBranch || null; }
+
 async function render() {
     try {
-        const orders = await fetchOrders();
+        const orders = await fetchOrders(getBranch());
         const history = orders.filter(o => o.status !== 'pending');
 
         if (!history.length) {

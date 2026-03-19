@@ -104,6 +104,7 @@ Route::middleware([/*'auth:sanctum',*/ 'throttle:10,1'])->prefix('mods')->group(
 Route::prefix('restaurant')->group(function () {
     Route::get('/branches', [RestaurantBranchController::class, 'index']);
     Route::post('/branches', [RestaurantBranchController::class, 'store']);
+    Route::post('/branches/auth', [RestaurantBranchController::class, 'authenticate']);
     Route::post('/sessions/check-in', [RestaurantBranchController::class, 'checkIn']);
     Route::post('/sessions/check-out', [RestaurantBranchController::class, 'checkOut']);
     Route::get('/orders', [RestaurantOrderController::class, 'index']);

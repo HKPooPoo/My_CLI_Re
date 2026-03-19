@@ -62,6 +62,8 @@
     "order.status.rejected": "已拒絕",
     "kitchen.empty": "目前沒有訂單",
     "kitchen.history": "已完成",
+    "kitchen.login-title": "廚房登入",
+    "kitchen.branch-code": "分店代碼",
     "kitchen.print": "印單",
     "kitchen.printed": "已印單！",
     "kitchen.no-history": "沒有歷史記錄",

@@ -36,6 +36,7 @@ class RestaurantOrderController extends Controller
             'customer_phone' => 'nullable|string|max:20',
             'customer_email' => 'nullable|email|max:255',
             'comment' => 'nullable|string|max:500',
+            'branch_code' => 'nullable|string|max:10',
             'session_token' => 'nullable|string',
         ]);
 
