@@ -14,7 +14,7 @@
 
 /* ==================== Background ==================== */
 
-:root.theme-light .page-container {
+:root.theme-light .body {
     background-image: url(/pages/restaurant/images/background.png);
     background-position: center;
     background-repeat: no-repeat;
