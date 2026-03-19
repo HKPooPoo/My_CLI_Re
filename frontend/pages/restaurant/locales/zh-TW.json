@@ -40,6 +40,8 @@
     "cart.error-address": "請輸入外送地址",
     "cart.error-name": "請輸入姓名",
     "cart.error-phone": "請輸入電話號碼",
+    "cart.email": "電郵（選填，接收收據）",
+    "cart.email-placeholder": "例：name@email.com",
     "cart.comment": "備註",
     "cart.comment-placeholder": "例：不要辣、走蔥...",
     "cart.place-order": "下單",

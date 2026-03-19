@@ -4,8 +4,10 @@ namespace App\Services;
 
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Mail;
 use Carbon\Carbon;
 use App\Events\RestaurantOrderUpdated;
+use App\Mail\RestaurantReceiptMail;
 
 class RestaurantOrderService
 {
@@ -56,6 +58,7 @@ class RestaurantOrderService
                 'delivery_fee' => $data['delivery_fee'] ?? 0,
                 'customer_name' => $data['customer_name'] ?? null,
                 'customer_phone' => $data['customer_phone'] ?? null,
+                'customer_email' => $data['customer_email'] ?? null,
                 'comment' => $data['comment'] ?? null,
                 'estimated_minutes' => $estimatedMinutes,
                 'created_at' => now(),
@@ -87,6 +90,14 @@ class RestaurantOrderService
             Cache::forget('restaurant:orders:today');
 
             event(new RestaurantOrderUpdated($orderNumber, 'created', $branchCode));
+
+            // Send receipt email if provided
+            $email = $data['customer_email'] ?? null;
+            if ($email) {
+                $order = $this->db()->table('orders')->find($orderId);
+                $items = $this->db()->table('order_items')->where('order_id', $orderId)->get()->toArray();
+                Mail::to($email)->queue(new RestaurantReceiptMail($order, $items));
+            }
 
             return (object) [
                 'id' => $orderId,

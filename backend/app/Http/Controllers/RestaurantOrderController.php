@@ -34,6 +34,7 @@ class RestaurantOrderController extends Controller
             'distance_km' => 'nullable|numeric|min:0',
             'customer_name' => 'nullable|string|max:100',
             'customer_phone' => 'nullable|string|max:20',
+            'customer_email' => 'nullable|email|max:255',
             'comment' => 'nullable|string|max:500',
             'session_token' => 'nullable|string',
         ]);

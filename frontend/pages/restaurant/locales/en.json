@@ -40,6 +40,8 @@
     "cart.error-address": "Please enter delivery address",
     "cart.error-name": "Please enter your name",
     "cart.error-phone": "Please enter phone number",
+    "cart.email": "Email (optional, for receipt)",
+    "cart.email-placeholder": "e.g. name@email.com",
     "cart.comment": "Comment",
     "cart.comment-placeholder": "e.g. no spicy, no onion...",
     "cart.place-order": "Place Order",
