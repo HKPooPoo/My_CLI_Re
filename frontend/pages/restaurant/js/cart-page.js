@@ -137,6 +137,10 @@ function renderCart() {
                 <label class="checkout-label">${t('cart.customer-phone')}</label>
                 <input type="tel" id="customer-phone" class="checkout-input" placeholder="${t('cart.phone-placeholder')}">
             </div>
+            <div class="checkout-field">
+                <label class="checkout-label">${t('cart.comment')}</label>
+                <textarea id="order-comment" class="checkout-input checkout-textarea" placeholder="${t('cart.comment-placeholder')}" rows="2"></textarea>
+            </div>
             <div id="fee-display" class="checkout-fee" hidden>
                 <div class="fee-row">
                     <span>${t('cart.subtotal')}</span>
@@ -241,6 +245,7 @@ function persistDeliveryInfo() {
         address: document.getElementById('delivery-address')?.value || '',
         name: document.getElementById('customer-name')?.value || '',
         phone: document.getElementById('customer-phone')?.value || '',
+        comment: document.getElementById('order-comment')?.value || '',
     });
 }
 
@@ -251,10 +256,12 @@ function restoreDeliveryInfo() {
     const address = document.getElementById('delivery-address');
     const name = document.getElementById('customer-name');
     const phone = document.getElementById('customer-phone');
+    const comment = document.getElementById('order-comment');
     if (zone && info.zone) zone.value = info.zone;
     if (address && info.address) address.value = info.address;
     if (name && info.name) name.value = info.name;
     if (phone && info.phone) phone.value = info.phone;
+    if (comment && info.comment) comment.value = info.comment;
 }
 
 cartPage.addEventListener('input', (e) => {
@@ -337,6 +344,7 @@ async function handlePlaceOrder(btn) {
         const deliveryAddress = document.getElementById('delivery-address').value.trim();
         const customerName = document.getElementById('customer-name').value.trim();
         const customerPhone = document.getElementById('customer-phone').value.trim();
+        const orderComment = document.getElementById('order-comment')?.value.trim() || '';
         const subtotal = getTotal();
 
         // Save to IndexedDB (local history)
@@ -348,6 +356,7 @@ async function handlePlaceOrder(btn) {
             distanceKm: zone.distanceKm,
             customerName,
             customerPhone,
+            comment: orderComment,
             subtotal,
         });
 
@@ -361,6 +370,7 @@ async function handlePlaceOrder(btn) {
                 distance_km: zone.distanceKm,
                 customer_name: customerName,
                 customer_phone: customerPhone,
+                comment: orderComment,
             });
             toast.addMessage(`${t('order.number')}${apiOrder.order_number}`, 4000, 'success');
         } catch {

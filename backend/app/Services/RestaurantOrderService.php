@@ -56,6 +56,7 @@ class RestaurantOrderService
                 'delivery_fee' => $data['delivery_fee'] ?? 0,
                 'customer_name' => $data['customer_name'] ?? null,
                 'customer_phone' => $data['customer_phone'] ?? null,
+                'comment' => $data['comment'] ?? null,
                 'estimated_minutes' => $estimatedMinutes,
                 'created_at' => now(),
                 'updated_at' => now(),

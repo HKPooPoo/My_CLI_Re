@@ -362,6 +362,12 @@
     outline: none;
 }
 
+.checkout-textarea {
+    resize: vertical;
+    min-height: 40px;
+    font-family: inherit;
+}
+
 /* ---- Fee display ---- */
 
 .checkout-fee {
@@ -501,6 +507,13 @@
     font-size: 0.85em;
     color: var(--text-red);
     font-weight: bold;
+}
+
+.order-card-comment {
+    font-size: 0.85em;
+    color: var(--text-orange-accent);
+    font-style: italic;
+    padding: 2px 0;
 }
 
 .order-items {
