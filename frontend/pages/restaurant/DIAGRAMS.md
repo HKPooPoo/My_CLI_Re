@@ -390,3 +390,653 @@ sequenceDiagram
         API-->>C: { status }
     end
 ```
+
+---
+
+## 4. Class Diagram
+
+### 4.1 Backend — Controllers, Services, Events, Mail
+
+```mermaid
+classDiagram
+    direction TB
+
+    %% ════════════════════════════════════════════
+    %% CONTROLLERS
+    %% ════════════════════════════════════════════
+
+    class RestaurantOrderController {
+        #RestaurantOrderService orderService
+        +index(Request) JsonResponse
+        +store(Request) JsonResponse
+        +show(string orderNumber) JsonResponse
+        +showByPickupCode(string code) JsonResponse
+        +updateStatus(Request, string orderNumber) JsonResponse
+        +listByDeliverer(int delivererId) JsonResponse
+        +clearOrders(Request) JsonResponse
+        +distance(Request) JsonResponse
+        +createCheckout(Request) JsonResponse
+    }
+
+    class RestaurantBranchController {
+        #RestaurantBranchService branchService
+        +index() JsonResponse
+        +store(Request) JsonResponse
+        +authenticate(Request) JsonResponse
+    }
+
+    class RestaurantDelivererController {
+        #RestaurantDelivererService service
+        +index() JsonResponse
+        +store(Request) JsonResponse
+        +authenticate(Request) JsonResponse
+        +logout(Request) JsonResponse
+        +me(Request) JsonResponse
+        +updateStatus(Request, int id) JsonResponse
+        +destroy(int id) JsonResponse
+    }
+
+    %% ════════════════════════════════════════════
+    %% SERVICES
+    %% ════════════════════════════════════════════
+
+    class RestaurantOrderService {
+        #db() DatabaseManager
+        +createOrder(array data) object
+        +getOrder(string orderNumber) object?
+        +listTodayOrders(string? branchCode) array
+        +clearOrders(string? branchCode) int
+        +listByDeliverer(int delivererId) array
+        +updateStatus(string orderNumber, string status, array extra) object?
+        #generateOrderNumber(string? branchCode) string
+    }
+
+    class RestaurantBranchService {
+        #db() DatabaseManager
+        +createBranch(string code, string name) object
+        +listBranches() array
+        +findByCode(string code) object?
+        +authenticate(string code, string password) object?
+    }
+
+    class RestaurantDelivererService {
+        #db() DatabaseManager
+        +register(string name, string phone, string password) object
+        +authenticate(string phone, string password) array?
+        +validateSession(string token) object?
+        +logout(string token) void
+        +list() array
+        +findById(int id) object?
+        +updateStatus(int id, string status) void
+        +delete(int id) void
+    }
+
+    %% ════════════════════════════════════════════
+    %% EVENT & MAIL
+    %% ════════════════════════════════════════════
+
+    class RestaurantOrderUpdated {
+        <<ShouldBroadcastNow>>
+        +string orderNumber
+        +string action
+        +string? branchCode
+        +broadcastOn() Channel
+        +broadcastAs() string
+        +broadcastWith() array
+    }
+
+    class RestaurantReceiptMail {
+        <<Mailable>>
+        +object order
+        +mixed items
+        +build() Mailable
+    }
+
+    %% ════════════════════════════════════════════
+    %% EXTERNAL SERVICES (used by controllers)
+    %% ════════════════════════════════════════════
+
+    class GoogleMapsAPI {
+        <<external>>
+        +distanceMatrix(origin, dest) JSON
+    }
+
+    class StripeCheckout {
+        <<external>>
+        +createSession(lineItems, urls) Session
+    }
+
+    %% ════════════════════════════════════════════
+    %% DATA STORES
+    %% ════════════════════════════════════════════
+
+    class PostgreSQL_orders {
+        <<table>>
+        +bigint id PK
+        +varchar order_number UK
+        +varchar status
+        +integer total
+        +jsonb items
+        +bigint branch_id FK
+        +varchar delivery_address
+        +integer delivery_fee
+        +varchar customer_name
+        +varchar customer_phone
+        +varchar customer_email
+        +text comment
+        +bigint deliverer_id FK
+        +integer estimated_minutes
+        +timestamp printed_at
+        +timestamp delivered_at
+    }
+
+    class PostgreSQL_branches {
+        <<table>>
+        +bigint id PK
+        +varchar code UK
+        +varchar name
+        +varchar password
+    }
+
+    class PostgreSQL_deliverers {
+        <<table>>
+        +bigint id PK
+        +varchar name
+        +varchar phone UK
+        +varchar password
+        +varchar status
+        +varchar session_token UK
+    }
+
+    class PostgreSQL_menu_items {
+        <<table>>
+        +bigint id PK
+        +jsonb category
+        +jsonb name
+        +integer price
+        +jsonb options_schema
+        +jsonb timeslots
+        +integer sort_order
+        +boolean available
+    }
+
+    class RedisCache {
+        <<cache>>
+        +restaurant:orders:today
+        +restaurant:deliverers (30s TTL)
+        +restaurant:order-seq:PREFIX:DATE (lock)
+    }
+
+    %% ════════════════════════════════════════════
+    %% RELATIONSHIPS
+    %% ════════════════════════════════════════════
+
+    %% Controller → Service (dependency injection)
+    RestaurantOrderController --> RestaurantOrderService : injects
+    RestaurantBranchController --> RestaurantBranchService : injects
+    RestaurantDelivererController --> RestaurantDelivererService : injects
+
+    %% Controller → External APIs
+    RestaurantOrderController ..> GoogleMapsAPI : HTTP GET
+    RestaurantOrderController ..> StripeCheckout : SDK call
+
+    %% Service → Data Stores
+    RestaurantOrderService --> PostgreSQL_orders : CRUD
+    RestaurantOrderService --> PostgreSQL_branches : read (findByCode)
+    RestaurantOrderService --> RedisCache : lock + cache
+    RestaurantBranchService --> PostgreSQL_branches : CRUD
+    RestaurantDelivererService --> PostgreSQL_deliverers : CRUD
+    RestaurantDelivererService --> RedisCache : cache (30s)
+
+    %% Service → Event / Mail
+    RestaurantOrderService ..> RestaurantOrderUpdated : dispatches
+    RestaurantOrderService ..> RestaurantReceiptMail : queues
+
+    %% DB Relationships
+    PostgreSQL_branches "1" --> "*" PostgreSQL_orders : branch_id FK
+    PostgreSQL_deliverers "1" --> "*" PostgreSQL_orders : deliverer_id FK
+    PostgreSQL_menu_items "0..*" ..> "0..*" PostgreSQL_orders : items JSONB snapshot
+```
+
+### 4.2 Frontend — ES Modules (as «module» stereotypes)
+
+```mermaid
+classDiagram
+    direction TB
+
+    %% ════════════════════════════════════════════
+    %% CORE MODULES
+    %% ════════════════════════════════════════════
+
+    class db {
+        <<module>>
+        +Dexie cartItems
+        +Dexie orders
+        -version 1~4
+    }
+
+    class i18n {
+        <<module>>
+        -object strings
+        -string locale
+        -array SUPPORTED
+        +initI18n() Promise~void~
+        +t(key) string
+        +localize(obj) string
+        +getLocale() string
+        +setLocale(newLocale) void
+        -renderDOM() void
+    }
+
+    class branch {
+        <<module>>
+        +const BRANCH string
+    }
+
+    class cart {
+        <<module>>
+        -array items
+        -boolean ready
+        +initCart() Promise~void~
+        +addItem(name, price, options) Promise~void~
+        +removeItem(id) Promise~void~
+        +setOption(id, key, choiceIndex) Promise~void~
+        +itemTotal(item) number
+        +getItems() array
+        +getTotal() number
+        +getCount() number
+        +clear() Promise~void~
+    }
+
+    class order_store {
+        <<module>>
+        -number counter
+        +createOrder(data) Promise~Order~
+        +getOrders() Promise~array~
+        +getOrderByNumber(num) Promise~Order~
+        +updateStatus(num, status, extra) Promise~Order~
+        +updateOrderFields(id, patch) Promise~void~
+        +clearOrders() Promise~void~
+        +saveDeliveryInfo(info) void
+        +getDeliveryInfo() object
+        +getDelivererSession() object?
+        +setDelivererSession(d) void
+        +clearDelivererSession() void
+        +getUnavailableItems() array
+        +setUnavailableItems(list) void
+        +toggleAvailability(name) boolean
+    }
+
+    class restaurant_api {
+        <<module>>
+        -string BASE
+        -request(path, opts) Promise
+        +calculateDistance(origin, dest) Promise
+        +createCheckoutSession(data) Promise
+        +authenticateBranch(code, pwd) Promise
+        +fetchOrders(branch) Promise
+        +fetchOrder(orderNumber) Promise
+        +fetchOrderByPickupCode(code) Promise
+        +fetchOrdersByDeliverer(id) Promise
+        +submitOrder(data) Promise
+        +clearAllOrders(branch) Promise
+        +updateOrderStatus(num, status, extra) Promise
+        +fetchDeliverers() Promise
+        +registerDeliverer(data) Promise
+        +authenticateDeliverer(phone, pwd) Promise
+        +logoutDeliverer() Promise
+        +updateDelivererStatus(id, status) Promise
+        +deleteDeliverer(id) Promise
+    }
+
+    class restaurant_echo {
+        <<module>>
+        +initRestaurantEcho(branchCode) void
+    }
+
+    class lang_toggle {
+        <<module>>
+        +initLangToggle() void
+    }
+
+    %% ════════════════════════════════════════════
+    %% CUSTOMER PAGE MODULES
+    %% ════════════════════════════════════════════
+
+    class menu {
+        <<module · Customer>>
+        -number MORNING_CUTOFF
+        -getCurrentSlot() string
+        -updateTimeslot() void
+        -updateAvailability() void
+    }
+
+    class cart_page {
+        <<module · Customer>>
+        -boolean armed
+        -object? verified
+        -string lastVerifiedAddress
+        -number MIN_ORDER
+        -number MAX_DISTANCE_KM
+        -object BRANCH_ORIGINS
+        -calculateFee(km) number
+        -getDistance(address) Promise~number~
+        -renderCart() void
+        -verifyAddress() Promise~void~
+        -handlePlaceOrder(btn) Promise~void~
+    }
+
+    class history_page {
+        <<module · Customer>>
+        -object liveStatus
+        -boolean rendering
+        -pollStatuses(orders) Promise~void~
+        -render() Promise~void~
+    }
+
+    class console_page {
+        <<module · Customer>>
+        -array devButtons
+        -render() Promise~void~
+    }
+
+    %% ════════════════════════════════════════════
+    %% KITCHEN PAGE MODULES
+    %% ════════════════════════════════════════════
+
+    class kitchen_login {
+        <<module · Kitchen>>
+        -render(error) void
+    }
+
+    class kitchen_page {
+        <<module · Kitchen>>
+        -boolean rendering
+        -renderOrderCard(order) string
+        -render() Promise~void~
+    }
+
+    class kitchen_history_page {
+        <<module · Kitchen>>
+        -boolean rendering
+        -render() Promise~void~
+    }
+
+    class kitchen_menu_page {
+        <<module · Kitchen>>
+        -array MENU_ITEMS
+        -object SLOT_BADGE
+        -render() void
+    }
+
+    class kitchen_console_page {
+        <<module · Kitchen>>
+        -boolean rendering
+        -string? armedAction
+        -number? armTimer
+        -resetArmed() void
+        -render() Promise~void~
+    }
+
+    class kitchen_deliverer_page {
+        <<module · Kitchen>>
+        -boolean rendering
+        -number? armedDeleteId
+        -object STATUS_BADGE
+        -render() Promise~void~
+    }
+
+    class kitchen_register_page {
+        <<module · Kitchen>>
+        -render() void
+    }
+
+    %% ════════════════════════════════════════════
+    %% DELIVERER PAGE MODULES
+    %% ════════════════════════════════════════════
+
+    class delivery_login {
+        <<module · Deliverer>>
+        -render(error) void
+    }
+
+    class delivery_page {
+        <<module · Deliverer>>
+        -getSession() object?
+        -claimByToken(token) Promise~void~
+        -render(error) void
+    }
+
+    class delivery_task_page {
+        <<module · Deliverer>>
+        -boolean rendering
+        -render() Promise~void~
+    }
+
+    class delivery_history_page {
+        <<module · Deliverer>>
+        -boolean rendering
+        -render() Promise~void~
+    }
+
+    %% ════════════════════════════════════════════
+    %% CLIENT-SIDE DATA STORES
+    %% ════════════════════════════════════════════
+
+    class IndexedDB {
+        <<storage>>
+        +cartItems table
+        +orders table
+    }
+
+    class localStorage {
+        <<storage>>
+        +restaurant-locale
+        +delivery-info
+        +kitchen-session
+        +deliverer-session
+        +order-counter
+        +menu-unavailable
+        +timeslot-override
+    }
+
+    %% ════════════════════════════════════════════
+    %% CUSTOM EVENTS (decoupled communication)
+    %% ════════════════════════════════════════════
+
+    class CustomEvents {
+        <<window events>>
+        +cart:updated
+        +order:created
+        +order:statusChanged
+        +menu:availabilityChanged
+        +restaurant:orderCreated
+        +restaurant:orderUpdated
+    }
+
+    %% ════════════════════════════════════════════
+    %% CORE DEPENDENCIES
+    %% ════════════════════════════════════════════
+
+    cart --> db : read/write cartItems
+    order_store --> db : read/write orders
+    cart ..> CustomEvents : dispatches cart:updated
+    order_store ..> CustomEvents : dispatches order:created, statusChanged
+    order_store ..> localStorage : delivery-info, menu-unavailable
+    restaurant_echo ..> CustomEvents : dispatches restaurant:orderCreated/Updated
+
+    %% ════════════════════════════════════════════
+    %% CUSTOMER PAGE DEPENDENCIES
+    %% ════════════════════════════════════════════
+
+    menu --> cart : addItem()
+    menu --> order_store : getUnavailableItems()
+    menu --> i18n : t()
+    menu ..> CustomEvents : listens menu:availabilityChanged
+    menu ..> localStorage : reads timeslot-override
+
+    cart_page --> cart : getItems(), clear()
+    cart_page --> order_store : createOrder(), saveDeliveryInfo()
+    cart_page --> restaurant_api : submitOrder(), calculateDistance(), createCheckoutSession()
+    cart_page --> i18n : t()
+    cart_page ..> CustomEvents : listens cart:updated
+
+    history_page --> order_store : getOrders()
+    history_page --> restaurant_api : fetchOrder()
+    history_page --> i18n : t()
+    history_page ..> CustomEvents : listens order:created, statusChanged
+
+    console_page --> cart : addItem(), clear()
+    console_page --> order_store : clearOrders()
+    console_page --> restaurant_api : submitOrder()
+    console_page --> db : direct table access
+    console_page --> i18n : t()
+
+    %% ════════════════════════════════════════════
+    %% KITCHEN PAGE DEPENDENCIES
+    %% ════════════════════════════════════════════
+
+    kitchen_login --> restaurant_api : authenticateBranch()
+    kitchen_login --> i18n : t()
+    kitchen_login --> branch : BRANCH
+    kitchen_login ..> localStorage : writes kitchen-session
+
+    kitchen_page --> restaurant_api : fetchOrders(), updateOrderStatus()
+    kitchen_page --> i18n : t()
+    kitchen_page --> branch : BRANCH
+    kitchen_page ..> CustomEvents : listens restaurant:orderCreated/Updated
+
+    kitchen_history_page --> restaurant_api : fetchOrders()
+    kitchen_history_page --> i18n : t()
+    kitchen_history_page --> branch : BRANCH
+
+    kitchen_menu_page --> order_store : toggleAvailability()
+    kitchen_menu_page --> i18n : t()
+
+    kitchen_console_page --> restaurant_api : fetchOrders(), clearAllOrders(), fetchDeliverers(), deleteDeliverer()
+    kitchen_console_page --> i18n : t()
+    kitchen_console_page --> branch : BRANCH
+    kitchen_console_page ..> localStorage : reads/writes timeslot-override
+
+    kitchen_deliverer_page --> restaurant_api : fetchDeliverers(), deleteDeliverer()
+    kitchen_deliverer_page --> i18n : t()
+
+    kitchen_register_page --> restaurant_api : registerDeliverer()
+    kitchen_register_page --> i18n : t()
+
+    %% ════════════════════════════════════════════
+    %% DELIVERER PAGE DEPENDENCIES
+    %% ════════════════════════════════════════════
+
+    delivery_login --> restaurant_api : authenticateDeliverer()
+    delivery_login --> i18n : t()
+    delivery_login ..> localStorage : writes deliverer-session
+
+    delivery_page --> restaurant_api : fetchOrderByPickupCode(), updateOrderStatus(), updateDelivererStatus()
+    delivery_page --> i18n : t()
+    delivery_page ..> localStorage : reads deliverer-session
+
+    delivery_task_page --> restaurant_api : fetchOrdersByDeliverer(), updateOrderStatus(), updateDelivererStatus()
+    delivery_task_page --> i18n : t()
+    delivery_task_page ..> CustomEvents : listens restaurant:orderUpdated
+
+    delivery_history_page --> restaurant_api : fetchOrdersByDeliverer()
+    delivery_history_page --> i18n : t()
+    delivery_history_page ..> CustomEvents : listens restaurant:orderUpdated
+```
+
+### 4.3 Full-Stack Integration — Backend ↔ Frontend
+
+```mermaid
+classDiagram
+    direction LR
+
+    class Frontend_restaurant_api {
+        <<JS module>>
+        +calculateDistance()
+        +createCheckoutSession()
+        +authenticateBranch()
+        +fetchOrders()
+        +submitOrder()
+        +updateOrderStatus()
+        +fetchDeliverers()
+        +registerDeliverer()
+        +authenticateDeliverer()
+        +clearAllOrders()
+    }
+
+    class Frontend_restaurant_echo {
+        <<JS module>>
+        +initRestaurantEcho(branch)
+    }
+
+    class Nginx {
+        <<reverse proxy>>
+        +/api/restaurant/* → PHP-FPM
+        +/pages/restaurant/* → static
+        +ws://8081 → Reverb
+    }
+
+    class RestaurantOrderController {
+        <<PHP>>
+        +index() +store() +show()
+        +updateStatus() +distance()
+        +createCheckout() +clearOrders()
+    }
+    class RestaurantBranchController {
+        <<PHP>>
+        +index() +store()
+        +authenticate()
+    }
+    class RestaurantDelivererController {
+        <<PHP>>
+        +index() +store()
+        +authenticate() +logout()
+        +me() +updateStatus()
+        +destroy()
+    }
+
+    class RestaurantOrderService {
+        <<PHP>>
+    }
+    class RestaurantBranchService {
+        <<PHP>>
+    }
+    class RestaurantDelivererService {
+        <<PHP>>
+    }
+
+    class LaravelReverb {
+        <<WebSocket>>
+        +restaurant-orders channel
+        +restaurant-orders.BRANCH channel
+    }
+
+    class PostgreSQL {
+        <<database>>
+        +orders +branches
+        +deliverers +menu_items
+    }
+
+    %% Frontend → Nginx → Controllers
+    Frontend_restaurant_api --> Nginx : HTTP /api/restaurant/*
+    Nginx --> RestaurantOrderController : FastCGI
+    Nginx --> RestaurantBranchController : FastCGI
+    Nginx --> RestaurantDelivererController : FastCGI
+
+    %% Controllers → Services
+    RestaurantOrderController --> RestaurantOrderService
+    RestaurantBranchController --> RestaurantBranchService
+    RestaurantDelivererController --> RestaurantDelivererService
+
+    %% Services → DB
+    RestaurantOrderService --> PostgreSQL
+    RestaurantBranchService --> PostgreSQL
+    RestaurantDelivererService --> PostgreSQL
+
+    %% WebSocket path
+    RestaurantOrderService ..> LaravelReverb : broadcasts event
+    Frontend_restaurant_echo --> Nginx : WebSocket ws://8081
+    Nginx --> LaravelReverb : proxy
+    LaravelReverb ..> Frontend_restaurant_echo : pushes events
+```
