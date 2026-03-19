@@ -69,45 +69,20 @@ erDiagram
         timestamp updated_at
     }
 
-    order_items {
-        bigint id PK
-        bigint order_id FK
-        bigint menu_item_id FK "nullable"
-        varchar name "snapshot"
-        integer base_price
-        integer qty "default 1"
-        jsonb options "default {}"
-        integer subtotal
-        timestamp created_at
-        timestamp updated_at
-    }
-
-    orders ||--o{ order_items : "order_id"
-    menu_items ||--o{ order_items : "menu_item_id"
-
-    restaurant_sessions {
-        bigint id PK
-        bigint branch_id FK
-        integer table_number
-        varchar token UK
-        varchar status "default active"
-        timestamp created_at
-        timestamp expires_at
-    }
-
-    branches ||--o{ restaurant_sessions : "branch_id"
+    %% order_items and restaurant_sessions do NOT exist in DB
+    %% (migrations never ran or tables were dropped)
 ```
 
-### Table Status
+### Table Status (4 tables in DB)
 
 | Table | Status | Notes |
 |-------|--------|-------|
 | `branches` | **ACTIVE** | 2 seeded rows (TM01, TSW01) |
 | `orders` | **ACTIVE** | Core order table, items as JSON, delivery_zone stores distance (e.g. "1.5km") |
 | `deliverers` | **ACTIVE** | Server-side session via `session_token` |
-| `menu_items` | **DEAD** | Menu hardcoded in HTML `data-*` attrs; table exists but empty |
-| `order_items` | **DEAD** | Replaced by `orders.items` JSON column; never written to |
-| `restaurant_sessions` | **DEAD** | Dine-in feature removed; table exists but unused |
+| `menu_items` | **UNUSED** | Menu hardcoded in HTML `data-*` attrs; table exists but empty |
+
+Tables in migrations but **NOT in DB**: `order_items` (items stored as JSON), `restaurant_sessions` (dine-in removed).
 
 ### Dead Columns on `orders`
 
@@ -322,12 +297,9 @@ DELETE /api/restaurant/deliverers/{id}          → remove
 ## Relationship Summary
 
 ```
-branches   1 ──── * orders              (branch_id FK, nullable, nullOnDelete)
-deliverers 1 ──── * orders              (deliverer_id FK, nullable, nullOnDelete)
-menu_items 1 ──── * order_items         (DEAD — not used)
-orders     1 ──── * order_items         (DEAD — not used)
-branches   1 ──── * restaurant_sessions (DEAD — not used)
+branches   1 ──── * orders    (branch_id FK, nullable, nullOnDelete)
+deliverers 1 ──── * orders    (deliverer_id FK, nullable, nullOnDelete)
+menu_items               (standalone, no FK — unused)
 ```
 
 Active foreign keys: **2** (orders.branch_id → branches, orders.deliverer_id → deliverers)
-Dead foreign keys: **3** (order_items.order_id, order_items.menu_item_id, restaurant_sessions.branch_id)
