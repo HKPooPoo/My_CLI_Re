@@ -20,10 +20,8 @@ class RestaurantOrderService
     {
         return $this->db()->transaction(function () use ($data) {
             $branchId = null;
-            $tableNumber = null;
             $branchCode = null;
 
-            // Branch from direct code (delivery orders)
             if (! empty($data['branch_code'])) {
                 $branch = $this->db()->table('branches')
                     ->where('code', strtoupper($data['branch_code']))
@@ -31,24 +29,6 @@ class RestaurantOrderService
                 if ($branch) {
                     $branchId = $branch->id;
                     $branchCode = $branch->code;
-                }
-            }
-
-            // Branch from session token (dine-in orders)
-            $sessionToken = $data['session_token'] ?? null;
-            if ($sessionToken && ! $branchId) {
-                $session = $this->db()->table('restaurant_sessions')
-                    ->join('branches', 'restaurant_sessions.branch_id', '=', 'branches.id')
-                    ->where('restaurant_sessions.token', $sessionToken)
-                    ->where('restaurant_sessions.status', 'active')
-                    ->where('restaurant_sessions.expires_at', '>', now())
-                    ->select('restaurant_sessions.branch_id', 'restaurant_sessions.table_number', 'branches.code as branch_code')
-                    ->first();
-
-                if ($session) {
-                    $branchId = $session->branch_id;
-                    $tableNumber = $session->table_number;
-                    $branchCode = $session->branch_code;
                 }
             }
 
@@ -63,8 +43,6 @@ class RestaurantOrderService
                 'status' => 'pending',
                 'total' => 0,
                 'branch_id' => $branchId,
-                'table_number' => $tableNumber,
-                'session_token' => $sessionToken,
                 'delivery_zone' => $data['delivery_zone'] ?? null,
                 'delivery_address' => $data['delivery_address'] ?? null,
                 'delivery_fee' => $data['delivery_fee'] ?? 0,

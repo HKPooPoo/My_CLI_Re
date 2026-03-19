@@ -100,13 +100,11 @@ Route::middleware([/*'auth:sanctum',*/ 'throttle:10,1'])->prefix('mods')->group(
     Route::post('/llm/chat/stream', [LlmController::class, 'chatStream']);
 });
 
-// Restaurant — anonymous dine-in, no auth
+// Restaurant — delivery only, no auth
 Route::prefix('restaurant')->group(function () {
     Route::get('/branches', [RestaurantBranchController::class, 'index']);
     Route::post('/branches', [RestaurantBranchController::class, 'store']);
     Route::post('/branches/auth', [RestaurantBranchController::class, 'authenticate']);
-    Route::post('/sessions/check-in', [RestaurantBranchController::class, 'checkIn']);
-    Route::post('/sessions/check-out', [RestaurantBranchController::class, 'checkOut']);
     Route::get('/orders', [RestaurantOrderController::class, 'index']);
     Route::post('/orders', [RestaurantOrderController::class, 'store']);
     Route::get('/orders/pickup/{code}', [RestaurantOrderController::class, 'showByPickupCode']);

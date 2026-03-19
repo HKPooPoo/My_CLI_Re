@@ -37,7 +37,6 @@ class RestaurantOrderController extends Controller
             'customer_email' => 'nullable|email|max:255',
             'comment' => 'nullable|string|max:500',
             'branch_code' => 'nullable|string|max:10',
-            'session_token' => 'nullable|string',
         ]);
 
         $order = $this->orderService->createOrder($request->all());
