@@ -10,6 +10,7 @@ const page = document.getElementById('history-page');
 
 const STATUS_CLASSES = {
     pending: 'status-pending',
+    printed: 'status-printed',
     preparing: 'status-preparing',
     ready: 'status-ready',
     delivering: 'status-delivering',
@@ -41,7 +42,7 @@ async function render() {
     // Newest first
     page.innerHTML = orders.reverse().map(order => {
         const statusCls = STATUS_CLASSES[order.status] || '';
-        const showEst = ['pending', 'preparing', 'ready', 'delivering'].includes(order.status);
+        const showEst = ['pending', 'printed', 'preparing', 'ready', 'delivering'].includes(order.status);
         const estHtml = showEst && order.estimatedMinutes
             ? `<div class="order-card-est">${t('order.est-time')} ~${order.estimatedMinutes} ${t('order.minutes')}</div>`
             : '';

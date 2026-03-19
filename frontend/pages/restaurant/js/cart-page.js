@@ -4,7 +4,7 @@
  */
 
 import { getItems, getTotal, getCount, itemTotal, removeItem, setOption, clear } from './cart.js';
-import { createOrder, getUnavailableItems } from './order-store.js';
+import { createOrder, getUnavailableItems, saveDeliveryInfo, getDeliveryInfo } from './order-store.js';
 import { t, localize } from './i18n.js';
 import { ToastMessager } from '/javascript/toast.js';
 
@@ -154,6 +154,7 @@ function renderCart() {
             <button class="checkout-btn" id="place-order-btn" disabled>${t('cart.place-order')}</button>
         </div>
     `;
+    restoreDeliveryInfo();
     validateCheckout();
     renderBadge();
 }
@@ -233,12 +234,40 @@ function validateCheckout() {
     }
 }
 
+function persistDeliveryInfo() {
+    saveDeliveryInfo({
+        zone: document.getElementById('delivery-zone')?.value || '',
+        address: document.getElementById('delivery-address')?.value || '',
+        name: document.getElementById('customer-name')?.value || '',
+        phone: document.getElementById('customer-phone')?.value || '',
+    });
+}
+
+function restoreDeliveryInfo() {
+    const info = getDeliveryInfo();
+    if (!info || !Object.keys(info).length) return;
+    const zone = document.getElementById('delivery-zone');
+    const address = document.getElementById('delivery-address');
+    const name = document.getElementById('customer-name');
+    const phone = document.getElementById('customer-phone');
+    if (zone && info.zone) zone.value = info.zone;
+    if (address && info.address) address.value = info.address;
+    if (name && info.name) name.value = info.name;
+    if (phone && info.phone) phone.value = info.phone;
+}
+
 cartPage.addEventListener('input', (e) => {
-    if (e.target.closest('.checkout-form')) validateCheckout();
+    if (e.target.closest('.checkout-form')) {
+        persistDeliveryInfo();
+        validateCheckout();
+    }
 });
 
 cartPage.addEventListener('change', (e) => {
-    if (e.target.id === 'delivery-zone') validateCheckout();
+    if (e.target.id === 'delivery-zone') {
+        persistDeliveryInfo();
+        validateCheckout();
+    }
 });
 
 cartPage.addEventListener('click', (e) => {

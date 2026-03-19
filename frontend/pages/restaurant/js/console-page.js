@@ -6,7 +6,7 @@
 import { t } from './i18n.js';
 import { addItem, clear as clearCart, getCount } from './cart.js';
 import { itemTotal, getItems } from './cart.js';
-import { createOrder, getOrders, clearOrders, getDeliveryPin, setDeliveryPin } from './order-store.js';
+import { createOrder, getOrders, clearOrders } from './order-store.js';
 import db from './db.js';
 import { ToastMessager } from '/javascript/toast.js';
 
@@ -20,7 +20,7 @@ const devButtons = [
         label: () => t('console.add-test-item'),
         cls: '',
         async action() {
-            await addItem('滷肉飯', 42, [
+            await addItem('滷肉飯', 52, [
                 {
                     key: 'drink', label: '飲品', choices: [
                         { label: '咖啡', extra: 0 },
@@ -77,7 +77,8 @@ const devButtons = [
             await clearCart();
             await clearOrders();
             localStorage.removeItem('menu-unavailable');
-            localStorage.removeItem('active-delivery-token');
+            localStorage.removeItem('delivery-info');
+            localStorage.removeItem('deliverer-session');
             window.dispatchEvent(new CustomEvent('menu:availabilityChanged'));
             toast.addMessage(t('console.all-cleared'), 2000, 'info');
         }
@@ -88,9 +89,10 @@ const devButtons = [
         async action() {
             await db.delete();
             localStorage.removeItem('order-counter');
+            localStorage.removeItem('deliverer-counter');
             localStorage.removeItem('menu-unavailable');
-            localStorage.removeItem('active-delivery-token');
-            localStorage.removeItem('delivery-pin');
+            localStorage.removeItem('delivery-info');
+            localStorage.removeItem('deliverer-session');
             toast.addMessage(t('console.db-reset'), 2000, 'info');
             setTimeout(() => location.reload(), 1000);
         }
@@ -100,12 +102,11 @@ const devButtons = [
 /* ── Render ── */
 
 async function render() {
-    const pin = getDeliveryPin();
     const orders = await getOrders();
-    const readyOrders = orders.filter(o => o.status === 'ready' && o.qrToken);
+    const printedOrders = orders.filter(o => o.status === 'printed' && o.qrToken);
 
-    const readyOrdersHtml = readyOrders.length
-        ? readyOrders.map(o => `
+    const printedHtml = printedOrders.length
+        ? printedOrders.map(o => `
             <div class="console-info">
                 <span class="console-info-label">${o.orderNumber}</span>
                 <span class="console-info-value">${o.qrToken}</span>
@@ -124,23 +125,9 @@ async function render() {
         </div>
 
         <div class="console-container">
-            <div class="console-title">${t('console.pin-title')}</div>
-            <div class="console-section">
-                <div class="console-info">
-                    <span class="console-info-label">${t('console.current-pin')}</span>
-                    <span class="console-info-value">${pin}</span>
-                </div>
-                <div class="console-field-row">
-                    <input id="new-pin" type="text" class="console-input" maxlength="4" placeholder="${t('console.new-pin')}" inputmode="numeric">
-                    <button class="dev-btn" data-action="set-pin" style="flex:0 0 auto;width:auto;padding:8px 16px">${t('console.set-pin')}</button>
-                </div>
-            </div>
-        </div>
-
-        <div class="console-container">
             <div class="console-title">${t('console.tokens-title')}</div>
             <div class="console-section">
-                ${readyOrdersHtml}
+                ${printedHtml}
             </div>
         </div>
     `;
@@ -165,20 +152,6 @@ page.addEventListener('click', async (e) => {
         return;
     }
 
-    // Set PIN
-    const pinBtn = e.target.closest('[data-action="set-pin"]');
-    if (pinBtn) {
-        const input = document.getElementById('new-pin');
-        const val = input?.value.trim();
-        if (val && val.length === 4) {
-            setDeliveryPin(val);
-            toast.addMessage(`PIN → ${val}`, 2000, 'success');
-            render();
-        } else {
-            toast.addMessage(t('console.pin-invalid'), 2000, 'error');
-        }
-        return;
-    }
 });
 
 window.addEventListener('order:created', render);

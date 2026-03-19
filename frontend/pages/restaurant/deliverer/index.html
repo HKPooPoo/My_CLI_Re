@@ -24,7 +24,13 @@
         <img src="/pages/restaurant/images/header.png" class="header-img" alt="臺味冰點">
     </div>
     <div class="body">
-        <nav class="navi-bar">
+        <!-- Login gate: shown when not authenticated -->
+        <div id="delivery-login-gate" style="display:none">
+            <div id="delivery-login-page"></div>
+        </div>
+
+        <!-- Main UI: shown when authenticated -->
+        <nav class="navi-bar" id="delivery-nav">
             <div class="navi-mask"></div>
 
             <!-- 外送 -->
@@ -36,6 +42,12 @@
                     <div class="sub-navi-track">
                         <div class="sub-navi-item" data-sub-navi-item="delivery-scan">
                             <div class="sub-navi-item-text" data-i18n="nav.delivery-scan">掃碼</div>
+                        </div>
+                        <div class="sub-navi-item" data-sub-navi-item="delivery-task">
+                            <div class="sub-navi-item-text" data-i18n="nav.delivery-task">任務</div>
+                        </div>
+                        <div class="sub-navi-item" data-sub-navi-item="delivery-history">
+                            <div class="sub-navi-item-text" data-i18n="nav.delivery-history">歷史</div>
                         </div>
                     </div>
                 </div>
@@ -60,15 +72,32 @@
         <script type="module">
             import { initI18n } from '../js/i18n.js';
             import { initCart } from '../js/cart.js';
+            import { getDelivererSession } from '../js/order-store.js';
             await initI18n();
             await initCart();
-            import('../js/delivery-page.js');
-            import('../js/console-page.js');
+
+            const session = getDelivererSession();
+            if (!session) {
+                // Not logged in: hide nav, show login gate
+                document.getElementById('delivery-nav').style.display = 'none';
+                document.querySelector('.sub-navi-indicator-mask').style.display = 'none';
+                document.getElementById('page-container').style.display = 'none';
+                document.getElementById('delivery-login-gate').style.display = '';
+                import('../js/delivery-login.js');
+            } else {
+                // Logged in: hide login gate, load pages
+                import('../js/delivery-page.js');
+                import('../js/delivery-task-page.js');
+                import('../js/delivery-history-page.js');
+                import('../js/console-page.js');
+            }
         </script>
         <div class="page-container" id="page-container">
 
             <!-- ====== 外送 pages ====== -->
             <div class="page" data-page="delivery-scan" id="delivery-scan-page"></div>
+            <div class="page" data-page="delivery-task" id="delivery-task-page"></div>
+            <div class="page" data-page="delivery-history" id="delivery-history-page"></div>
 
             <!-- ====== 控制臺 pages ====== -->
             <div class="page" data-page="dev-tools" id="dev-tools-page"></div>

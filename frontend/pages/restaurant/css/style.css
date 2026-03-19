@@ -931,3 +931,105 @@
     color: var(--text-red);
     border-color: var(--text-red);
 }
+
+/* ==================== Printed Status ==================== */
+
+.status-printed {
+    background: var(--text-yellow, #ffd54f);
+    color: #333;
+}
+
+/* ==================== Deliverer List (Kitchen) ==================== */
+
+.deliverer-list {
+    width: var(--container-width);
+    max-width: var(--container-max-width);
+    margin: 16px auto 0;
+    gap: 8px;
+}
+
+.deliverer-card {
+    padding: 10px 12px;
+    border: var(--border-line);
+    border-radius: var(--border-radius);
+    background: var(--bg-primary);
+    gap: 4px;
+}
+
+.deliverer-card-header {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.deliverer-card-code {
+    font-weight: bold;
+    font-family: monospace;
+    font-size: calc(var(--font-size) + 0.1rem);
+    letter-spacing: 0.05em;
+}
+
+.deliverer-card-info {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.9em;
+}
+
+.deliverer-card-phone {
+    font-family: monospace;
+    opacity: 0.6;
+}
+
+.deliverer-card-actions {
+    flex-direction: row;
+    justify-content: flex-end;
+    margin-top: 2px;
+}
+
+/* ==================== Register Form ==================== */
+
+.register-form {
+    width: var(--container-width);
+    max-width: var(--container-max-width);
+    margin: 24px auto 0;
+    padding: 16px;
+    border: var(--border-line);
+    border-radius: var(--border-radius);
+    background: var(--bg-primary);
+    gap: 10px;
+}
+
+/* ==================== Delivery Login ==================== */
+
+.delivery-login-form {
+    margin-top: 48px;
+}
+
+/* ==================== Delivery Session Bar ==================== */
+
+.delivery-session-bar {
+    width: var(--container-width);
+    max-width: var(--container-max-width);
+    margin: 12px auto 0;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    border: var(--border-line);
+    border-radius: var(--border-radius);
+    background: var(--bg-primary);
+}
+
+.delivery-session-name {
+    font-weight: bold;
+    font-family: monospace;
+}
+
+/* ==================== Armed delete button ==================== */
+
+.cart-remove.armed {
+    background: var(--text-red);
+    color: var(--bg-primary);
+    border-color: var(--text-red);
+}
