@@ -69,6 +69,7 @@ erDiagram
 
     branches ||--o{ orders : "branch_id"
     deliverers ||--o{ orders : "deliverer_id"
+    menu_items }o--o{ orders : "items JSONB snapshot"
 ```
 
 ### Table Status (4 tables in DB)
