@@ -198,9 +198,7 @@ class RestaurantOrderService
             'updated_at' => now(),
         ];
 
-        // Generate pickup token when printing
-        if ($status === 'printed' && ! $order->qr_token) {
-            $patch['qr_token'] = substr(bin2hex(random_bytes(4)), 0, 8);
+        if ($status === 'printed') {
             $patch['printed_at'] = now();
         }
 
@@ -233,24 +231,25 @@ class RestaurantOrderService
         return $updated;
     }
 
+    /**
+     * Generate pickup code: {branch}{2-digit daily seq}-{4-char random}
+     * e.g. TM01-a3f8, A01-d4e2
+     * Daily reset like McDonald's. 2 digits = 99 orders/day/branch.
+     * 4-char random prevents guessing.
+     */
     protected function generateOrderNumber(?string $branchCode = null): string
     {
         $today = Carbon::today()->toDateString();
         $prefix = $branchCode ? strtoupper($branchCode) : 'A';
 
-        $lastOrder = $this->db()->table('orders')
+        $count = $this->db()->table('orders')
             ->whereDate('created_at', $today)
             ->where('order_number', 'like', $prefix . '%')
-            ->orderByDesc('order_number')
-            ->first();
+            ->count();
 
-        if (! $lastOrder) {
-            return $prefix . '001';
-        }
+        $seq = str_pad($count + 1, 2, '0', STR_PAD_LEFT);
+        $rand = substr(bin2hex(random_bytes(2)), 0, 4);
 
-        $lastSeq = (int) substr($lastOrder->order_number, strlen($prefix));
-        $nextSeq = $lastSeq + 1;
-
-        return $prefix . str_pad($nextSeq, 3, '0', STR_PAD_LEFT);
+        return $prefix . $seq . '-' . $rand;
     }
 }

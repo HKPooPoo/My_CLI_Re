@@ -21,12 +21,6 @@ function nextOrderNumber() {
     return 'TIS' + String(counter).padStart(3, '0');
 }
 
-/* ── QR token generator ── */
-
-function generateToken() {
-    return crypto.randomUUID().slice(0, 8);
-}
-
 /* ── Estimated delivery time (mock) ── */
 
 function estimateMinutes(distanceKm) {
@@ -51,7 +45,7 @@ export async function createOrder({ items, deliveryZone, deliveryAddress, delive
         customerPhone,
         subtotal,
         total: subtotal + deliveryFee,
-        qrToken: null,
+        apiOrderNumber: null,
         delivererId: null,
         estimatedMinutes: estimateMinutes(distanceKm),
         createdAt: new Date().toISOString(),
@@ -67,11 +61,6 @@ export async function getOrders() {
     return db.orders.orderBy('id').toArray();
 }
 
-export async function getOrderByToken(token) {
-    if (!token) return null;
-    const all = await db.orders.toArray();
-    return all.find(o => o.qrToken === token) || null;
-}
 
 export async function getOrderByNumber(orderNumber) {
     if (!orderNumber) return null;
@@ -90,8 +79,7 @@ export async function updateStatus(orderNumber, status, extra = {}) {
 
     const patch = { status, ...extra };
 
-    if (status === 'printed' && !order.qrToken) {
-        patch.qrToken = generateToken();
+    if (status === 'printed') {
         patch.printedAt = new Date().toISOString();
     }
     if (status === 'delivered') {

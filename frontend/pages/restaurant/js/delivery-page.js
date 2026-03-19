@@ -3,7 +3,7 @@
  */
 
 import { t } from './i18n.js';
-import { fetchOrderByToken, updateOrderStatus, updateDelivererStatus } from './restaurant-api.js';
+import { fetchOrderByPickupCode, updateOrderStatus, updateDelivererStatus } from './restaurant-api.js';
 import { ToastMessager } from '/javascript/toast.js';
 
 const page = document.getElementById('delivery-scan-page');
@@ -43,7 +43,7 @@ async function claimByToken(token) {
     }
 
     try {
-        const order = await fetchOrderByToken(token);
+        const order = await fetchOrderByPickupCode(token);
 
         if (order.status !== 'printed') {
             render(t('delivery.order-not-ready'));

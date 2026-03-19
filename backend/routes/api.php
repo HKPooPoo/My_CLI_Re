@@ -108,7 +108,7 @@ Route::prefix('restaurant')->group(function () {
     Route::post('/sessions/check-out', [RestaurantBranchController::class, 'checkOut']);
     Route::get('/orders', [RestaurantOrderController::class, 'index']);
     Route::post('/orders', [RestaurantOrderController::class, 'store']);
-    Route::get('/orders/token/{token}', [RestaurantOrderController::class, 'showByToken']);
+    Route::get('/orders/pickup/{code}', [RestaurantOrderController::class, 'showByPickupCode']);
     Route::get('/orders/deliverer/{delivererId}', [RestaurantOrderController::class, 'listByDeliverer']);
     Route::get('/orders/{orderNumber}', [RestaurantOrderController::class, 'show']);
     Route::patch('/orders/{orderNumber}/status', [RestaurantOrderController::class, 'updateStatus']);

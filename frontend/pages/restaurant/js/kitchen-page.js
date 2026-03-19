@@ -85,11 +85,8 @@ page.addEventListener('click', async (e) => {
     if (printBtn && !printBtn.disabled) {
         printBtn.disabled = true;
         try {
-            const order = await updateOrderStatus(printBtn.dataset.order, 'printed');
+            await updateOrderStatus(printBtn.dataset.order, 'printed');
             toast.addMessage(`${printBtn.dataset.order} ${t('kitchen.printed')}`, 2000, 'success');
-            if (order?.qr_token) {
-                toast.addMessage(`${t('kitchen.qr-token')}: ${order.qr_token}`, 4000, 'info');
-            }
         } catch (err) {
             toast.addMessage(err.message, 3000, 'error');
             printBtn.disabled = false;

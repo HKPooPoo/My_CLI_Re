@@ -59,9 +59,9 @@ class RestaurantOrderController extends Controller
         return response()->json($order);
     }
 
-    public function showByToken(string $token)
+    public function showByPickupCode(string $code)
     {
-        $order = $this->orderService->getOrderByToken($token);
+        $order = $this->orderService->getOrder($code);
 
         if (! $order) {
             return response()->json(['message' => 'Order not found'], 404);

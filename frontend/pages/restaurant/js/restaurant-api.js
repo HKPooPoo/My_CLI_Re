@@ -30,8 +30,8 @@ export function fetchOrder(orderNumber) {
     return request(`/orders/${orderNumber}`);
 }
 
-export function fetchOrderByToken(token) {
-    return request(`/orders/token/${token}`);
+export function fetchOrderByPickupCode(code) {
+    return request(`/orders/pickup/${encodeURIComponent(code)}`);
 }
 
 export function fetchOrdersByDeliverer(delivererId) {
