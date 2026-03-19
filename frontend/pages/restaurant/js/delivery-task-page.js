@@ -51,6 +51,7 @@ async function render() {
                     <div class="delivery-info-label">${t('delivery.address')}</div>
                     <div class="delivery-info-value">${order.delivery_zone || ''} · ${order.delivery_address || ''}</div>
                 </div>
+                ${order.comment ? `<div class="delivery-info-section"><div class="delivery-info-label">${t('cart.comment')}</div><div class="delivery-info-value order-card-comment">${order.comment}</div></div>` : ''}
                 <div class="delivery-map-placeholder">
                     <div class="delivery-map-text">${t('delivery.map-placeholder')}</div>
                 </div>

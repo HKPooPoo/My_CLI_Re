@@ -41,6 +41,7 @@ async function render() {
                 <div class="order-card-time">${formatTime(order.created_at)}</div>
                 <div class="order-card-delivery">${order.delivery_zone || ''} · ${order.delivery_address || ''}</div>
                 <div class="order-card-contact">${order.customer_name || ''} · ${order.customer_phone || ''}</div>
+                ${order.comment ? `<div class="order-card-comment">${order.comment}</div>` : ''}
                 <div class="order-items">
                     ${items.map(item => `
                         <div class="order-item-row">
