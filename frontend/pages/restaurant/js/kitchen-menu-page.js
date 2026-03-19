@@ -10,10 +10,10 @@ const page = document.getElementById('kitchen-menu-page');
 if (!page) console.warn('kitchen-menu-page.js: #kitchen-menu-page not found');
 
 const MENU_ITEMS = [
-    { name: '滷肉飯', price: 42 },
-    { name: '炒飯', price: 40 },
-    { name: '肥牛炒烏冬', price: 48 },
-    { name: '肉醬意粉', price: 45 },
+    { name: '滷肉飯', price: 52 },
+    { name: '炒飯', price: 50 },
+    { name: '肥牛炒烏冬', price: 55 },
+    { name: '肉醬意粉', price: 52 },
     { name: '茉香綠茶', price: 18 },
     { name: '金桔綠茶', price: 18 },
     { name: '青蘋菓綠茶', price: 18 },

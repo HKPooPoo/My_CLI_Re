@@ -154,6 +154,7 @@ function renderCart() {
             <button class="checkout-btn" id="place-order-btn" disabled>${t('cart.place-order')}</button>
         </div>
     `;
+    validateCheckout();
     renderBadge();
 }
 
@@ -164,57 +165,72 @@ function getSelectedZone() {
 }
 
 function validateCheckout() {
-    const zone = getSelectedZone();
-    const address = document.getElementById('delivery-address')?.value.trim();
-    const name = document.getElementById('customer-name')?.value.trim();
-    const phone = document.getElementById('customer-phone')?.value.trim();
-    const subtotal = getTotal();
-    const btn = document.getElementById('place-order-btn');
-    const errEl = document.getElementById('checkout-error');
-    const feeDisplay = document.getElementById('fee-display');
+    try {
+        const zone = getSelectedZone();
+        const address = document.getElementById('delivery-address')?.value?.trim() || '';
+        const name = document.getElementById('customer-name')?.value?.trim() || '';
+        const phone = document.getElementById('customer-phone')?.value?.trim() || '';
+        const subtotal = getTotal();
+        const btn = document.getElementById('place-order-btn');
+        const errEl = document.getElementById('checkout-error');
+        const feeDisplay = document.getElementById('fee-display');
 
-    if (!btn) return;
+        if (!btn) return;
 
-    let error = '';
-    let canOrder = true;
+        let error = '';
+        let canOrder = true;
 
-    if (!zone) {
-        canOrder = false;
-    } else if (zone.fee === -1) {
-        error = t('cart.out-of-range');
-        canOrder = false;
-    } else if (subtotal < MIN_ORDER) {
-        error = t('cart.min-order-msg').replace('{amount}', MIN_ORDER);
-        canOrder = false;
-    } else if (!address) {
-        canOrder = false;
-    } else if (!name) {
-        canOrder = false;
-    } else if (!phone) {
-        canOrder = false;
-    }
-
-    // Update fee display
-    if (zone && zone.fee !== -1) {
-        feeDisplay.hidden = false;
-        document.getElementById('fee-subtotal').textContent = `$${subtotal}`;
-        document.getElementById('fee-delivery').textContent = zone.fee === 0 ? t('cart.free') : `$${zone.fee}`;
-        document.getElementById('fee-total').textContent = `$${subtotal + zone.fee}`;
-    } else {
-        feeDisplay.hidden = !zone;
-        if (zone) {
-            feeDisplay.hidden = false;
-            document.getElementById('fee-subtotal').textContent = `$${subtotal}`;
-            document.getElementById('fee-delivery').textContent = '—';
-            document.getElementById('fee-total').textContent = '—';
+        if (!zone) {
+            error = t('cart.error-select-zone');
+            canOrder = false;
+        } else if (zone.fee === -1) {
+            error = t('cart.out-of-range');
+            canOrder = false;
+        } else if (subtotal < MIN_ORDER) {
+            error = t('cart.min-order-msg').replace('${amount}', MIN_ORDER).replace('{amount}', MIN_ORDER);
+            canOrder = false;
+        } else if (!address) {
+            error = t('cart.error-address');
+            canOrder = false;
+        } else if (!name) {
+            error = t('cart.error-name');
+            canOrder = false;
+        } else if (!phone) {
+            error = t('cart.error-phone');
+            canOrder = false;
         }
-    }
 
-    if (errEl) {
-        errEl.textContent = error;
-        errEl.hidden = !error;
+        // Update fee display
+        if (feeDisplay) {
+            if (zone && zone.fee !== -1) {
+                feeDisplay.hidden = false;
+                const fs = document.getElementById('fee-subtotal');
+                const fd = document.getElementById('fee-delivery');
+                const ft = document.getElementById('fee-total');
+                if (fs) fs.textContent = `$${subtotal}`;
+                if (fd) fd.textContent = zone.fee === 0 ? t('cart.free') : `$${zone.fee}`;
+                if (ft) ft.textContent = `$${subtotal + zone.fee}`;
+            } else if (zone) {
+                feeDisplay.hidden = false;
+                const fs = document.getElementById('fee-subtotal');
+                const fd = document.getElementById('fee-delivery');
+                const ft = document.getElementById('fee-total');
+                if (fs) fs.textContent = `$${subtotal}`;
+                if (fd) fd.textContent = '—';
+                if (ft) ft.textContent = '—';
+            } else {
+                feeDisplay.hidden = true;
+            }
+        }
+
+        if (errEl) {
+            errEl.textContent = error;
+            errEl.hidden = !error;
+        }
+        btn.disabled = !canOrder;
+    } catch (e) {
+        console.error('validateCheckout error:', e);
     }
-    btn.disabled = !canOrder;
 }
 
 cartPage.addEventListener('input', (e) => {
