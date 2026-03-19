@@ -83,13 +83,15 @@
                 document.querySelector('.sub-navi-indicator-mask').style.display = 'none';
                 document.getElementById('page-container').style.display = 'none';
                 document.getElementById('delivery-login-gate').style.display = '';
-                import('../js/delivery-login.js?v=3');
+                const v = Date.now();
+                import(`../js/delivery-login.js?v=${v}`);
             } else {
                 // Logged in: hide login gate, load pages
-                import('../js/delivery-page.js?v=3');
-                import('../js/delivery-task-page.js?v=3');
-                import('../js/delivery-history-page.js?v=3');
-                import('../js/console-page.js?v=3');
+                const v = Date.now();
+                import(`../js/delivery-page.js?v=${v}`);
+                import(`../js/delivery-task-page.js?v=${v}`);
+                import(`../js/delivery-history-page.js?v=${v}`);
+                import(`../js/console-page.js?v=${v}`);
             }
         </script>
         <div class="page-container" id="page-container">

@@ -69,10 +69,11 @@
             import { initCart } from '../js/cart.js';
             await initI18n();
             await initCart();
-            import('../js/menu.js?v=3');
-            import('../js/cart-page.js?v=3');
-            import('../js/history-page.js?v=3');
-            import('../js/console-page.js?v=3');
+            const v = Date.now();
+            import(`../js/menu.js?v=${v}`);
+            import(`../js/cart-page.js?v=${v}`);
+            import(`../js/history-page.js?v=${v}`);
+            import(`../js/console-page.js?v=${v}`);
         </script>
         <div class="page-container" id="page-container">
 

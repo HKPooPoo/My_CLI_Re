@@ -85,12 +85,13 @@
             import { initCart } from '../js/cart.js';
             await initI18n();
             await initCart();
-            import('../js/kitchen-page.js?v=3');
-            import('../js/kitchen-history-page.js?v=3');
-            import('../js/kitchen-menu-page.js?v=3');
-            import('../js/kitchen-deliverer-page.js?v=3');
-            import('../js/kitchen-register-page.js?v=3');
-            import('../js/console-page.js?v=3');
+            const v = Date.now();
+            import(`../js/kitchen-page.js?v=${v}`);
+            import(`../js/kitchen-history-page.js?v=${v}`);
+            import(`../js/kitchen-menu-page.js?v=${v}`);
+            import(`../js/kitchen-deliverer-page.js?v=${v}`);
+            import(`../js/kitchen-register-page.js?v=${v}`);
+            import(`../js/console-page.js?v=${v}`);
         </script>
         <div class="page-container" id="page-container">
 
