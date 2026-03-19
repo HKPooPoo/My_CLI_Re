@@ -1,6 +1,6 @@
 /**
  * Console page — dev tools for testing the delivery prototype.
- * Simulate orders, scans, manage PIN, clear data.
+ * Simulate orders, clear data.
  */
 
 import { t } from './i18n.js';
