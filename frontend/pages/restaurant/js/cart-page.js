@@ -1,6 +1,13 @@
 /**
  * Cart page — renders cart items with options + in-page checkout form.
- * Checkout includes: delivery zone, address, name, phone, fee calc, armed confirm.
+ * Checkout includes: address verification (mock Google Maps API), fee calc, armed confirm.
+ *
+ * Delivery fee tiers (by ceiling km):
+ *   ≤1km  → $0
+ *   ≤2km  → $10
+ *   ≤3km  → $20
+ *   ≤4km  → $30
+ *   ≥5km  → unavailable
  */
 
 import { getItems, getTotal, getCount, itemTotal, removeItem, setOption, clear } from './cart.js';
@@ -16,16 +23,46 @@ const toast = new ToastMessager();
 
 import { BRANCH } from './branch.js';
 
-const DELIVERY_ZONES = [
-    { id: 'center', name: { 'zh-TW': '屯門市中心', en: 'Tuen Mun Central' }, distanceKm: 1.5, fee: 0 },
-    { id: 'north', name: { 'zh-TW': '屯門北', en: 'Tuen Mun North' }, distanceKm: 3.0, fee: 15 },
-    { id: 'tsw', name: { 'zh-TW': '天水圍', en: 'Tin Shui Wai' }, distanceKm: 4.5, fee: 25 },
-    { id: 'yl', name: { 'zh-TW': '元朗', en: 'Yuen Long' }, distanceKm: 6.0, fee: -1 },
-];
 const MIN_ORDER = 50;
+const MAX_DISTANCE_KM = 5;
 
 let armed = false;
 let armTimer = null;
+
+// Verification state: null = not verified, false = out of range, { distanceKm, fee } = verified
+let verified = null;
+let lastVerifiedAddress = '';
+
+/* ══════════════════════════════════════
+   Mock Google Maps Distance API
+   Replace with real Distance Matrix API call in production.
+   ══════════════════════════════════════ */
+
+function calculateFee(distanceKm) {
+    const ceil = Math.ceil(distanceKm);
+    if (ceil <= 1) return 0;
+    return (ceil - 1) * 10;
+}
+
+async function mockDistanceAPI(address) {
+    // Simulate 800ms network latency
+    await new Promise(r => setTimeout(r, 800));
+
+    const lower = address.toLowerCase();
+    if (/屯門市中心|tuen mun central/.test(lower)) return 0.8;
+    if (/屯門|tuen mun/.test(lower)) return 1.5;
+    if (/天水圍|tin shui wai/.test(lower)) return 3.2;
+    if (/元朗|yuen long/.test(lower)) return 5.5;
+
+    // Deterministic hash for unknown addresses → 0.5–5.4km
+    let hash = 0;
+    for (const c of address) hash = ((hash << 5) - hash + c.charCodeAt(0)) | 0;
+    return 0.5 + (Math.abs(hash) % 50) / 10;
+}
+
+/* ══════════════════════════════════════
+   Render helpers
+   ══════════════════════════════════════ */
 
 function renderBadge() {
     const count = getCount();
@@ -66,6 +103,38 @@ function renderOptions(item) {
     }).join('');
 }
 
+/* ══════════════════════════════════════
+   Verification result display
+   ══════════════════════════════════════ */
+
+function renderVerifyResult() {
+    const resultEl = document.getElementById('verify-result');
+    if (!resultEl) return;
+
+    if (verified === null) {
+        resultEl.innerHTML = '';
+        resultEl.hidden = true;
+        return;
+    }
+
+    if (verified === false) {
+        resultEl.innerHTML = `<span class="verify-fail">${t('cart.out-of-range')} (≥${MAX_DISTANCE_KM}km)</span>`;
+        resultEl.hidden = false;
+        return;
+    }
+
+    resultEl.innerHTML = `
+        <span class="verify-pass">${t('cart.verified')}</span>
+        <span class="verify-distance">${verified.distanceKm.toFixed(1)}km</span>
+        <span class="verify-fee">${t('cart.delivery-fee')}: ${verified.fee === 0 ? t('cart.free') : '$' + verified.fee}</span>
+    `;
+    resultEl.hidden = false;
+}
+
+/* ══════════════════════════════════════
+   Main render
+   ══════════════════════════════════════ */
+
 function renderCart() {
     const items = getItems();
     const subtotal = getTotal();
@@ -101,12 +170,6 @@ function renderCart() {
         return;
     }
 
-    const zoneOptions = DELIVERY_ZONES.map(z => {
-        const label = localize(z.name);
-        const feeText = z.fee === -1 ? `(${t('cart.out-of-range')})` : z.fee === 0 ? `(${t('cart.free')})` : `(+$${z.fee})`;
-        return `<option value="${z.id}" ${z.fee === -1 ? 'data-out-of-range' : ''}>${label} ${z.distanceKm}km ${feeText}</option>`;
-    }).join('');
-
     armed = false;
     clearTimeout(armTimer);
 
@@ -121,15 +184,12 @@ function renderCart() {
         <div class="checkout-form">
             <div class="checkout-title">${t('cart.delivery-info')}</div>
             <div class="checkout-field">
-                <label class="checkout-label">${t('cart.delivery-zone')}</label>
-                <select id="delivery-zone" class="checkout-input">
-                    <option value="">${t('cart.select-zone')}</option>
-                    ${zoneOptions}
-                </select>
-            </div>
-            <div class="checkout-field">
                 <label class="checkout-label">${t('cart.delivery-address')}</label>
-                <input type="text" id="delivery-address" class="checkout-input" placeholder="${t('cart.address-placeholder')}">
+                <div class="address-verify-row">
+                    <input type="text" id="delivery-address" class="checkout-input" placeholder="${t('cart.address-placeholder')}">
+                    <button class="verify-btn" id="verify-btn">${t('cart.verify-btn')}</button>
+                </div>
+                <div id="verify-result" class="verify-result" hidden></div>
             </div>
             <div class="checkout-field">
                 <label class="checkout-label">${t('cart.customer-name')}</label>
@@ -166,19 +226,59 @@ function renderCart() {
         </div>
     `;
     restoreDeliveryInfo();
+    renderVerifyResult();
     validateCheckout();
     renderBadge();
 }
 
-function getSelectedZone() {
-    const sel = document.getElementById('delivery-zone');
-    if (!sel || !sel.value) return null;
-    return DELIVERY_ZONES.find(z => z.id === sel.value) || null;
+/* ══════════════════════════════════════
+   Address verification
+   ══════════════════════════════════════ */
+
+async function verifyAddress() {
+    const address = document.getElementById('delivery-address')?.value?.trim();
+    const verifyBtn = document.getElementById('verify-btn');
+    if (!address || !verifyBtn) return;
+
+    verifyBtn.disabled = true;
+    verifyBtn.textContent = t('cart.verifying');
+
+    try {
+        const distanceKm = await mockDistanceAPI(address);
+
+        if (distanceKm >= MAX_DISTANCE_KM) {
+            verified = false;
+        } else {
+            const fee = calculateFee(distanceKm);
+            verified = { distanceKm, fee };
+        }
+        lastVerifiedAddress = address;
+    } catch {
+        verified = null;
+        toast.addMessage('Verification failed', 2000, 'error');
+    }
+
+    verifyBtn.disabled = false;
+    verifyBtn.textContent = verified && verified !== false
+        ? t('cart.verified')
+        : t('cart.verify-btn');
+    if (verified && verified !== false) {
+        verifyBtn.classList.add('verify-passed');
+    } else {
+        verifyBtn.classList.remove('verify-passed');
+    }
+
+    renderVerifyResult();
+    validateCheckout();
+    persistDeliveryInfo();
 }
+
+/* ══════════════════════════════════════
+   Validation
+   ══════════════════════════════════════ */
 
 function validateCheckout() {
     try {
-        const zone = getSelectedZone();
         const address = document.getElementById('delivery-address')?.value?.trim() || '';
         const name = document.getElementById('customer-name')?.value?.trim() || '';
         const phone = document.getElementById('customer-phone')?.value?.trim() || '';
@@ -192,17 +292,17 @@ function validateCheckout() {
         let error = '';
         let canOrder = true;
 
-        if (!zone) {
-            error = t('cart.error-select-zone');
+        if (!address) {
+            error = t('cart.error-address');
             canOrder = false;
-        } else if (zone.fee === -1) {
+        } else if (verified === null) {
+            error = t('cart.verify-first');
+            canOrder = false;
+        } else if (verified === false) {
             error = t('cart.out-of-range');
             canOrder = false;
         } else if (subtotal < MIN_ORDER) {
             error = t('cart.min-order-msg').replace('${amount}', MIN_ORDER).replace('{amount}', MIN_ORDER);
-            canOrder = false;
-        } else if (!address) {
-            error = t('cart.error-address');
             canOrder = false;
         } else if (!name) {
             error = t('cart.error-name');
@@ -214,22 +314,14 @@ function validateCheckout() {
 
         // Update fee display
         if (feeDisplay) {
-            if (zone && zone.fee !== -1) {
+            if (verified && verified !== false) {
                 feeDisplay.hidden = false;
                 const fs = document.getElementById('fee-subtotal');
                 const fd = document.getElementById('fee-delivery');
                 const ft = document.getElementById('fee-total');
                 if (fs) fs.textContent = `$${subtotal}`;
-                if (fd) fd.textContent = zone.fee === 0 ? t('cart.free') : `$${zone.fee}`;
-                if (ft) ft.textContent = `$${subtotal + zone.fee}`;
-            } else if (zone) {
-                feeDisplay.hidden = false;
-                const fs = document.getElementById('fee-subtotal');
-                const fd = document.getElementById('fee-delivery');
-                const ft = document.getElementById('fee-total');
-                if (fs) fs.textContent = `$${subtotal}`;
-                if (fd) fd.textContent = '—';
-                if (ft) ft.textContent = '—';
+                if (fd) fd.textContent = verified.fee === 0 ? t('cart.free') : `$${verified.fee}`;
+                if (ft) ft.textContent = `$${subtotal + verified.fee}`;
             } else {
                 feeDisplay.hidden = true;
             }
@@ -245,9 +337,12 @@ function validateCheckout() {
     }
 }
 
+/* ══════════════════════════════════════
+   Persistence
+   ══════════════════════════════════════ */
+
 function persistDeliveryInfo() {
     saveDeliveryInfo({
-        zone: document.getElementById('delivery-zone')?.value || '',
         address: document.getElementById('delivery-address')?.value || '',
         name: document.getElementById('customer-name')?.value || '',
         phone: document.getElementById('customer-phone')?.value || '',
@@ -259,13 +354,11 @@ function persistDeliveryInfo() {
 function restoreDeliveryInfo() {
     const info = getDeliveryInfo();
     if (!info || !Object.keys(info).length) return;
-    const zone = document.getElementById('delivery-zone');
     const address = document.getElementById('delivery-address');
     const name = document.getElementById('customer-name');
     const phone = document.getElementById('customer-phone');
     const email = document.getElementById('customer-email');
     const comment = document.getElementById('order-comment');
-    if (zone && info.zone) zone.value = info.zone;
     if (address && info.address) address.value = info.address;
     if (name && info.name) name.value = info.name;
     if (phone && info.phone) phone.value = info.phone;
@@ -273,15 +366,25 @@ function restoreDeliveryInfo() {
     if (comment && info.comment) comment.value = info.comment;
 }
 
-cartPage.addEventListener('input', (e) => {
-    if (e.target.closest('.checkout-form')) {
-        persistDeliveryInfo();
-        validateCheckout();
-    }
-});
+/* ══════════════════════════════════════
+   Event handling
+   ══════════════════════════════════════ */
 
-cartPage.addEventListener('change', (e) => {
-    if (e.target.id === 'delivery-zone') {
+cartPage.addEventListener('input', (e) => {
+    // Reset verification when address changes
+    if (e.target.id === 'delivery-address') {
+        const currentAddr = e.target.value.trim();
+        if (currentAddr !== lastVerifiedAddress) {
+            verified = null;
+            const verifyBtn = document.getElementById('verify-btn');
+            if (verifyBtn) {
+                verifyBtn.textContent = t('cart.verify-btn');
+                verifyBtn.classList.remove('verify-passed');
+            }
+            renderVerifyResult();
+        }
+    }
+    if (e.target.closest('.checkout-form')) {
         persistDeliveryInfo();
         validateCheckout();
     }
@@ -304,6 +407,12 @@ cartPage.addEventListener('click', (e) => {
         return;
     }
 
+    // Verify address button
+    if (e.target.closest('#verify-btn')) {
+        verifyAddress();
+        return;
+    }
+
     const orderBtn = e.target.closest('#place-order-btn');
     if (orderBtn) {
         handlePlaceOrder(orderBtn);
@@ -311,14 +420,17 @@ cartPage.addEventListener('click', (e) => {
     }
 });
 
+/* ══════════════════════════════════════
+   Place order
+   ══════════════════════════════════════ */
+
 async function handlePlaceOrder(btn) {
-    if (btn.disabled) return;
+    if (btn.disabled || !verified || verified === false) return;
 
     if (!armed) {
         armed = true;
         btn.classList.add('armed');
-        const zone = getSelectedZone();
-        const total = getTotal() + (zone?.fee || 0);
+        const total = getTotal() + verified.fee;
         btn.textContent = `${t('cart.confirm-order')} $${total}`;
         armTimer = setTimeout(() => {
             armed = false;
@@ -334,7 +446,6 @@ async function handlePlaceOrder(btn) {
     btn.textContent = '...';
 
     try {
-        const zone = getSelectedZone();
         const items = getItems().map(item => {
             const options = {};
             for (const opt of item.options) {
@@ -360,10 +471,10 @@ async function handlePlaceOrder(btn) {
         // Save to IndexedDB (local history)
         const order = await createOrder({
             items,
-            deliveryZone: localize(zone.name),
+            deliveryZone: `${verified.distanceKm.toFixed(1)}km`,
             deliveryAddress,
-            deliveryFee: zone.fee,
-            distanceKm: zone.distanceKm,
+            deliveryFee: verified.fee,
+            distanceKm: verified.distanceKm,
             customerName,
             customerPhone,
             comment: orderComment,
@@ -374,22 +485,25 @@ async function handlePlaceOrder(btn) {
         try {
             const apiOrder = await submitOrder({
                 items: items.map(i => ({ name: i.name, subtotal: i.subtotal, options: i.options })),
-                delivery_zone: localize(zone.name),
+                delivery_zone: `${verified.distanceKm.toFixed(1)}km`,
                 delivery_address: deliveryAddress,
-                delivery_fee: zone.fee,
-                distance_km: zone.distanceKm,
+                delivery_fee: verified.fee,
+                distance_km: verified.distanceKm,
                 customer_name: customerName,
                 customer_phone: customerPhone,
                 customer_email: customerEmail || undefined,
                 comment: orderComment,
                 branch_code: BRANCH || undefined,
             });
-            // Save API order number to local record for status polling
             await updateOrderFields(order.id, { apiOrderNumber: apiOrder.order_number });
             toast.addMessage(`${t('order.number')}${apiOrder.order_number}`, 4000, 'success');
         } catch {
             toast.addMessage(`${t('order.number')}${order.orderNumber}`, 4000, 'success');
         }
+
+        // Reset verification state
+        verified = null;
+        lastVerifiedAddress = '';
 
         await clear();
         document.querySelector('[data-sub-navi-item="history"]')?.click();

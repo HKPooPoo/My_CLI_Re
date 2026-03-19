@@ -368,6 +368,70 @@
     font-family: inherit;
 }
 
+/* ---- Address verify ---- */
+
+.address-verify-row {
+    flex-direction: row;
+    gap: 8px;
+    align-items: stretch;
+}
+
+.address-verify-row .checkout-input {
+    flex: 1;
+    min-width: 0;
+}
+
+.verify-btn {
+    padding: 8px 14px;
+    border: 2px solid var(--text-green);
+    border-radius: var(--border-radius);
+    background: var(--bg-primary);
+    color: var(--text-green);
+    font-size: 0.85em;
+    font-weight: bold;
+    cursor: pointer;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.verify-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.verify-btn.verify-passed {
+    background: #4caf50;
+    color: #fff;
+    border-color: #4caf50;
+}
+
+.verify-result {
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 0 0;
+    font-size: 0.85em;
+}
+
+.verify-pass {
+    color: #4caf50;
+    font-weight: bold;
+}
+
+.verify-fail {
+    color: #e53935;
+    font-weight: bold;
+}
+
+.verify-distance {
+    font-family: monospace;
+    font-weight: bold;
+}
+
+.verify-fee {
+    opacity: 0.7;
+}
+
 /* ---- Fee display ---- */
 
 .checkout-fee {
