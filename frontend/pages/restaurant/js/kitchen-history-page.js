@@ -1,6 +1,6 @@
 /**
  * Kitchen history page — fetches non-pending orders from API.
- * Read-only view of printed/delivering/delivered orders.
+ * Unified order card: order_number as primary identifier.
  */
 
 import { t } from './i18n.js';
@@ -26,16 +26,11 @@ async function render() {
         page.innerHTML = history.reverse().map(order => {
             const isDone = ['delivered'].includes(order.status);
             const items = order.items || [];
-            const qrHtml = order.qr_token
-                ? `<div class="kitchen-qr-section">
-                    <div class="kitchen-qr-label">${t('kitchen.qr-token')}</div>
-                    <div class="kitchen-qr-code">${order.qr_token}</div>
-                   </div>` : '';
 
             return `
             <div class="order-card kitchen-card ${isDone ? 'kitchen-done' : ''}">
                 <div class="order-card-header">
-                    <span class="order-number">${order.order_number}</span>
+                    <span class="order-number">${t('order.number')}${order.order_number}</span>
                     <span class="order-status status-${order.status}">${t('order.status.' + order.status)}</span>
                 </div>
                 <div class="order-card-time">${formatTime(order.created_at)}</div>
@@ -54,7 +49,6 @@ async function render() {
                     <span>${t('cart.grand-total')}</span>
                     <span class="order-total-amount">$${order.total}</span>
                 </div>
-                ${qrHtml}
             </div>`;
         }).join('');
     } catch (err) {

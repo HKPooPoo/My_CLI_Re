@@ -33,7 +33,7 @@ async function render() {
         page.innerHTML = delivered.map(order => `
             <div class="order-card kitchen-done">
                 <div class="order-card-header">
-                    <span class="order-number">${t('order.number')}${order.order_number}</span>
+                <span class="order-number">${t('order.number')}${order.order_number}</span>
                     <span class="order-status status-${order.status}">${t('order.status.' + order.status)}</span>
                 </div>
                 <div class="order-card-time">${formatTime(order.created_at)}</div>

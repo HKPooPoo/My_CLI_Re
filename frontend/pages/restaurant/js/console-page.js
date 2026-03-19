@@ -1,12 +1,14 @@
 /**
  * Console page — dev tools for testing the delivery prototype.
+ * Works on all interfaces (menu, kitchen, deliverer).
  * Simulate orders, clear data.
  */
 
 import { t } from './i18n.js';
 import { addItem, clear as clearCart, getCount } from './cart.js';
 import { itemTotal, getItems } from './cart.js';
-import { createOrder, getOrders, clearOrders } from './order-store.js';
+import { createOrder, clearOrders } from './order-store.js';
+import { submitOrder, fetchOrders as apiFetchOrders } from './restaurant-api.js';
 import db from './db.js';
 import { ToastMessager } from '/javascript/toast.js';
 
@@ -40,7 +42,8 @@ const devButtons = [
             const items = getItems().map(item => ({
                 name: item.name, subtotal: itemTotal(item), options: {},
             }));
-            const order = await createOrder({
+            // Save to IndexedDB
+            await createOrder({
                 items,
                 deliveryZone: '屯門市中心',
                 deliveryAddress: '測試路 1 號',
@@ -50,8 +53,22 @@ const devButtons = [
                 customerPhone: '91234567',
                 subtotal: items.reduce((s, i) => s + i.subtotal, 0),
             });
+            // Also submit to API
+            try {
+                const apiOrder = await submitOrder({
+                    items: items.map(i => ({ name: i.name, subtotal: i.subtotal, options: i.options })),
+                    delivery_zone: '屯門市中心',
+                    delivery_address: '測試路 1 號',
+                    delivery_fee: 0,
+                    distance_km: 1.5,
+                    customer_name: '測試員',
+                    customer_phone: '91234567',
+                });
+                toast.addMessage(`${t('order.number')}${apiOrder.order_number}`, 3000, 'success');
+            } catch {
+                toast.addMessage(t('console.simulate-order'), 3000, 'info');
+            }
             await clearCart();
-            toast.addMessage(`${t('order.number')}${order.orderNumber}`, 3000, 'success');
         }
     },
     {
@@ -101,17 +118,22 @@ const devButtons = [
 /* ── Render ── */
 
 async function render() {
-    const orders = await getOrders();
-    const printedOrders = orders.filter(o => o.status === 'printed' && o.qrToken);
-
-    const printedHtml = printedOrders.length
-        ? printedOrders.map(o => `
-            <div class="console-info">
-                <span class="console-info-label">${o.orderNumber}</span>
-                <span class="console-info-value">${o.qrToken}</span>
-            </div>
-        `).join('')
-        : `<div class="console-info"><span class="console-info-label">${t('console.no-ready')}</span></div>`;
+    // Fetch from API for the printed orders section
+    let printedHtml = '';
+    try {
+        const orders = await apiFetchOrders();
+        const printed = orders.filter(o => o.status === 'printed');
+        printedHtml = printed.length
+            ? printed.map(o => `
+                <div class="console-info">
+                    <span class="console-info-label">${t('order.number')}${o.order_number}</span>
+                    <span class="console-info-value">${o.qr_token || '—'}</span>
+                </div>
+            `).join('')
+            : `<div class="console-info"><span class="console-info-label">${t('console.no-ready')}</span></div>`;
+    } catch {
+        printedHtml = `<div class="console-info"><span class="console-info-label">${t('console.no-ready')}</span></div>`;
+    }
 
     page.innerHTML = `
         <div class="console-container">
@@ -135,7 +157,6 @@ async function render() {
 /* ── Event handling ── */
 
 page.addEventListener('click', async (e) => {
-    // Dev buttons
     const devBtn = e.target.closest('.dev-btn[data-idx]');
     if (devBtn && !devBtn.disabled) {
         const idx = Number(devBtn.dataset.idx);
@@ -150,9 +171,10 @@ page.addEventListener('click', async (e) => {
         }
         return;
     }
-
 });
 
 window.addEventListener('order:created', render);
 window.addEventListener('order:statusChanged', render);
+window.addEventListener('restaurant:orderCreated', render);
+window.addEventListener('restaurant:orderUpdated', render);
 render();

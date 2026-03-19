@@ -35,7 +35,7 @@ async function render(error) {
         ? printedOrders.map(order => `
             <div class="order-card">
                 <div class="order-card-header">
-                    <span class="order-number">${order.order_number}</span>
+                    <span class="order-number">${t('order.number')}${order.order_number}</span>
                     <span class="order-status status-printed">${t('order.status.printed')}</span>
                 </div>
                 <div class="order-card-time">${formatTime(order.created_at)}</div>
