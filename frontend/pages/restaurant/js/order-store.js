@@ -104,6 +104,10 @@ export async function updateStatus(orderNumber, status, extra = {}) {
     return order;
 }
 
+export async function updateOrderFields(id, patch) {
+    await db.orders.update(id, patch);
+}
+
 export async function clearOrders() {
     await db.orders.clear();
     localStorage.removeItem('order-counter');

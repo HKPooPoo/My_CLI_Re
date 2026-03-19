@@ -4,7 +4,7 @@
  */
 
 import { getItems, getTotal, getCount, itemTotal, removeItem, setOption, clear } from './cart.js';
-import { createOrder, getUnavailableItems, saveDeliveryInfo, getDeliveryInfo } from './order-store.js';
+import { createOrder, updateOrderFields, getUnavailableItems, saveDeliveryInfo, getDeliveryInfo } from './order-store.js';
 import { submitOrder } from './restaurant-api.js';
 import { t, localize } from './i18n.js';
 import { ToastMessager } from '/javascript/toast.js';
@@ -372,6 +372,8 @@ async function handlePlaceOrder(btn) {
                 customer_phone: customerPhone,
                 comment: orderComment,
             });
+            // Save API order number to local record for status polling
+            await updateOrderFields(order.id, { apiOrderNumber: apiOrder.order_number });
             toast.addMessage(`${t('order.number')}${apiOrder.order_number}`, 4000, 'success');
         } catch {
             toast.addMessage(`${t('order.number')}${order.orderNumber}`, 4000, 'success');

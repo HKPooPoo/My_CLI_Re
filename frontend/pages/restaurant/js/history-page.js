@@ -1,22 +1,32 @@
 /**
- * History page — renders all submitted orders from IndexedDB.
- * Listens to order:created and order:statusChanged for live updates.
+ * History page — renders orders from IndexedDB with live status from API.
+ * Polls API every 2 seconds for status updates.
+ *
+ * Customer-facing status mapping:
+ *   pending           → 準備中
+ *   printed           → 等待外送員接單中
+ *   delivering/delivered → 已結單
  */
 
 import { t } from './i18n.js';
 import { getOrders } from './order-store.js';
+import { fetchOrder } from './restaurant-api.js';
 
 const page = document.getElementById('history-page');
 
-const STATUS_CLASSES = {
-    pending: 'status-pending',
-    printed: 'status-printed',
-    preparing: 'status-preparing',
-    ready: 'status-ready',
-    delivering: 'status-delivering',
-    delivered: 'status-delivered',
-    rejected: 'status-rejected',
-};
+// Map backend status → customer-facing status key + CSS class
+function customerStatus(status) {
+    switch (status) {
+        case 'pending':
+            return { label: t('order.customer-status.preparing'), cls: 'status-pending' };
+        case 'printed':
+            return { label: t('order.customer-status.waiting'), cls: 'status-printed' };
+        case 'delivering':
+        case 'delivered':
+        default:
+            return { label: t('order.customer-status.done'), cls: 'status-delivered' };
+    }
+}
 
 function formatTime(iso) {
     const d = new Date(iso);
@@ -31,6 +41,19 @@ function renderItemOptions(options) {
     }).join('');
 }
 
+// Cache of live statuses from API: { apiOrderNumber → status }
+const liveStatus = {};
+
+async function pollStatuses(orders) {
+    for (const order of orders) {
+        if (!order.apiOrderNumber) continue;
+        try {
+            const apiOrder = await fetchOrder(order.apiOrderNumber);
+            if (apiOrder) liveStatus[order.apiOrderNumber] = apiOrder.status;
+        } catch {}
+    }
+}
+
 async function render() {
     const orders = await getOrders();
 
@@ -39,30 +62,40 @@ async function render() {
         return;
     }
 
+    // Poll live statuses from API
+    await pollStatuses(orders);
+
     // Newest first
     page.innerHTML = orders.reverse().map(order => {
-        const statusCls = STATUS_CLASSES[order.status] || '';
-        const showEst = ['pending', 'printed', 'preparing', 'ready', 'delivering'].includes(order.status);
-        const estHtml = showEst && order.estimatedMinutes
-            ? `<div class="order-card-est">${t('order.est-time')} ~${order.estimatedMinutes} ${t('order.minutes')}</div>`
-            : '';
-        const rejectHtml = order.status === 'rejected' && order.rejectReason
-            ? `<div class="order-card-reject">${t('kitchen.reject-reason')}: ${order.rejectReason}</div>`
-            : '';
+        // Use live status if available, else fall back to local
+        const effectiveStatus = order.apiOrderNumber && liveStatus[order.apiOrderNumber]
+            ? liveStatus[order.apiOrderNumber]
+            : (order.status || 'pending');
+
+        const cs = customerStatus(effectiveStatus);
+        const orderNum = order.apiOrderNumber || order.orderNumber;
+        const isDone = ['delivering', 'delivered'].includes(effectiveStatus);
+
         const deliveryHtml = order.deliveryZone
             ? `<div class="order-card-delivery">${order.deliveryZone} · ${order.deliveryAddress}</div>`
             : '';
+        const commentHtml = order.comment
+            ? `<div class="order-card-comment">${order.comment}</div>`
+            : '';
+        const estHtml = !isDone && order.estimatedMinutes
+            ? `<div class="order-card-est">${t('order.est-time')} ~${order.estimatedMinutes} ${t('order.minutes')}</div>`
+            : '';
 
         return `
-        <div class="order-card">
+        <div class="order-card ${isDone ? 'kitchen-done' : ''}">
             <div class="order-card-header">
-                <span class="order-number">${t('order.number')}${order.orderNumber}</span>
-                <span class="order-status ${statusCls}">${t('order.status.' + order.status)}</span>
+                <span class="order-number">${t('order.number')}${orderNum}</span>
+                <span class="order-status ${cs.cls}">${cs.label}</span>
             </div>
             <div class="order-card-time">${formatTime(order.createdAt)}</div>
             ${deliveryHtml}
+            ${commentHtml}
             ${estHtml}
-            ${rejectHtml}
             <div class="order-items">
                 ${(order.items || []).map(item => `
                     <div class="order-item-row">
@@ -87,3 +120,4 @@ async function render() {
 window.addEventListener('order:created', render);
 window.addEventListener('order:statusChanged', render);
 render();
+setInterval(render, 2000);
