@@ -19,6 +19,20 @@ erDiagram
         timestamp updated_at
     }
 
+    menu_items {
+        bigint id PK
+        jsonb category "i18n {zh-TW, en}"
+        jsonb name "i18n {zh-TW, en}"
+        integer price
+        varchar image "nullable"
+        jsonb options_schema "default []"
+        jsonb timeslots "default [all]"
+        integer sort_order "default 0"
+        boolean available "default true"
+        timestamp created_at
+        timestamp updated_at
+    }
+
     deliverers {
         bigint id PK
         varchar name
@@ -35,7 +49,7 @@ erDiagram
         varchar order_number UK "TM0101-a3f8"
         varchar status "pending | printed | delivering | delivered"
         integer total "grand total incl. delivery fee"
-        jsonb items "array of {name, subtotal, qty, options}, default []"
+        jsonb items "snapshot from menu_items at order time"
         bigint branch_id FK "nullable"
         varchar delivery_zone "distance e.g. 1.5km"
         varchar delivery_address "nullable"
@@ -55,23 +69,6 @@ erDiagram
 
     branches ||--o{ orders : "branch_id"
     deliverers ||--o{ orders : "deliverer_id"
-
-    menu_items {
-        bigint id PK
-        jsonb category "i18n {zh-TW, en}"
-        jsonb name "i18n {zh-TW, en}"
-        integer price
-        varchar image "nullable"
-        jsonb options_schema "default []"
-        jsonb timeslots "default [all]"
-        integer sort_order "default 0"
-        boolean available "default true"
-        timestamp created_at
-        timestamp updated_at
-    }
-
-    %% order_items and restaurant_sessions do NOT exist in DB
-    %% (migrations never ran or tables were dropped)
 ```
 
 ### Table Status (4 tables in DB)
@@ -79,11 +76,45 @@ erDiagram
 | Table | Status | Notes |
 |-------|--------|-------|
 | `branches` | **ACTIVE** | 2 seeded rows (TM01, TSW01) |
-| `orders` | **ACTIVE** | Core order table, items as JSON, delivery_zone stores distance (e.g. "1.5km") |
+| `menu_items` | **ACTIVE** | Dynamic menu: customer fetches via API, kitchen manages availability |
+| `orders` | **ACTIVE** | Core order table, `items` JSONB snapshots menu_items at order time |
 | `deliverers` | **ACTIVE** | Server-side session via `session_token` |
-| `menu_items` | **UNUSED** | Menu hardcoded in HTML `data-*` attrs; table exists but empty |
 
-Tables in migrations but **NOT in DB**: `order_items` (items stored as JSON), `restaurant_sessions` (dine-in removed).
+### `menu_items` — Dynamic Menu System
+
+Menu items are the **source of truth** for the customer menu page and kitchen menu control.
+
+**Schema fields:**
+
+| Column | Purpose |
+|--------|---------|
+| `category` | JSONB i18n — `{"zh-TW":"飯","en":"Rice"}` |
+| `name` | JSONB i18n — `{"zh-TW":"滷肉飯","en":"Braised Pork Rice"}` |
+| `price` | Integer, base price in HKD |
+| `image` | Image path, nullable |
+| `options_schema` | JSONB — option groups with choices and extras (same structure as HTML `data-options`) |
+| `timeslots` | JSONB — when item is available, default `["all"]` |
+| `sort_order` | Display order within category |
+| `available` | Boolean — kitchen toggles on/off via API |
+
+**Data flow:**
+
+```
+menu_items (DB)
+    │
+    ├──► GET /api/restaurant/menu-items ──► Customer menu page (renders dynamically)
+    │
+    ├──► GET /api/restaurant/menu-items ──► Kitchen menu control (toggle available)
+    │       PATCH /api/restaurant/menu-items/{id} ◄── Kitchen toggles
+    │
+    └──► At order time: snapshot into orders.items JSONB
+         (decoupled — menu changes don't affect past orders)
+```
+
+**Relationship to orders:** No FK. Orders store a **snapshot** of items at order time as JSONB. This means:
+- Renaming a menu item doesn't change historical orders
+- Deleting a menu item doesn't break existing orders
+- Price changes only affect future orders
 
 ### Dead Columns on `orders`
 
@@ -98,7 +129,7 @@ Columns in migrations but **NOT in DB**: `table_number`, `session_token` (dine-i
 | Column | Table | Status |
 |--------|-------|--------|
 | `session_token` | `deliverers` | Used by `RestaurantDelivererService` but **no migration** creates it. Likely added manually. Should formalize with migration. |
-| `items` (json) | `orders` | Used by `RestaurantOrderService` but **no migration** adds it. Likely added manually. Should formalize with migration. |
+| `items` (jsonb) | `orders` | Used by `RestaurantOrderService` but **no migration** adds it. Likely added manually. Should formalize with migration. |
 
 ---
 
@@ -108,9 +139,9 @@ Columns in migrations but **NOT in DB**: `table_number`, `session_token` (dine-i
 erDiagram
     cartItems {
         int id PK "auto-increment"
-        string name "item name"
+        string name "item name from menu_items"
         int price "base price"
-        array options "option schema from HTML data-options"
+        array options "options_schema from menu_items"
         object selected "user selections {key: choiceIndex}"
     }
 
@@ -157,7 +188,6 @@ erDiagram
         json delivery-info "{ address, name, phone, email, comment }"
         json kitchen-session "{ id, code, name }"
         json deliverer-session "{ id, phone, name, token }"
-        json menu-unavailable "string[] of item names"
         string order-counter "sequential number for local IDB orderNumber"
     }
 ```
@@ -168,8 +198,9 @@ erDiagram
 | `delivery-info` | Customer | Saved checkout form fields (address, name, phone, email, comment) |
 | `kitchen-session` | Kitchen | Branch login state `{ id, code, name }` |
 | `deliverer-session` | Deliverer | Login state `{ id, phone, name, token }` |
-| `menu-unavailable` | Customer + Kitchen | Array of unavailable item names, cross-tab via `storage` event |
 | `order-counter` | Customer | Local sequential counter for IDB orderNumber (TIS001, TIS002...) |
+
+`menu-unavailable` localStorage key **removed** — availability is managed via `menu_items.available` in PostgreSQL.
 
 ---
 
@@ -182,6 +213,7 @@ flowchart LR
     end
     subgraph Backend
         B[RestaurantOrderController]
+        B2[RestaurantMenuController]
     end
     subgraph Google
         C[Distance Matrix API]
@@ -240,13 +272,18 @@ Address input → POST /api/restaurant/distance → Google API → distance_km
 Customer                  Backend                    External             Kitchen/Deliverer
 ════════                  ═══════                    ════════             ═════════════════
 
+GET /menu-items ────► menu_items table
+◄── items + options     (source of truth)
+
 Enter address ──────► POST /distance ──────► Google Maps API
                     ◄── distance_km ◄────── Distance Matrix
 
 Verify: fee calc
+Add to cart (IDB)
 
 Place order ────────► POST /orders ─────────────────────────────► WebSocket event
-  (IDB + API)        status: pending                                 │
+  (IDB + API)        items snapshot → orders.items                   │
+                     status: pending                                 │
                           │                                          │
                     POST /orders/checkout ──► Stripe API             ▼
                     ◄── checkout_url ◄────── Checkout Session    Kitchen sees
@@ -263,17 +300,26 @@ History page                                                   by pickup code
   delivering → "已結單"                                             │
   delivered → "已結單"                                          PATCH: delivered
                                                                delivered_at set
+
+                                                    Kitchen: PATCH /menu-items/{id}
+                                                    → toggle available (on/off)
+                                                    → affects future customer menu
 ```
 
 ---
 
-## API Routes (14 endpoints)
+## API Routes (17 endpoints)
 
 ```
 POST   /api/restaurant/distance                → Google Maps proxy
+
 GET    /api/restaurant/branches                 → list branches
 POST   /api/restaurant/branches                 → create branch
 POST   /api/restaurant/branches/auth            → kitchen login
+
+GET    /api/restaurant/menu-items               → list menu (customer + kitchen)
+GET    /api/restaurant/menu-items/{id}          → single item detail
+PATCH  /api/restaurant/menu-items/{id}          → update (toggle available, edit price)
 
 GET    /api/restaurant/orders?branch=           → today's orders
 POST   /api/restaurant/orders                   → create order
@@ -298,9 +344,10 @@ DELETE /api/restaurant/deliverers/{id}          → remove
 ## Relationship Summary
 
 ```
-branches   1 ──── * orders    (branch_id FK, nullable, nullOnDelete)
-deliverers 1 ──── * orders    (deliverer_id FK, nullable, nullOnDelete)
-menu_items               (standalone, no FK — unused)
+branches   1 ──── * orders      (branch_id FK, nullable, nullOnDelete)
+deliverers 1 ──── * orders      (deliverer_id FK, nullable, nullOnDelete)
+menu_items ─ ─ ─ ─ orders.items (snapshot at order time, no FK — decoupled)
 ```
 
 Active foreign keys: **2** (orders.branch_id → branches, orders.deliverer_id → deliverers)
+Logical relationship: **1** (menu_items → orders.items via JSONB snapshot, no FK constraint)
