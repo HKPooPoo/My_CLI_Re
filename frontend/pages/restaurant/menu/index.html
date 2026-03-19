@@ -103,11 +103,29 @@
                     <input type="text" id="menu-search" class="menu-search-input" data-i18n-placeholder="menu.search" placeholder="搜尋菜單...">
                 </div>
 
-                <!-- 飯 -->
-                <div class="food-categorized-container">
+                <div id="timeslot-banner" class="timeslot-banner"></div>
+
+                <!-- 早餐 (morning only) -->
+                <div class="food-categorized-container" data-timeslot="morning">
+                    <div class="food-category-title">早餐</div>
+                    <div class="food-item-item-container">
+                        <div class="food-item-container" data-name="雪菜肉絲米粉" data-price="38" data-timeslot="morning"
+                            data-options='[{"key":"drink","label":"飲品","choices":[{"label":"咖啡","extra":0},{"label":"朱古力","extra":0},{"label":"茉香綠茶","extra":3},{"label":"鴛鴦","extra":4}]},{"key":"extra","label":"加料","type":"multi","choices":[{"label":"加蛋","extra":5},{"label":"加肉絲","extra":8}]}]'>
+                            <div class="food-item-img"></div>
+                            <div class="food-item-name">雪菜肉絲米粉</div>
+                            <div class="food-item-bottom">
+                                <div class="food-item-price">$38</div>
+                                <button class="food-item-add">+</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 飯 (regular only) -->
+                <div class="food-categorized-container" data-timeslot="regular">
                     <div class="food-category-title">飯</div>
                     <div class="food-item-item-container">
-                        <div class="food-item-container" data-name="滷肉飯" data-price="52"
+                        <div class="food-item-container" data-name="滷肉飯" data-price="52" data-timeslot="regular"
                             data-options='[{"key":"drink","label":"飲品","choices":[{"label":"咖啡","extra":0},{"label":"朱古力","extra":0},{"label":"可口可樂","extra":2},{"label":"茉香綠茶","extra":3},{"label":"金桔綠茶","extra":3},{"label":"青蘋菓綠茶","extra":3},{"label":"荔枝綠茶","extra":3},{"label":"檸檬可樂","extra":4},{"label":"鴛鴦","extra":4}]},{"key":"topping","label":"加料","type":"multi","choices":[{"label":"珍珠","extra":2},{"label":"少冰","extra":0},{"label":"去冰","extra":0},{"label":"少甜","extra":0},{"label":"走甜","extra":0}]},{"key":"extra","label":"加餸","type":"multi","choices":[{"label":"加汁","extra":5},{"label":"加肉燥","extra":12},{"label":"加白飯","extra":12}]}]'>
                             <div class="food-item-img"></div>
                             <div class="food-item-name">滷肉飯</div>
@@ -116,7 +134,7 @@
                                 <button class="food-item-add">+</button>
                             </div>
                         </div>
-                        <div class="food-item-container" data-name="炒飯" data-price="50"
+                        <div class="food-item-container" data-name="炒飯" data-price="50" data-timeslot="regular"
                             data-options='[{"key":"drink","label":"飲品","choices":[{"label":"咖啡","extra":0},{"label":"朱古力","extra":0},{"label":"可口可樂","extra":2},{"label":"茉香綠茶","extra":3},{"label":"金桔綠茶","extra":3},{"label":"青蘋菓綠茶","extra":3},{"label":"荔枝綠茶","extra":3},{"label":"檸檬可樂","extra":4},{"label":"鴛鴦","extra":4}]},{"key":"topping","label":"加料","type":"multi","choices":[{"label":"珍珠","extra":2},{"label":"少冰","extra":0},{"label":"去冰","extra":0},{"label":"少甜","extra":0},{"label":"走甜","extra":0}]},{"key":"extra","label":"加餸","type":"multi","choices":[{"label":"加蛋","extra":5},{"label":"加白飯","extra":12}]}]'>
                             <div class="food-item-img"></div>
                             <div class="food-item-name">炒飯</div>
@@ -128,11 +146,11 @@
                     </div>
                 </div>
 
-                <!-- 麵 -->
-                <div class="food-categorized-container">
+                <!-- 麵 (regular only) -->
+                <div class="food-categorized-container" data-timeslot="regular">
                     <div class="food-category-title">麵</div>
                     <div class="food-item-item-container">
-                        <div class="food-item-container" data-name="肥牛炒烏冬" data-price="55"
+                        <div class="food-item-container" data-name="肥牛炒烏冬" data-price="55" data-timeslot="regular"
                             data-options='[{"key":"drink","label":"飲品","choices":[{"label":"咖啡","extra":0},{"label":"朱古力","extra":0},{"label":"可口可樂","extra":2},{"label":"茉香綠茶","extra":3},{"label":"金桔綠茶","extra":3},{"label":"青蘋菓綠茶","extra":3},{"label":"荔枝綠茶","extra":3},{"label":"檸檬可樂","extra":4},{"label":"鴛鴦","extra":4}]},{"key":"topping","label":"加料","type":"multi","choices":[{"label":"珍珠","extra":2},{"label":"少冰","extra":0},{"label":"去冰","extra":0},{"label":"少甜","extra":0},{"label":"走甜","extra":0}]},{"key":"extra","label":"加餸","type":"multi","choices":[{"label":"加肥牛","extra":15},{"label":"加蛋","extra":5}]}]'>
                             <div class="food-item-img"></div>
                             <div class="food-item-name">肥牛炒烏冬</div>
@@ -141,7 +159,7 @@
                                 <button class="food-item-add">+</button>
                             </div>
                         </div>
-                        <div class="food-item-container" data-name="肉醬意粉" data-price="52"
+                        <div class="food-item-container" data-name="肉醬意粉" data-price="52" data-timeslot="regular"
                             data-options='[{"key":"drink","label":"飲品","choices":[{"label":"咖啡","extra":0},{"label":"朱古力","extra":0},{"label":"可口可樂","extra":2},{"label":"茉香綠茶","extra":3},{"label":"金桔綠茶","extra":3},{"label":"青蘋菓綠茶","extra":3},{"label":"荔枝綠茶","extra":3},{"label":"檸檬可樂","extra":4},{"label":"鴛鴦","extra":4}]},{"key":"topping","label":"加料","type":"multi","choices":[{"label":"珍珠","extra":2},{"label":"少冰","extra":0},{"label":"去冰","extra":0},{"label":"少甜","extra":0},{"label":"走甜","extra":0}]},{"key":"extra","label":"加餸","type":"multi","choices":[{"label":"加芝士","extra":5},{"label":"加肉醬","extra":10}]}]'>
                             <div class="food-item-img"></div>
                             <div class="food-item-name">肉醬意粉</div>

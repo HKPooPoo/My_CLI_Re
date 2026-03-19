@@ -69,6 +69,62 @@
     display: none !important;
 }
 
+.timeslot-hidden {
+    display: none !important;
+}
+
+/* ---- Timeslot banner ---- */
+
+.timeslot-banner {
+    width: var(--container-width);
+    max-width: var(--container-max-width);
+    margin: 12px auto 0;
+    padding: 8px 12px;
+    border-radius: var(--border-radius);
+    font-size: 0.85em;
+    font-weight: bold;
+    text-align: center;
+}
+
+.slot-morning {
+    background: #fff3e0;
+    color: #e65100;
+    border: 1px solid #ffcc80;
+}
+
+.slot-regular {
+    background: #e8f5e9;
+    color: #2e7d32;
+    border: 1px solid #a5d6a7;
+}
+
+/* ---- Timeslot badges (kitchen) ---- */
+
+.slot-badge {
+    display: inline-block;
+    padding: 1px 6px;
+    border-radius: 3px;
+    font-size: 0.7em;
+    font-weight: bold;
+    vertical-align: middle;
+    margin-left: 4px;
+}
+
+.slot-badge-morning {
+    background: #fff3e0;
+    color: #e65100;
+}
+
+.slot-badge-regular {
+    background: #e8f5e9;
+    color: #2e7d32;
+}
+
+.slot-badge-all {
+    background: #e3f2fd;
+    color: #1565c0;
+}
+
 /* ==================== Menu ==================== */
 
 .food-categorized-container {
