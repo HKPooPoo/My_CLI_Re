@@ -18,85 +18,73 @@ class RestaurantOrderService
 
     public function createOrder(array $data): object
     {
-        return $this->db()->transaction(function () use ($data) {
-            $branchId = null;
-            $branchCode = null;
+        $branchId = null;
+        $branchCode = null;
 
-            if (! empty($data['branch_code'])) {
-                $branch = $this->db()->table('branches')
-                    ->where('code', strtoupper($data['branch_code']))
-                    ->first();
-                if ($branch) {
-                    $branchId = $branch->id;
-                    $branchCode = $branch->code;
-                }
+        if (! empty($data['branch_code'])) {
+            $branch = $this->db()->table('branches')
+                ->where('code', strtoupper($data['branch_code']))
+                ->first();
+            if ($branch) {
+                $branchId = $branch->id;
+                $branchCode = $branch->code;
             }
+        }
 
-            $orderNumber = $this->generateOrderNumber($branchCode);
-            $total = 0;
+        $orderNumber = $this->generateOrderNumber($branchCode);
 
-            $distanceKm = $data['distance_km'] ?? 1.5;
-            $estimatedMinutes = (int) round(15 + $distanceKm * 5);
-
-            $orderId = $this->db()->table('orders')->insertGetId([
-                'order_number' => $orderNumber,
-                'status' => 'pending',
-                'total' => 0,
-                'branch_id' => $branchId,
-                'delivery_zone' => $data['delivery_zone'] ?? null,
-                'delivery_address' => $data['delivery_address'] ?? null,
-                'delivery_fee' => $data['delivery_fee'] ?? 0,
-                'customer_name' => $data['customer_name'] ?? null,
-                'customer_phone' => $data['customer_phone'] ?? null,
-                'customer_email' => $data['customer_email'] ?? null,
-                'comment' => $data['comment'] ?? null,
-                'estimated_minutes' => $estimatedMinutes,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
-
-            foreach ($data['items'] as $item) {
-                $subtotal = $item['subtotal'];
-                $total += $subtotal;
-
-                $this->db()->table('order_items')->insert([
-                    'order_id' => $orderId,
-                    'menu_item_id' => null,
-                    'name' => $item['name'],
-                    'base_price' => $item['base_price'] ?? $item['subtotal'],
-                    'qty' => $item['qty'] ?? 1,
-                    'options' => json_encode($item['options'] ?? new \stdClass()),
-                    'subtotal' => $subtotal,
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ]);
-            }
-
-            $grandTotal = $total + ($data['delivery_fee'] ?? 0);
-            $this->db()->table('orders')
-                ->where('id', $orderId)
-                ->update(['total' => $grandTotal]);
-
-            Cache::forget('restaurant:orders:today');
-
-            event(new RestaurantOrderUpdated($orderNumber, 'created', $branchCode));
-
-            // Send receipt email if provided
-            $email = $data['customer_email'] ?? null;
-            if ($email) {
-                $order = $this->db()->table('orders')->find($orderId);
-                $items = $this->db()->table('order_items')->where('order_id', $orderId)->get()->toArray();
-                Mail::to($email)->queue(new RestaurantReceiptMail($order, $items));
-            }
-
-            return (object) [
-                'id' => $orderId,
-                'order_number' => $orderNumber,
-                'total' => $grandTotal,
-                'status' => 'pending',
-                'estimated_minutes' => $estimatedMinutes,
+        // Build items JSON and compute total
+        $items = [];
+        $total = 0;
+        foreach ($data['items'] as $item) {
+            $subtotal = $item['subtotal'];
+            $total += $subtotal;
+            $items[] = [
+                'name' => $item['name'],
+                'subtotal' => $subtotal,
+                'qty' => $item['qty'] ?? 1,
+                'options' => $item['options'] ?? new \stdClass(),
             ];
-        });
+        }
+
+        $grandTotal = $total + ($data['delivery_fee'] ?? 0);
+        $distanceKm = $data['distance_km'] ?? 1.5;
+        $estimatedMinutes = (int) round(15 + $distanceKm * 5);
+
+        $orderId = $this->db()->table('orders')->insertGetId([
+            'order_number' => $orderNumber,
+            'status' => 'pending',
+            'total' => $grandTotal,
+            'items' => json_encode($items),
+            'branch_id' => $branchId,
+            'delivery_zone' => $data['delivery_zone'] ?? null,
+            'delivery_address' => $data['delivery_address'] ?? null,
+            'delivery_fee' => $data['delivery_fee'] ?? 0,
+            'customer_name' => $data['customer_name'] ?? null,
+            'customer_phone' => $data['customer_phone'] ?? null,
+            'customer_email' => $data['customer_email'] ?? null,
+            'comment' => $data['comment'] ?? null,
+            'estimated_minutes' => $estimatedMinutes,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        Cache::forget('restaurant:orders:today');
+        event(new RestaurantOrderUpdated($orderNumber, 'created', $branchCode));
+
+        // Send receipt email if provided
+        if (! empty($data['customer_email'])) {
+            $order = $this->db()->table('orders')->find($orderId);
+            Mail::to($data['customer_email'])->queue(new RestaurantReceiptMail($order, $items));
+        }
+
+        return (object) [
+            'id' => $orderId,
+            'order_number' => $orderNumber,
+            'total' => $grandTotal,
+            'status' => 'pending',
+            'estimated_minutes' => $estimatedMinutes,
+        ];
     }
 
     public function getOrder(string $orderNumber): ?object
@@ -105,30 +93,9 @@ class RestaurantOrderService
             ->where('order_number', $orderNumber)
             ->first();
 
-        if (! $order) {
-            return null;
+        if ($order) {
+            $order->items = json_decode($order->items ?? '[]');
         }
-
-        $order->items = $this->db()->table('order_items')
-            ->where('order_id', $order->id)
-            ->get();
-
-        return $order;
-    }
-
-    public function getOrderByToken(string $qrToken): ?object
-    {
-        $order = $this->db()->table('orders')
-            ->where('qr_token', $qrToken)
-            ->first();
-
-        if (! $order) {
-            return null;
-        }
-
-        $order->items = $this->db()->table('order_items')
-            ->where('order_id', $order->id)
-            ->get();
 
         return $order;
     }
@@ -157,9 +124,7 @@ class RestaurantOrderService
             ->get();
 
         foreach ($orders as $order) {
-            $order->items = $this->db()->table('order_items')
-                ->where('order_id', $order->id)
-                ->get();
+            $order->items = json_decode($order->items ?? '[]');
         }
 
         return $orders->toArray();
@@ -173,9 +138,7 @@ class RestaurantOrderService
             ->get();
 
         foreach ($orders as $order) {
-            $order->items = $this->db()->table('order_items')
-                ->where('order_id', $order->id)
-                ->get();
+            $order->items = json_decode($order->items ?? '[]');
         }
 
         return $orders->toArray();
@@ -202,11 +165,9 @@ class RestaurantOrderService
         if ($status === 'printed') {
             $patch['printed_at'] = now();
         }
-
         if ($status === 'delivering' && isset($extra['deliverer_id'])) {
             $patch['deliverer_id'] = $extra['deliverer_id'];
         }
-
         if ($status === 'delivered') {
             $patch['delivered_at'] = now();
         }
@@ -221,8 +182,12 @@ class RestaurantOrderService
             ->where('order_number', $orderNumber)
             ->first();
 
+        if ($updated) {
+            $updated->items = json_decode($updated->items ?? '[]');
+        }
+
         $branchCode = null;
-        if ($updated && $updated->branch_id) {
+        if ($updated?->branch_id) {
             $branch = $this->db()->table('branches')->find($updated->branch_id);
             $branchCode = $branch?->code;
         }
@@ -234,9 +199,7 @@ class RestaurantOrderService
 
     /**
      * Generate pickup code: {branch}{2-digit daily seq}-{4-char random}
-     * e.g. TM01-a3f8, A01-d4e2
      * Daily reset like McDonald's. 2 digits = 99 orders/day/branch.
-     * 4-char random prevents guessing.
      */
     protected function generateOrderNumber(?string $branchCode = null): string
     {

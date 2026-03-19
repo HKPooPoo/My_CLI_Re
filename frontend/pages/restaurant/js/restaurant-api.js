@@ -6,11 +6,17 @@
 
 const BASE = '/api/restaurant';
 
+function getDelivererToken() {
+    try {
+        return JSON.parse(localStorage.getItem('deliverer-session'))?.token || null;
+    } catch { return null; }
+}
+
 async function request(path, options = {}) {
-    const res = await fetch(`${BASE}${path}`, {
-        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-        ...options,
-    });
+    const headers = { 'Content-Type': 'application/json', 'Accept': 'application/json' };
+    const token = getDelivererToken();
+    if (token) headers['X-Deliverer-Token'] = token;
+    const res = await fetch(`${BASE}${path}`, { headers, ...options });
     if (res.status === 204) return null;
     const data = await res.json();
     if (!res.ok) throw new Error(data.message || `API error ${res.status}`);
@@ -83,6 +89,10 @@ export function authenticateDeliverer(phone, password) {
         method: 'POST',
         body: JSON.stringify({ phone, password }),
     });
+}
+
+export function logoutDeliverer() {
+    return request('/deliverers/logout', { method: 'POST' });
 }
 
 export function updateDelivererStatus(id, status) {

@@ -11,9 +11,9 @@ class RestaurantReceiptMail extends Mailable
     use Queueable, SerializesModels;
 
     public object $order;
-    public array $items;
+    public $items;
 
-    public function __construct(object $order, array $items)
+    public function __construct(object $order, $items)
     {
         $this->order = $order;
         $this->items = $items;

@@ -3,7 +3,7 @@
  */
 
 import { t } from './i18n.js';
-import { fetchOrderByPickupCode, updateOrderStatus, updateDelivererStatus } from './restaurant-api.js';
+import { fetchOrderByPickupCode, updateOrderStatus, updateDelivererStatus, logoutDeliverer } from './restaurant-api.js';
 import { ToastMessager } from '/javascript/toast.js';
 
 const page = document.getElementById('delivery-scan-page');
@@ -65,10 +65,7 @@ async function claimByToken(token) {
 page.addEventListener('click', async (e) => {
     // Logout
     if (e.target.closest('.delivery-logout-btn')) {
-        const session = getSession();
-        if (session?.id) {
-            try { await updateDelivererStatus(session.id, 'offline'); } catch {}
-        }
+        try { await logoutDeliverer(); } catch {}
         localStorage.removeItem('deliverer-session');
         location.reload();
         return;

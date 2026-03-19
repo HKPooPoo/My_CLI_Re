@@ -27,6 +27,7 @@ class RestaurantBranchService
     public function listBranches(): array
     {
         return $this->db()->table('branches')
+            ->select('id', 'code', 'name', 'created_at')
             ->orderBy('id')
             ->get()
             ->toArray();

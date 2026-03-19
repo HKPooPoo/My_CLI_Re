@@ -115,6 +115,8 @@ Route::prefix('restaurant')->group(function () {
     Route::get('/deliverers', [RestaurantDelivererController::class, 'index']);
     Route::post('/deliverers', [RestaurantDelivererController::class, 'store']);
     Route::post('/deliverers/auth', [RestaurantDelivererController::class, 'authenticate']);
+    Route::post('/deliverers/logout', [RestaurantDelivererController::class, 'logout']);
+    Route::get('/deliverers/me', [RestaurantDelivererController::class, 'me']);
     Route::patch('/deliverers/{id}/status', [RestaurantDelivererController::class, 'updateStatus']);
     Route::delete('/deliverers/{id}', [RestaurantDelivererController::class, 'destroy']);
 });

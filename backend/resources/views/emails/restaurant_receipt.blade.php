@@ -22,8 +22,8 @@
     <table style="width: 100%; border-collapse: collapse; margin-bottom: 12px;">
         @foreach($items as $item)
         <tr>
-            <td style="padding: 4px 0;">{{ $item->name }}</td>
-            <td style="padding: 4px 0; text-align: right;">${{ $item->subtotal }}</td>
+            <td style="padding: 4px 0;">{{ is_object($item) ? $item->name : $item['name'] }}</td>
+            <td style="padding: 4px 0; text-align: right;">${{ is_object($item) ? $item->subtotal : $item['subtotal'] }}</td>
         </tr>
         @endforeach
     </table>

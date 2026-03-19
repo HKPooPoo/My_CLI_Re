@@ -34,12 +34,7 @@ class RestaurantDelivererController extends Controller
                 $request->input('password'),
             );
 
-            return response()->json([
-                'id' => $deliverer->id,
-                'name' => $deliverer->name,
-                'phone' => $deliverer->phone,
-                'status' => $deliverer->status,
-            ], 201);
+            return response()->json($deliverer, 201);
         } catch (\InvalidArgumentException $e) {
             return response()->json(['message' => $e->getMessage()], 409);
         }
@@ -52,21 +47,41 @@ class RestaurantDelivererController extends Controller
             'password' => 'required|string',
         ]);
 
-        $deliverer = $this->service->authenticate(
+        $result = $this->service->authenticate(
             $request->input('phone'),
             $request->input('password'),
         );
 
-        if (! $deliverer) {
+        if (! $result) {
             return response()->json(['message' => 'Invalid credentials'], 401);
         }
 
-        return response()->json([
-            'id' => $deliverer->id,
-            'name' => $deliverer->name,
-            'phone' => $deliverer->phone,
-            'status' => $deliverer->status,
-        ]);
+        return response()->json($result);
+    }
+
+    public function logout(Request $request)
+    {
+        $token = $request->header('X-Deliverer-Token');
+        if ($token) {
+            $this->service->logout($token);
+        }
+
+        return response()->json(null, 204);
+    }
+
+    public function me(Request $request)
+    {
+        $token = $request->header('X-Deliverer-Token');
+        if (! $token) {
+            return response()->json(['message' => 'No session'], 401);
+        }
+
+        $deliverer = $this->service->validateSession($token);
+        if (! $deliverer) {
+            return response()->json(['message' => 'Invalid session'], 401);
+        }
+
+        return response()->json($deliverer);
     }
 
     public function updateStatus(Request $request, int $id)

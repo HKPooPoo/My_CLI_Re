@@ -31,24 +31,57 @@ class RestaurantDelivererService
 
         Cache::forget('restaurant:deliverers');
 
-        return $this->db()->table('deliverers')->find($id);
+        return $this->db()->table('deliverers')
+            ->select('id', 'name', 'phone', 'status')
+            ->find($id);
     }
 
-    public function authenticate(string $phone, string $password): ?object
+    public function authenticate(string $phone, string $password): ?array
     {
         $deliverer = $this->db()->table('deliverers')->where('phone', $phone)->first();
-        if (! $deliverer) {
+        if (! $deliverer || ! Hash::check($password, $deliverer->password)) {
             return null;
         }
 
-        if (! Hash::check($password, $deliverer->password)) {
-            return null;
-        }
+        // Generate session token
+        $token = bin2hex(random_bytes(32));
+        $this->db()->table('deliverers')
+            ->where('id', $deliverer->id)
+            ->update([
+                'session_token' => $token,
+                'status' => 'idle',
+                'updated_at' => now(),
+            ]);
 
-        // Set status to idle on login
-        $this->updateStatus($deliverer->id, 'idle');
+        Cache::forget('restaurant:deliverers');
 
-        return $deliverer;
+        return [
+            'id' => $deliverer->id,
+            'name' => $deliverer->name,
+            'phone' => $deliverer->phone,
+            'status' => 'idle',
+            'session_token' => $token,
+        ];
+    }
+
+    public function validateSession(string $token): ?object
+    {
+        return $this->db()->table('deliverers')
+            ->select('id', 'name', 'phone', 'status')
+            ->where('session_token', $token)
+            ->first();
+    }
+
+    public function logout(string $token): void
+    {
+        $this->db()->table('deliverers')
+            ->where('session_token', $token)
+            ->update([
+                'session_token' => null,
+                'status' => 'offline',
+                'updated_at' => now(),
+            ]);
+        Cache::forget('restaurant:deliverers');
     }
 
     public function list(): array
@@ -64,7 +97,9 @@ class RestaurantDelivererService
 
     public function findById(int $id): ?object
     {
-        return $this->db()->table('deliverers')->find($id);
+        return $this->db()->table('deliverers')
+            ->select('id', 'name', 'phone', 'status')
+            ->find($id);
     }
 
     public function updateStatus(int $id, string $status): void
@@ -72,7 +107,6 @@ class RestaurantDelivererService
         $this->db()->table('deliverers')
             ->where('id', $id)
             ->update(['status' => $status, 'updated_at' => now()]);
-
         Cache::forget('restaurant:deliverers');
     }
 

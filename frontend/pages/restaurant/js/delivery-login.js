@@ -48,6 +48,7 @@ page.addEventListener('click', async (e) => {
             id: deliverer.id,
             phone: deliverer.phone,
             name: deliverer.name,
+            token: deliverer.session_token,
         }));
         location.reload();
     } catch {
