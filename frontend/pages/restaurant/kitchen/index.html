@@ -87,6 +87,7 @@
             await initCart();
             const v = Date.now();
             import(`../js/lang-toggle.js?v=${v}`).then(m => m.initLangToggle());
+            import(`../js/restaurant-echo.js?v=${v}`).then(m => m.initRestaurantEcho());
             import(`../js/kitchen-page.js?v=${v}`);
             import(`../js/kitchen-history-page.js?v=${v}`);
             import(`../js/kitchen-menu-page.js?v=${v}`);

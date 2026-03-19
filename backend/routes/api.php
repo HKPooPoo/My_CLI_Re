@@ -11,6 +11,7 @@ use App\Http\Controllers\BroadcastChannelController;
 use App\Http\Controllers\LlmController;
 use App\Http\Controllers\RestaurantOrderController;
 use App\Http\Controllers\RestaurantBranchController;
+use App\Http\Controllers\RestaurantDelivererController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Broadcast;
 
@@ -107,8 +108,16 @@ Route::prefix('restaurant')->group(function () {
     Route::post('/sessions/check-out', [RestaurantBranchController::class, 'checkOut']);
     Route::get('/orders', [RestaurantOrderController::class, 'index']);
     Route::post('/orders', [RestaurantOrderController::class, 'store']);
+    Route::get('/orders/token/{token}', [RestaurantOrderController::class, 'showByToken']);
+    Route::get('/orders/deliverer/{delivererId}', [RestaurantOrderController::class, 'listByDeliverer']);
     Route::get('/orders/{orderNumber}', [RestaurantOrderController::class, 'show']);
     Route::patch('/orders/{orderNumber}/status', [RestaurantOrderController::class, 'updateStatus']);
+
+    Route::get('/deliverers', [RestaurantDelivererController::class, 'index']);
+    Route::post('/deliverers', [RestaurantDelivererController::class, 'store']);
+    Route::post('/deliverers/auth', [RestaurantDelivererController::class, 'authenticate']);
+    Route::patch('/deliverers/{id}/status', [RestaurantDelivererController::class, 'updateStatus']);
+    Route::delete('/deliverers/{id}', [RestaurantDelivererController::class, 'destroy']);
 });
 
 // File Download & Meta — no throttle (auto-sync file checks need burst capacity)

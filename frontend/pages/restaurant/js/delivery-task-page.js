@@ -1,14 +1,18 @@
 /**
- * Delivery task page — shows the deliverer's current active delivery.
- * Actions: mark delivered.
+ * Delivery task page — shows active deliveries from API.
  */
 
 import { t } from './i18n.js';
-import { getOrdersByDeliverer, updateStatus, getDelivererSession, updateDelivererStatus } from './order-store.js';
+import { fetchOrdersByDeliverer, updateOrderStatus, updateDelivererStatus } from './restaurant-api.js';
 import { ToastMessager } from '/javascript/toast.js';
 
 const page = document.getElementById('delivery-task-page');
 const toast = new ToastMessager();
+
+function getSession() {
+    try { return JSON.parse(localStorage.getItem('deliverer-session')); }
+    catch { return null; }
+}
 
 function formatTime(iso) {
     const d = new Date(iso);
@@ -16,58 +20,62 @@ function formatTime(iso) {
 }
 
 async function render() {
-    const session = getDelivererSession();
+    const session = getSession();
     if (!session) return;
 
-    const orders = await getOrdersByDeliverer(session.id);
-    const active = orders.filter(o => o.status === 'delivering');
+    try {
+        const orders = await fetchOrdersByDeliverer(session.id);
+        const active = orders.filter(o => o.status === 'delivering');
 
-    if (!active.length) {
-        page.innerHTML = `<div class="cart-empty">${t('delivery.no-task')}</div>`;
-        return;
-    }
+        if (!active.length) {
+            page.innerHTML = `<div class="cart-empty">${t('delivery.no-task')}</div>`;
+            return;
+        }
 
-    page.innerHTML = active.map(order => `
-        <div class="delivery-info-card">
-            <div class="delivery-info-header">
-                <span class="order-number">${t('order.number')}${order.orderNumber}</span>
-                <span class="order-status status-${order.status}">${t('order.status.' + order.status)}</span>
-            </div>
-            <div class="order-card-time">${formatTime(order.createdAt)}</div>
-            <div class="delivery-info-section">
-                <div class="delivery-info-label">${t('delivery.customer')}</div>
-                <div class="delivery-info-value">${order.customerName}</div>
-            </div>
-            <div class="delivery-info-section">
-                <div class="delivery-info-label">${t('delivery.phone')}</div>
-                <div class="delivery-info-value delivery-phone">${order.customerPhone}</div>
-            </div>
-            <div class="delivery-info-section">
-                <div class="delivery-info-label">${t('delivery.address')}</div>
-                <div class="delivery-info-value">${order.deliveryZone} · ${order.deliveryAddress}</div>
-            </div>
-            <div class="delivery-map-placeholder">
-                <div class="delivery-map-text">${t('delivery.map-placeholder')}</div>
-            </div>
-            <div class="delivery-info-section">
-                <div class="delivery-info-label">${t('order.est-time')}</div>
-                <div class="delivery-info-value">~${order.estimatedMinutes} ${t('order.minutes')}</div>
-            </div>
-            <div class="delivery-items-summary">
-                ${(order.items || []).map(item => `
-                    <div class="order-item-row">
-                        <span>${item.name}</span>
-                        <span>$${item.subtotal}</span>
-                    </div>
-                `).join('')}
-                <div class="order-card-footer">
-                    <span>${t('cart.grand-total')}</span>
-                    <span class="order-total-amount">$${order.total}</span>
+        page.innerHTML = active.map(order => `
+            <div class="delivery-info-card">
+                <div class="delivery-info-header">
+                    <span class="order-number">${t('order.number')}${order.order_number}</span>
+                    <span class="order-status status-${order.status}">${t('order.status.' + order.status)}</span>
                 </div>
+                <div class="order-card-time">${formatTime(order.created_at)}</div>
+                <div class="delivery-info-section">
+                    <div class="delivery-info-label">${t('delivery.customer')}</div>
+                    <div class="delivery-info-value">${order.customer_name || ''}</div>
+                </div>
+                <div class="delivery-info-section">
+                    <div class="delivery-info-label">${t('delivery.phone')}</div>
+                    <div class="delivery-info-value delivery-phone">${order.customer_phone || ''}</div>
+                </div>
+                <div class="delivery-info-section">
+                    <div class="delivery-info-label">${t('delivery.address')}</div>
+                    <div class="delivery-info-value">${order.delivery_zone || ''} · ${order.delivery_address || ''}</div>
+                </div>
+                <div class="delivery-map-placeholder">
+                    <div class="delivery-map-text">${t('delivery.map-placeholder')}</div>
+                </div>
+                <div class="delivery-info-section">
+                    <div class="delivery-info-label">${t('order.est-time')}</div>
+                    <div class="delivery-info-value">~${order.estimated_minutes || '?'} ${t('order.minutes')}</div>
+                </div>
+                <div class="delivery-items-summary">
+                    ${(order.items || []).map(item => `
+                        <div class="order-item-row">
+                            <span>${item.name}</span>
+                            <span>$${item.subtotal}</span>
+                        </div>
+                    `).join('')}
+                    <div class="order-card-footer">
+                        <span>${t('cart.grand-total')}</span>
+                        <span class="order-total-amount">$${order.total}</span>
+                    </div>
+                </div>
+                <button class="checkout-btn delivery-action-btn" data-order="${order.order_number}">${t('delivery.mark-delivered')}</button>
             </div>
-            <button class="checkout-btn delivery-action-btn" data-order="${order.orderNumber}">${t('delivery.mark-delivered')}</button>
-        </div>
-    `).join('');
+        `).join('');
+    } catch (err) {
+        page.innerHTML = `<div class="cart-empty">${err.message}</div>`;
+    }
 }
 
 page.addEventListener('click', async (e) => {
@@ -77,20 +85,25 @@ page.addEventListener('click', async (e) => {
     btn.disabled = true;
     btn.textContent = '...';
 
-    await updateStatus(btn.dataset.order, 'delivered');
+    try {
+        await updateOrderStatus(btn.dataset.order, 'delivered');
 
-    // Check if deliverer has more active orders
-    const session = getDelivererSession();
-    if (session?.id) {
-        const orders = await getOrdersByDeliverer(session.id);
-        const stillActive = orders.filter(o => o.status === 'delivering');
-        if (!stillActive.length) {
-            await updateDelivererStatus(session.id, 'idle');
+        const session = getSession();
+        if (session?.id) {
+            const orders = await fetchOrdersByDeliverer(session.id);
+            const stillActive = orders.filter(o => o.status === 'delivering');
+            if (!stillActive.length) {
+                await updateDelivererStatus(session.id, 'idle');
+            }
         }
-    }
 
-    toast.addMessage(t('delivery.complete'), 2000, 'success');
+        toast.addMessage(t('delivery.complete'), 2000, 'success');
+    } catch (err) {
+        toast.addMessage(err.message, 3000, 'error');
+        btn.disabled = false;
+        btn.textContent = t('delivery.mark-delivered');
+    }
 });
 
-window.addEventListener('order:statusChanged', render);
+window.addEventListener('restaurant:orderUpdated', render);
 render();

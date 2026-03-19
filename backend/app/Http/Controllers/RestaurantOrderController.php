@@ -21,41 +21,29 @@ class RestaurantOrderController extends Controller
         return response()->json($this->orderService->listTodayOrders($branchCode));
     }
 
-    public function updateStatus(Request $request, string $orderNumber)
-    {
-        $request->validate([
-            'status' => 'required|string|in:preparing,ready',
-        ]);
-
-        $order = $this->orderService->updateStatus($orderNumber, $request->input('status'));
-
-        if (! $order) {
-            return response()->json(['message' => 'Order not found'], 404);
-        }
-
-        return response()->json($order);
-    }
-
     public function store(Request $request)
     {
         $request->validate([
             'items' => 'required|array|min:1',
             'items.*.name' => 'required|string',
-            'items.*.base_price' => 'required|integer|min:0',
             'items.*.subtotal' => 'required|integer|min:0',
-            'items.*.options' => 'nullable|array',
+            'items.*.options' => 'nullable',
+            'delivery_zone' => 'nullable|string',
+            'delivery_address' => 'nullable|string',
+            'delivery_fee' => 'nullable|integer|min:0',
+            'distance_km' => 'nullable|numeric|min:0',
+            'customer_name' => 'nullable|string|max:100',
+            'customer_phone' => 'nullable|string|max:20',
             'session_token' => 'nullable|string',
         ]);
 
-        $order = $this->orderService->createOrder(
-            $request->input('items'),
-            $request->input('session_token'),
-        );
+        $order = $this->orderService->createOrder($request->all());
 
         return response()->json([
             'order_number' => $order->order_number,
             'total' => $order->total,
             'status' => $order->status,
+            'estimated_minutes' => $order->estimated_minutes,
         ], 201);
     }
 
@@ -68,5 +56,41 @@ class RestaurantOrderController extends Controller
         }
 
         return response()->json($order);
+    }
+
+    public function showByToken(string $token)
+    {
+        $order = $this->orderService->getOrderByToken($token);
+
+        if (! $order) {
+            return response()->json(['message' => 'Order not found'], 404);
+        }
+
+        return response()->json($order);
+    }
+
+    public function updateStatus(Request $request, string $orderNumber)
+    {
+        $request->validate([
+            'status' => 'required|string|in:pending,printed,delivering,delivered',
+            'deliverer_id' => 'nullable|integer',
+        ]);
+
+        $order = $this->orderService->updateStatus(
+            $orderNumber,
+            $request->input('status'),
+            $request->only('deliverer_id'),
+        );
+
+        if (! $order) {
+            return response()->json(['message' => 'Order not found'], 404);
+        }
+
+        return response()->json($order);
+    }
+
+    public function listByDeliverer(int $delivererId)
+    {
+        return response()->json($this->orderService->listByDeliverer($delivererId));
     }
 }

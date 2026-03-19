@@ -5,6 +5,7 @@
 
 import { getItems, getTotal, getCount, itemTotal, removeItem, setOption, clear } from './cart.js';
 import { createOrder, getUnavailableItems, saveDeliveryInfo, getDeliveryInfo } from './order-store.js';
+import { submitOrder } from './restaurant-api.js';
 import { t, localize } from './i18n.js';
 import { ToastMessager } from '/javascript/toast.js';
 
@@ -333,19 +334,40 @@ async function handlePlaceOrder(btn) {
             return { name: item.name, subtotal: itemTotal(item), options };
         });
 
+        const deliveryAddress = document.getElementById('delivery-address').value.trim();
+        const customerName = document.getElementById('customer-name').value.trim();
+        const customerPhone = document.getElementById('customer-phone').value.trim();
+        const subtotal = getTotal();
+
+        // Save to IndexedDB (local history)
         const order = await createOrder({
             items,
             deliveryZone: localize(zone.name),
-            deliveryAddress: document.getElementById('delivery-address').value.trim(),
+            deliveryAddress,
             deliveryFee: zone.fee,
             distanceKm: zone.distanceKm,
-            customerName: document.getElementById('customer-name').value.trim(),
-            customerPhone: document.getElementById('customer-phone').value.trim(),
-            subtotal: getTotal(),
+            customerName,
+            customerPhone,
+            subtotal,
         });
 
+        // Submit to API (kitchen sees it via PostgreSQL)
+        try {
+            const apiOrder = await submitOrder({
+                items: items.map(i => ({ name: i.name, subtotal: i.subtotal, options: i.options })),
+                delivery_zone: localize(zone.name),
+                delivery_address: deliveryAddress,
+                delivery_fee: zone.fee,
+                distance_km: zone.distanceKm,
+                customer_name: customerName,
+                customer_phone: customerPhone,
+            });
+            toast.addMessage(`${t('order.number')}${apiOrder.order_number}`, 4000, 'success');
+        } catch {
+            toast.addMessage(`${t('order.number')}${order.orderNumber}`, 4000, 'success');
+        }
+
         await clear();
-        toast.addMessage(`${t('order.number')}${order.orderNumber}`, 4000, 'success');
         document.querySelector('[data-sub-navi-item="history"]')?.click();
     } catch (err) {
         toast.addMessage(err.message, 4000, 'error');

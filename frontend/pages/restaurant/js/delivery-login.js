@@ -1,10 +1,10 @@
 /**
- * Deliverer login page — authenticates with phone + password.
+ * Deliverer login page — authenticates via API (phone + password).
  * On success, saves session to localStorage and reloads.
  */
 
 import { t } from './i18n.js';
-import { authenticateDeliverer, setDelivererSession } from './order-store.js';
+import { authenticateDeliverer } from './restaurant-api.js';
 
 const page = document.getElementById('delivery-login-page');
 
@@ -42,14 +42,17 @@ page.addEventListener('click', async (e) => {
     btn.disabled = true;
     btn.textContent = '...';
 
-    const deliverer = await authenticateDeliverer(phone, password);
-    if (!deliverer) {
+    try {
+        const deliverer = await authenticateDeliverer(phone, password);
+        localStorage.setItem('deliverer-session', JSON.stringify({
+            id: deliverer.id,
+            phone: deliverer.phone,
+            name: deliverer.name,
+        }));
+        location.reload();
+    } catch {
         render(t('deliverer.login-error'));
-        return;
     }
-
-    setDelivererSession(deliverer);
-    location.reload();
 });
 
 render();

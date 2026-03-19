@@ -1,10 +1,9 @@
 /**
- * Kitchen deliverer registration page — form to register new deliverers.
- * Fields: name, phone, password.
+ * Kitchen deliverer registration page — registers via API.
  */
 
 import { t } from './i18n.js';
-import { addDeliverer } from './order-store.js';
+import { registerDeliverer } from './restaurant-api.js';
 import { ToastMessager } from '/javascript/toast.js';
 
 const page = document.getElementById('deliverer-register-page');
@@ -53,7 +52,7 @@ page.addEventListener('click', async (e) => {
 
     submitBtn.disabled = true;
     try {
-        const deliverer = await addDeliverer({ name, phone, password });
+        const deliverer = await registerDeliverer({ name, phone, password });
         toast.addMessage(`${t('deliverer.registered')} ${deliverer.name}`, 3000, 'success');
         render();
     } catch (err) {

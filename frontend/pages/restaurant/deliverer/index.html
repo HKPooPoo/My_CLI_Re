@@ -89,6 +89,7 @@
             } else {
                 // Logged in: hide login gate, load pages
                 import(`../js/lang-toggle.js?v=${v}`).then(m => m.initLangToggle());
+                import(`../js/restaurant-echo.js?v=${v}`).then(m => m.initRestaurantEcho());
                 import(`../js/delivery-page.js?v=${v}`);
                 import(`../js/delivery-task-page.js?v=${v}`);
                 import(`../js/delivery-history-page.js?v=${v}`);

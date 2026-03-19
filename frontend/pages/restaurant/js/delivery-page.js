@@ -1,17 +1,22 @@
 /**
- * Delivery scan page — enter pickup code (qrToken) to claim an order.
+ * Delivery scan page — enter pickup code (qrToken) to claim an order via API.
  * Deliverer is already authenticated via session.
  */
 
 import { t } from './i18n.js';
-import { getOrderByToken, updateStatus, getDelivererSession, clearDelivererSession, updateDelivererStatus } from './order-store.js';
+import { fetchOrderByToken, updateOrderStatus, updateDelivererStatus } from './restaurant-api.js';
 import { ToastMessager } from '/javascript/toast.js';
 
 const page = document.getElementById('delivery-scan-page');
 const toast = new ToastMessager();
 
+function getSession() {
+    try { return JSON.parse(localStorage.getItem('deliverer-session')); }
+    catch { return null; }
+}
+
 function render(error) {
-    const session = getDelivererSession();
+    const session = getSession();
     const errorHtml = error ? `<div class="delivery-error">${error}</div>` : '';
     page.innerHTML = `
         <div class="delivery-session-bar">
@@ -31,17 +36,17 @@ function render(error) {
 }
 
 page.addEventListener('click', async (e) => {
-    // Logout
     const logoutBtn = e.target.closest('.delivery-logout-btn');
     if (logoutBtn) {
-        const session = getDelivererSession();
-        if (session?.id) await updateDelivererStatus(session.id, 'offline');
-        clearDelivererSession();
+        const session = getSession();
+        if (session?.id) {
+            try { await updateDelivererStatus(session.id, 'offline'); } catch {}
+        }
+        localStorage.removeItem('deliverer-session');
         location.reload();
         return;
     }
 
-    // Claim delivery
     const submitBtn = e.target.closest('#scan-submit');
     if (!submitBtn || submitBtn.disabled) return;
 
@@ -54,25 +59,24 @@ page.addEventListener('click', async (e) => {
     submitBtn.disabled = true;
     submitBtn.textContent = '...';
 
-    const order = await getOrderByToken(token);
-    if (!order) {
-        render(t('delivery.invalid-token'));
-        return;
+    try {
+        const order = await fetchOrderByToken(token);
+
+        if (order.status !== 'printed') {
+            render(t('delivery.order-not-ready'));
+            return;
+        }
+
+        const session = getSession();
+        await updateOrderStatus(order.order_number, 'delivering', { deliverer_id: session?.id });
+        if (session?.id) await updateDelivererStatus(session.id, 'delivering');
+
+        toast.addMessage(t('delivery.claimed'), 2000, 'success');
+        document.querySelector('[data-sub-navi-item="delivery-task"]')?.click();
+        render();
+    } catch (err) {
+        render(err.message || t('delivery.invalid-token'));
     }
-
-    if (order.status !== 'printed') {
-        render(t('delivery.order-not-ready'));
-        return;
-    }
-
-    const session = getDelivererSession();
-    await updateStatus(order.orderNumber, 'delivering', { delivererId: session?.id });
-    if (session?.id) await updateDelivererStatus(session.id, 'delivering');
-    toast.addMessage(t('delivery.claimed'), 2000, 'success');
-
-    // Navigate to task page
-    document.querySelector('[data-sub-navi-item="delivery-task"]')?.click();
-    render();
 });
 
 render();
