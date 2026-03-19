@@ -35,7 +35,7 @@ erDiagram
         varchar order_number UK "TM0101-a3f8"
         varchar status "pending | printed | delivering | delivered"
         integer total "grand total incl. delivery fee"
-        json items "array of {name, subtotal, qty, options}"
+        jsonb items "array of {name, subtotal, qty, options}, default []"
         bigint branch_id FK "nullable"
         varchar delivery_zone "distance e.g. 1.5km"
         varchar delivery_address "nullable"
@@ -45,6 +45,7 @@ erDiagram
         varchar customer_email "nullable"
         text comment "nullable"
         bigint deliverer_id FK "nullable"
+        varchar qr_token UK "DEAD — never populated"
         integer estimated_minutes "nullable"
         timestamp printed_at "nullable"
         timestamp delivered_at "nullable"
@@ -89,8 +90,8 @@ Tables in migrations but **NOT in DB**: `order_items` (items stored as JSON), `r
 | Column | Why Dead |
 |--------|----------|
 | `qr_token` | Pickup code = `order_number` directly; never populated |
-| `table_number` | Dine-in removed |
-| `session_token` | Dine-in session; not the deliverer session |
+
+Columns in migrations but **NOT in DB**: `table_number`, `session_token` (dine-in migration never ran).
 
 ### Missing Migration
 
@@ -152,7 +153,7 @@ erDiagram
 ```mermaid
 erDiagram
     localStorage {
-        string locale "zh-TW | en"
+        string restaurant-locale "zh-TW | en"
         json delivery-info "{ address, name, phone, email, comment }"
         json kitchen-session "{ id, code, name }"
         json deliverer-session "{ id, phone, name, token }"
@@ -163,7 +164,7 @@ erDiagram
 
 | Key | Interface | Purpose |
 |-----|-----------|---------|
-| `locale` | All | Current language |
+| `restaurant-locale` | All | Current language (`zh-TW` or `en`) |
 | `delivery-info` | Customer | Saved checkout form fields (address, name, phone, email, comment) |
 | `kitchen-session` | Kitchen | Branch login state `{ id, code, name }` |
 | `deliverer-session` | Deliverer | Login state `{ id, phone, name, token }` |
