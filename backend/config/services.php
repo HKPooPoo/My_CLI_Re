@@ -40,6 +40,11 @@ return [
         'project_id' => env('GG_PROJECT_ID', 'my-cli-re'),
     ],
 
+    'stripe' => [
+        'key' => env('STRIPE_KEY'),
+        'secret' => env('STRIPE_SECRET'),
+    ],
+
     'ollama' => [
         'host' => env('OLLAMA_HOST', 'ollama'),
         'port' => env('OLLAMA_PORT', '11434'),

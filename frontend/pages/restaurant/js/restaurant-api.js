@@ -24,6 +24,28 @@ async function request(path, options = {}) {
 }
 
 /* ══════════════════════════════════════
+   Distance (Google Maps proxy)
+   ══════════════════════════════════════ */
+
+export function calculateDistance(origin, destination) {
+    return request('/distance', {
+        method: 'POST',
+        body: JSON.stringify({ origin, destination }),
+    });
+}
+
+/* ══════════════════════════════════════
+   Payment (Stripe Checkout)
+   ══════════════════════════════════════ */
+
+export function createCheckoutSession(data) {
+    return request('/orders/checkout', {
+        method: 'POST',
+        body: JSON.stringify(data),
+    });
+}
+
+/* ══════════════════════════════════════
    Branches
    ══════════════════════════════════════ */
 

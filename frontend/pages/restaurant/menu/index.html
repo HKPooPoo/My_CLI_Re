@@ -75,6 +75,25 @@
             import(`/pages/restaurant/js/cart-page.js?v=${v}`);
             import(`/pages/restaurant/js/history-page.js?v=${v}`);
             import(`/pages/restaurant/js/console-page.js?v=${v}`);
+
+            // Handle Stripe payment return
+            const params = new URLSearchParams(location.search);
+            if (params.get('payment') === 'success') {
+                const { t } = await import('/pages/restaurant/js/i18n.js');
+                const { ToastMessager } = await import('/javascript/toast.js');
+                const toast = new ToastMessager();
+                const orderNum = params.get('order') || '';
+                toast.addMessage(`${t('cart.payment-success')} ${orderNum}`, 5000, 'success');
+                history.replaceState(null, '', location.pathname);
+                // Navigate to history page
+                setTimeout(() => document.querySelector('[data-sub-navi-item="history"]')?.click(), 500);
+            } else if (params.get('payment') === 'cancelled') {
+                const { t } = await import('/pages/restaurant/js/i18n.js');
+                const { ToastMessager } = await import('/javascript/toast.js');
+                const toast = new ToastMessager();
+                toast.addMessage(t('cart.payment-cancelled'), 4000, 'error');
+                history.replaceState(null, '', location.pathname);
+            }
         </script>
         <div class="page-container" id="page-container">
 

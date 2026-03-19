@@ -1,6 +1,7 @@
 /**
  * Cart page — renders cart items with options + in-page checkout form.
- * Checkout includes: address verification (mock Google Maps API), fee calc, armed confirm.
+ * Checkout includes: address verification (Google Maps Distance Matrix API), fee calc,
+ * Stripe Checkout payment, armed confirm.
  *
  * Delivery fee tiers (by ceiling km):
  *   ≤1km  → $0
@@ -12,7 +13,7 @@
 
 import { getItems, getTotal, getCount, itemTotal, removeItem, setOption, clear } from './cart.js';
 import { createOrder, updateOrderFields, getUnavailableItems, saveDeliveryInfo, getDeliveryInfo } from './order-store.js';
-import { submitOrder } from './restaurant-api.js';
+import { submitOrder, calculateDistance, createCheckoutSession } from './restaurant-api.js';
 import { t, localize } from './i18n.js';
 import { ToastMessager } from '/javascript/toast.js';
 
@@ -34,9 +35,16 @@ let verified = null;
 let lastVerifiedAddress = '';
 
 /* ══════════════════════════════════════
-   Mock Google Maps Distance API
-   Replace with real Distance Matrix API call in production.
+   Google Maps Distance Matrix API
+   Calls backend proxy → Google API (key stays server-side).
    ══════════════════════════════════════ */
+
+// Restaurant fixed origin per branch (extend for new branches)
+const BRANCH_ORIGINS = {
+    TM01: 'Tuen Mun, Hong Kong',
+    TSW01: 'Tin Shui Wai, Hong Kong',
+};
+const DEFAULT_ORIGIN = 'Tuen Mun, Hong Kong';
 
 function calculateFee(distanceKm) {
     const ceil = Math.ceil(distanceKm);
@@ -44,20 +52,10 @@ function calculateFee(distanceKm) {
     return (ceil - 1) * 10;
 }
 
-async function mockDistanceAPI(address) {
-    // Simulate 800ms network latency
-    await new Promise(r => setTimeout(r, 800));
-
-    const lower = address.toLowerCase();
-    if (/屯門市中心|tuen mun central/.test(lower)) return 0.8;
-    if (/屯門|tuen mun/.test(lower)) return 1.5;
-    if (/天水圍|tin shui wai/.test(lower)) return 3.2;
-    if (/元朗|yuen long/.test(lower)) return 5.5;
-
-    // Deterministic hash for unknown addresses → 0.5–5.4km
-    let hash = 0;
-    for (const c of address) hash = ((hash << 5) - hash + c.charCodeAt(0)) | 0;
-    return 0.5 + (Math.abs(hash) % 50) / 10;
+async function getDistance(address) {
+    const origin = BRANCH_ORIGINS[BRANCH] || DEFAULT_ORIGIN;
+    const data = await calculateDistance(origin, address);
+    return data.distance_km;
 }
 
 /* ══════════════════════════════════════
@@ -244,7 +242,7 @@ async function verifyAddress() {
     verifyBtn.textContent = t('cart.verifying');
 
     try {
-        const distanceKm = await mockDistanceAPI(address);
+        const distanceKm = await getDistance(address);
 
         if (distanceKm >= MAX_DISTANCE_KM) {
             verified = false;
@@ -482,6 +480,7 @@ async function handlePlaceOrder(btn) {
         });
 
         // Submit to API (kitchen sees it via PostgreSQL)
+        let apiOrderNumber = null;
         try {
             const apiOrder = await submitOrder({
                 items: items.map(i => ({ name: i.name, subtotal: i.subtotal, options: i.options })),
@@ -495,10 +494,32 @@ async function handlePlaceOrder(btn) {
                 comment: orderComment,
                 branch_code: BRANCH || undefined,
             });
-            await updateOrderFields(order.id, { apiOrderNumber: apiOrder.order_number });
-            toast.addMessage(`${t('order.number')}${apiOrder.order_number}`, 4000, 'success');
+            apiOrderNumber = apiOrder.order_number;
+            await updateOrderFields(order.id, { apiOrderNumber });
         } catch {
-            toast.addMessage(`${t('order.number')}${order.orderNumber}`, 4000, 'success');
+            // API failed — order saved locally only
+        }
+
+        // Stripe Checkout — redirect to payment page
+        const orderNum = apiOrderNumber || order.orderNumber;
+        try {
+            const checkout = await createCheckoutSession({
+                order_number: orderNum,
+                total: subtotal + verified.fee,
+                items: items.map(i => ({ name: i.name, subtotal: i.subtotal, qty: 1 })),
+                delivery_fee: verified.fee,
+                branch: BRANCH || '',
+            });
+            // Reset state before redirect
+            verified = null;
+            lastVerifiedAddress = '';
+            await clear();
+            // Redirect to Stripe hosted checkout
+            window.location.href = checkout.checkout_url;
+            return;
+        } catch {
+            // Stripe not configured — fall through to normal completion
+            toast.addMessage(`${t('order.number')}${orderNum}`, 4000, 'success');
         }
 
         // Reset verification state
