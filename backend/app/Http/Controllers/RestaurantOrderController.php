@@ -98,6 +98,14 @@ class RestaurantOrderController extends Controller
         return response()->json($this->orderService->listByDeliverer($delivererId));
     }
 
+    public function clearOrders(Request $request)
+    {
+        $branchCode = $request->query('branch');
+        $count = $this->orderService->clearOrders($branchCode);
+
+        return response()->json(['deleted' => $count]);
+    }
+
     /**
      * Google Maps Distance Matrix API proxy.
      * Keeps GG_API key server-side.

@@ -84,6 +84,11 @@ export function submitOrder(data) {
     });
 }
 
+export function clearAllOrders(branch) {
+    const qs = branch ? `?branch=${branch}` : '';
+    return request(`/orders${qs}`, { method: 'DELETE' });
+}
+
 export function updateOrderStatus(orderNumber, status, extra = {}) {
     return request(`/orders/${orderNumber}/status`, {
         method: 'PATCH',

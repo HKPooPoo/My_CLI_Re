@@ -113,6 +113,7 @@ Route::prefix('restaurant')->group(function () {
     Route::get('/orders/deliverer/{delivererId}', [RestaurantOrderController::class, 'listByDeliverer']);
     Route::get('/orders/{orderNumber}', [RestaurantOrderController::class, 'show']);
     Route::patch('/orders/{orderNumber}/status', [RestaurantOrderController::class, 'updateStatus']);
+    Route::delete('/orders', [RestaurantOrderController::class, 'clearOrders']);
 
     Route::get('/deliverers', [RestaurantDelivererController::class, 'index']);
     Route::post('/deliverers', [RestaurantDelivererController::class, 'store']);

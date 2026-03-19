@@ -130,6 +130,25 @@ class RestaurantOrderService
         return $orders->toArray();
     }
 
+    public function clearOrders(?string $branchCode = null): int
+    {
+        $query = $this->db()->table('orders');
+
+        if ($branchCode) {
+            $branch = $this->db()->table('branches')
+                ->where('code', strtoupper($branchCode))
+                ->first();
+            if ($branch) {
+                $query->where('branch_id', $branch->id);
+            }
+        }
+
+        $count = $query->count();
+        $query->delete();
+        Cache::forget('restaurant:orders:today');
+        return $count;
+    }
+
     public function listByDeliverer(int $delivererId): array
     {
         $orders = $this->db()->table('orders')
