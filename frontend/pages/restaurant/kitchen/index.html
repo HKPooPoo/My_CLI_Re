@@ -108,7 +108,7 @@
                 import(`/pages/restaurant/js/kitchen-login.js?v=${v}`);
             } else {
                 import(`/pages/restaurant/js/lang-toggle.js?v=${v}`).then(m => m.initLangToggle());
-                import(`/pages/restaurant/js/restaurant-echo.js?v=${v}`).then(m => m.initRestaurantEcho());
+                import(`/pages/restaurant/js/restaurant-echo.js?v=${v}`).then(m => m.initRestaurantEcho(BRANCH));
                 import(`/pages/restaurant/js/kitchen-page.js?v=${v}`);
                 import(`/pages/restaurant/js/kitchen-history-page.js?v=${v}`);
                 import(`/pages/restaurant/js/kitchen-menu-page.js?v=${v}`);

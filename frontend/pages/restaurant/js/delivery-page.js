@@ -4,7 +4,7 @@
 
 import { t } from './i18n.js';
 import { BRANCH } from './branch.js';
-import { fetchOrders, updateOrderStatus, updateDelivererStatus, logoutDeliverer } from './restaurant-api.js';
+import { fetchOrderByPickupCode, updateOrderStatus, updateDelivererStatus, logoutDeliverer } from './restaurant-api.js';
 import { ToastMessager } from '/javascript/toast.js';
 
 const page = document.getElementById('delivery-scan-page');
@@ -20,7 +20,7 @@ function render(error) {
     const errorHtml = error ? `<div class="delivery-error">${error}</div>` : '';
     page.innerHTML = `
         <div class="delivery-session-bar">
-            <span class="delivery-session-name">${session?.name} · ${session?.phone}</span>
+            <span class="delivery-session-name">${session?.name || '—'} · ${session?.phone || '—'}</span>
             <button class="cart-remove delivery-logout-btn">${t('deliverer.logout')}</button>
         </div>
         <div class="delivery-form">

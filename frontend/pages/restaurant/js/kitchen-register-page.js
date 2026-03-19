@@ -19,7 +19,7 @@ function render() {
             </div>
             <div class="checkout-field">
                 <label class="checkout-label">${t('deliverer.phone')}</label>
-                <input type="tel" id="reg-phone" class="checkout-input" placeholder="91234567">
+                <input type="tel" id="reg-phone" class="checkout-input" placeholder="${t('cart.phone-placeholder')}">
             </div>
             <div class="checkout-field">
                 <label class="checkout-label">${t('deliverer.password')}</label>

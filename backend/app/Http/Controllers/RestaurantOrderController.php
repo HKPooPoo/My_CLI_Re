@@ -27,6 +27,7 @@ class RestaurantOrderController extends Controller
             'items' => 'required|array|min:1',
             'items.*.name' => 'required|string',
             'items.*.subtotal' => 'required|integer|min:0',
+            'items.*.qty' => 'nullable|integer|min:1',
             'items.*.options' => 'nullable',
             'delivery_zone' => 'nullable|string',
             'delivery_address' => 'nullable|string',

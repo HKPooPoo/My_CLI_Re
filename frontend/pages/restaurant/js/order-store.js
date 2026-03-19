@@ -32,7 +32,7 @@ function estimateMinutes(distanceKm) {
    Status flow: pending → printed → delivering → delivered
    ══════════════════════════════════════ */
 
-export async function createOrder({ items, deliveryZone, deliveryAddress, deliveryFee, distanceKm, customerName, customerPhone, subtotal }) {
+export async function createOrder({ items, deliveryZone, deliveryAddress, deliveryFee, distanceKm, customerName, customerPhone, comment, subtotal }) {
     const order = {
         orderNumber: nextOrderNumber(),
         status: 'pending',
@@ -43,6 +43,7 @@ export async function createOrder({ items, deliveryZone, deliveryAddress, delive
         distanceKm,
         customerName,
         customerPhone,
+        comment: comment || null,
         subtotal,
         total: subtotal + deliveryFee,
         apiOrderNumber: null,
@@ -104,57 +105,6 @@ export async function clearOrders() {
 }
 
 /* ══════════════════════════════════════
-   Deliverer CRUD
-   ══════════════════════════════════════ */
-
-export async function addDeliverer({ name, phone, password }) {
-    const existing = await getDelivererByPhone(phone);
-    if (existing) throw new Error('Phone already registered');
-    const deliverer = {
-        name,
-        phone,
-        password,
-        status: 'idle',
-        createdAt: new Date().toISOString(),
-    };
-    deliverer.id = await db.deliverers.add(deliverer);
-    window.dispatchEvent(new CustomEvent('deliverer:changed'));
-    return deliverer;
-}
-
-export async function getDeliverers() {
-    return db.deliverers.orderBy('id').toArray();
-}
-
-export async function getDelivererByPhone(phone) {
-    if (!phone) return null;
-    const all = await db.deliverers.toArray();
-    return all.find(d => d.phone === phone) || null;
-}
-
-export async function getDelivererById(id) {
-    if (!id) return null;
-    return db.deliverers.get(id) || null;
-}
-
-export async function updateDelivererStatus(id, status) {
-    await db.deliverers.update(id, { status });
-    window.dispatchEvent(new CustomEvent('deliverer:changed'));
-}
-
-export async function deleteDeliverer(id) {
-    await db.deliverers.delete(id);
-    window.dispatchEvent(new CustomEvent('deliverer:changed'));
-}
-
-export async function authenticateDeliverer(phone, password) {
-    const d = await getDelivererByPhone(phone);
-    if (!d) return null;
-    if (d.password !== password) return null;
-    return d;
-}
-
-/* ══════════════════════════════════════
    Delivery info persistence (localStorage)
    ══════════════════════════════════════ */
 
@@ -178,6 +128,7 @@ export function setDelivererSession(deliverer) {
         id: deliverer.id,
         phone: deliverer.phone,
         name: deliverer.name,
+        token: deliverer.session_token || deliverer.token || null,
     }));
 }
 

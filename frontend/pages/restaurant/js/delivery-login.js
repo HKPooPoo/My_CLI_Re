@@ -15,7 +15,7 @@ function render(error) {
             <div class="delivery-form-title">${t('deliverer.login-title')}</div>
             <div class="checkout-field">
                 <label class="checkout-label">${t('deliverer.phone')}</label>
-                <input type="tel" id="login-phone" class="checkout-input" placeholder="91234567" inputmode="tel">
+                <input type="tel" id="login-phone" class="checkout-input" placeholder="${t('cart.phone-placeholder')}" inputmode="tel">
             </div>
             <div class="checkout-field">
                 <label class="checkout-label">${t('deliverer.password')}</label>

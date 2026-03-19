@@ -6,6 +6,7 @@ import { t } from './i18n.js';
 import { fetchOrdersByDeliverer } from './restaurant-api.js';
 
 const page = document.getElementById('delivery-history-page');
+let rendering = false;
 
 function getSession() {
     try { return JSON.parse(localStorage.getItem('deliverer-session')); }
@@ -18,8 +19,10 @@ function formatTime(iso) {
 }
 
 async function render() {
+    if (rendering) return;
+    rendering = true;
     const session = getSession();
-    if (!session) return;
+    if (!session) { rendering = false; return; }
 
     try {
         const orders = await fetchOrdersByDeliverer(session.id);
@@ -56,6 +59,8 @@ async function render() {
         `).join('');
     } catch (err) {
         page.innerHTML = `<div class="cart-empty">${err.message}</div>`;
+    } finally {
+        rendering = false;
     }
 }
 

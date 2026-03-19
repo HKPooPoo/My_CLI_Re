@@ -17,8 +17,13 @@ const STATUS_BADGE = {
 
 let armedDeleteId = null;
 let armTimer = null;
+let rendering = false;
 
 async function render() {
+    if (rendering) return;
+    rendering = true;
+    armedDeleteId = null;
+    clearTimeout(armTimer);
     try {
         const deliverers = await fetchDeliverers();
 
@@ -47,6 +52,8 @@ async function render() {
         `;
     } catch (err) {
         page.innerHTML = `<div class="cart-empty">${err.message}</div>`;
+    } finally {
+        rendering = false;
     }
 }
 

@@ -43,6 +43,7 @@ function renderItemOptions(options) {
 
 // Cache of live statuses from API: { apiOrderNumber → status }
 const liveStatus = {};
+let rendering = false;
 
 async function pollStatuses(orders) {
     await Promise.all(orders
@@ -57,18 +58,21 @@ async function pollStatuses(orders) {
 }
 
 async function render() {
-    const orders = await getOrders();
+    if (rendering) return;
+    rendering = true;
+    try {
+        const orders = await getOrders();
 
-    if (orders.length === 0) {
-        page.innerHTML = `<div class="cart-empty">${t('order.empty')}</div>`;
-        return;
-    }
+        if (orders.length === 0) {
+            page.innerHTML = `<div class="cart-empty">${t('order.empty')}</div>`;
+            return;
+        }
 
-    // Poll live statuses from API
-    await pollStatuses(orders);
+        // Poll live statuses from API
+        await pollStatuses(orders);
 
-    // Newest first
-    page.innerHTML = orders.reverse().map(order => {
+        // Newest first
+        page.innerHTML = orders.reverse().map(order => {
         // Use live status if available, else fall back to local
         const effectiveStatus = order.apiOrderNumber && liveStatus[order.apiOrderNumber]
             ? liveStatus[order.apiOrderNumber]
@@ -99,13 +103,15 @@ async function render() {
             ${commentHtml}
             ${estHtml}
             <div class="order-items">
-                ${(order.items || []).map(item => `
+                ${(order.items || []).map(item => {
+                    const optsHtml = renderItemOptions(item.options);
+                    return `
                     <div class="order-item-row">
                         <span class="order-item-name">${item.name}</span>
                         <span class="order-item-price">$${item.subtotal}</span>
                     </div>
-                    ${renderItemOptions(item.options) ? `<div class="order-item-options">${renderItemOptions(item.options)}</div>` : ''}
-                `).join('')}
+                    ${optsHtml ? `<div class="order-item-options">${optsHtml}</div>` : ''}`;
+                }).join('')}
             </div>
             <div class="order-card-footer">
                 <span>${t('cart.delivery-fee')}</span>
@@ -116,7 +122,10 @@ async function render() {
                 <span class="order-total-amount">$${order.total}</span>
             </div>
         </div>`;
-    }).join('');
+        }).join('');
+    } finally {
+        rendering = false;
+    }
 }
 
 window.addEventListener('order:created', render);

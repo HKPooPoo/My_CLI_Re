@@ -10,7 +10,7 @@
 
 let echo = null;
 
-export async function initRestaurantEcho() {
+export async function initRestaurantEcho(branchCode) {
     if (echo) return;
 
     // Load Echo + Pusher vendor libs (same as main platform)
@@ -45,14 +45,20 @@ export async function initRestaurantEcho() {
         disableStats: true,
     });
 
-    // Listen on the public restaurant orders channel
-    echo.channel('restaurant-orders')
-        .listen('.restaurant.order.updated', (data) => {
-            const eventName = data.action === 'created'
-                ? 'restaurant:orderCreated'
-                : 'restaurant:orderUpdated';
-            window.dispatchEvent(new CustomEvent(eventName, { detail: data }));
-        });
+    function handleEvent(data) {
+        const eventName = data.action === 'created'
+            ? 'restaurant:orderCreated'
+            : 'restaurant:orderUpdated';
+        window.dispatchEvent(new CustomEvent(eventName, { detail: data }));
+    }
+
+    // Listen on the global channel (customer/deliverer pages)
+    echo.channel('restaurant-orders').listen('.restaurant.order.updated', handleEvent);
+
+    // Also listen on branch-specific channel if branch provided (kitchen pages)
+    if (branchCode) {
+        echo.channel(`restaurant-orders.${branchCode}`).listen('.restaurant.order.updated', handleEvent);
+    }
 }
 
 export function disconnectRestaurantEcho() {

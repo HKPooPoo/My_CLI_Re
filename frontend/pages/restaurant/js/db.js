@@ -24,4 +24,10 @@ db.version(3).stores({
     deliverers: '++id, phone, name, status',
 });
 
+db.version(4).stores({
+    cartItems: '++id, name',
+    orders: '++id, orderNumber, status, createdAt, delivererId',
+    deliverers: null,
+});
+
 export default db;

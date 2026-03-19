@@ -17,17 +17,7 @@ function formatTime(iso) {
     return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
 
-function renderItemOptions(items) {
-    if (!items || !items.length) return '';
-    return items.map(item => {
-        const opts = typeof item.options === 'string' ? JSON.parse(item.options) : item.options;
-        if (!opts || typeof opts !== 'object' || !Object.keys(opts).length) return '';
-        return Object.entries(opts).map(([, val]) => {
-            const text = Array.isArray(val) ? val.join(', ') : val;
-            return `<span class="order-item-option">${text}</span>`;
-        }).join('');
-    }).join('');
-}
+let rendering = false;
 
 function renderOrderCard(order) {
     const items = order.items || [];
@@ -66,6 +56,8 @@ function renderOrderCard(order) {
 }
 
 async function render() {
+    if (rendering) return;
+    rendering = true;
     try {
         const orders = await fetchOrders(BRANCH);
         const pending = orders.filter(o => o.status === 'pending');
@@ -78,6 +70,8 @@ async function render() {
         page.innerHTML = pending.map(o => renderOrderCard(o)).join('');
     } catch (err) {
         page.innerHTML = `<div class="cart-empty">${err.message}</div>`;
+    } finally {
+        rendering = false;
     }
 }
 

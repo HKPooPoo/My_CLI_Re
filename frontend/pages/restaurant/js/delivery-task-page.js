@@ -8,6 +8,7 @@ import { ToastMessager } from '/javascript/toast.js';
 
 const page = document.getElementById('delivery-task-page');
 const toast = new ToastMessager();
+let rendering = false;
 
 function getSession() {
     try { return JSON.parse(localStorage.getItem('deliverer-session')); }
@@ -20,8 +21,10 @@ function formatTime(iso) {
 }
 
 async function render() {
+    if (rendering) return;
+    rendering = true;
     const session = getSession();
-    if (!session) return;
+    if (!session) { rendering = false; return; }
 
     try {
         const orders = await fetchOrdersByDeliverer(session.id);
@@ -76,6 +79,8 @@ async function render() {
         `).join('');
     } catch (err) {
         page.innerHTML = `<div class="cart-empty">${err.message}</div>`;
+    } finally {
+        rendering = false;
     }
 }
 

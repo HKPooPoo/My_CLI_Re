@@ -433,34 +433,34 @@
 }
 
 .status-pending {
-    background: var(--text-cyan, #4dd0e1);
-    color: var(--bg-primary);
+    background: #4dd0e1;
+    color: #fff;
 }
 
 .status-preparing {
-    background: var(--text-orange-accent);
-    color: var(--bg-primary);
+    background: #ff9800;
+    color: #fff;
 }
 
 .status-ready {
-    background: var(--text-green);
-    color: var(--bg-primary);
+    background: #4caf50;
+    color: #fff;
 }
 
 .status-delivering {
-    background: var(--text-yellow, #ffd54f);
-    color: var(--bg-primary);
+    background: #ffa726;
+    color: #fff;
 }
 
 .status-delivered {
-    background: var(--text-green);
-    color: var(--bg-primary);
+    background: #4caf50;
+    color: #fff;
     opacity: 0.6;
 }
 
 .status-rejected {
-    background: var(--text-red);
-    color: var(--bg-primary);
+    background: #e53935;
+    color: #fff;
 }
 
 /* ==================== Order Cards (History + Kitchen) ==================== */
@@ -961,7 +961,7 @@
 /* ==================== Printed Status ==================== */
 
 .status-printed {
-    background: var(--text-yellow, #ffd54f);
+    background: #ffd54f;
     color: #333;
 }
 

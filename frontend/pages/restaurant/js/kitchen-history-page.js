@@ -8,6 +8,7 @@ import { BRANCH } from './branch.js';
 import { fetchOrders } from './restaurant-api.js';
 
 const page = document.getElementById('kitchen-history-page');
+let rendering = false;
 
 function formatTime(iso) {
     const d = new Date(iso);
@@ -15,6 +16,8 @@ function formatTime(iso) {
 }
 
 async function render() {
+    if (rendering) return;
+    rendering = true;
     try {
         const orders = await fetchOrders(BRANCH);
         const history = orders.filter(o => o.status !== 'pending');
@@ -62,6 +65,8 @@ async function render() {
         }).join('');
     } catch (err) {
         page.innerHTML = `<div class="cart-empty">${err.message}</div>`;
+    } finally {
+        rendering = false;
     }
 }
 

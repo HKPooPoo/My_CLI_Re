@@ -11,12 +11,16 @@ const toast = new ToastMessager();
 
 import { BRANCH } from './branch.js';
 
+let rendering = false;
+
 function getSession() {
     try { return JSON.parse(localStorage.getItem('kitchen-session')); }
     catch { return null; }
 }
 
 async function render() {
+    if (rendering) return;
+    rendering = true;
     const session = getSession();
     const branch = BRANCH;
 
@@ -48,6 +52,7 @@ async function render() {
             </div>
         </div>
     `;
+    rendering = false;
 }
 
 page.addEventListener('click', (e) => {
