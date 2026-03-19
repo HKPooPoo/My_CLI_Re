@@ -91,6 +91,7 @@
     "deliverer.no-deliverers": "沒有已註冊的外送員",
     "deliverer.registered": "已註冊！",
     "deliverer.delete": "刪除",
+    "deliverer.deleted": "外送員已刪除",
     "deliverer.delete-confirm": "確認刪除",
     "deliverer.login-title": "外送員登入",
     "deliverer.login-btn": "登入",

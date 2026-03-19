@@ -91,6 +91,7 @@
     "deliverer.no-deliverers": "No deliverers registered",
     "deliverer.registered": "Registered!",
     "deliverer.delete": "Delete",
+    "deliverer.deleted": "Deliverer removed",
     "deliverer.delete-confirm": "Confirm Delete",
     "deliverer.login-title": "Deliverer Login",
     "deliverer.login-btn": "Login",

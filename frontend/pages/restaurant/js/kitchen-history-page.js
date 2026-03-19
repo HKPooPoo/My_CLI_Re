@@ -26,7 +26,7 @@ async function render() {
         }
 
         page.innerHTML = history.reverse().map(order => {
-            const isDone = ['delivered'].includes(order.status);
+            const isDone = ['delivering', 'delivered'].includes(order.status);
             const items = order.items || [];
 
             return `
@@ -40,12 +40,20 @@ async function render() {
                 <div class="order-card-contact">${order.customer_name || ''} · ${order.customer_phone || ''}</div>
                 ${order.comment ? `<div class="order-card-comment">${order.comment}</div>` : ''}
                 <div class="order-items">
-                    ${items.map(item => `
-                        <div class="order-item-row">
-                            <span class="order-item-name">${item.name}</span>
-                            <span class="order-item-price">$${item.subtotal}</span>
-                        </div>
-                    `).join('')}
+                    ${items.map(item => {
+                        const opts = typeof item.options === 'string' ? JSON.parse(item.options) : item.options;
+                        const optsHtml = opts && Object.keys(opts).length
+                            ? `<div class="order-item-options">${Object.entries(opts).map(([, v]) => {
+                                const txt = Array.isArray(v) ? v.join(', ') : v;
+                                return `<span class="order-item-option">${txt}</span>`;
+                            }).join('')}</div>` : '';
+                        return `
+                            <div class="order-item-row">
+                                <span class="order-item-name">${item.name}</span>
+                                <span class="order-item-price">$${item.subtotal}</span>
+                            </div>
+                            ${optsHtml}`;
+                    }).join('')}
                 </div>
                 <div class="order-card-footer">
                     <span>${t('cart.grand-total')}</span>

@@ -61,7 +61,7 @@ page.addEventListener('click', async (e) => {
         armedDeleteId = null;
         try {
             await deleteDeliverer(id);
-            toast.addMessage(t('deliverer.delete'), 2000, 'info');
+            toast.addMessage(t('deliverer.deleted'), 2000, 'info');
             render();
         } catch (err) {
             toast.addMessage(err.message, 3000, 'error');

@@ -45,13 +45,15 @@ function renderItemOptions(options) {
 const liveStatus = {};
 
 async function pollStatuses(orders) {
-    for (const order of orders) {
-        if (!order.apiOrderNumber) continue;
-        try {
-            const apiOrder = await fetchOrder(order.apiOrderNumber);
-            if (apiOrder) liveStatus[order.apiOrderNumber] = apiOrder.status;
-        } catch {}
-    }
+    await Promise.all(orders
+        .filter(o => o.apiOrderNumber)
+        .map(async o => {
+            try {
+                const apiOrder = await fetchOrder(o.apiOrderNumber);
+                if (apiOrder) liveStatus[o.apiOrderNumber] = apiOrder.status;
+            } catch {}
+        })
+    );
 }
 
 async function render() {

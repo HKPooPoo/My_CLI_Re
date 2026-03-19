@@ -129,7 +129,7 @@ async function render() {
             ? printed.map(o => `
                 <div class="console-info">
                     <span class="console-info-label">${t('order.number')}${o.order_number}</span>
-                    <span class="console-info-value">${o.order_number}</span>
+                    <span class="console-info-value">${o.status}</span>
                 </div>
             `).join('')
             : `<div class="console-info"><span class="console-info-label">${t('console.no-ready')}</span></div>`;
