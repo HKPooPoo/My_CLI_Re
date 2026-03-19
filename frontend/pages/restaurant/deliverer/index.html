@@ -53,33 +53,18 @@
                 </div>
             </div>
 
-            <!-- 控制臺 -->
-            <div class="navi-item" data-navi-item="console" data-sound-main="UIGeneralCancel.mp3"
-                data-sound-sub="UIGeneralFocus.mp3">
-                <div class="navi-item-text" data-i18n="nav.console">控制臺</div>
-                <div class="sub-navi-indicator"></div>
-                <div class="sub-navi-container">
-                    <div class="sub-navi-track">
-                        <div class="sub-navi-item" data-sub-navi-item="dev-tools">
-                            <div class="sub-navi-item-text" data-i18n="nav.dev-tools">工具</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
         </nav>
         <div class="sub-navi-indicator-mask"></div>
         <script type="module" src="/javascript/navi.js"></script>
         <script type="module">
             import { initI18n } from '../js/i18n.js';
-            import { initCart } from '../js/cart.js';
-            import { getDelivererSession } from '../js/order-store.js';
             await initI18n();
-            await initCart();
 
             const v = Date.now();
-            const session = getDelivererSession();
+            let session = null;
+            try { session = JSON.parse(localStorage.getItem('deliverer-session')); } catch {}
+
             if (!session) {
-                // Not logged in: hide nav, show login gate
                 document.getElementById('delivery-nav').style.display = 'none';
                 document.querySelector('.sub-navi-indicator-mask').style.display = 'none';
                 document.getElementById('page-container').style.display = 'none';
@@ -87,13 +72,11 @@
                 import(`../js/lang-toggle.js?v=${v}`).then(m => m.initLangToggle());
                 import(`../js/delivery-login.js?v=${v}`);
             } else {
-                // Logged in: load pages
                 import(`../js/lang-toggle.js?v=${v}`).then(m => m.initLangToggle());
                 import(`../js/restaurant-echo.js?v=${v}`).then(m => m.initRestaurantEcho());
                 import(`../js/delivery-page.js?v=${v}`);
                 import(`../js/delivery-task-page.js?v=${v}`);
                 import(`../js/delivery-history-page.js?v=${v}`);
-                import(`../js/console-page.js?v=${v}`);
             }
         </script>
         <div class="page-container" id="page-container">
@@ -102,9 +85,6 @@
             <div class="page" data-page="delivery-scan" id="delivery-scan-page"></div>
             <div class="page" data-page="delivery-task" id="delivery-task-page"></div>
             <div class="page" data-page="delivery-history" id="delivery-history-page"></div>
-
-            <!-- ====== 控制臺 pages ====== -->
-            <div class="page" data-page="dev-tools" id="dev-tools-page"></div>
 
             <div id="toast-container"></div>
         </div>
