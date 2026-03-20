@@ -37,12 +37,14 @@ flowchart LR
     Kitchen --- UC7
     Kitchen --- UC8
     Kitchen --- UC9
+    Kitchen --- UC11
 
     Deliverer --- UC10
     Deliverer --- UC11
     Deliverer --- UC12
 
     UC4 -.->|"«includes»"| UC6
+    UC8 -.->|"«includes»"| UC11
     UC10 -.->|"«includes»"| UC11
 ```
 
@@ -61,7 +63,7 @@ flowchart TB
     Customer -->|"browse menu, place order, pay"| System
     System -->|"order confirmation, status updates,\ndelivery fee estimate"| Customer
 
-    Kitchen -->|"toggle menu availability,\nprint receipt"| System
+    Kitchen -->|"authenticate, toggle menu\navailability, print receipt"| System
     System -->|"incoming orders (FIFO queue)"| Kitchen
 
     Deliverer -->|"scan QR code, authenticate,\nupdate delivery status"| System
