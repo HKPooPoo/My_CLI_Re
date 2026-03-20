@@ -16,7 +16,7 @@ flowchart LR
         UC3(["Edit Cart"])
         UC4(["Place Order & Pay"])
         UC5(["View Order Status & History"])
-        UC6(["View Delivery Traffic"])
+        UC6(["Verify Delivery Address"])
 
         UC7(["Toggle Menu Availability"])
         UC8(["View Order Queue"])
@@ -42,7 +42,7 @@ flowchart LR
     Deliverer --- UC11
     Deliverer --- UC12
 
-    UC4 -.->|"«includes»"| UC11
+    UC4 -.->|"«includes»"| UC6
     UC10 -.->|"«includes»"| UC11
 ```
 
@@ -59,7 +59,7 @@ flowchart TB
     System(["臺味冰點\nOnline Ordering System"])
 
     Customer -->|"browse menu, place order, pay"| System
-    System -->|"order confirmation, status updates,\ndelivery traffic"| Customer
+    System -->|"order confirmation, status updates,\ndelivery fee estimate"| Customer
 
     Kitchen -->|"toggle menu availability,\nprint receipt"| System
     System -->|"incoming orders (FIFO queue)"| Kitchen
@@ -86,10 +86,11 @@ flowchart TB
     P6["P6\nTrack Order Status"]
     P7["P7\nManage Menu Availability"]
 
-    DS1[("Menu\nDatabase")]
+    DS1[("Menu\n(Static HTML)")]
     DS2[("Order\nDatabase")]
-    DS3[("Cart\n(Local Storage)")]
+    DS3[("Cart\n(IndexedDB)")]
     DS4[("Deliverer\nDatabase")]
+    DS5[("Availability\n(localStorage)")]
 
     Customer -->|"search keyword"| P1
     DS1 -->|"meal list"| P1
@@ -107,10 +108,10 @@ flowchart TB
     DS2 -->|"pending orders (FIFO)"| P4
     P4 -->|"order cards"| Kitchen
     Kitchen -->|"print receipt"| P4
-    P4 -->|"update status: ready"| DS2
+    P4 -->|"update status: printed"| DS2
 
     Kitchen -->|"enable / disable meal"| P7
-    P7 <-->|"availability"| DS1
+    P7 <-->|"availability"| DS5
 
     Deliverer -->|"scan QR, authenticate"| P5
     DS2 -->|"order details"| P5
