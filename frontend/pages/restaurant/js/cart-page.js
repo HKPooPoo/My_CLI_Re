@@ -466,8 +466,7 @@ async function handlePlaceOrder(btn) {
         const orderComment = document.getElementById('order-comment')?.value.trim() || '';
         const subtotal = getTotal();
 
-        // Save to IndexedDB (local history)
-        const order = await createOrder({
+        const orderPayload = {
             items,
             deliveryZone: `${verified.distanceKm.toFixed(1)}km`,
             deliveryAddress,
@@ -475,59 +474,31 @@ async function handlePlaceOrder(btn) {
             distanceKm: verified.distanceKm,
             customerName,
             customerPhone,
+            customerEmail,
             comment: orderComment,
             subtotal,
-        });
+            branchCode: BRANCH || '',
+        };
 
-        // Submit to API (kitchen sees it via PostgreSQL)
-        let apiOrderNumber = null;
-        try {
-            const apiOrder = await submitOrder({
-                items: items.map(i => ({ name: i.name, subtotal: i.subtotal, options: i.options })),
-                delivery_zone: `${verified.distanceKm.toFixed(1)}km`,
-                delivery_address: deliveryAddress,
-                delivery_fee: verified.fee,
-                distance_km: verified.distanceKm,
-                customer_name: customerName,
-                customer_phone: customerPhone,
-                customer_email: customerEmail || undefined,
-                comment: orderComment,
-                branch_code: BRANCH || undefined,
-            });
-            apiOrderNumber = apiOrder.order_number;
-            await updateOrderFields(order.id, { apiOrderNumber });
-        } catch {
-            // API failed — order saved locally only
-        }
-
-        // Stripe Checkout — redirect to payment page
-        const orderNum = apiOrderNumber || order.orderNumber;
+        // Try Stripe first — don't create order until payment succeeds
         try {
             const checkout = await createCheckoutSession({
-                order_number: orderNum,
+                order_number: 'PENDING',
                 total: subtotal + verified.fee,
                 items: items.map(i => ({ name: i.name, subtotal: i.subtotal, qty: 1 })),
                 delivery_fee: verified.fee,
                 branch: BRANCH || '',
             });
-            // Reset state before redirect
-            verified = null;
-            lastVerifiedAddress = '';
-            await clear();
-            // Redirect to Stripe hosted checkout
+            // Save order data for after-payment finalization
+            localStorage.setItem('pending-checkout', JSON.stringify(orderPayload));
             window.location.href = checkout.checkout_url;
             return;
         } catch {
-            // Stripe not configured — fall through to normal completion
-            toast.addMessage(`${t('order.number')}${orderNum}`, 4000, 'success');
+            // Stripe not configured — create order immediately (no payment)
         }
 
-        // Reset verification state
-        verified = null;
-        lastVerifiedAddress = '';
-
-        await clear();
-        document.querySelector('[data-sub-navi-item="history"]')?.click();
+        // Fallback: no Stripe — create order directly
+        await finalizeOrder(orderPayload);
     } catch (err) {
         toast.addMessage(err.message, 4000, 'error');
         btn.disabled = false;
@@ -535,6 +506,55 @@ async function handlePlaceOrder(btn) {
         btn.textContent = t('cart.place-order');
     }
 }
+
+/* ══════════════════════════════════════
+   Finalize order (IDB + API + cleanup)
+   Called after Stripe success or directly when Stripe is not configured.
+   ══════════════════════════════════════ */
+
+async function finalizeOrder(payload) {
+    const { items, deliveryZone, deliveryAddress, deliveryFee, distanceKm,
+        customerName, customerPhone, customerEmail, comment, subtotal, branchCode } = payload;
+
+    // Save to IndexedDB (local history)
+    const order = await createOrder({
+        items, deliveryZone, deliveryAddress, deliveryFee,
+        distanceKm, customerName, customerPhone, comment, subtotal,
+    });
+
+    // Submit to API (kitchen sees it via PostgreSQL)
+    let apiOrderNumber = null;
+    try {
+        const apiOrder = await submitOrder({
+            items: items.map(i => ({ name: i.name, subtotal: i.subtotal, options: i.options })),
+            delivery_zone: deliveryZone,
+            delivery_address: deliveryAddress,
+            delivery_fee: deliveryFee,
+            distance_km: distanceKm,
+            customer_name: customerName,
+            customer_phone: customerPhone,
+            customer_email: customerEmail || undefined,
+            comment,
+            branch_code: branchCode || undefined,
+        });
+        apiOrderNumber = apiOrder.order_number;
+        await updateOrderFields(order.id, { apiOrderNumber });
+    } catch {
+        // API failed — order saved locally only
+    }
+
+    const orderNum = apiOrderNumber || order.orderNumber;
+    toast.addMessage(`${t('order.number')}${orderNum}`, 4000, 'success');
+
+    verified = null;
+    lastVerifiedAddress = '';
+    await clear();
+    document.querySelector('[data-sub-navi-item="history"]')?.click();
+    return orderNum;
+}
+
+// Exposed for Stripe return handler in HTML inline script
+window.__finalizeRestaurantOrder = finalizeOrder;
 
 window.addEventListener('cart:updated', (e) => {
     renderCart();

@@ -79,20 +79,23 @@
             // Handle Stripe payment return
             const params = new URLSearchParams(location.search);
             if (params.get('payment') === 'success') {
-                const { t } = await import('/pages/restaurant/js/i18n.js');
-                const { ToastMessager } = await import('/javascript/toast.js');
-                const toast = new ToastMessager();
-                const orderNum = params.get('order') || '';
-                toast.addMessage(`${t('cart.payment-success')} ${orderNum}`, 5000, 'success');
                 history.replaceState(null, '', location.pathname);
-                // Navigate to history page
-                setTimeout(() => document.querySelector('[data-sub-navi-item="history"]')?.click(), 500);
+                // Wait for cart-page.js to expose finalizeOrder
+                await import(`/pages/restaurant/js/cart-page.js?v=${v}`);
+                const pending = localStorage.getItem('pending-checkout');
+                if (pending && window.__finalizeRestaurantOrder) {
+                    localStorage.removeItem('pending-checkout');
+                    await window.__finalizeRestaurantOrder(JSON.parse(pending));
+                } else {
+                    const { ToastMessager } = await import('/javascript/toast.js');
+                    new ToastMessager().addMessage(t('cart.payment-success'), 5000, 'success');
+                    setTimeout(() => document.querySelector('[data-sub-navi-item="history"]')?.click(), 500);
+                }
             } else if (params.get('payment') === 'cancelled') {
-                const { t } = await import('/pages/restaurant/js/i18n.js');
-                const { ToastMessager } = await import('/javascript/toast.js');
-                const toast = new ToastMessager();
-                toast.addMessage(t('cart.payment-cancelled'), 4000, 'error');
                 history.replaceState(null, '', location.pathname);
+                localStorage.removeItem('pending-checkout');
+                const { ToastMessager } = await import('/javascript/toast.js');
+                new ToastMessager().addMessage(t('cart.payment-cancelled'), 4000, 'error');
             }
         </script>
         <div class="page-container" id="page-container">
