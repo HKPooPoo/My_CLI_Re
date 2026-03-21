@@ -180,8 +180,8 @@
     pointer-events: none;
 }
 
-.food-item-container.item-unavailable .food-item-bottom::after {
-    content: attr(data-unavailable-text);
+.food-item-container.item-unavailable .food-item-name::after {
+    content: " — " attr(data-unavailable-text);
     font-size: 0.75em;
     color: var(--text-red);
     font-weight: bold;

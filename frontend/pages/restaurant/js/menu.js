@@ -49,10 +49,13 @@ function updateTimeslot() {
 function updateAvailability() {
     if (!menuPage) return;
     const unavailable = getUnavailableItems();
+    const label = t('menu.unavailable');
     menuPage.querySelectorAll('.food-item-container').forEach(card => {
         const name = card.dataset.name;
         const isOff = unavailable.includes(name);
         card.classList.toggle('item-unavailable', isOff);
+        const nameEl = card.querySelector('.food-item-name');
+        if (nameEl) nameEl.dataset.unavailableText = isOff ? label : '';
         const btn = card.querySelector('.food-item-add');
         if (btn) btn.disabled = isOff;
     });
