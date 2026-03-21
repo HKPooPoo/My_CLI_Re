@@ -229,13 +229,13 @@ class RestaurantOrderService
         return Cache::lock($lockKey, 5)->block(3, function () use ($today, $prefix) {
             $count = $this->db()->table('orders')
                 ->whereDate('created_at', $today)
-                ->where('order_number', 'like', $prefix . '%')
+                ->where('order_number', 'like', $prefix . '-%')
                 ->count();
 
             $seq = str_pad($count + 1, 2, '0', STR_PAD_LEFT);
             $rand = substr(bin2hex(random_bytes(2)), 0, 4);
 
-            return $prefix . $seq . '-' . $rand;
+            return $prefix . '-' . $seq . '-' . $rand;
         });
     }
 }
