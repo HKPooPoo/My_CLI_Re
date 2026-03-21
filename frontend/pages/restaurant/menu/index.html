@@ -79,25 +79,15 @@
             // Handle Stripe payment return
             const params = new URLSearchParams(location.search);
             if (params.get('payment') === 'success') {
+                const { ToastMessager } = await import('/javascript/toast.js');
+                const orderNum = params.get('order') || '';
+                new ToastMessager().addMessage(`${t('cart.payment-success')} ${orderNum}`, 5000, 'success');
                 history.replaceState(null, '', location.pathname);
-                await import(`/pages/restaurant/js/cart-page.js?v=${v}`);
-                const pending = localStorage.getItem('pending-checkout');
-                if (pending && window.__finalizeRestaurantOrder) {
-                    localStorage.removeItem('pending-checkout');
-                    await window.__finalizeRestaurantOrder(JSON.parse(pending));
-                } else {
-                    const { ToastMessager } = await import('/javascript/toast.js');
-                    new ToastMessager().addMessage(t('cart.payment-success'), 5000, 'success');
-                    setTimeout(() => document.querySelector('[data-sub-navi-item="history"]')?.click(), 500);
-                }
-            } else {
-                // No success param — abandoned checkout or normal page load: clean up
-                localStorage.removeItem('pending-checkout');
-                if (params.get('payment') === 'cancelled') {
-                    history.replaceState(null, '', location.pathname);
-                    const { ToastMessager } = await import('/javascript/toast.js');
-                    new ToastMessager().addMessage(t('cart.payment-cancelled'), 4000, 'error');
-                }
+                setTimeout(() => document.querySelector('[data-sub-navi-item="history"]')?.click(), 500);
+            } else if (params.get('payment') === 'cancelled') {
+                const { ToastMessager } = await import('/javascript/toast.js');
+                new ToastMessager().addMessage(t('cart.payment-cancelled'), 4000, 'error');
+                history.replaceState(null, '', location.pathname);
             }
         </script>
         <div class="page-container" id="page-container">
