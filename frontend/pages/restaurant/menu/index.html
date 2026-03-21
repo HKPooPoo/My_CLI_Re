@@ -80,7 +80,6 @@
             const params = new URLSearchParams(location.search);
             if (params.get('payment') === 'success') {
                 history.replaceState(null, '', location.pathname);
-                // Wait for cart-page.js to expose finalizeOrder
                 await import(`/pages/restaurant/js/cart-page.js?v=${v}`);
                 const pending = localStorage.getItem('pending-checkout');
                 if (pending && window.__finalizeRestaurantOrder) {
@@ -91,11 +90,14 @@
                     new ToastMessager().addMessage(t('cart.payment-success'), 5000, 'success');
                     setTimeout(() => document.querySelector('[data-sub-navi-item="history"]')?.click(), 500);
                 }
-            } else if (params.get('payment') === 'cancelled') {
-                history.replaceState(null, '', location.pathname);
+            } else {
+                // No success param — abandoned checkout or normal page load: clean up
                 localStorage.removeItem('pending-checkout');
-                const { ToastMessager } = await import('/javascript/toast.js');
-                new ToastMessager().addMessage(t('cart.payment-cancelled'), 4000, 'error');
+                if (params.get('payment') === 'cancelled') {
+                    history.replaceState(null, '', location.pathname);
+                    const { ToastMessager } = await import('/javascript/toast.js');
+                    new ToastMessager().addMessage(t('cart.payment-cancelled'), 4000, 'error');
+                }
             }
         </script>
         <div class="page-container" id="page-container">
