@@ -356,20 +356,31 @@ export const EditorAttachments = {
             },
 
             /**
-             * Helper to open a file.
+             * Trigger browser "Save As" for a blob.
              */
-            async openFile(hash) {
-                let localFile = await db.file_blobs.get(hash);
+            _saveBlobAs(blob, filename) {
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename || 'download';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                setTimeout(() => URL.revokeObjectURL(url), 60000);
+            },
 
+            /**
+             * Ensure file blob is locally cached. Downloads from server if needed.
+             * Returns { blob, name } or null on failure.
+             */
+            async _ensureLocal(hash) {
+                const localFile = await db.file_blobs.get(hash);
                 if (localFile?.blob) {
                     await db.file_blobs.update(hash, { last_accessed: Date.now() });
-                    const url = URL.createObjectURL(localFile.blob);
-                    window.open(url, '_blank');
-                    setTimeout(() => URL.revokeObjectURL(url), 60000);
-                    return;
+                    return { blob: localFile.blob, name: localFile.name };
                 }
 
-                // Cloud file — download to local cache only, don't open
+                // Cloud file — fetch from server and cache
                 const loadingChip = this._findChip(hash);
                 if (loadingChip) {
                     const icon = loadingChip.querySelector('.attachment-chip-icon');
@@ -406,10 +417,32 @@ export const EditorAttachments = {
                     }
 
                     toastHandle.update(t('files.downloadSuccess'));
+                    return { blob, name: meta.name };
                 } catch (e) {
                     console.error("Download failed", e);
                     toastHandle.update(t('files.downloadFailed'));
+                    return null;
                 }
+            },
+
+            /**
+             * Open file in browser (new tab preview).
+             */
+            async openFile(hash) {
+                const file = await this._ensureLocal(hash);
+                if (!file) return;
+                const url = URL.createObjectURL(file.blob);
+                window.open(url, '_blank');
+                setTimeout(() => URL.revokeObjectURL(url), 60000);
+            },
+
+            /**
+             * Download file to user's downloads folder.
+             */
+            async downloadFile(hash) {
+                const file = await this._ensureLocal(hash);
+                if (!file) return;
+                this._saveBlobAs(file.blob, file.name);
             },
 
             // === Private Rendering Methods ===
@@ -470,9 +503,12 @@ export const EditorAttachments = {
                 const displayName = name || hash.substring(0, 8) + '…';
 
                 chip.innerHTML = `
-                    <span class="attachment-chip-name"></span>
+                    <div class="attachment-chip-top">
+                        <span class="attachment-chip-name"></span>
+                        <span class="attachment-chip-download" data-hash="${hash}">${t('files.downloadBtn')}</span>
+                    </div>
                     <div class="attachment-chip-bottom">
-                        <span class="attachment-chip-icon" style="cursor: pointer;" title="Open File">${iconText}</span>
+                        <span class="attachment-chip-icon" style="cursor: pointer;">${iconText}</span>
                         ${removeHtml}
                     </div>
                 `;
@@ -482,8 +518,11 @@ export const EditorAttachments = {
                 nameEl.textContent = displayName;
                 nameEl.title = name || hash;
 
-                const iconEl = chip.querySelector('.attachment-chip-icon');
-                iconEl.addEventListener('click', () => {
+                chip.querySelector('.attachment-chip-download').addEventListener('click', () => {
+                    this.downloadFile(hash);
+                });
+
+                chip.querySelector('.attachment-chip-icon').addEventListener('click', () => {
                     this.openFile(hash);
                 });
 

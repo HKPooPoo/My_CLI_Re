@@ -101,14 +101,40 @@
     font-size: calc(var(--font-size) * 1.1);
 }
 
+.attachment-chip-top {
+    flex-direction: row;
+    align-items: center;
+    gap: 6px;
+}
+
 .attachment-chip-name {
     display: block;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
     min-width: 0;
-    font-size: calc(var(--font-size) * 0.75);
-    opacity: 0.8;
+    font-size: calc(var(--font-size) * 1.1);
+    cursor: pointer;
+}
+
+.attachment-chip-download {
+    flex-shrink: 0;
+    cursor: pointer;
+    font-size: calc(var(--font-size) * 0.85);
+    transition: color var(--transition-normal),
+        text-shadow var(--transition-normal);
+}
+
+@media (hover: hover) {
+    .attachment-chip-download:hover {
+        color: var(--text-cyan);
+        text-shadow: var(--text-shadow-cyan);
+    }
+}
+
+.attachment-chip.is-local .attachment-chip-download:hover {
+    color: var(--text-orange);
+    text-shadow: var(--text-shadow-orange);
 }
 
 .attachment-chip-bottom {
@@ -148,8 +174,9 @@
     }
 }
 
-/* Readonly chips (THEY side) — no remove button */
-.attachment-chips.readonly .attachment-chip-remove {
+/* Readonly chips (THEY side) — no remove/download buttons */
+.attachment-chips.readonly .attachment-chip-remove,
+.attachment-chips.readonly .attachment-chip-download {
     display: none;
 }
 

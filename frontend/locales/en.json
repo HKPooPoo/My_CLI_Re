@@ -191,7 +191,8 @@
     "statusSync": "[Synced]",
     "statusCloud": "[Cloud]",
     "statusWait": "[Waiting]",
-    "removeBtn": "[X]"
+    "removeBtn": "[X]",
+    "downloadBtn": "[⬇]"
   },
   "pwa": {
     "updateAvailable": "Update available"

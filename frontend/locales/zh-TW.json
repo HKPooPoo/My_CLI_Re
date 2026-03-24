@@ -191,7 +191,8 @@
     "statusSync": "[同步]",
     "statusCloud": "[雲端]",
     "statusWait": "[等待]",
-    "removeBtn": "[X]"
+    "removeBtn": "[X]",
+    "downloadBtn": "[⬇]"
   },
   "pwa": {
     "updateAvailable": "有可用更新"
