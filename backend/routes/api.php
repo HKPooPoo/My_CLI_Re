@@ -9,9 +9,6 @@ use App\Http\Controllers\WalkieTypieController;
 use App\Http\Controllers\FileController;
 use App\Http\Controllers\BroadcastChannelController;
 use App\Http\Controllers\LlmController;
-use App\Http\Controllers\RestaurantOrderController;
-use App\Http\Controllers\RestaurantBranchController;
-use App\Http\Controllers\RestaurantDelivererController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Broadcast;
 
@@ -98,30 +95,6 @@ Route::prefix('mods')->group(function () {
 Route::middleware([/*'auth:sanctum',*/ 'throttle:10,1'])->prefix('mods')->group(function () {
     Route::post('/llm/chat', [LlmController::class, 'chat']);
     Route::post('/llm/chat/stream', [LlmController::class, 'chatStream']);
-});
-
-// Restaurant — delivery only, no auth
-Route::prefix('restaurant')->group(function () {
-    Route::get('/branches', [RestaurantBranchController::class, 'index']);
-    Route::post('/branches', [RestaurantBranchController::class, 'store']);
-    Route::post('/branches/auth', [RestaurantBranchController::class, 'authenticate']);
-    Route::post('/distance', [RestaurantOrderController::class, 'distance']);
-    Route::get('/orders', [RestaurantOrderController::class, 'index']);
-    Route::post('/orders', [RestaurantOrderController::class, 'store']);
-    Route::post('/orders/checkout', [RestaurantOrderController::class, 'createCheckout']);
-    Route::get('/orders/pickup/{code}', [RestaurantOrderController::class, 'showByPickupCode']);
-    Route::get('/orders/deliverer/{delivererId}', [RestaurantOrderController::class, 'listByDeliverer']);
-    Route::get('/orders/{orderNumber}', [RestaurantOrderController::class, 'show']);
-    Route::patch('/orders/{orderNumber}/status', [RestaurantOrderController::class, 'updateStatus']);
-    Route::delete('/orders', [RestaurantOrderController::class, 'clearOrders']);
-
-    Route::get('/deliverers', [RestaurantDelivererController::class, 'index']);
-    Route::post('/deliverers', [RestaurantDelivererController::class, 'store']);
-    Route::post('/deliverers/auth', [RestaurantDelivererController::class, 'authenticate']);
-    Route::post('/deliverers/logout', [RestaurantDelivererController::class, 'logout']);
-    Route::get('/deliverers/me', [RestaurantDelivererController::class, 'me']);
-    Route::patch('/deliverers/{id}/status', [RestaurantDelivererController::class, 'updateStatus']);
-    Route::delete('/deliverers/{id}', [RestaurantDelivererController::class, 'destroy']);
 });
 
 // File Download & Meta — no throttle (auto-sync file checks need burst capacity)

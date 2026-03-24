@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Events;
+namespace App\Restaurant\Events;
 
 use Illuminate\Broadcasting\Channel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;

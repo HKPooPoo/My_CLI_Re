@@ -569,14 +569,19 @@ claude mcp add my-db -- npx -y @bytebase/dbhub --dsn "postgresql://<POSTGRES_USE
 
 Standalone ordering system embedded in the MyCLI platform. Uses a **separate PostgreSQL connection** (`restaurant`) — completely independent from the main `my-cli-db`.
 
-### Backend
+### Backend (`app/Restaurant/`)
+
+All restaurant backend code is isolated under `App\Restaurant\` namespace with a dedicated route file `routes/restaurant.php` (registered via `bootstrap/app.php` `then` callback).
 
 | Feature | Controller | Service |
 |---------|-----------|---------|
-| Orders | `RestaurantOrderController` | `RestaurantOrderService` |
-| Branch & Sessions | `RestaurantBranchController` | `RestaurantBranchService`, `RestaurantSessionService` |
+| Orders | `Restaurant\Controllers\RestaurantOrderController` | `Restaurant\Services\RestaurantOrderService` |
+| Branch & Sessions | `Restaurant\Controllers\RestaurantBranchController` | `Restaurant\Services\RestaurantBranchService` |
+| Deliverers | `Restaurant\Controllers\RestaurantDelivererController` | `Restaurant\Services\RestaurantDelivererService` |
 
-**Event:** `RestaurantOrderUpdated` — `broadcastAs('restaurant.order.updated')` on public channel `restaurant-orders.{branchCode}`, payload `{ order_number, action, branch_code }`.
+**Event:** `Restaurant\Events\RestaurantOrderUpdated` — `broadcastAs('restaurant.order.updated')` on public channel `restaurant-orders.{branchCode}`, payload `{ order_number, action, branch_code }`.
+
+**Mail:** `Restaurant\Mail\RestaurantReceiptMail` — view at `resources/views/restaurant/receipt.blade.php`.
 
 ### Database Schema (separate PostgreSQL connection `restaurant`)
 

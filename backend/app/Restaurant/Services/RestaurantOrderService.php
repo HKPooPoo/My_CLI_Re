@@ -1,13 +1,13 @@
 <?php
 
-namespace App\Services;
+namespace App\Restaurant\Services;
 
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Mail;
 use Carbon\Carbon;
-use App\Events\RestaurantOrderUpdated;
-use App\Mail\RestaurantReceiptMail;
+use App\Restaurant\Events\RestaurantOrderUpdated;
+use App\Restaurant\Mail\RestaurantReceiptMail;
 
 class RestaurantOrderService
 {

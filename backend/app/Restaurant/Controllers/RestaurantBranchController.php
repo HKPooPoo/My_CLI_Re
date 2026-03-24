@@ -1,8 +1,9 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Restaurant\Controllers;
 
-use App\Services\RestaurantBranchService;
+use App\Http\Controllers\Controller;
+use App\Restaurant\Services\RestaurantBranchService;
 use Illuminate\Http\Request;
 
 class RestaurantBranchController extends Controller

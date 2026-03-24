@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Mail;
+namespace App\Restaurant\Mail;
 
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
@@ -22,6 +22,6 @@ class RestaurantReceiptMail extends Mailable
     public function build()
     {
         return $this->subject("臺味冰點 — 收據 {$this->order->order_number}")
-                    ->view('emails.restaurant_receipt');
+                    ->view('restaurant.receipt');
     }
 }

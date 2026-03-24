@@ -1,8 +1,9 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Restaurant\Controllers;
 
-use App\Services\RestaurantOrderService;
+use App\Http\Controllers\Controller;
+use App\Restaurant\Services\RestaurantOrderService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 

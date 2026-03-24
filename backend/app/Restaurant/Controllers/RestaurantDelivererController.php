@@ -1,8 +1,9 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Restaurant\Controllers;
 
-use App\Services\RestaurantDelivererService;
+use App\Http\Controllers\Controller;
+use App\Restaurant\Services\RestaurantDelivererService;
 use Illuminate\Http\Request;
 
 class RestaurantDelivererController extends Controller
