@@ -130,6 +130,14 @@ export const BBSync = {
      * Recovery: flush pending + checkout current branch (for tab-switch / online recovery).
      * Uses 'remote' owner so checkout fetches fresh data from server.
      */
+    /**
+     * True if user has unsaved edits (pending debounce or in-flight commit).
+     * Used by poll fallback to avoid overwriting active editing.
+     */
+    get hasPendingEdits() {
+        return !!_commitTimer || _isCommitting;
+    },
+
     async recover() {
         if (!_isAutoSyncEnabled() || !_isLoggedIn()) return;
         await this.flush();
@@ -138,8 +146,8 @@ export const BBSync = {
         if (!state) return;
 
         try {
-            await BBVCS.checkout(state, state.branchId, 'remote');
-            _onRemoteUpdate?.();
+            const fetched = await BBVCS.checkout(state, state.branchId, 'remote');
+            if (fetched) _onRemoteUpdate?.();
         } catch (err) {
             console.warn('[BBSync] Recovery checkout failed:', err);
         }
@@ -190,9 +198,11 @@ export const BBSync = {
             if (st && st.branchId === target.branchId) {
                 _checkoutChain = _checkoutChain.then(async () => {
                     try {
-                        await BBVCS.checkout(st, target.branchId, 'remote');
-                        _onRemoteUpdate?.();
-                        BBMessage.info(t('blackboard.autoSyncReceived'));
+                        const fetched = await BBVCS.checkout(st, target.branchId, 'remote');
+                        if (fetched) {
+                            _onRemoteUpdate?.();
+                            BBMessage.info(t('blackboard.autoSyncReceived'));
+                        }
                     } catch (err) {
                         console.warn('[BBSync] Deferred remote checkout failed:', err);
                     }
@@ -226,9 +236,11 @@ export const BBSync = {
             // P5: Serialize overlapping checkouts via promise chain
             _checkoutChain = _checkoutChain.then(async () => {
                 try {
-                    await BBVCS.checkout(state, state.branchId, 'remote');
-                    _onRemoteUpdate?.();
-                    BBMessage.info(t('blackboard.autoSyncReceived'));
+                    const fetched = await BBVCS.checkout(state, state.branchId, 'remote');
+                    if (fetched) {
+                        _onRemoteUpdate?.();
+                        BBMessage.info(t('blackboard.autoSyncReceived'));
+                    }
                 } catch (err) {
                     console.warn('[BBSync] Remote checkout failed:', err);
                 }

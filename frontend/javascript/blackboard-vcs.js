@@ -234,6 +234,7 @@ export const BBVCS = {
      * Checkout: 切換分支
      */
     async checkout(state, targetBranchId, targetOwner) {
+        let serverFetched = (targetOwner === "local");
         if (targetOwner !== "local") {
 
             try {
@@ -290,6 +291,7 @@ export const BBVCS = {
                 } else {
                     await BBCore.cleanupOldRecords("local", targetBranchId, state.maxSlot || 10);
                 }
+                serverFetched = true;
             } catch (e) {
                 console.warn("CLOUD SYNC FAILED. USING LOCAL CACHE.", e);
                 BBMessage.info(t('blackboard.usingLocalCache'));
@@ -304,6 +306,6 @@ export const BBVCS = {
         state.branch = latest?.branch ?? "";
 
         localStorage.setItem("currentBranchId", state.branchId);
-        return true;
+        return serverFetched;
     }
 };

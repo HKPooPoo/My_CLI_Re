@@ -232,6 +232,7 @@ async function updateBranchList() {
                         if (existing) {
                             existing.isServer = true;
                             existing.serverOwner = sb.uid;
+                            existing.serverLastUpdate = serverLastUpdate;
                             // 無腦比對：只要時間戳不一致，就是 asynced
                             existing.isDirty = (serverLastUpdate !== existing.lastUpdate);
                         } else {
@@ -275,6 +276,11 @@ async function updateBranchList() {
 
         BBUI.renderBranchList(combinedBranches, targetSelectionId, state.owner, state.branchId);
 
+        // Return whether server has newer data for the current branch (for poll fallback)
+        const currentBranch = branchMap.get(state.branchId);
+        if (currentBranch?.isLocal && currentBranch?.isServer) {
+            return { serverNewer: currentBranch.serverLastUpdate > currentBranch.lastUpdate };
+        }
     } catch (criticalError) {
         console.error("CRITICAL: Failed to update branch list", criticalError);
         BBMessage.error(t('blackboard.listFailed'));
@@ -748,7 +754,15 @@ setInterval(async () => {
 
     if (document.visibilityState === 'visible' && isBlackboardVisible && loggedInUser && !isInitializing) {
         _pollBusy = true;
-        try { await updateBranchList(); } catch (_) {}
+        try {
+            const result = await updateBranchList();
+            // Auto-sync fallback: if server has newer data and user isn't actively editing,
+            // pull content even when WebSocket event was missed or checkout failed.
+            if (result?.serverNewer && Settings.get('bb', 'autoSync') && !BBSync.hasPendingEdits) {
+                const fetched = await BBVCS.checkout(state, state.branchId, 'remote');
+                if (fetched) await syncView();
+            }
+        } catch (_) {}
         _pollBusy = false;
     }
 }, 5000);
