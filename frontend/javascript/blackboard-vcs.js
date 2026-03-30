@@ -277,6 +277,25 @@ export const BBVCS = {
                 // forked, never committed) nukes all local records because server
                 // returns empty — triggered by BBSync.recover() on visibilitychange.
                 if (downloadRecords.length > 0) {
+                    // [Race-condition guard]: Preserve uncommitted local file hashes.
+                    // visibilitychange:visible triggers recover()→checkout(), which races
+                    // with handleFile()'s onAttach() writing file_hash to the same record.
+                    // Blobs with status='local' are attached but not yet committed — don't wipe them.
+                    const localFileMap = new Map(); // timestamp → file_hash
+                    const localWithFiles = await db.blackboard.where('[branch_id+timestamp]')
+                        .between([targetBranchId, Dexie.minKey], [targetBranchId, Dexie.maxKey])
+                        .and(item => item.owner.startsWith('local') && !!item.file_hash)
+                        .toArray();
+                    for (const r of localWithFiles) {
+                        for (const h of extractHashes(r.file_hash)) {
+                            const blob = await db.file_blobs.get(h);
+                            if (blob?.status === 'local') {
+                                localFileMap.set(r.timestamp, r.file_hash);
+                                break;
+                            }
+                        }
+                    }
+
                     const oldKeys = await db.blackboard.where('[branch_id+timestamp]')
                         .between([targetBranchId, Dexie.minKey], [targetBranchId, Dexie.maxKey])
                         .and(item => item.owner.startsWith('local'))
@@ -285,6 +304,14 @@ export const BBVCS = {
                         await db.blackboard.bulkDelete(oldKeys);
                     }
                     await db.blackboard.bulkPut(downloadRecords);
+
+                    // Restore uncommitted file hashes that the server doesn't have yet
+                    if (localFileMap.size > 0) {
+                        await db.blackboard.where('[branch_id+timestamp]')
+                            .between([targetBranchId, Dexie.minKey], [targetBranchId, Dexie.maxKey])
+                            .and(item => item.owner.startsWith('local') && localFileMap.has(item.timestamp) && !item.file_hash)
+                            .modify(item => { item.file_hash = localFileMap.get(item.timestamp); });
+                    }
                 }
                 if (Settings.get('bb', 'autoCleanBlanks')) {
                     await BBCore.scrubBranch("local", targetBranchId, state.maxSlot || 10);
