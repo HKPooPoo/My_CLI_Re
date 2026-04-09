@@ -184,12 +184,17 @@ export function updateNaviPosition($naviItem, silent = false, instant = false) {
 const $subNaviIndicatorMask = document.querySelector(".sub-navi-indicator-mask");
 $subNaviIndicatorMask.addEventListener("wheel", handleSubNaviScroll, { passive: false });
 
+let _scrollCooldown = false;
 function handleSubNaviScroll(e) {
     if (!activeNaviItem) return;
     e.preventDefault();
+    if (_scrollCooldown) return;
 
     const direction = Math.sign(e.deltaY);
     if (direction === 0) return;
+
+    _scrollCooldown = true;
+    setTimeout(() => { _scrollCooldown = false; }, 200);
 
     const stateOfNaviItem = stateOfEachNaviItem[activeNaviItem];
     const nextIndex = stateOfNaviItem.subNaviHeadIndex + direction;

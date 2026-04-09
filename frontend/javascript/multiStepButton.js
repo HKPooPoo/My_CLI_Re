@@ -27,6 +27,7 @@
  */
 
 import { playAudio } from "./audio.js";
+import { t } from "./i18n.js";
 
 export class MultiStepButton {
     /**
@@ -52,10 +53,21 @@ export class MultiStepButton {
         this.confirmSound = opts.confirmSound || this.sound;
         this.timeout = opts.timeout || 3000;
 
-        this.originalLabel = this.el.textContent;
+        this.i18nKey = this.el.getAttribute('data-i18n') || null;
+        this.originalLabel = this.i18nKey ? t(this.i18nKey) : this.el.textContent;
         this.armed = false;
         this.busy = false;
         this.timer = null;
+
+        // Re-capture label when i18n re-renders (locale loaded after construction)
+        if (this.i18nKey) {
+            window.addEventListener('i18n:ready', () => {
+                if (!this.armed) {
+                    this.originalLabel = t(this.i18nKey);
+                    this.el.textContent = this.originalLabel;
+                }
+            });
+        }
 
         this.el.addEventListener("click", (e) => {
             e.preventDefault();
@@ -99,7 +111,7 @@ export class MultiStepButton {
 
     _disarm() {
         this.armed = false;
-        this.el.textContent = this.originalLabel;
+        this.el.textContent = this.i18nKey ? t(this.i18nKey) : this.originalLabel;
         this.el.classList.remove("btn-armed");
         this._clearTimer();
     }
@@ -135,7 +147,8 @@ export class MultiStepButton {
         // First step provides the initial label and sound
         const firstStep = steps[0];
 
-        this.originalLabel = firstStep.label || this.el.textContent;
+        this.i18nKey = this.el.getAttribute('data-i18n') || null;
+        this.originalLabel = firstStep.label || (this.i18nKey ? t(this.i18nKey) : this.el.textContent);
         this.sound = firstStep.sound || null;
         this.action = lastStep.action || (() => {});
         this.confirmLabel = steps.length > 1 ? steps[steps.length - 1].label || "SURE?" : null;
@@ -155,6 +168,16 @@ export class MultiStepButton {
 
         // Set initial label
         this.el.textContent = this.originalLabel;
+
+        // Re-capture label when i18n re-renders (locale loaded after construction)
+        if (this.i18nKey && !firstStep.label) {
+            window.addEventListener('i18n:ready', () => {
+                if (!this.armed && this.stepIndex === 0) {
+                    this.originalLabel = t(this.i18nKey);
+                    this.el.textContent = this.originalLabel;
+                }
+            });
+        }
 
         this.el.addEventListener("click", (e) => {
             e.preventDefault();
@@ -195,7 +218,7 @@ export class MultiStepButton {
     _resetMulti() {
         this._clearTimer();
         this.stepIndex = 0;
-        this.el.textContent = this.originalLabel;
+        this.el.textContent = this.i18nKey ? t(this.i18nKey) : this.originalLabel;
         this.el.classList.remove("btn-armed");
     }
 

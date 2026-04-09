@@ -247,14 +247,14 @@ Two-level hierarchy: main navi (`data-navi-item`: blackboard, walkie-typie, broa
 
 Code-level identifiers (`commit`, `checkout`, `push`, `pull`, `branch`) remain unchanged. Only **UI display text** varies per locale. When adding strings to `en.json` and `zh-TW.json`, never leak VCS terms — use the vocabulary mapping in the table above.
 - `mergeStrings(partial)` deep-merges into global strings (used by mod-loader for MOD-local i18n)
-- `renderDOM()` re-scans all `data-i18n*` elements — **do NOT** put `data-i18n` on elements managed by MultiStepButton (conflicts with armed-state label)
+- `renderDOM()` re-scans all `data-i18n*` elements — MultiStepButton is now i18n-aware: if an element has `data-i18n`, the button reads the translated label via `t()` and re-captures on `i18n:ready`. Static `data-i18n` on MultiStepButton elements is safe.
 
 ### MultiStepButton (`multiStepButton.js`)
 
 - **INSTANT:** `new MultiStepButton(el, { action })` — single click fires
 - **CONFIRM:** `new MultiStepButton(el, { action, confirm: true, confirmLabel })` — first click arms (`.btn-armed`), second fires, auto-resets after 3s
 - Prevents double-fire via `aria-busy="true"` during async actions
-- **Do NOT use for dynamic-label buttons.** Constructor captures `originalLabel = el.textContent` at init time — external `textContent` changes conflict. Use raw `addEventListener` instead (see Dynamic Buttons below).
+- **Do NOT use for dynamic-label buttons.** Constructor captures `originalLabel` at init time — external `textContent` changes conflict. Use raw `addEventListener` instead (see Dynamic Buttons below). However, static `data-i18n` labels ARE supported: MultiStepButton detects `data-i18n` and uses `t()` for label restoration, with `i18n:ready` listener to re-capture after locale loads.
 
 ### Dynamic State Buttons (Blackboard)
 
