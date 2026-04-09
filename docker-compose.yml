@@ -19,7 +19,7 @@ services:
     restart: unless-stopped
 
   api:
-    build: ./backend
+    image: hkpoopoo/my-cli-re-api:latest
     container_name: my-cli-api
     volumes:
       - ./docker/entrypoint.sh:/usr/local/bin/docker-entrypoint.sh:ro
@@ -74,7 +74,7 @@ services:
     restart: unless-stopped
 
   queue:
-    build: ./backend
+    image: hkpoopoo/my-cli-re-api:latest
     container_name: my-cli-queue
     volumes:
       - ./docker/entrypoint.sh:/usr/local/bin/docker-entrypoint.sh:ro
@@ -116,7 +116,7 @@ services:
     restart: unless-stopped
 
   scheduler:
-    build: ./backend
+    image: hkpoopoo/my-cli-re-api:latest
     container_name: my-cli-scheduler
     volumes:
       - ./docker/entrypoint.sh:/usr/local/bin/docker-entrypoint.sh:ro
@@ -183,7 +183,7 @@ services:
     restart: unless-stopped
 
   reverb:
-    build: ./backend
+    image: hkpoopoo/my-cli-re-api:latest
     container_name: my-cli-reverb
     volumes:
       - ./docker/entrypoint.sh:/usr/local/bin/docker-entrypoint.sh:ro
