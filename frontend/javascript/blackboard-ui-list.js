@@ -35,6 +35,7 @@ export class InfiniteList {
      */
     initEventListeners() {
         // --- 滾輪接管 ---
+        let _listScrollCooldown = false;
         this.container.addEventListener("wheel", (e) => {
             this.refresh(); // 滾動前先確保引用最新 (例如剛渲染完)
 
@@ -42,8 +43,13 @@ export class InfiniteList {
 
             // 步驟：1. 阻斷瀏覽器原生捲動 2. 判斷滾輪方向 3. 演進游標
             e.preventDefault();
+            if (_listScrollCooldown) return;
+
             const direction = e.deltaY > 0 ? 1 : -1;
             this.moveCursor(direction);
+
+            _listScrollCooldown = true;
+            setTimeout(() => { _listScrollCooldown = false; }, 120);
         }, { passive: false });
 
         // --- 點擊反饋 ---
