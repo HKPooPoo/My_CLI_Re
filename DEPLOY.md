@@ -163,3 +163,46 @@ docker compose up -d
 ### 啟動時 Race Condition
 
 首次 `docker compose up` 後前 1-2 分鐘可能出現 500 錯誤（Redis/PostgreSQL 尚未就緒）。等所有 container 穩定後自動恢復。
+
+### Ollama GPU + 模型下載
+
+**前置：** 安裝 NVIDIA Container Toolkit（讓 Docker 容器能用 GPU）
+```bash
+yay -S nvidia-container-toolkit
+sudo nvidia-ctk runtime configure --runtime=docker
+sudo systemctl restart docker
+```
+
+**啟動 ollama：**
+```bash
+docker compose up -d ollama
+```
+
+成功後 log 會顯示：
+```
+inference compute ... library=CUDA ... description="NVIDIA GeForce RTX 4080 Laptop GPU" total="12.0 GiB"
+```
+
+**模型下載問題：**
+Ollama 容器內 `ollama pull qwen3.5:4b` 會 TLS handshake timeout，但宿主機能連到 `registry.ollama.ai`。
+這是 Docker bridge 網路 NAT 問題（跟之前 build 時遇到的相同類型）。
+
+**解法：** 在容器內手動 pull（而非透過 entrypoint 自動 pull）：
+```bash
+docker exec -it my-cli-ollama ollama pull qwen3.5:4b
+```
+
+下載完成後，模型會持久化到 `ollama-data` volume，之後重啟 container 不用再下載。
+
+**模型選擇（適合 12GB RTX 4080 Laptop）：**
+| 模型 | 大小 | 用途 |
+|------|------|------|
+| `qwen3.5:2b` | ~2GB | 輕量、快速 |
+| `qwen3.5:4b` | ~3GB | 平衡（目前使用） |
+| `qwen3.5:9b` | ~6GB | 更強推理 |
+| `qwen3.5:27b` | ~17GB | 太大，不適合 |
+
+**驗證：**
+```bash
+docker exec my-cli-ollama ollama list           # 列出已下載模型
+docker exec my-cli-ollama ollama run qwen3.5:4b "hello"  # 測試
