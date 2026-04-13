@@ -398,6 +398,18 @@ class WalkieTypieControllerTest extends TestCase
             ->assertJson(['message' => 'PARTNER NOT FOUND']);
     }
 
+    #[Test]
+    public function update_tag_returns_404_for_non_connected_partner(): void
+    {
+        // Bob exists but no connection
+        $response = $this->actingAs($this->alice)->patchJson('/api/walkie-typie/connections/bob', [
+            'tag' => 'Test',
+        ]);
+
+        $response->assertStatus(404)
+            ->assertJson(['message' => 'CONNECTION NOT FOUND']);
+    }
+
     // =========================================================================
     //  DELETE /api/walkie-typie/connections/{partnerUid} (destroy)
     // =========================================================================

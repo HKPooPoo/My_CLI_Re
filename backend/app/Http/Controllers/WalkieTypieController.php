@@ -179,13 +179,17 @@ class WalkieTypieController extends Controller
             return response()->json(['message' => 'PARTNER NOT FOUND'], 404);
         }
 
-        DB::table('walkie_typie_connections')
+        $affected = DB::table('walkie_typie_connections')
             ->where('user_id', $user->id)
             ->where('partner_id', $partnerId)
             ->update([
                 'partner_tag' => $request->input('tag'),
                 'updated_at' => now()
             ]);
+
+        if ($affected === 0) {
+            return response()->json(['message' => 'CONNECTION NOT FOUND'], 404);
+        }
 
         return response()->json(['message' => 'TAG UPDATED']);
     }
