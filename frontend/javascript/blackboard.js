@@ -665,6 +665,12 @@ window.addEventListener('settings:changed', (e) => {
     const d = e.detail;
     if (d.scope === 'bb' && d.key === 'maxSlot' || d.scope === 'all') {
         state.maxSlot = Settings.get('bb', 'maxSlot');
+        // Trigger cleanup + UI refresh so stale records beyond new limit are removed
+        if (state.branchId) {
+            BBCore.cleanupOldRecords(state.owner, state.branchId, state.maxSlot)
+                .then(() => syncView())
+                .catch(() => {});
+        }
     }
     // React to loopList toggle — update all BB InfiniteList instances
     if ((d.scope === 'bb' && d.key === 'loopList') || d.scope === 'all') {
