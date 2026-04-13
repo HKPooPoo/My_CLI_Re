@@ -228,7 +228,8 @@ export const BCList = {
                     } catch (e) {
                         console.error('CAST ERROR:', e);
                         msg.close();
-                        BBMessage.error(t('broadcast.castFailed'));
+                        const isUserError = e.status >= 400 && e.status < 500;
+                        BBMessage.error(isUserError ? (e.message || t('broadcast.castFailed')) : t('broadcast.castFailed'));
                     }
                 }
             });
