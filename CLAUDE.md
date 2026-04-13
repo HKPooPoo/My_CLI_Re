@@ -96,12 +96,13 @@ docker exec my-cli-api php artisan test                        # Run all tests (
 docker exec my-cli-api php artisan test --filter TestClassName # Run single test class
 ```
 
-### Test Suite (85 tests, 158 assertions)
+### Test Suite (116 tests, 250 assertions)
 
 | Test Class | Tests | What it covers |
 |------------|-------|----------------|
 | `AuthServiceTest` | 19 | register, login, /passwd, /bind, requestPasswordReset |
 | `BlackboardServiceTest` | 19 | LWW commit, blank skip, dedup, cache, events, CRUD |
+| `BlackboardControllerTest` | 31 | HTTP integration: commit validation, auth guards, response format, round-trip, LWW via HTTP |
 | `BroadcastChannelServiceTest` | 19 | cast (DELETE+INSERT), rename, destroy, pin/unpin, title guard |
 | `WalkieTypieBoardServiceTest` | 12 | LWW commit, partner signal, connection access control |
 | `FileServiceTest` | 14 | upload dedup, markCommitted, markOrphaned, cleanupOrphaned |
