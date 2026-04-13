@@ -48,8 +48,11 @@ export class InfiniteList {
             const direction = e.deltaY > 0 ? 1 : -1;
             this.moveCursor(direction);
 
+            // Adaptive cooldown: fast flick = shorter cooldown for rapid scrolling
+            const speed = Math.abs(e.deltaY);
+            const cooldown = speed > 100 ? 40 : 80;
             _listScrollCooldown = true;
-            setTimeout(() => { _listScrollCooldown = false; }, 120);
+            setTimeout(() => { _listScrollCooldown = false; }, cooldown);
         }, { passive: false });
 
         // --- 點擊反饋 ---

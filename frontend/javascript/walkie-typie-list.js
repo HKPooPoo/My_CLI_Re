@@ -264,7 +264,10 @@ export const WTList = {
 
             // Prevent InfiniteList from capturing input events
             tagInput.addEventListener("click", (e) => e.stopPropagation());
-            tagInput.addEventListener("keydown", (e) => e.stopPropagation());
+            tagInput.addEventListener("keydown", (e) => {
+                if (e.key === 'Enter') { e.preventDefault(); e.target.blur(); }
+                e.stopPropagation();
+            });
 
             // Last Signal
             const lastSignal = document.createElement("div");

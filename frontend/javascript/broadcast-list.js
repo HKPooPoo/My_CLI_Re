@@ -469,7 +469,10 @@ export const BCList = {
 
             // Prevent InfiniteList from swallowing input events
             nameInput.addEventListener('click', e => e.stopPropagation());
-            nameInput.addEventListener('keydown', e => e.stopPropagation());
+            nameInput.addEventListener('keydown', e => {
+                if (e.key === 'Enter') { e.preventDefault(); e.target.blur(); }
+                e.stopPropagation();
+            });
 
             // Row 2: last signal timestamp
             const lastSignalEl = document.createElement('div');

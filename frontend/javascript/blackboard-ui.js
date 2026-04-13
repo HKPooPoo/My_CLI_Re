@@ -121,6 +121,10 @@ export const BBUI = {
                         detail: { branchId: branch.id, newName }
                     }));
                 });
+                input.addEventListener("keydown", (e) => {
+                    if (e.key === 'Enter') { e.preventDefault(); e.target.blur(); }
+                    e.stopPropagation();
+                });
             }
 
             fragment.appendChild(item);
