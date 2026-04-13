@@ -131,7 +131,8 @@ class BackendServiceControllerTest extends TestCase
             'target' => 'zh-TW',
         ]);
 
-        $response->assertStatus(500);
+        $response->assertStatus(500)
+            ->assertJsonStructure(['message']);
     }
 
     // =========================================================================
@@ -157,7 +158,8 @@ class BackendServiceControllerTest extends TestCase
             'audio' => str_repeat('A', 10 * 1024 * 1024 + 1),
         ]);
 
-        $response->assertStatus(413);
+        $response->assertStatus(413)
+            ->assertJsonStructure(['message']);
     }
 
     #[Test]
@@ -169,7 +171,8 @@ class BackendServiceControllerTest extends TestCase
             'audio' => base64_encode('fake audio data'),
         ]);
 
-        $response->assertStatus(500);
+        $response->assertStatus(500)
+            ->assertJsonStructure(['message']);
     }
 
     // =========================================================================

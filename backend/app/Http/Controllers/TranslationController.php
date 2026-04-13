@@ -34,7 +34,7 @@ class TranslationController extends Controller
 
         if (!$apiKey) {
             return response()->json([
-                'error' => ['message' => 'API Key not configured on server']
+                'message' => 'API Key not configured on server'
             ], 500);
         }
 
@@ -51,7 +51,7 @@ class TranslationController extends Controller
         } catch (\Exception $e) {
             Log::error('Google Translation API Error: ' . $e->getMessage());
             return response()->json([
-                'error' => ['message' => 'Translation service unavailable']
+                'message' => 'Translation service unavailable'
             ], 502);
         }
     }

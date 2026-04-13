@@ -54,7 +54,7 @@ class LlmController extends Controller
         } catch (\Exception $e) {
             Log::error("LLM chat error ({$provider}): " . $e->getMessage());
             return response()->json([
-                'error' => 'LLM provider request failed',
+                'message' => 'LLM provider request failed',
             ], 502);
         }
     }

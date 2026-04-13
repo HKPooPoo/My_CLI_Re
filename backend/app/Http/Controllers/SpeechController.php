@@ -20,7 +20,7 @@ class SpeechController extends Controller
         // Enforce payload size limit
         if (strlen($validated['audio']) > self::MAX_AUDIO_SIZE) {
             return response()->json([
-                'error' => ['message' => 'Audio payload too large']
+                'message' => 'Audio payload too large'
             ], 413);
         }
 
@@ -28,7 +28,7 @@ class SpeechController extends Controller
 
         if (!$apiKey) {
             return response()->json([
-                'error' => ['message' => 'API Key not configured on server']
+                'message' => 'API Key not configured on server'
             ], 500);
         }
 
@@ -92,7 +92,7 @@ class SpeechController extends Controller
         } catch (\Exception $e) {
             Log::error('Speech V1 Error: ' . $e->getMessage());
             return response()->json([
-                'error' => ['message' => 'Speech service unavailable']
+                'message' => 'Speech service unavailable'
             ], 502);
         }
     }
