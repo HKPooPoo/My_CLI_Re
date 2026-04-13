@@ -403,6 +403,10 @@ export const WTText = {
     // =====================================================================
 
     async loadConnection(connection) {
+        // Lock textarea during connection transition to prevent input events
+        // from rescheduling timers to the wrong connection during async gaps.
+        this.elements.weTextarea?.setAttribute('disabled', 'true');
+
         // Capture live state synchronously BEFORE any await suspension point,
         // then cancel all timers atomically — prevents input events from
         // rescheduling timers between cancel and save.
