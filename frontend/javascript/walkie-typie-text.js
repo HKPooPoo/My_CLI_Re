@@ -24,6 +24,7 @@ import { WTDb } from "./walkie-typie-db.js";
 import { WTVCS } from "./walkie-typie-vcs.js";
 import { WalkieTypieService } from "./services/walkie-typie-service.js";
 import { WTCore } from "./walkie-typie-core.js";
+import { BBMessage } from "./blackboard-msg.js";
 import { EditorAttachments } from "./editor-attachments.js";
 import db from "./indexedDB.js";
 import { playAudio } from "./audio.js";
@@ -487,6 +488,7 @@ export const WTText = {
             this.refreshTitles();
         } catch (err) {
             console.error("WTText: Load Failed", err);
+            BBMessage.error(t('walkieTypie.loadFailed'));
         }
     },
 
@@ -696,6 +698,7 @@ export const WTText = {
             // Silently ignore "empty board" — nothing to commit is not an error
             if (!err.message?.includes('EMPTY') && !err.message?.includes('NOT FOUND')) {
                 console.error("WT: Commit Failed", err);
+                BBMessage.error(t('walkieTypie.commitFailed'));
             }
         }
     }

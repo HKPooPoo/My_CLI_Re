@@ -193,7 +193,10 @@ export const WTList = {
                 this.render();
             }
         } catch (e) {
-            // Silent on auth errors — user might not be logged in
+            // Silent on 401 — user might not be logged in
+            if (e.status && e.status !== 401) {
+                BBMessage.error(t('walkieTypie.fetchFailed'));
+            }
             console.warn("WTList: Fetch Failed", e);
         }
     },

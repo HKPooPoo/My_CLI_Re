@@ -139,7 +139,11 @@
     "loginRequired": "Log in to sync.",
     "noLocalData": "No messages yet. Start typing to create one.",
     "uploading": "Uploading: {name}",
-    "uploadFailed": "Upload failed: {hash}"
+    "uploadFailed": "Upload failed: {hash}",
+    "commitFailed": "Sync failed — your message may not reach your partner.",
+    "loadFailed": "Failed to load chat data.",
+    "fetchFailed": "Failed to load contacts.",
+    "realtimeUnavailable": "Live typing is unavailable — messages still sync on save."
   },
   "broadcast": {
     "pageTitle": "Channels",

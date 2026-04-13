@@ -145,6 +145,7 @@ export const WTVCS = {
                         } catch (e) {
                             console.error(`WT Commit: Upload failed for ${hash}`, e);
                             BBMessage.error(t('walkieTypie.uploadFailed', { hash: hash.substring(0, 8) }));
+                            hashStr = null; // Strip broken reference — don't send unuploaded file_hash to server
                         }
                     }
                 } else {

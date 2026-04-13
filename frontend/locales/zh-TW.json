@@ -139,7 +139,11 @@
     "loginRequired": "上傳需要登入",
     "noLocalData": "尚無訊息，開始輸入即可建立",
     "uploading": "上傳中：{name}",
-    "uploadFailed": "上傳失敗：{hash}"
+    "uploadFailed": "上傳失敗：{hash}",
+    "commitFailed": "同步失敗 — 對方可能看不到你的訊息",
+    "loadFailed": "對話資料載入失敗",
+    "fetchFailed": "連線列表載入失敗",
+    "realtimeUnavailable": "即時通訊不可用 — 訊息仍會在儲存時同步"
   },
   "broadcast": {
     "pageTitle": "公共頻道",

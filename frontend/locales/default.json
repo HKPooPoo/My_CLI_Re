@@ -139,7 +139,11 @@
     "loginRequired": "LOGIN REQUIRED FOR COMMIT.",
     "noLocalData": "LOCAL DATA NOT FOUND OR EMPTY.",
     "uploading": "UPLOADING: {name}",
-    "uploadFailed": "UPLOAD FAILED: {hash}"
+    "uploadFailed": "UPLOAD FAILED: {hash}",
+    "commitFailed": "ERROR: SYNC FAILED — DATA MAY NOT REACH PARTNER",
+    "loadFailed": "ERROR: CONNECTION DATA LOAD FAILED",
+    "fetchFailed": "ERROR: CONNECTION LIST FETCH FAILED",
+    "realtimeUnavailable": "REALTIME UNAVAILABLE — LIVE TYPING DISABLED"
   },
   "broadcast": {
     "pageTitle": "CHANNEL MODULATION",

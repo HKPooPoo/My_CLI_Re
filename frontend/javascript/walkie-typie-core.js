@@ -49,6 +49,7 @@ export const WTCore = {
             console.log(`WT: Listening on App.Models.User.${this.uid}`);
         } catch (e) {
             console.error('WT Core Init Failed:', e);
+            BBMessage.info(t('walkieTypie.realtimeUnavailable'));
         }
     }
 };
