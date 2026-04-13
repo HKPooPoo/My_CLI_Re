@@ -197,6 +197,12 @@ export const WTText = {
         // WTCore.releaseEcho() already handles channel disconnection;
         // we just need to clear local state, timers, and boards.
         window.addEventListener("auth:updated", () => {
+            // Best-effort flush: save current textarea before clearing
+            const liveText = this.elements.weTextarea?.value;
+            if (this.currentConnection && liveText !== undefined) {
+                WTVCS.save(this.weState, liveText).catch(() => {});
+            }
+
             this.timers.cancelAll();
 
             this.activeChannel = null;
@@ -205,6 +211,11 @@ export const WTText = {
             this.theyLiveText = null;
             this.theyLiveBin = null;
             this.currentBin = null;
+
+            // Reset VCS state to prevent stale virtual flag on next login
+            this.weState.isVirtual = false;
+            this.weState.currentHead = 0;
+            this.weState.branchId = 0;
 
             this.lockBoards();
             this.clearBoards();
