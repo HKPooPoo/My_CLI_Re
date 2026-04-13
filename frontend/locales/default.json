@@ -105,6 +105,7 @@
     "fileSyncFailed": "ERROR: FILE SYNC FAILED",
     "loginRequired": "ERROR: LOGIN REQUIRED",
     "uploadFailed": "ERROR: UPLOAD FAILED",
+    "tagUpdateFailed": "COMMIT OK BUT LOCAL TAG STALE — REFRESH",
     "searchPlaceholder": "SEARCH BRANCHES...",
     "autoSyncReceived": "SYNCED FROM DEVICE",
     "autoSyncFailed": "AUTO-COMMIT FAILED — WILL RETRY",

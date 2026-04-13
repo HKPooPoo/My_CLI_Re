@@ -24,6 +24,7 @@ import { MOD_API_VERSION } from '../javascript/version.js';
 
 const _templates = {};
 const _codeLoaded = new Set();
+const _codeLoadingPromises = {};  // [Bug 2 fix]: dedupe concurrent ensureCodeLoaded calls
 let _modsReady = false;
 
 // Re-merge MOD locales whenever the user switches language.
@@ -135,45 +136,61 @@ export async function ensureCodeLoaded(templateId) {
     if (_codeLoaded.has(templateId)) return true;
     if (!_templates[templateId]) return false;
 
-    const success = await loadModCode(templateId);
-    if (!success) return false;
-
-    // Validate full template (manifest + code)
-    const errors = validateTemplate(_templates[templateId]);
-    if (errors.length > 0) {
-        console.warn(`[mod-loader] Full validation failed for "${templateId}":`, errors);
-        return false;
+    // [Bug 2 fix]: dedupe concurrent calls — without this guard, two parallel
+    // calls would both pass the _codeLoaded.has() check, both load mod.js,
+    // both register hooks/tools, and both call init() — causing duplicate
+    // handlers and duplicate DOM setup.
+    if (_codeLoadingPromises[templateId]) {
+        return _codeLoadingPromises[templateId];
     }
 
-    _codeLoaded.add(templateId);
+    _codeLoadingPromises[templateId] = (async () => {
+        const success = await loadModCode(templateId);
+        if (!success) return false;
 
-    const tpl = _templates[templateId];
-
-    // Register declarative hooks (template.hooks[])
-    if (Array.isArray(tpl.hooks)) {
-        for (const hook of tpl.hooks) {
-            ModHooks.register(hook.name, hook.handler, hook.priority || 100, tpl.id);
+        // Validate full template (manifest + code)
+        const errors = validateTemplate(_templates[templateId]);
+        if (errors.length > 0) {
+            console.warn(`[mod-loader] Full validation failed for "${templateId}":`, errors);
+            return false;
         }
-    }
 
-    // Register declarative tools (template.tools[])
-    if (Array.isArray(tpl.tools)) {
-        for (const tool of tpl.tools) {
-            ModTools.register(tpl.id, tool);
+        _codeLoaded.add(templateId);
+
+        const tpl = _templates[templateId];
+
+        // Register declarative hooks (template.hooks[])
+        if (Array.isArray(tpl.hooks)) {
+            for (const hook of tpl.hooks) {
+                ModHooks.register(hook.name, hook.handler, hook.priority || 100, tpl.id);
+            }
         }
-    }
 
-    // Call init() once
-    try {
-        if (typeof tpl.init === 'function') {
-            const initCtx = createInitContext(tpl.id, tpl);
-            await tpl.init(initCtx);
+        // Register declarative tools (template.tools[])
+        if (Array.isArray(tpl.tools)) {
+            for (const tool of tpl.tools) {
+                ModTools.register(tpl.id, tool);
+            }
         }
-    } catch (e) {
-        console.error(`[mod-loader] init failed for ${tpl.id}:`, e);
-    }
 
-    return true;
+        // Call init() once
+        try {
+            if (typeof tpl.init === 'function') {
+                const initCtx = createInitContext(tpl.id, tpl);
+                await tpl.init(initCtx);
+            }
+        } catch (e) {
+            console.error(`[mod-loader] init failed for ${tpl.id}:`, e);
+        }
+
+        return true;
+    })().finally(() => {
+        // Clear the promise after completion (success or fail) so future
+        // calls re-check _codeLoaded.has() instead of returning a stale promise.
+        delete _codeLoadingPromises[templateId];
+    });
+
+    return _codeLoadingPromises[templateId];
 }
 
 // ===================== Boot =====================

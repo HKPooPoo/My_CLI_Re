@@ -105,6 +105,7 @@
     "fileSyncFailed": "File sync failed.",
     "loginRequired": "Please log in first.",
     "uploadFailed": "Upload failed.",
+    "tagUpdateFailed": "Synced to cloud, but local sync indicator is stale. Refresh to fix.",
     "searchPlaceholder": "Search topics...",
     "autoSyncReceived": "Synced from another device",
     "autoSyncFailed": "Auto-save to cloud failed — will retry",

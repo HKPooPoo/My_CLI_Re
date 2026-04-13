@@ -105,6 +105,7 @@
     "fileSyncFailed": "檔案上傳失敗",
     "loginRequired": "請先登入",
     "uploadFailed": "上傳失敗",
+    "tagUpdateFailed": "已同步到雲端，但本地同步指示器未更新。請刷新頁面修正。",
     "searchPlaceholder": "搜尋主題...",
     "autoSyncReceived": "已從其他裝置同步",
     "autoSyncFailed": "自動同步失敗 — 下次編輯時重試",

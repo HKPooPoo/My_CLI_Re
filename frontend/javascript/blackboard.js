@@ -762,7 +762,10 @@ setInterval(async () => {
                 const fetched = await BBVCS.checkout(state, state.branchId, 'remote');
                 if (fetched) await syncView();
             }
-        } catch (_) {}
+        } catch (err) {
+            // [Bug 3 fix]: silent catch swallowed all errors. Log so we can debug.
+            console.warn('[BB poll] sync failed:', err);
+        }
         _pollBusy = false;
     }
 }, 5000);

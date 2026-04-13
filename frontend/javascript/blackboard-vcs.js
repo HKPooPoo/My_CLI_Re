@@ -220,9 +220,17 @@ export const BBVCS = {
 
             await BlackboardService.commit(commitPayload);
 
-            await db.blackboard.where('owner').startsWith('local')
-                .and(item => item.branch_id === branchId)
-                .modify({ owner: makeSyncedOwner(loggedInUser) });
+            // [Bug 1 fix]: Server commit succeeded — local tag update is best-effort.
+            // If this throws (IndexedDB transaction abort, quota exceeded, etc.),
+            // server STILL has the data. Don't mask success as failure; warn instead.
+            try {
+                await db.blackboard.where('owner').startsWith('local')
+                    .and(item => item.branch_id === branchId)
+                    .modify({ owner: makeSyncedOwner(loggedInUser) });
+            } catch (tagErr) {
+                console.warn('[BBVCS] Server commit OK, but local sync-tag update failed:', tagErr);
+                BBMessage.error(t('blackboard.tagUpdateFailed'));
+            }
 
             return true;
         } catch (e) {
