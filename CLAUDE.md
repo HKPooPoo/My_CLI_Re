@@ -96,19 +96,21 @@ docker exec my-cli-api php artisan test                        # Run all tests (
 docker exec my-cli-api php artisan test --filter TestClassName # Run single test class
 ```
 
-### Test Suite (221 tests, 490 assertions)
+### Test Suite (258 tests, 589 assertions)
 
 | Test Class | Tests | What it covers |
 |------------|-------|----------------|
 | `AuthServiceTest` | 19 | register, login, /passwd, /bind, requestPasswordReset |
 | `AuthControllerTest` | 32 | HTTP integration: register validation (10), login (4), logout, status (2), /passwd + /bind commands (6), reset/bind requests (7), lifecycle |
+| `BackendServiceControllerTest` | 22 | HTTP integration: status health check, translation validation + mock, speech validation + size limit, LLM chat validation + provider routing, ollama health mock + cache |
 | `BlackboardServiceTest` | 19 | LWW commit, blank skip, dedup, cache, events, CRUD |
 | `BlackboardControllerTest` | 31 | HTTP integration: commit validation, auth guards, response format, round-trip, LWW via HTTP |
 | `BroadcastChannelServiceTest` | 19 | cast (DELETE+INSERT), rename, destroy, pin/unpin, title guard |
 | `BroadcastChannelControllerTest` | 34 | HTTP integration: public index/fetchBoards, cast validation + title guard, rename/destroy ownership, pin/unpin, lifecycle |
+| `FileControllerTest` | 15 | HTTP integration: upload + dedup, blocked extensions (php/exe/html/sh), safe extensions, exists/meta/download, lifecycle |
+| `FileServiceTest` | 14 | upload dedup, markCommitted, markOrphaned, cleanupOrphaned |
 | `WalkieTypieControllerTest` | 39 | HTTP integration: connection CRUD, signal, tag update, board commit/fetch, lifecycle round-trip |
 | `WalkieTypieBoardServiceTest` | 12 | LWW commit, partner signal, connection access control |
-| `FileServiceTest` | 14 | upload dedup, markCommitted, markOrphaned, cleanupOrphaned |
 
 ### Test Conventions
 
