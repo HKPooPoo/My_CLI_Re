@@ -304,7 +304,8 @@ export const BCList = {
                     } catch (e) {
                         console.error('DELETE ERROR:', e);
                         msg.close();
-                        BBMessage.error(t('broadcast.deleteFailed'));
+                        const isUserError = e.status >= 400 && e.status < 500;
+                        BBMessage.error(isUserError ? (e.message || t('broadcast.deleteFailed')) : t('broadcast.deleteFailed'));
                     }
                 }
             });
@@ -461,7 +462,8 @@ export const BCList = {
                 } catch (err) {
                     console.error('RENAME ERROR:', err);
                     e.target.value = ch.name;
-                    BBMessage.error(t('broadcast.renameFailed'));
+                    const isUserError = err.status >= 400 && err.status < 500;
+                    BBMessage.error(isUserError ? (err.message || t('broadcast.renameFailed')) : t('broadcast.renameFailed'));
                 }
             });
 

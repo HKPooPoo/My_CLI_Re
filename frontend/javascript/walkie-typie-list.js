@@ -80,7 +80,8 @@ export const WTList = {
                     } catch (e) {
                         console.error("CONNECT ERROR:", e);
                         msg.close();
-                        BBMessage.error(t('walkieTypie.connectFailed'));
+                        const isUserError = e.status >= 400 && e.status < 500;
+                        BBMessage.error(isUserError ? (e.message || t('walkieTypie.connectFailed')) : t('walkieTypie.connectFailed'));
                     }
                 }
             });
@@ -123,7 +124,8 @@ export const WTList = {
                     } catch (e) {
                         console.error("CUT ERROR:", e);
                         msg.close();
-                        BBMessage.error(t('walkieTypie.cutFailed'));
+                        const isUserError = e.status >= 400 && e.status < 500;
+                        BBMessage.error(isUserError ? (e.message || t('walkieTypie.cutFailed')) : t('walkieTypie.cutFailed'));
                     }
                 }
             });
