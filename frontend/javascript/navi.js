@@ -54,14 +54,16 @@ Array.from($allNaviItems).forEach($naviItem => {
     $subNaviTrack.addEventListener("wheel", handleSubNaviScroll, { passive: false });
 
     // 子導航觸控滑動 (Start)
+    let trackSwipeStartTime = 0;
     $subNaviTrack.addEventListener("touchstart", (e) => {
         touchStartX = e.changedTouches[0].screenX;
+        trackSwipeStartTime = Date.now();
     }, { passive: true });
 
     // 子導航觸控滑動 (End)
     $subNaviTrack.addEventListener('touchend', (e) => {
         const touchEndX = e.changedTouches[0].screenX;
-        handleSubNaviSwipe(touchStartX, touchEndX);
+        handleSubNaviSwipe(touchStartX, touchEndX, Date.now() - trackSwipeStartTime);
     });
 
     // 修補：防止軌道點擊誤觸
@@ -274,13 +276,15 @@ window.addEventListener("resize", () => {
 let touchStartX = 0;
 let $subNaviMask = document.getElementsByClassName("sub-navi-indicator-mask")[0];
 
+let maskSwipeStartTime = 0;
 $subNaviMask.addEventListener("touchstart", (e) => {
     touchStartX = e.changedTouches[0].screenX;
+    maskSwipeStartTime = Date.now();
 }, { passive: true });
 
 $subNaviMask.addEventListener('touchend', (e) => {
     const touchEndX = e.changedTouches[0].screenX;
-    handleSubNaviSwipe(touchStartX, touchEndX);
+    handleSubNaviSwipe(touchStartX, touchEndX, Date.now() - maskSwipeStartTime);
 });
 
 // --- Page area swipe → change sub-navi (Mobile) ---
@@ -303,19 +307,21 @@ $pageContainer.addEventListener('touchend', (e) => {
     const deltaY = Math.abs(pageSwipeStartY - touch.screenY);
     const elapsed = Date.now() - pageSwipeStartTime;
 
-    if (elapsed > 400) return;
-    if (deltaX < 50) return;
+    if (elapsed > 350) return;
+    if (deltaX < 80) return;
     if (deltaX < deltaY * 2) return;
 
-    handleSubNaviSwipe(pageSwipeStartX, touch.screenX);
+    handleSubNaviSwipe(pageSwipeStartX, touch.screenX, elapsed);
 });
 
-function handleSubNaviSwipe(startX, endX) {
+function handleSubNaviSwipe(startX, endX, elapsed = 0) {
     if (!activeNaviItem) return;
-    const threshold = 50;
+    const threshold = 80;
     const distance = startX - endX;
 
     if (Math.abs(distance) < threshold) return;
+    // Require deliberate swipe: reject slow drags (> 350ms)
+    if (elapsed > 0 && elapsed > 350) return;
 
     const direction = distance > 0 ? 1 : -1;
     moveSubNaviItemHead(activeNaviItem, stateOfEachNaviItem[activeNaviItem].subNaviHeadIndex + direction);
