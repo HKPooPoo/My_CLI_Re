@@ -347,6 +347,7 @@ if (BBUI.elements.branchBtn) {
     new MultiStepButton(BBUI.elements.branchBtn, {
         sound: "UIPipboyOK.mp3",
         action: async () => {
+            BBSync.cancelPendingCommit();
             const selected = getSelectedBranchInfo();
             if (!selected) return;
 
@@ -382,6 +383,7 @@ if (BBUI.elements.commitBtn) {
     new MultiStepButton(BBUI.elements.commitBtn, {
         sound: "UIPipboyOKPress.mp3",
         action: async () => {
+            BBSync.cancelPendingCommit();
             const selected = getSelectedBranchInfo();
             if (!selected) return;
 
@@ -450,6 +452,7 @@ if (checkoutBtnEl) {
         const selected = getSelectedBranchInfo();
         if (!selected) return;
 
+        BBSync.cancelPendingCommit();
         playAudio("Click.mp3");
 
         let msg;
@@ -543,6 +546,7 @@ if (dropBtnEl) {
         const selected = getSelectedBranchInfo();
         if (!selected) return;
 
+        BBSync.cancelPendingCommit();
         playAudio("UIGeneralCancel.mp3");
 
         let msg;

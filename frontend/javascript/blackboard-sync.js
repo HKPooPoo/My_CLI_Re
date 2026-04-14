@@ -8,6 +8,8 @@
  */
 
 import { BBVCS } from './blackboard-vcs.js';
+import { BBCore } from './blackboard-core.js';
+import { BlackboardService } from './services/blackboard-service.js';
 import { BBMessage } from './blackboard-msg.js';
 import { getEcho } from './echo-service.js';
 import { t } from './i18n.js';
@@ -140,16 +142,39 @@ export const BBSync = {
 
     async recover() {
         if (!_isAutoSyncEnabled() || !_isLoggedIn()) return;
-        await this.flush();
 
         const state = _getState?.();
-        if (!state) return;
+        if (!state?.branchId) return;
 
         try {
-            const fetched = await BBVCS.checkout(state, state.branchId, 'remote');
-            if (fetched) _onRemoteUpdate?.();
+            // Compare local vs server timestamps to decide sync direction.
+            // Without this, flush() blindly commits local data and overwrites
+            // newer server content from another device.
+            const localBranches = await BBCore.getAllBranches('local');
+            const localBranch = localBranches.find(b => b.id === state.branchId);
+            const localLastUpdate = localBranch?.lastUpdate ?? 0;
+
+            const serverData = await BlackboardService.fetchBranches();
+            const serverBranch = serverData?.branches?.find(
+                b => parseInt(b.branch_id) === state.branchId
+            );
+            const serverLastUpdate = serverBranch ? Number(serverBranch.last_update) : 0;
+
+            if (serverLastUpdate > localLastUpdate) {
+                // Server is newer → download only, don't overwrite with stale local data
+                const fetched = await BBVCS.checkout(state, state.branchId, 'remote');
+                if (fetched) {
+                    _onRemoteUpdate?.();
+                    _onBranchListUpdate?.();
+                }
+            } else if (localLastUpdate > serverLastUpdate) {
+                // Local is newer → upload
+                await this.flush();
+                _onBranchListUpdate?.();
+            }
+            // Equal → already in sync, do nothing
         } catch (err) {
-            console.warn('[BBSync] Recovery checkout failed:', err);
+            console.warn('[BBSync] Recovery failed:', err);
         }
     },
 
