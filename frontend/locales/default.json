@@ -169,6 +169,8 @@
     "casting": "CASTING...",
     "castComplete": "CAST COMPLETE",
     "castFailed": "ERROR: CAST FAILED",
+    "uploading": "UPLOADING: {name}",
+    "uploadFailed": "UPLOAD FAILED: {hash}",
     "createStep1": "CREATE",
     "creating": "CREATING...",
     "createComplete": "CREATE COMPLETE",

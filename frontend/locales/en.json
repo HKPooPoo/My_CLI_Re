@@ -169,6 +169,8 @@
     "casting": "Publishing...",
     "castComplete": "Published!",
     "castFailed": "Publish failed.",
+    "uploading": "Uploading: {name}",
+    "uploadFailed": "Upload failed: {hash}",
     "createStep1": "Create",
     "creating": "Creating...",
     "createComplete": "Created!",

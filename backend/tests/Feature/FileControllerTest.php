@@ -263,6 +263,52 @@ class FileControllerTest extends TestCase
         $this->assertDatabaseHas('files', ['hash' => $hash, 'status' => 'committed']);
     }
 
+    #[Test]
+    public function file_status_transitions_staged_to_committed_via_bc_cast(): void
+    {
+        // BC cast requires owner to have a title
+        $owner = User::factory()->withTitle('CASTER')->create(['uid' => 'bc-caster']);
+
+        // Upload file → status = staged
+        $file = UploadedFile::fake()->createWithContent('bc-staged.txt', 'BC stage me');
+        $uploadResponse = $this->actingAs($owner)->postJson('/api/files', ['file' => $file]);
+        $hash = $uploadResponse->json('hash');
+
+        $this->assertDatabaseHas('files', ['hash' => $hash, 'status' => 'staged']);
+
+        // Cast a BC channel referencing this file → status should become committed
+        $this->actingAs($owner)->postJson('/api/broadcast/channels/cast', [
+            'channel_name' => 'BC File Test',
+            'records' => [
+                ['timestamp' => 1000, 'text' => 'Has file', 'file_hash' => $hash],
+            ],
+        ])->assertStatus(200);
+
+        $this->assertDatabaseHas('files', ['hash' => $hash, 'status' => 'committed']);
+    }
+
+    #[Test]
+    public function file_status_transitions_staged_to_committed_via_wt_commit(): void
+    {
+        // Upload file → status = staged
+        $file = UploadedFile::fake()->createWithContent('wt-staged.txt', 'WT stage me');
+        $uploadResponse = $this->actingAs($this->user)->postJson('/api/files', ['file' => $file]);
+        $hash = $uploadResponse->json('hash');
+
+        $this->assertDatabaseHas('files', ['hash' => $hash, 'status' => 'staged']);
+
+        // Commit a WT board referencing this file → status should become committed
+        $this->actingAs($this->user)->postJson('/api/walkie-typie/boards/commit', [
+            'branch_id' => 'wt-file-test-br',
+            'branch_name' => 'WT File Test',
+            'records' => [
+                ['timestamp' => 1000, 'text' => 'Has file', 'file_hash' => $hash],
+            ],
+        ])->assertStatus(200);
+
+        $this->assertDatabaseHas('files', ['hash' => $hash, 'status' => 'committed']);
+    }
+
     // =========================================================================
     //  Orphan detection: file no longer referenced by any board
     // =========================================================================

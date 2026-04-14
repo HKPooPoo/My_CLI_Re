@@ -21,6 +21,7 @@
  */
 
 import { BroadcastService } from './services/broadcast-service.js';
+import { FileService } from './services/file-service.js';
 import { BCDb, BCMeta, getHKTTimestamp } from './broadcast-db.js';
 import { InfiniteList } from './blackboard-ui-list.js';
 import { MultiStepButton } from './multiStepButton.js';
@@ -29,6 +30,7 @@ import { playAudio } from './audio.js';
 import { t } from './i18n.js';
 import { updateNaviPosition } from './navi.js';
 import * as Settings from './settings.js';
+import db from './indexedDB.js';
 
 // Sub-navi <---> text element — updated when channel is selected or renamed
 const $bcNaviText = document.querySelector(
@@ -201,13 +203,51 @@ export const BCList = {
                     try {
                         // Gather local board records
                         const localRecords = await BCDb.getAllRecords(ch.localId);
-                        const apiRecords = localRecords
-                            .filter(r => (r.text && r.text.trim()) || r.file_hash)
-                            .map(r => ({
-                                timestamp: r.timestamp,
-                                text: r.text || '',
-                                file_hash: (r.file_hash && typeof r.file_hash === 'object') ? r.file_hash.hash : r.file_hash
-                            }));
+                        const candidateRecords = localRecords.filter(r =>
+                            (r.text && r.text.trim()) || r.file_hash
+                        );
+
+                        // [File Sync]: upload pending files before sending records.
+                        // Mirror WT pattern — on upload failure, strip hash so server
+                        // does not store a dangling reference. Empty records (no text
+                        // and no surviving hash) are dropped via second filter below.
+                        const apiRecords = [];
+                        for (const r of candidateRecords) {
+                            let hashStr = null;
+
+                            if (r.file_hash) {
+                                const hash = (typeof r.file_hash === 'object') ? r.file_hash.hash : r.file_hash;
+                                const fileName = (typeof r.file_hash === 'object') ? r.file_hash.name : null;
+                                hashStr = hash;
+
+                                const localFile = await db.file_blobs.get(hash);
+                                if (localFile && localFile.blob) {
+                                    if (localFile.status !== 'synced') {
+                                        try {
+                                            BBMessage.info(t('broadcast.uploading', { name: fileName || hash.substring(0, 8) }));
+                                            await FileService.upload(localFile.blob);
+                                            await db.file_blobs.update(hash, { status: 'synced' });
+                                        } catch (err) {
+                                            console.error(`BC Cast: Upload failed for ${hash}`, err);
+                                            BBMessage.error(t('broadcast.uploadFailed', { hash: hash.substring(0, 8) }));
+                                            hashStr = null;
+                                        }
+                                    }
+                                } else {
+                                    console.warn(`BC Cast: Local file missing for hash ${hash}`);
+                                    hashStr = null;
+                                }
+                            }
+
+                            // Drop record if upload failed AND there is no text
+                            if ((r.text && r.text.trim()) || hashStr) {
+                                apiRecords.push({
+                                    timestamp: r.timestamp,
+                                    text: r.text || '',
+                                    file_hash: hashStr
+                                });
+                            }
+                        }
 
                         const result = await BroadcastService.cast({
                             channel_name: ch.name,

@@ -169,6 +169,8 @@
     "casting": "廣播中...",
     "castComplete": "廣播完成",
     "castFailed": "廣播失敗",
+    "uploading": "上傳中：{name}",
+    "uploadFailed": "上傳失敗：{hash}",
     "createStep1": "建立",
     "creating": "建立中...",
     "createComplete": "建立完成",
