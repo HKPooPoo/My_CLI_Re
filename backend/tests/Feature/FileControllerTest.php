@@ -204,12 +204,194 @@ class FileControllerTest extends TestCase
             ->assertJson(['message' => 'FILE NOT FOUND']);
     }
 
+    #[Test]
+    public function download_returns_file_for_uploaded_hash(): void
+    {
+        $file = UploadedFile::fake()->createWithContent('download-test.txt', 'Download me');
+        $uploadResponse = $this->postJson('/api/files', ['file' => $file]);
+        $hash = $uploadResponse->json('hash');
+
+        $response = $this->get("/api/files/{$hash}");
+
+        $response->assertStatus(200);
+        $this->assertStringContainsString('text/plain', $response->headers->get('content-type'));
+    }
+
+    #[Test]
+    public function download_returns_404_when_db_exists_but_disk_missing(): void
+    {
+        // Create DB record pointing to non-existent file
+        \App\Models\File::create([
+            'hash' => 'ghost_hash_on_disk',
+            'user_id' => $this->user->id,
+            'original_name' => 'ghost.txt',
+            'mime_type' => 'text/plain',
+            'size' => 100,
+            'disk_path' => 'files/gh/os/ghost_hash_on_disk.txt',
+            'status' => 'committed',
+        ]);
+
+        $response = $this->getJson('/api/files/ghost_hash_on_disk');
+
+        $response->assertStatus(404)
+            ->assertJson(['message' => 'FILE MISSING FROM DISK']);
+    }
+
     // =========================================================================
-    //  End-to-end: upload → exists → meta → download
+    //  File status transitions via board commit
     // =========================================================================
 
     #[Test]
-    public function full_lifecycle_upload_exists_meta(): void
+    public function file_status_transitions_staged_to_committed_via_board_commit(): void
+    {
+        // Upload file → status = staged
+        $file = UploadedFile::fake()->createWithContent('staged.txt', 'Stage me');
+        $uploadResponse = $this->actingAs($this->user)->postJson('/api/files', ['file' => $file]);
+        $hash = $uploadResponse->json('hash');
+
+        $this->assertDatabaseHas('files', ['hash' => $hash, 'status' => 'staged']);
+
+        // Commit a BB record referencing this file → status should become committed
+        $this->actingAs($this->user)->postJson('/api/blackboard/commit', [
+            'branch_id' => 'file-test-br',
+            'branch_name' => 'File Test',
+            'records' => [
+                ['timestamp' => 1000, 'text' => 'Has file', 'file_hash' => $hash],
+            ],
+        ])->assertStatus(200);
+
+        $this->assertDatabaseHas('files', ['hash' => $hash, 'status' => 'committed']);
+    }
+
+    // =========================================================================
+    //  Orphan detection: file no longer referenced by any board
+    // =========================================================================
+
+    #[Test]
+    public function mark_orphaned_detects_unreferenced_committed_files(): void
+    {
+        $fileService = app(\App\Services\FileService::class);
+
+        // Create a committed file
+        \App\Models\File::create([
+            'hash' => 'orphan_test_hash',
+            'user_id' => $this->user->id,
+            'original_name' => 'orphan.txt',
+            'mime_type' => 'text/plain',
+            'size' => 50,
+            'disk_path' => 'files/or/ph/orphan_test_hash.txt',
+            'status' => 'committed',
+        ]);
+
+        // No board references this hash → should be marked orphaned
+        $marked = $fileService->markOrphaned();
+
+        $this->assertGreaterThan(0, $marked);
+        $this->assertDatabaseHas('files', ['hash' => 'orphan_test_hash', 'status' => 'orphaned']);
+    }
+
+    #[Test]
+    public function mark_orphaned_keeps_files_referenced_by_bb(): void
+    {
+        $fileService = app(\App\Services\FileService::class);
+
+        \App\Models\File::create([
+            'hash' => 'referenced_hash',
+            'user_id' => $this->user->id,
+            'original_name' => 'safe.txt',
+            'mime_type' => 'text/plain',
+            'size' => 50,
+            'disk_path' => 'files/re/fe/referenced_hash.txt',
+            'status' => 'committed',
+        ]);
+
+        // BB record references this file
+        \Illuminate\Support\Facades\DB::table('blackboards')->insert([
+            'user_id' => $this->user->id, 'branch_id' => 'br1', 'branch_name' => 'Main',
+            'timestamp' => 1000, 'text' => 'With file', 'file_hash' => 'referenced_hash',
+            'created_at' => now(), 'updated_at' => now(),
+        ]);
+
+        $fileService->markOrphaned();
+
+        // Should still be committed, not orphaned
+        $this->assertDatabaseHas('files', ['hash' => 'referenced_hash', 'status' => 'committed']);
+    }
+
+    #[Test]
+    public function mark_orphaned_keeps_files_referenced_by_wt(): void
+    {
+        $fileService = app(\App\Services\FileService::class);
+
+        \App\Models\File::create([
+            'hash' => 'wt_ref_hash',
+            'user_id' => $this->user->id,
+            'original_name' => 'wt-safe.txt',
+            'mime_type' => 'text/plain',
+            'size' => 50,
+            'disk_path' => 'files/wt/re/wt_ref_hash.txt',
+            'status' => 'committed',
+        ]);
+
+        // WT board references this file
+        \Illuminate\Support\Facades\DB::table('walkie_typie_boards')->insert([
+            'user_id' => $this->user->id, 'branch_id' => 'wt-br1',
+            'timestamp' => 1000, 'text' => 'WT file', 'file_hash' => 'wt_ref_hash',
+            'created_at' => now(), 'updated_at' => now(),
+        ]);
+
+        $fileService->markOrphaned();
+
+        $this->assertDatabaseHas('files', ['hash' => 'wt_ref_hash', 'status' => 'committed']);
+    }
+
+    #[Test]
+    public function mark_orphaned_keeps_files_referenced_by_bc(): void
+    {
+        $fileService = app(\App\Services\FileService::class);
+
+        \App\Models\File::create([
+            'hash' => 'bc_ref_hash',
+            'user_id' => $this->user->id,
+            'original_name' => 'bc-safe.txt',
+            'mime_type' => 'text/plain',
+            'size' => 50,
+            'disk_path' => 'files/bc/re/bc_ref_hash.txt',
+            'status' => 'committed',
+        ]);
+
+        // BC board references this file
+        $chId = \Illuminate\Support\Facades\DB::table('broadcast_channels')->insertGetId([
+            'name' => 'file-test-ch', 'user_id' => $this->user->id,
+            'last_signal' => 1000, 'created_at' => now(), 'updated_at' => now(),
+        ]);
+        \Illuminate\Support\Facades\DB::table('broadcast_boards')->insert([
+            'channel_id' => $chId, 'timestamp' => 1000, 'text' => 'BC file',
+            'file_hash' => 'bc_ref_hash', 'created_at' => now(), 'updated_at' => now(),
+        ]);
+
+        $fileService->markOrphaned();
+
+        $this->assertDatabaseHas('files', ['hash' => 'bc_ref_hash', 'status' => 'committed']);
+    }
+
+    // =========================================================================
+    //  Clean orphaned files command
+    // =========================================================================
+
+    #[Test]
+    public function clean_orphaned_command_runs_successfully(): void
+    {
+        $this->artisan('files:clean-orphaned')
+            ->assertExitCode(0);
+    }
+
+    // =========================================================================
+    //  End-to-end: upload → commit → exists → meta → download
+    // =========================================================================
+
+    #[Test]
+    public function full_lifecycle_upload_commit_exists_meta(): void
     {
         $file = UploadedFile::fake()->createWithContent('lifecycle.txt', 'Hello lifecycle test');
 
@@ -218,16 +400,28 @@ class FileControllerTest extends TestCase
         $uploadResponse->assertStatus(200);
         $hash = $uploadResponse->json('hash');
 
-        // 2. Exists
+        // Status: staged
+        $this->assertDatabaseHas('files', ['hash' => $hash, 'status' => 'staged']);
+
+        // 2. Commit referencing the file → status: committed
+        $this->actingAs($this->user)->postJson('/api/blackboard/commit', [
+            'branch_id' => 'lifecycle-br',
+            'branch_name' => 'Lifecycle',
+            'records' => [['timestamp' => 1000, 'text' => 'With file', 'file_hash' => $hash]],
+        ])->assertStatus(200);
+
+        $this->assertDatabaseHas('files', ['hash' => $hash, 'status' => 'committed']);
+
+        // 3. Exists
         $this->getJson("/api/files/{$hash}/exists")
             ->assertJson(['exists' => true]);
 
-        // 3. Meta
-        $metaResponse = $this->getJson("/api/files/{$hash}/meta");
-        $metaResponse->assertStatus(200)
-            ->assertJson([
-                'name' => 'lifecycle.txt',
-                'status' => 'staged',
-            ]);
+        // 4. Meta
+        $this->getJson("/api/files/{$hash}/meta")
+            ->assertJson(['name' => 'lifecycle.txt', 'status' => 'committed']);
+
+        // 5. Download
+        $this->get("/api/files/{$hash}")
+            ->assertStatus(200);
     }
 }
