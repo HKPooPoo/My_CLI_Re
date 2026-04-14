@@ -168,6 +168,7 @@
     "notOwner": "ERROR: NOT OWNER",
     "casting": "CASTING...",
     "castComplete": "CAST COMPLETE",
+    "castPartial": "CAST PARTIAL — {count} FILE(S) PENDING RETRY",
     "castFailed": "ERROR: CAST FAILED",
     "uploading": "UPLOADING: {name}",
     "uploadFailed": "UPLOAD FAILED: {name} — RETRY ON NEXT CAST",

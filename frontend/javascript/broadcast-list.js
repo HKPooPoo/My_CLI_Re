@@ -209,6 +209,7 @@ export const BCList = {
 
                         // Local First: upload pending files but never strip the hash.
                         // Failed uploads stay 'local' in file_blobs; next cast retries.
+                        let failedCount = 0;
                         const apiRecords = [];
                         for (const r of candidateRecords) {
                             let hashStr = null;
@@ -228,10 +229,12 @@ export const BCList = {
                                         } catch (err) {
                                             console.error(`BC Cast: Upload failed for ${hash}`, err);
                                             BBMessage.error(t('broadcast.uploadFailed', { name: fileName }));
+                                            failedCount++;
                                         }
                                     }
                                 } else {
                                     console.warn(`BC Cast: Local file missing for hash ${hash}`);
+                                    failedCount++;
                                 }
                             }
 
@@ -256,7 +259,10 @@ export const BCList = {
                         ch.serverChannelId = serverCh.id;
                         ch.lastSignal = serverCh.last_signal;
 
-                        msg.update(t('broadcast.castComplete'));
+                        // Honest status: "complete" only when all files uploaded.
+                        msg.update(failedCount === 0
+                            ? t('broadcast.castComplete')
+                            : t('broadcast.castPartial', { count: failedCount }));
                         await this.fetchAndRender();
                     } catch (e) {
                         console.error('CAST ERROR:', e);
