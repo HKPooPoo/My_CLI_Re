@@ -168,6 +168,9 @@ export const BBVCS = {
         // Failed uploads stay as 'local' status in file_blobs; next commit retries.
         // Server may receive a hash that does not yet exist on disk — observers
         // will see the chip and get downloadFailed until the retry succeeds.
+        // Note: per-file failure toast is deferred until AFTER the records POST
+        // succeeds — otherwise an offline scenario shows a misleading "X files
+        // failed, retry later" alongside the caller's "sync failed" toast.
         let failedCount = 0;
         if (uniqueHashes.size > 0) {
             for (const hash of uniqueHashes) {
@@ -188,9 +191,6 @@ export const BBVCS = {
                     console.error(`Failed to sync file ${hash}:`, err);
                     failedCount++;
                 }
-            }
-            if (failedCount > 0) {
-                BBMessage.error(t('blackboard.filesPartialFail', { count: failedCount }));
             }
         }
 
@@ -221,6 +221,13 @@ export const BBVCS = {
             if (deviceId) commitPayload.device_id = deviceId;
 
             await BlackboardService.commit(commitPayload);
+
+            // POST succeeded — now safe to inform user about per-file failures.
+            // (If POST had failed, this toast would contradict the caller's
+            // sync-failed toast and confuse the user about what actually got out.)
+            if (failedCount > 0) {
+                BBMessage.error(t('blackboard.filesPartialFail', { count: failedCount }));
+            }
 
             // Honest status display per design page 18:
             //   - All files uploaded → "local, online/uid [synced]"
