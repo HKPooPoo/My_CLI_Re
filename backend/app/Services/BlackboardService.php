@@ -103,15 +103,40 @@ class BlackboardService
             return [];
         }
 
-        return Cache::remember("bb:branch:{$user->id}:{$branchId}:details", 30, fn() =>
-            DB::table('blackboards')
+        return Cache::remember("bb:branch:{$user->id}:{$branchId}:details", 30, function () use ($user, $branchId) {
+            $records = DB::table('blackboards')
                 ->join('users', 'blackboards.user_id', '=', 'users.id')
                 ->where('blackboards.branch_id', $branchId)
                 ->where('blackboards.user_id', $user->id)
                 ->orderBy('blackboards.timestamp', 'asc')
                 ->select('blackboards.*', 'users.uid')
-                ->get()
-        );
+                ->get();
+
+            // Hide file_hash entries whose blob is not currently available, so the
+            // user does not see chips that would 404 when clicked. The other-device
+            // sync (or observer fetch) sees only what they can actually download.
+            return $this->stripUnavailableFileHashes($records);
+        });
+    }
+
+    /**
+     * Replace each record's file_hash with a value that only references blobs
+     * currently present in the files table (status != orphaned).
+     */
+    private function stripUnavailableFileHashes($records)
+    {
+        $allHashes = [];
+        foreach ($records as $r) {
+            [, $hashes] = FileService::normalizeFileHash($r->file_hash);
+            foreach ($hashes as $h) $allHashes[] = $h;
+        }
+        if (empty($allHashes)) return $records;
+
+        $available = FileService::buildAvailableHashSet($allHashes);
+        foreach ($records as $r) {
+            $r->file_hash = FileService::filterAvailableHashes($r->file_hash, $available);
+        }
+        return $records;
     }
 
     public function deleteBranch(User $user, string $branchId)

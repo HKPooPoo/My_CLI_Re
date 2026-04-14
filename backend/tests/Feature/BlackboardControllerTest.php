@@ -378,6 +378,16 @@ class BlackboardControllerTest extends TestCase
     #[Test]
     public function fetch_branch_details_returns_record_fields(): void
     {
+        // Insert files row so the fetch filter keeps the hash (otherwise it
+        // would be stripped as "blob not on server"); see A5 hash availability
+        // filter in BlackboardService::stripUnavailableFileHashes.
+        \App\Models\File::create([
+            'hash' => 'hash123', 'user_id' => $this->user->id,
+            'original_name' => 'doc.txt', 'mime_type' => 'text/plain',
+            'size' => 10, 'disk_path' => 'files/ha/sh/hash123.txt',
+            'status' => 'committed',
+        ]);
+
         DB::table('blackboards')->insert([
             'user_id' => $this->user->id, 'branch_id' => 'br1', 'branch_name' => 'Main',
             'timestamp' => 1000, 'text' => 'Content here', 'file_hash' => 'hash123',
@@ -391,6 +401,47 @@ class BlackboardControllerTest extends TestCase
         $this->assertEquals('Content here', $record['text']);
         $this->assertEquals('hash123', $record['file_hash']);
         $this->assertEquals('bb-tester', $record['uid']);
+    }
+
+    #[Test]
+    public function fetch_branch_details_strips_file_hash_when_blob_unavailable(): void
+    {
+        // Record references a hash that has no files row → fetch should hide
+        // the chip by setting file_hash to null. Otherwise the user would see
+        // a phantom chip that 404s on download.
+        DB::table('blackboards')->insert([
+            'user_id' => $this->user->id, 'branch_id' => 'br1', 'branch_name' => 'Main',
+            'timestamp' => 1000, 'text' => 'Has phantom file', 'file_hash' => 'phantom_hash',
+            'created_at' => now(), 'updated_at' => now(),
+        ]);
+
+        $response = $this->actingAs($this->user)->getJson('/api/blackboard/branches/br1');
+
+        $record = $response->json('records.0');
+        $this->assertEquals('Has phantom file', $record['text']);
+        $this->assertNull($record['file_hash']);
+    }
+
+    #[Test]
+    public function fetch_branch_details_strips_orphaned_file_hash(): void
+    {
+        // Orphaned files are about to be cleaned up — fetch should hide them.
+        \App\Models\File::create([
+            'hash' => 'orphan_hash', 'user_id' => $this->user->id,
+            'original_name' => 'old.txt', 'mime_type' => 'text/plain',
+            'size' => 10, 'disk_path' => 'files/or/ph/orphan_hash.txt',
+            'status' => 'orphaned',
+        ]);
+        DB::table('blackboards')->insert([
+            'user_id' => $this->user->id, 'branch_id' => 'br1', 'branch_name' => 'Main',
+            'timestamp' => 1000, 'text' => 'Orphan ref', 'file_hash' => 'orphan_hash',
+            'created_at' => now(), 'updated_at' => now(),
+        ]);
+
+        $response = $this->actingAs($this->user)->getJson('/api/blackboard/branches/br1');
+
+        $record = $response->json('records.0');
+        $this->assertNull($record['file_hash']);
     }
 
     // =========================================================================

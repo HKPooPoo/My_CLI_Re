@@ -104,6 +104,51 @@ class FileService
     }
 
     /**
+     * Build a fast lookup set of hashes whose file row exists and is not orphaned.
+     * Pass this to filterAvailableHashes() in a loop to avoid N+1 queries.
+     *
+     * @param string[] $hashes  Flat list of hashes (may contain duplicates)
+     * @return array<string, true>  Set keyed by hash
+     */
+    public static function buildAvailableHashSet(array $hashes): array
+    {
+        if (empty($hashes)) return [];
+
+        $rows = File::whereIn('hash', array_unique($hashes))
+            ->where('status', '!=', 'orphaned')
+            ->pluck('hash')
+            ->all();
+
+        return array_flip($rows);
+    }
+
+    /**
+     * Filter a file_hash field value against an availability set, preserving the
+     * stored shape:
+     *   - single hash, available     → return as-is
+     *   - single hash, unavailable   → null
+     *   - array, all available       → return as-is
+     *   - array, partial available   → JSON-encoded array of remaining
+     *   - array, none available      → null
+     *
+     * @param mixed $fileHash  Raw value from DB (string|null, plain hash or JSON)
+     * @param array<string, true> $availableSet  From buildAvailableHashSet()
+     */
+    public static function filterAvailableHashes(mixed $fileHash, array $availableSet): mixed
+    {
+        if (!$fileHash) return null;
+
+        [, $hashes] = self::normalizeFileHash($fileHash);
+
+        $kept = array_values(array_filter($hashes, fn($h) => isset($availableSet[$h])));
+
+        if (empty($kept)) return null;
+        if (count($kept) === count($hashes)) return $fileHash;
+        if (count($kept) === 1) return $kept[0];
+        return json_encode($kept);
+    }
+
+    /**
      * Mark file as committed (referenced by a record).
      */
     public function markCommitted(string $hash): void

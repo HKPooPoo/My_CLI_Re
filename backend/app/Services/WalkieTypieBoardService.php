@@ -124,13 +124,36 @@ class WalkieTypieBoardService
             return [];
         }
 
-        return Cache::remember("wt:boards:{$branchId}", 30, fn() =>
-            DB::table('walkie_typie_boards')
+        return Cache::remember("wt:boards:{$branchId}", 30, function () use ($branchId) {
+            $records = DB::table('walkie_typie_boards')
                 ->where('branch_id', $branchId)
                 ->orderBy('timestamp', 'asc')
                 ->select('walkie_typie_boards.*')
-                ->get()
-        );
+                ->get();
+
+            return $this->stripUnavailableFileHashes($records);
+        });
+    }
+
+    /**
+     * Replace each record's file_hash with a value that only references blobs
+     * currently present in the files table (status != orphaned), so the partner
+     * does not see chips that would 404 when clicked.
+     */
+    private function stripUnavailableFileHashes($records)
+    {
+        $allHashes = [];
+        foreach ($records as $r) {
+            [, $hashes] = FileService::normalizeFileHash($r->file_hash);
+            foreach ($hashes as $h) $allHashes[] = $h;
+        }
+        if (empty($allHashes)) return $records;
+
+        $available = FileService::buildAvailableHashSet($allHashes);
+        foreach ($records as $r) {
+            $r->file_hash = FileService::filterAvailableHashes($r->file_hash, $available);
+        }
+        return $records;
     }
 
     /**

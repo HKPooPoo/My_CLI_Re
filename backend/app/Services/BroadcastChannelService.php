@@ -222,14 +222,29 @@ class BroadcastChannelService
      */
     public function fetchBoards(int $channelId): array
     {
-        return Cache::remember("bc:boards:{$channelId}", 30, fn() =>
-            DB::table('broadcast_boards')
+        return Cache::remember("bc:boards:{$channelId}", 30, function () use ($channelId) {
+            $records = DB::table('broadcast_boards')
                 ->where('broadcast_boards.channel_id', $channelId)
                 ->orderBy('broadcast_boards.timestamp', 'asc')
                 ->select('broadcast_boards.*')
-                ->get()
-                ->toArray()
-        );
+                ->get();
+
+            // Hide file_hash entries whose blob is not currently available, so
+            // subscribers do not see chips that would 404 when clicked.
+            $allHashes = [];
+            foreach ($records as $r) {
+                [, $hashes] = FileService::normalizeFileHash($r->file_hash);
+                foreach ($hashes as $h) $allHashes[] = $h;
+            }
+            if (!empty($allHashes)) {
+                $available = FileService::buildAvailableHashSet($allHashes);
+                foreach ($records as $r) {
+                    $r->file_hash = FileService::filterAvailableHashes($r->file_hash, $available);
+                }
+            }
+
+            return $records->toArray();
+        });
     }
 
     /**
