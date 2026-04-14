@@ -128,24 +128,26 @@ export const WTVCS = {
 
         const apiRecords = [];
 
+        // Local First: never strip the hash. Failed uploads stay 'local' in
+        // file_blobs; next commit retries automatically.
         for (const r of records) {
             let hashStr = null;
 
             if (r.file_hash) {
                 const hash = r.file_hash.hash;
+                const fileName = r.file_hash.name || hash.substring(0, 8);
                 hashStr = hash;
 
                 const localFile = await db.file_blobs.get(hash);
                 if (localFile && localFile.blob) {
                     if (localFile.status !== 'synced') {
                         try {
-                            BBMessage.info(t('walkieTypie.uploading', { name: r.file_hash.name || hash.substring(0, 8) }));
+                            BBMessage.info(t('walkieTypie.uploading', { name: fileName }));
                             await FileService.upload(localFile.blob);
                             await db.file_blobs.update(hash, { status: 'synced' });
                         } catch (e) {
                             console.error(`WT Commit: Upload failed for ${hash}`, e);
-                            BBMessage.error(t('walkieTypie.uploadFailed', { hash: hash.substring(0, 8) }));
-                            hashStr = null; // Strip broken reference — don't send unuploaded file_hash to server
+                            BBMessage.error(t('walkieTypie.uploadFailed', { name: fileName }));
                         }
                     }
                 } else {
