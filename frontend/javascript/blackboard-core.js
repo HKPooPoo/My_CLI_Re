@@ -30,6 +30,11 @@ export function makeSyncedOwner(uid) {
     return `local, online/${uid} [synced]`;
 }
 
+/** Build asynced owner tag: "local, online/{uid} [asynced]" */
+export function makeAsyncedOwner(uid) {
+    return `local, online/${uid} [asynced]`;
+}
+
 /** Transition owner tag: [synced] → [asynced] if applicable, otherwise unchanged */
 export function markAsynced(owner) {
     return owner.includes('[synced]') ? owner.replace('[synced]', '[asynced]') : owner;

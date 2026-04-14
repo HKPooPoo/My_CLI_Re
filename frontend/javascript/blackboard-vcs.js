@@ -1,4 +1,4 @@
-import { BBCore, extractHashes, makeSyncedOwner } from "./blackboard-core.js";
+import { BBCore, extractHashes, makeSyncedOwner, makeAsyncedOwner } from "./blackboard-core.js";
 import { BBMessage } from "./blackboard-msg.js";
 import db, { Dexie } from "./indexedDB.js";
 import { BlackboardService } from "./services/blackboard-service.js";
@@ -222,19 +222,21 @@ export const BBVCS = {
 
             await BlackboardService.commit(commitPayload);
 
-            // Honest status display: only mark [synced] when files are also up.
-            // If any file failed, keep owner='local' so the branch indicator does
-            // not claim full sync. Next commit retries the uploads and, on full
-            // success, updates the owner tag.
-            if (failedCount === 0) {
-                try {
-                    await db.blackboard.where('owner').startsWith('local')
-                        .and(item => item.branch_id === branchId)
-                        .modify({ owner: makeSyncedOwner(loggedInUser) });
-                } catch (tagErr) {
-                    console.warn('[BBVCS] Server commit OK, but local sync-tag update failed:', tagErr);
-                    BBMessage.error(t('blackboard.tagUpdateFailed'));
-                }
+            // Honest status display per design page 18:
+            //   - All files uploaded → "local, online/uid [synced]"
+            //   - Some files failed  → "local, online/uid [asynced]" (records on
+            //     server but content not fully matching due to missing blobs)
+            //   - Records POST itself failed (handled by outer catch) → stays "local"
+            const targetOwner = failedCount === 0
+                ? makeSyncedOwner(loggedInUser)
+                : makeAsyncedOwner(loggedInUser);
+            try {
+                await db.blackboard.where('owner').startsWith('local')
+                    .and(item => item.branch_id === branchId)
+                    .modify({ owner: targetOwner });
+            } catch (tagErr) {
+                console.warn('[BBVCS] Server commit OK, but local sync-tag update failed:', tagErr);
+                BBMessage.error(t('blackboard.tagUpdateFailed'));
             }
 
             return true;
