@@ -164,10 +164,11 @@ export const BBVCS = {
             }
         }
 
-        // Best-effort: attempt ALL uploads before deciding to fail.
-        // Prevents partial orphan state where file 1 uploads but file 2 fails.
+        // Best-effort: attempt ALL uploads and collect failures.
+        // On failure, strip the failed hash from records so text still commits.
+        // Records that become empty (no text AND all hashes stripped) are dropped.
+        const failedHashes = new Set();
         if (uniqueHashes.size > 0) {
-            const failedHashes = [];
             for (const hash of uniqueHashes) {
                 try {
                     const exists = await FileService.exists(hash);
@@ -176,7 +177,7 @@ export const BBVCS = {
                     const fileData = await db.file_blobs.get(hash);
                     if (!fileData || !fileData.blob) {
                         console.warn(`Local file missing for hash ${hash}, skipping upload.`);
-                        failedHashes.push(hash);
+                        failedHashes.add(hash);
                         continue;
                     }
 
@@ -184,11 +185,11 @@ export const BBVCS = {
                     await db.file_blobs.update(hash, { status: 'synced' });
                 } catch (err) {
                     console.error(`Failed to sync file ${hash}:`, err);
-                    failedHashes.push(hash);
+                    failedHashes.add(hash);
                 }
             }
-            if (failedHashes.length > 0) {
-                throw new Error(t('blackboard.fileSyncFailed'));
+            if (failedHashes.size > 0) {
+                BBMessage.error(t('blackboard.filesPartialFail', { count: failedHashes.size }));
             }
         }
 
@@ -203,13 +204,22 @@ export const BBVCS = {
                 return true;
             });
 
-            const payloadRecords = uniqueRecords.map(r => {
-                const hashes = extractHashes(r.file_hash);
+            const payloadRecords = [];
+            for (const r of uniqueRecords) {
+                const hashes = extractHashes(r.file_hash).filter(h => !failedHashes.has(h));
                 let fh = null;
                 if (hashes.length === 1) fh = hashes[0];
                 else if (hashes.length > 1) fh = JSON.stringify(hashes);
-                return { ...r, file_hash: fh };
-            });
+
+                // Drop record if upload stripped its only content
+                if ((r.text && r.text.trim() !== '') || fh) {
+                    payloadRecords.push({ ...r, file_hash: fh });
+                }
+            }
+
+            if (payloadRecords.length === 0) {
+                throw new Error(t('blackboard.noData'));
+            }
 
             const commitPayload = {
                 branch_id: branchId,

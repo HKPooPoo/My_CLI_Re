@@ -102,7 +102,7 @@
     "actionFailed": "ERROR: ACTION FAILED",
     "syncingFiles": "SYNCING FILES...",
     "noData": "ERROR: NO DATA",
-    "fileSyncFailed": "ERROR: FILE SYNC FAILED",
+    "filesPartialFail": "WARNING: {count} FILE SYNC FAILED — TEXT COMMITTED",
     "loginRequired": "ERROR: LOGIN REQUIRED",
     "uploadFailed": "ERROR: UPLOAD FAILED",
     "tagUpdateFailed": "COMMIT OK BUT LOCAL TAG STALE — REFRESH",

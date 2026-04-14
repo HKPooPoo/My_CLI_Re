@@ -102,7 +102,7 @@
     "actionFailed": "操作失敗",
     "syncingFiles": "同步檔案中...",
     "noData": "沒有可上傳的內容",
-    "fileSyncFailed": "檔案上傳失敗",
+    "filesPartialFail": "{count} 個檔案上傳失敗，僅送出文字",
     "loginRequired": "請先登入",
     "uploadFailed": "上傳失敗",
     "tagUpdateFailed": "已同步到雲端，但本地同步指示器未更新。請刷新頁面修正。",
