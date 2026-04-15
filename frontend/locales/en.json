@@ -170,6 +170,7 @@
     "casting": "Publishing...",
     "castComplete": "Published!",
     "castPartial": "Published (text only) — {count} file(s) pending retry.",
+    "realtimeUnavailable": "Live updates unavailable — refresh to see new posts.",
     "castFailed": "Publish failed.",
     "uploading": "Uploading: {name}",
     "uploadFailed": "{name} couldn't upload — will retry on next cast.",

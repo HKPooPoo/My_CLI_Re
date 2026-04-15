@@ -178,6 +178,7 @@ export const BCChannel = {
                 });
         } catch (err) {
             console.error('BCChannel: subscribe failed', err);
+            BBMessage.info(t('broadcast.realtimeUnavailable'));
         }
     },
 

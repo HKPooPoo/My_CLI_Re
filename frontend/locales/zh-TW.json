@@ -170,6 +170,7 @@
     "casting": "廣播中...",
     "castComplete": "廣播完成",
     "castPartial": "廣播部分完成（{count} 個檔案待重試）",
+    "realtimeUnavailable": "即時更新不可用 — 需刷新頁面才能看到新 cast",
     "castFailed": "廣播失敗",
     "uploading": "上傳中：{name}",
     "uploadFailed": "{name} 未能上傳，下次廣播會自動重試",

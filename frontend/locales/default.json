@@ -170,6 +170,7 @@
     "casting": "CASTING...",
     "castComplete": "CAST COMPLETE",
     "castPartial": "CAST PARTIAL — {count} FILE(S) PENDING RETRY",
+    "realtimeUnavailable": "REALTIME UNAVAILABLE — REFRESH FOR NEW CASTS",
     "castFailed": "ERROR: CAST FAILED",
     "uploading": "UPLOADING: {name}",
     "uploadFailed": "UPLOAD FAILED: {name} — RETRY ON NEXT CAST",
