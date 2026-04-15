@@ -55,6 +55,12 @@ Broadcast    = Board(scope: PUBLIC) → public channels, one-to-many
 
 **LWW Commit (Last-Write-Wins):** Commit is full-branch replacement — client sends all records, server DELETEs records not in payload then UPSERTs the rest. No conflict detection, no optimistic locking. Accepted for personal notebook system: same-user dual-device simultaneous commit is near-impossible (auto-sync deviceId prevents self-echo). Diff-Match-Patch is not applicable — DMP solves intra-document text conflicts, not inter-record set conflicts. Timestamp-Based Union Merge was considered but rejected — `updateText()` uses delete + create (IndexedDB primary key includes timestamp, cannot update in place), so union merge would resurrect old record versions. Correct merge would require record lineage tracking, which exceeds the system's complexity budget.
 
+**Logout preserves local data (intentional).** `auth.js` logout only clears the Sanctum session, `localStorage.currentUser/currentTitle`, and in-memory state. IndexedDB tables (`blackboard`, `walkie_typie`, `broadcast_boards`, `broadcast_channels`, `file_blobs`) are untouched. Rationale: local-first — the device is the user's primary storage; logging out is about ending a server session, not erasing notes. Owner tags (e.g. `"local, online/alice [synced]"`) remain after Alice logs out. **Only account deletion** (pending mission E2) fully wipes user-scoped local data.
+
+Known risk on shared devices: Bob logging in after Alice will see Alice's locally-persisted branches tagged `online/alice [synced]`. Bob's edits to those records stay local until Bob's own commit creates a parallel server copy under Bob's user_id; Alice's server records are unaffected. This is acceptable for the target single-user personal-notebook use case but documented here for consideration if multi-user shared-device usage becomes a requirement.
+
+**File blobs also persist on logout.** `db.file_blobs` caches downloaded attachments by hash. Since hashes are content-addressed (SHA-256), a cached blob from Alice is readable by Bob if Bob encounters the same hash — harmless for shared server-committed files (both were authorized to see them), but worth noting when considering strict-isolation scenarios.
+
 ## Development Commands
 
 ```bash
