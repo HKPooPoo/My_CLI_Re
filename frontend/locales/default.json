@@ -216,7 +216,7 @@
   "hints": {
     "push": "Step forward to a newer record. If already at the newest, opens a blank page — type anything to create a new record.",
     "pull": "Step back to an older record. If on a blank page with text, saves it first before moving.",
-    "commit": "Upload ALL records from the selected branch to the cloud, replacing the entire cloud copy. Last write wins — your version overwrites whatever was there. File attachments included.",
+    "commit": "Upload ALL records from the selected branch to the cloud, replacing the entire cloud copy. Last write wins — your version overwrites whatever was there. File attachments included. File upload failure does not block text; failed files retry on next commit.",
     "checkout": "Re-download the selected branch from the cloud, overwriting your local copy.",
     "switch": "Change to a different branch. If it only exists on the cloud, it's downloaded first.",
     "fork": "Duplicate every record from the selected branch into a new unnamed branch. The original and copy are fully separate — edits to one never affect the other.",
@@ -228,14 +228,14 @@
     "wt": {
       "theyPush": "View a newer record on your partner's board (read-only).",
       "theyPull": "View an older record on your partner's board (read-only).",
-      "wePush": "Step forward to a newer record on your board. Your partner sees changes in real-time. At the newest, opens a blank page for a new message.",
-      "wePull": "Step back to an older record on your board. Current text is saved first.",
-      "add": "Connect with another user by UID. Both sides get a paired board — you write on yours, they write on theirs, visible to each other in real-time.",
+      "wePush": "Step forward to a newer record on your board. Partner sees whisper preview (~20ms); full commit to server ~2s after you stop typing. At the newest, opens a blank page for a new message.",
+      "wePull": "Step back to an older record on your board. Current text is saved first. Partner sees the head shift in real-time.",
+      "add": "Connect with another user by UID. Both sides get a paired board — you write on yours, they write on theirs, visible to each other via whisper (~20ms).",
       "cut": "Disconnect the selected partner and erase all message history for this pair on both sides."
     },
     "bc": {
       "pin": "Bookmark this channel. Pinned channels appear at the top of your list.",
-      "cast": "Publish ALL local records to this channel, replacing its entire cloud content. Full upload, not just the current record.",
+      "cast": "Publish ALL local records to this channel, replacing its entire cloud content. Full upload, not just the current record. File upload failure does not block text; failed files retry on next cast.",
       "create": "Start a new local channel. Write records first, then CAST to publish.",
       "delete": "Permanently destroy this channel and all its records (local + cloud). Owner only. Cannot be undone."
     },
@@ -246,7 +246,7 @@
       "maxSlot": "Max records per branch. Oldest auto-removed when full.",
       "autoCleanBlanks": "Auto-remove blank records when navigating. Keeps history clean.",
       "updateTimestamp": "Move edited record to newest position. OFF = stays in place.",
-      "autoSync": "Two-way sync for the CURRENT branch only: auto-commit after 3s idle, auto-checkout on remote changes. Other branches sync when you switch to them. Requires login.",
+      "autoSync": "Two-way sync for the CURRENT branch only: auto-commit 2s after idle, remote changes appear in ~4s via WS/poll. Other branches sync when you switch to them. Requires login.",
       "loopList": "Wrap around: past the last item → first, and vice versa.",
       "boardSwap": "Your board on top, partner below. OFF = partner on top (default).",
       "screensaverTimeout": "Seconds after leaving the tab before screensaver activates. Max value disables it.",
