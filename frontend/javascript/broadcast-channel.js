@@ -39,7 +39,7 @@ import { registerMetadataProvider } from './mod-board-provider.js';
 import { TimerGroup } from './timer-group.js';
 
 const _readerCache = new Map();  // serverChannelId → { records, fetchedAt }
-const READER_CACHE_TTL = 30_000; // 30 seconds
+const READER_CACHE_TTL = 8_000;  // 8 seconds (matches backend fetch TTL)
 
 // --- Shared global head-indicator elements (same as BB) ---
 const $branchName  = document.querySelector('.branch-name');

@@ -22,7 +22,7 @@ class BroadcastChannelService
      */
     public function listChannels(?User $user): array
     {
-        $channels = Cache::remember('bc:channels:base', 30, fn() =>
+        $channels = Cache::remember('bc:channels:base', 8, fn() =>
             DB::table('broadcast_channels')
                 ->leftJoin('users', 'broadcast_channels.user_id', '=', 'users.id')
                 ->orderBy('broadcast_channels.last_signal', 'desc')
@@ -35,7 +35,7 @@ class BroadcastChannelService
         );
 
         $pinnedIds = $user
-            ? Cache::remember("bc:pins:{$user->id}", 120, fn() =>
+            ? Cache::remember("bc:pins:{$user->id}", 8, fn() =>
                 DB::table('broadcast_pins')
                     ->where('user_id', $user->id)
                     ->pluck('channel_id')->flip()->toArray()
@@ -222,7 +222,7 @@ class BroadcastChannelService
      */
     public function fetchBoards(int $channelId): array
     {
-        return Cache::remember("bc:boards:{$channelId}", 30, function () use ($channelId) {
+        return Cache::remember("bc:boards:{$channelId}", 8, function () use ($channelId) {
             $records = DB::table('broadcast_boards')
                 ->where('broadcast_boards.channel_id', $channelId)
                 ->orderBy('broadcast_boards.timestamp', 'asc')
