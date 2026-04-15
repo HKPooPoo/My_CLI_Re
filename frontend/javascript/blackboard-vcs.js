@@ -185,6 +185,9 @@ export const BBVCS = {
                         continue;
                     }
 
+                    // Per-file progress toast so large uploads don't look frozen.
+                    const fileName = fileData.name || hash.substring(0, 8);
+                    BBMessage.info(t('blackboard.uploading', { name: fileName }));
                     await FileService.upload(fileData.blob);
                     await db.file_blobs.update(hash, { status: 'synced' });
                 } catch (err) {

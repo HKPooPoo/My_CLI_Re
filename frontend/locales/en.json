@@ -102,6 +102,7 @@
     "actionFailed": "Action failed.",
     "syncingFiles": "Syncing files...",
     "noData": "Nothing to upload. Write something first.",
+    "uploading": "COMMIT: Uploading {name}",
     "filesPartialFail": "COMMIT: {count} file(s) couldn't upload — will retry on next sync.",
     "loginRequired": "Please log in first.",
     "uploadFailed": "Upload failed.",

@@ -102,6 +102,7 @@
     "actionFailed": "ERROR: ACTION FAILED",
     "syncingFiles": "SYNCING FILES...",
     "noData": "ERROR: NO DATA",
+    "uploading": "COMMIT: UPLOADING {name}",
     "filesPartialFail": "COMMIT: {count} FILE SYNC FAILED — RETRY ON NEXT COMMIT",
     "loginRequired": "ERROR: LOGIN REQUIRED",
     "uploadFailed": "ERROR: UPLOAD FAILED",

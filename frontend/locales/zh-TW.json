@@ -102,6 +102,7 @@
     "actionFailed": "操作失敗",
     "syncingFiles": "同步檔案中...",
     "noData": "沒有可上傳的內容",
+    "uploading": "提交：上傳中 {name}",
     "filesPartialFail": "提交：{count} 個檔案未能上傳，下次同步會自動重試",
     "loginRequired": "請先登入",
     "uploadFailed": "上傳失敗",
