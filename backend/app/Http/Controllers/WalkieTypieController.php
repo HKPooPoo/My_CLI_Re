@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Services\WalkieTypieBoardService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 class WalkieTypieController extends Controller
@@ -28,15 +29,19 @@ class WalkieTypieController extends Controller
         if (!$user)
             return response()->json(['message' => 'Unauthorized'], 401);
 
-        $connections = DB::table('walkie_typie_connections')
-            ->join('users as partner', 'walkie_typie_connections.partner_id', '=', 'partner.id')
-            ->where('walkie_typie_connections.user_id', $user->id)
-            ->orderBy('walkie_typie_connections.last_signal', 'desc')
-            ->select(
-                'walkie_typie_connections.*',
-                'partner.uid as partner_uid'
-            )
-            ->get();
+        $connections = Cache::remember(
+            "wt:connections:{$user->id}",
+            config('timing.backend.cacheTTL.wtConnections'),
+            fn() => DB::table('walkie_typie_connections')
+                ->join('users as partner', 'walkie_typie_connections.partner_id', '=', 'partner.id')
+                ->where('walkie_typie_connections.user_id', $user->id)
+                ->orderBy('walkie_typie_connections.last_signal', 'desc')
+                ->select(
+                    'walkie_typie_connections.*',
+                    'partner.uid as partner_uid'
+                )
+                ->get()
+        );
 
         return response()->json(['connections' => $connections]);
     }
@@ -155,6 +160,9 @@ class WalkieTypieController extends Controller
             $c1Array = (array) $c1;
             $c2Array = (array) $c2;
 
+            Cache::forget("wt:connections:{$user->id}");
+            Cache::forget("wt:connections:{$partner->id}");
+
             broadcast(new WalkieTypieConnectionUpdated($user->uid, $c1Array));
             broadcast(new WalkieTypieConnectionUpdated($partner->uid, $c2Array));
 
@@ -190,6 +198,8 @@ class WalkieTypieController extends Controller
         if ($affected === 0) {
             return response()->json(['message' => 'CONNECTION NOT FOUND'], 404);
         }
+
+        Cache::forget("wt:connections:{$user->id}");
 
         return response()->json(['message' => 'TAG UPDATED']);
     }
@@ -248,6 +258,9 @@ class WalkieTypieController extends Controller
             $this->boardService->deleteBoards($user->id, $myBranchId);
             $this->boardService->deleteBoards($partnerId, $partnerBranchId);
         });
+
+        Cache::forget("wt:connections:{$user->id}");
+        Cache::forget("wt:connections:{$partnerId}");
 
         broadcast(new WalkieTypieConnectionUpdated($partnerUid, [
             'deleted' => true,

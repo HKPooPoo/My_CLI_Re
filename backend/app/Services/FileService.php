@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\File;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
@@ -43,7 +44,7 @@ class FileService
         );
 
         // 5. Create DB record
-        return File::create([
+        $newFile = File::create([
             'hash' => $hash,
             'user_id' => $userId,
             'original_name' => $file->getClientOriginalName(),
@@ -52,14 +53,25 @@ class FileService
             'disk_path' => $diskPath,
             'status' => 'staged',
         ]);
+
+        // Invalidate any negative cache from a prior exists()/meta() that saw no row
+        Cache::forget("file:meta:{$hash}");
+
+        return $newFile;
     }
 
     /**
-     * Get file by hash.
+     * Get file by hash. Cached because download/exists/meta all hit this in a
+     * tight loop (one DB query per file click). File rows are immutable once
+     * created, so a short cache is safe; invalidated on orphan/delete.
      */
     public function getByHash(string $hash): ?File
     {
-        return File::where('hash', $hash)->first();
+        return Cache::remember(
+            "file:meta:{$hash}",
+            config('timing.backend.cacheTTL.fileMetadata'),
+            fn() => File::where('hash', $hash)->first()
+        );
     }
 
     /**
@@ -156,6 +168,7 @@ class FileService
         File::where('hash', $hash)
             ->where('status', '!=', 'committed')
             ->update(['status' => 'committed']);
+        Cache::forget("file:meta:{$hash}");
     }
 
     /**
@@ -165,9 +178,11 @@ class FileService
     {
         if (empty($hashes)) return;
 
-        File::whereIn('hash', array_unique($hashes))
+        $unique = array_unique($hashes);
+        File::whereIn('hash', $unique)
             ->where('status', '!=', 'committed')
             ->update(['status' => 'committed']);
+        foreach ($unique as $h) Cache::forget("file:meta:{$h}");
     }
 
     /**
@@ -196,15 +211,21 @@ class FileService
         foreach ($committedFiles as $file) {
             if (!isset($referencedHashes[$file->hash])) {
                 $file->update(['status' => 'orphaned']);
+                Cache::forget("file:meta:{$file->hash}");
                 $marked++;
             }
         }
 
-        // Mark stale staged files (uploaded but never committed) as orphaned
-        $staleStaged = File::where('status', 'staged')
+        // Mark stale staged files (uploaded but never committed) as orphaned.
+        // Invalidate their cache entries so observers do not keep seeing them.
+        $staleStagedHashes = File::where('status', 'staged')
             ->where('created_at', '<', now()->subHours(24))
-            ->update(['status' => 'orphaned']);
-        $marked += $staleStaged;
+            ->pluck('hash');
+        if ($staleStagedHashes->isNotEmpty()) {
+            File::whereIn('hash', $staleStagedHashes)->update(['status' => 'orphaned']);
+            foreach ($staleStagedHashes as $h) Cache::forget("file:meta:{$h}");
+            $marked += $staleStagedHashes->count();
+        }
 
         return $marked;
     }
@@ -223,6 +244,7 @@ class FileService
         $deleted = 0;
         foreach ($orphaned as $file) {
             Storage::disk('local')->delete($file->disk_path);
+            Cache::forget("file:meta:{$file->hash}");
             $file->delete();
             $deleted++;
         }
