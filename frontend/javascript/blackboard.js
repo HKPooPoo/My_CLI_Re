@@ -22,6 +22,7 @@ import { BlackboardService } from "./services/blackboard-service.js";
 import { playAudio } from "./audio.js";
 import { EditorAttachments } from "./editor-attachments.js";
 import { t } from './i18n.js';
+import { T } from './timing.js';
 import * as Settings from './settings.js';
 import { registerMetadataProvider } from './mod-board-provider.js';
 import { BBSync } from './blackboard-sync.js';
@@ -593,14 +594,14 @@ window.addEventListener("list:selectionChanged", ({ detail }) => {
     if (!$vcsListContainer?.contains(detail.item)) return;
     // 防抖：避免快速滾動時頻繁查詢 DB
     if (dropButtonTimer) clearTimeout(dropButtonTimer);
-    dropButtonTimer = setTimeout(updateDropButtonState, 100);
+    dropButtonTimer = setTimeout(updateDropButtonState, T('frontend.ui.buttonStateDebounce'));
     if (checkoutButtonTimer) clearTimeout(checkoutButtonTimer);
-    checkoutButtonTimer = setTimeout(updateCheckoutButtonState, 100);
+    checkoutButtonTimer = setTimeout(updateCheckoutButtonState, T('frontend.ui.buttonStateDebounce'));
 });
 
 window.addEventListener("list:updated", () => {
-    setTimeout(updateDropButtonState, 50);
-    setTimeout(updateCheckoutButtonState, 50);
+    setTimeout(updateDropButtonState, T('frontend.ui.buttonStateDebounce'));
+    setTimeout(updateCheckoutButtonState, T('frontend.ui.buttonStateDebounce'));
 });
 
 // --- 事件監聽區 ---
@@ -620,7 +621,7 @@ BBUI.elements.textarea?.addEventListener("input", () => {
             BBUI.updateIndicators(undefined, undefined, false);
             console.warn('[BB] Save failed:', e.message);
         }
-    }, 200);
+    }, T('frontend.input.bbSaveDebounce'));
 
     BBSync.scheduleAutoCommit();
 });
@@ -778,7 +779,7 @@ setInterval(async () => {
         }
         _pollBusy = false;
     }
-}, 5000);
+}, T('frontend.background.bbPollInterval'));
 
 // PWA logic extracted to pwa.js
 import "./pwa.js";

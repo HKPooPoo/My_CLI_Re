@@ -1,5 +1,6 @@
+import { T } from '../timing.js';
+
 const BASE_URL = '/api';
-const DEFAULT_TIMEOUT = 15000; // 15 seconds
 let _lastRateLimitEvent = 0;
 
 /**
@@ -10,7 +11,7 @@ let _lastRateLimitEvent = 0;
  */
 export async function apiRequest(endpoint, options = {}) {
     const url = `${BASE_URL}${endpoint}`;
-    const timeout = options.timeout ?? DEFAULT_TIMEOUT;
+    const timeout = options.timeout ?? T('frontend.timeout.apiDefault');
 
     const defaultHeaders = {
         'Content-Type': 'application/json',
@@ -55,7 +56,7 @@ export async function apiRequest(endpoint, options = {}) {
             // [429 UX]: Dispatch debounced event so UI layer can show a toast
             if (response.status === 429) {
                 const now = Date.now();
-                if (now - _lastRateLimitEvent > 5000) {
+                if (now - _lastRateLimitEvent > T('frontend.toast.rateLimitDebounce')) {
                     _lastRateLimitEvent = now;
                     window.dispatchEvent(new Event('api:rateLimited'));
                 }

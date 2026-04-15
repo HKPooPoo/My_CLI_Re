@@ -12,6 +12,7 @@
  */
 
 import { playAudio } from "./audio.js";
+import { T } from "./timing.js";
 import * as Settings from "./settings.js";
 
 export class InfiniteList {
@@ -50,7 +51,9 @@ export class InfiniteList {
 
             // Adaptive cooldown: fast flick = shorter cooldown for rapid scrolling
             const speed = Math.abs(e.deltaY);
-            const cooldown = speed > 100 ? 40 : 80;
+            const cooldown = speed > 100
+                ? T('frontend.ui.scrollCooldownMin')
+                : T('frontend.ui.scrollCooldownMax');
             _listScrollCooldown = true;
             setTimeout(() => { _listScrollCooldown = false; }, cooldown);
         }, { passive: false });

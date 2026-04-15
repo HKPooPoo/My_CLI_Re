@@ -1,0 +1,76 @@
+{
+  "_comment_top": "Single source of truth for all debounce, polling, cache TTL, and toast timings.",
+  "_comment_units": "Frontend values are in milliseconds. Backend cacheTTL values are in SECONDS.",
+  "_comment_edit": "Deployer can tune the system by editing this file alone. Backend reads via config('timing.*'); frontend fetches via GET /api/config/timing. Auth tokens (10-min reset/bind expiry) are NOT here — kept hardcoded in AuthService for security.",
+
+  "frontend": {
+    "_comment": "Values are milliseconds.",
+
+    "input": {
+      "_comment": "Debounce after user types in a textarea.",
+      "bbSaveDebounce": 200,
+      "wtWhisperDebounce": 20,
+      "wtSaveDebounce": 200,
+      "wtCommitDebounce": 2000,
+      "bcSaveDebounce": 200
+    },
+
+    "background": {
+      "_comment": "Periodic background tasks.",
+      "bbAutoCommitDelay": 2000,
+      "bbPollInterval": 2000,
+      "hudHeartbeatInterval": 4000,
+      "_comment_hud": "Aligned with backend status:online cache TTL — polling more often gives the same cached answer."
+    },
+
+    "ui": {
+      "_comment": "Visual / interaction debounce.",
+      "listSelectionDebounce": 200,
+      "buttonStateDebounce": 20,
+      "scrollCooldownMin": 20,
+      "scrollCooldownMax": 80,
+      "subNaviCooldown": 200,
+      "crtGlitchDuration": 1200
+    },
+
+    "toast": {
+      "_comment": "How long each toast type stays on screen.",
+      "infoDuration": 4000,
+      "successDuration": 4000,
+      "errorDuration": 6000,
+      "_comment_error": "Errors stay longer so the user has time to read what failed.",
+      "rateLimitDebounce": 4000
+    },
+
+    "timeout": {
+      "_comment": "Hard limits — give up after this long.",
+      "apiDefault": 15000,
+      "fileUpload": 60000,
+      "blobUrlRevoke": 60000
+    },
+
+    "frontendCache": {
+      "_comment": "Browser-side memory caches.",
+      "bcReaderCacheTTL": 4000
+    }
+  },
+
+  "backend": {
+    "_comment": "Values are SECONDS (Laravel Cache::remember TTL convention).",
+
+    "cacheTTL": {
+      "bbBranchList": 4,
+      "bbBranchDetails": 4,
+      "wtBoards": 4,
+      "wtConnections": 4,
+      "_comment_wtConnections": "Match BB/BC list cache pattern.",
+      "bcChannelsBase": 4,
+      "bcPins": 4,
+      "bcBoards": 4,
+      "llmOllamaHealth": 4,
+      "statusOnline": 4,
+      "fileMetadata": 60,
+      "_comment_fileMetadata": "FileService::getByHash cache — file metadata is immutable so longer TTL is safe."
+    }
+  }
+}

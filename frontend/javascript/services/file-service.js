@@ -5,6 +5,8 @@
  * =================================================================
  */
 
+import { T } from '../timing.js';
+
 export const FileService = {
     /**
      * Compute SHA-256 hash of a File or Blob.
@@ -52,7 +54,7 @@ export const FileService = {
         }
 
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 60000); // 60s for large files
+        const timeoutId = setTimeout(() => controller.abort(), T('frontend.timeout.fileUpload'));
 
         try {
             const response = await fetch('/api/files', {

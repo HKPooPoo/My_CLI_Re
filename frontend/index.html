@@ -14,9 +14,11 @@
     <script>window.addEventListener('unhandledrejection', e => console.error('[Unhandled]', e.reason))</script>
     <script type="module" src="./javascript/audio.js"></script>
     <script type="module" src="./javascript/textarea-tab.js"></script>
-    <!-- i18n: fire-and-forget init — locale JSON loads before any user interaction -->
+    <!-- Timing config + i18n init — both load JSON in parallel before user interaction -->
     <script type="module">
         import { initI18n } from './javascript/i18n.js';
+        import { loadTiming } from './javascript/timing.js';
+        loadTiming();
         initI18n();
     </script>
     <link rel="icon" href="./images/favicon.ico">

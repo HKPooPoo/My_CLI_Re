@@ -81,7 +81,7 @@ class BlackboardService
 
     public function fetchBranches(User $user)
     {
-        return Cache::remember("user:{$user->id}:branches", 4, function () use ($user) {
+        return Cache::remember("user:{$user->id}:branches", config('timing.backend.cacheTTL.bbBranchList'), function () use ($user) {
             return DB::table('blackboards')
                 ->join('users', 'blackboards.user_id', '=', 'users.id')
                 ->where('blackboards.user_id', $user->id)
@@ -103,7 +103,7 @@ class BlackboardService
             return [];
         }
 
-        return Cache::remember("bb:branch:{$user->id}:{$branchId}:details", 4, function () use ($user, $branchId) {
+        return Cache::remember("bb:branch:{$user->id}:{$branchId}:details", config('timing.backend.cacheTTL.bbBranchDetails'), function () use ($user, $branchId) {
             $records = DB::table('blackboards')
                 ->join('users', 'blackboards.user_id', '=', 'users.id')
                 ->where('blackboards.branch_id', $branchId)

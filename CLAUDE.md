@@ -164,7 +164,17 @@ nginx (static SPA + reverse proxy) · api (Laravel 12 PHP-FPM) · reverb (WebSoc
 | MOD Health | `ModController` | — |
 Models: `User`, `File` only. Events (5): `BlackboardUpdated`, `BroadcastChannelUpdated`, `WalkieTypieConnectionUpdated`, `WalkieTypieContentUpdated`, `WalkieTypieSignal`. Mail: `ResetPasscodeMail`, `BindEmailMail`. Commands: `CleanOrphanedFiles`.
 
-**Rate limiting** (`routes/api.php`): AI endpoints 10/min · Auth login/register 30/min · Auth commands 10/min. All other endpoints (reads, writes, files, mods) are unthrottled — local single-user app with Redis caching. Client-side 429 handling: `api.js` dispatches `api:rateLimited` event (5s debounce), `blackboard-msg.js` listens and shows toast.
+**Rate limiting** (`routes/api.php`): AI endpoints 10/min · Auth login/register 30/min · Auth commands 10/min. All other endpoints (reads, writes, files, mods) are unthrottled — local single-user app with Redis caching. Client-side 429 handling: `api.js` dispatches `api:rateLimited` event (debounced by `frontend.toast.rateLimitDebounce`), `blackboard-msg.js` listens and shows toast.
+
+### Centralized Timing Config
+
+**All debounce, polling, cache TTL, and toast durations live in `backend/config/timing.json`** — one JSON file is the single source of truth. Deployers tune the system by editing this file alone.
+
+- **Backend** reads via `config('timing.backend.cacheTTL.*')` (Laravel config, auto-loaded from `config/timing.php` → `timing.json`).
+- **Frontend** fetches once at boot via `GET /api/config/timing`, then synchronous access: `import { T } from './timing.js'; T('frontend.input.bbSaveDebounce')`.
+- **Out of scope:** Auth reset/bind tokens (10-min security expiry, hardcoded in AuthService).
+
+Frontend timings in milliseconds; backend `cacheTTL` values in seconds (Laravel convention). See the `_comment_*` keys in timing.json for inline documentation.
 
 ### Database Schema (11 main tables)
 

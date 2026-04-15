@@ -15,6 +15,7 @@ import { InfiniteList } from './blackboard-ui-list.js';
 import { BBMessage } from './blackboard-msg.js';
 import { playAudio } from './audio.js';
 import { t } from './i18n.js';
+import { T } from './timing.js';
 import { registerFieldType, getRenderer } from './mod-field-registry.js';
 import * as Settings from './settings.js';
 
@@ -752,7 +753,7 @@ function bindEvents() {
             selectionTimer = setTimeout(() => {
                 renderInstanceActions(instanceId);
                 window.dispatchEvent(new CustomEvent('mods:selected', { detail: { instanceId } }));
-            }, 200);
+            }, T('frontend.ui.listSelectionDebounce'));
         } else if (templateId) {
             // CATALOG path — show preview, clear actions
             selectedInstanceId = null;
@@ -760,7 +761,7 @@ function bindEvents() {
             selectionTimer = setTimeout(() => {
                 renderCatalogPreview(templateId);
                 renderInstanceActions(null);
-            }, 200);
+            }, T('frontend.ui.listSelectionDebounce'));
         }
     });
 

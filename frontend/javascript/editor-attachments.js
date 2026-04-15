@@ -11,6 +11,7 @@ import { FileService } from './services/file-service.js';
 import db from './indexedDB.js';
 import { BBMessage } from './blackboard-msg.js';
 import { t } from './i18n.js';
+import { T } from './timing.js';
 import * as Settings from './settings.js';
 
 /**
@@ -366,7 +367,7 @@ export const EditorAttachments = {
                 document.body.appendChild(a);
                 a.click();
                 document.body.removeChild(a);
-                setTimeout(() => URL.revokeObjectURL(url), 60000);
+                setTimeout(() => URL.revokeObjectURL(url), T('frontend.timeout.blobUrlRevoke'));
             },
 
             /**
@@ -433,7 +434,7 @@ export const EditorAttachments = {
                 if (!file) return;
                 const url = URL.createObjectURL(file.blob);
                 window.open(url, '_blank');
-                setTimeout(() => URL.revokeObjectURL(url), 60000);
+                setTimeout(() => URL.revokeObjectURL(url), T('frontend.timeout.blobUrlRevoke'));
             },
 
             /**

@@ -29,6 +29,7 @@ import { EditorAttachments } from "./editor-attachments.js";
 import db from "./indexedDB.js";
 import { playAudio } from "./audio.js";
 import { t } from './i18n.js';
+import { T } from './timing.js';
 import * as Settings from './settings.js';
 import { registerMetadataProvider } from './mod-board-provider.js';
 import { TimerGroup } from './timer-group.js';
@@ -641,7 +642,7 @@ export const WTText = {
      * Trigger a delayed commit (debounced).
      */
     triggerCommit(text) {
-        this.timers.schedule('commit', () => this.commitWE(text), 1000);
+        this.timers.schedule('commit', () => this.commitWE(text), T('frontend.input.wtCommitDebounce'));
     },
 
     /**
@@ -656,11 +657,11 @@ export const WTText = {
 
         this.timers.schedule('save', async () => {
             await WTVCS.save(this.weState, text);
-        }, 200);
+        }, T('frontend.input.wtSaveDebounce'));
 
         this.timers.schedule('signal', () => {
             this.broadcastSignal(text);
-        }, 50);
+        }, T('frontend.input.wtWhisperDebounce'));
 
         this.triggerCommit(text);
     },

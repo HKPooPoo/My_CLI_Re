@@ -20,6 +20,7 @@ import { InfiniteList } from "./blackboard-ui-list.js";
 import { MultiStepButton } from "./multiStepButton.js";
 import { BBMessage } from "./blackboard-msg.js";
 import { t } from './i18n.js';
+import { T } from './timing.js';
 import * as Settings from './settings.js';
 
 export const WTList = {
@@ -153,13 +154,13 @@ export const WTList = {
             if (conn) {
                 this.selectedConnection = conn;
 
-                // 500ms debounce before dispatching to text page
+                // debounce before dispatching to text page
                 clearTimeout(this.selectionTimer);
                 this.selectionTimer = setTimeout(() => {
                     window.dispatchEvent(new CustomEvent("walkie-typie:selected", {
                         detail: conn
                     }));
-                }, 200);
+                }, T('frontend.ui.listSelectionDebounce'));
             }
         });
 

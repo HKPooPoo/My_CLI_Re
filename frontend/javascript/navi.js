@@ -12,6 +12,7 @@
  */
 
 import { playAudio } from "./audio.js";
+import { T } from "./timing.js";
 
 // --- 靜態引用 ---
 const $allNaviItems = document.getElementsByClassName("navi-item");
@@ -174,7 +175,7 @@ export function updateNaviPosition($naviItem, silent = false, instant = false) {
         $noiseLayer.classList.remove("glitchEffect");
         void $noiseLayer.offsetWidth; // 強制重繪
         $noiseLayer.classList.add("glitchEffect");
-        setTimeout(() => { $noiseLayer.classList.remove("glitchEffect") }, 1200);
+        setTimeout(() => { $noiseLayer.classList.remove("glitchEffect") }, T('frontend.ui.crtGlitchDuration'));
     }
 
     saveNaviItemPositionToLocalStorage();
@@ -196,7 +197,7 @@ function handleSubNaviScroll(e) {
     if (direction === 0) return;
 
     _scrollCooldown = true;
-    setTimeout(() => { _scrollCooldown = false; }, 200);
+    setTimeout(() => { _scrollCooldown = false; }, T('frontend.ui.subNaviCooldown'));
 
     const stateOfNaviItem = stateOfEachNaviItem[activeNaviItem];
     const nextIndex = stateOfNaviItem.subNaviHeadIndex + direction;

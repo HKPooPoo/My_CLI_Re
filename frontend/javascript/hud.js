@@ -12,6 +12,7 @@
 
 import { StatusService } from "./services/status-service.js";
 import { t } from './i18n.js';
+import { T } from './timing.js';
 
 // --- 常量定義 ---
 const ONLINE_STR = "ONLINE";
@@ -95,7 +96,7 @@ async function guardedHeartbeat() {
 function startHeartbeat() {
     if (heartbeatIntervalId) return;
     guardedHeartbeat();
-    heartbeatIntervalId = setInterval(guardedHeartbeat, 30000);
+    heartbeatIntervalId = setInterval(guardedHeartbeat, T('frontend.background.hudHeartbeatInterval'));
 }
 
 function stopHeartbeat() {

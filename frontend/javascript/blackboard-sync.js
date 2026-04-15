@@ -13,6 +13,7 @@ import { BlackboardService } from './services/blackboard-service.js';
 import { BBMessage } from './blackboard-msg.js';
 import { getEcho } from './echo-service.js';
 import { t } from './i18n.js';
+import { T } from './timing.js';
 import * as Settings from './settings.js';
 
 // --- Per-tab device ID (survives refresh within same tab) ---
@@ -94,7 +95,7 @@ export const BBSync = {
     },
 
     /**
-     * Schedule an auto-commit after 3s debounce.
+     * Schedule an auto-commit after the configured idle delay.
      * No-op if autoSync OFF or not logged in.
      */
     scheduleAutoCommit() {
@@ -104,7 +105,7 @@ export const BBSync = {
             _commitTimer = null;
             _commitPromise = this._executeAutoCommit()
                 .finally(() => { _commitPromise = null; });
-        }, 3000);
+        }, T('frontend.background.bbAutoCommitDelay'));
     },
 
     cancelPendingCommit() {

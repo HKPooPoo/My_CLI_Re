@@ -34,12 +34,12 @@ import { playAudio } from './audio.js';
 import { BBMessage } from './blackboard-msg.js';
 import { getEcho } from './echo-service.js';
 import { t } from './i18n.js';
+import { T } from './timing.js';
 import * as Settings from './settings.js';
 import { registerMetadataProvider } from './mod-board-provider.js';
 import { TimerGroup } from './timer-group.js';
 
 const _readerCache = new Map();  // serverChannelId → { records, fetchedAt }
-const READER_CACHE_TTL = 4_000;  // 4 seconds (matches backend fetch TTL)
 
 // --- Shared global head-indicator elements (same as BB) ---
 const $branchName  = document.querySelector('.branch-name');
@@ -274,7 +274,7 @@ export const BCChannel = {
             this.timers.schedule('save', async () => {
                 await this.save(this.elements.textarea.value);
                 this.updateIndicators();
-            }, 200);
+            }, T('frontend.input.bcSaveDebounce'));
         });
     },
 
@@ -327,7 +327,7 @@ export const BCChannel = {
 
         // Use cached records if still fresh
         const cached = _readerCache.get(channel.serverChannelId);
-        if (cached && Date.now() - cached.fetchedAt < READER_CACHE_TTL) {
+        if (cached && Date.now() - cached.fetchedAt < T('frontend.frontendCache.bcReaderCacheTTL')) {
             this.serverRecords = cached.records;
             this.syncReaderView();
             return;

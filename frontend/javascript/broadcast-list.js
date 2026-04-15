@@ -28,6 +28,7 @@ import { MultiStepButton } from './multiStepButton.js';
 import { BBMessage } from './blackboard-msg.js';
 import { playAudio } from './audio.js';
 import { t } from './i18n.js';
+import { T } from './timing.js';
 import { updateNaviPosition } from './navi.js';
 import * as Settings from './settings.js';
 import db from './indexedDB.js';
@@ -117,7 +118,7 @@ export const BCList = {
             this.selectionTimer = setTimeout(() => {
                 this.updateNaviText(ch.name);
                 window.dispatchEvent(new CustomEvent('broadcast:selected', { detail: ch }));
-            }, 200);
+            }, T('frontend.ui.listSelectionDebounce'));
         });
 
         // Channel renamed → update navi + server if cast

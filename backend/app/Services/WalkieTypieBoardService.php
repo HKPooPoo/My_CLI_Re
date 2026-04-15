@@ -124,7 +124,7 @@ class WalkieTypieBoardService
             return [];
         }
 
-        return Cache::remember("wt:boards:{$branchId}", 4, function () use ($branchId) {
+        return Cache::remember("wt:boards:{$branchId}", config('timing.backend.cacheTTL.wtBoards'), function () use ($branchId) {
             $records = DB::table('walkie_typie_boards')
                 ->where('branch_id', $branchId)
                 ->orderBy('timestamp', 'asc')

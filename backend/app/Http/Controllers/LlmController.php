@@ -176,7 +176,7 @@ class LlmController extends Controller
     {
         $cacheKey = 'mod:llm:ollama:health';
 
-        $result = Cache::remember($cacheKey, 4, function () {
+        $result = Cache::remember($cacheKey, config('timing.backend.cacheTTL.llmOllamaHealth'), function () {
             $url = $this->ollamaUrl('/api/tags');
 
             try {

@@ -12,6 +12,7 @@
 
 import toast from "./toast.js";
 import { t } from './i18n.js';
+import { T } from './timing.js';
 
 /**
  * Message Wrapper: Ensures prefixes are preserved during updates.
@@ -29,7 +30,7 @@ export const BBMessage = {
      */
     info(text) {
         const prefix = t('toast.systemPrefix');
-        return wrapHandler(toast.addMessage(`${prefix}${text}`, 5000, 'info'), prefix);
+        return wrapHandler(toast.addMessage(`${prefix}${text}`, T('frontend.toast.infoDuration'), 'info'), prefix);
     },
 
     /**
@@ -37,7 +38,7 @@ export const BBMessage = {
      */
     error(text) {
         const prefix = t('toast.criticalPrefix');
-        return wrapHandler(toast.addMessage(`${prefix}${text}`, 5000, 'error'), prefix);
+        return wrapHandler(toast.addMessage(`${prefix}${text}`, T('frontend.toast.errorDuration'), 'error'), prefix);
     },
 
     /**
@@ -45,7 +46,7 @@ export const BBMessage = {
      */
     success(action) {
         const prefix = t('toast.systemPrefix');
-        return wrapHandler(toast.addMessage(`${prefix}${action}`, 5000, 'success'), prefix);
+        return wrapHandler(toast.addMessage(`${prefix}${action}`, T('frontend.toast.successDuration'), 'success'), prefix);
     },
 
     /**

@@ -17,7 +17,7 @@ class StatusController extends Controller
 
         try {
             DB::connection()->getPdo();
-            Cache::put('status:online', 'ONLINE', 4);
+            Cache::put('status:online', 'ONLINE', config('timing.backend.cacheTTL.statusOnline'));
             return response()->json(['status' => 'ONLINE']);
         } catch (\Exception $e) {
             return response()->json(['status' => 'OFFLINE'], 503);
