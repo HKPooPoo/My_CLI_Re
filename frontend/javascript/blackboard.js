@@ -697,7 +697,10 @@ window.addEventListener('settings:changed', (e) => {
     if ((d.scope === 'bb' && d.key === 'autoSync') || d.scope === 'all') {
         if (Settings.get('bb', 'autoSync') && localStorage.getItem('currentUser')) {
             BBSync.startListening();
-            BBSync.scheduleAutoCommit(); // P10: Catch up on pending unsaved changes
+            // Use recover() (timestamp-based) instead of scheduleAutoCommit() to
+            // avoid overwriting newer server content with stale local data when
+            // another device made edits while this one had autoSync off.
+            BBSync.recover();
         } else {
             BBSync.stopListening();
         }

@@ -171,8 +171,16 @@ export const BBSync = {
                     _onBranchListUpdate?.();
                 }
             } else if (localLastUpdate > serverLastUpdate) {
-                // Local is newer → upload
-                await this.flush();
+                // Local is newer → force a commit now. flush() is a noop when
+                // there is no pending timer (e.g. recover triggered by autoSync
+                // toggle with no in-flight edit), so we execute directly.
+                if (_commitTimer) {
+                    clearTimeout(_commitTimer);
+                    _commitTimer = null;
+                }
+                _commitPromise = this._executeAutoCommit()
+                    .finally(() => { _commitPromise = null; });
+                await _commitPromise;
                 _onBranchListUpdate?.();
             }
             // Equal → already in sync, do nothing
