@@ -100,12 +100,14 @@ export const BBSync = {
      */
     scheduleAutoCommit() {
         if (!_isAutoSyncEnabled() || !_isLoggedIn()) return;
+        const delay = T('frontend.background.bbAutoCommitDelay');
+        console.log(`[AUTO-SYNC] schedule commit in ${delay}ms`);
         clearTimeout(_commitTimer);
         _commitTimer = setTimeout(() => {
             _commitTimer = null;
             _commitPromise = this._executeAutoCommit()
                 .finally(() => { _commitPromise = null; });
-        }, T('frontend.background.bbAutoCommitDelay'));
+        }, delay);
     },
 
     cancelPendingCommit() {
@@ -194,6 +196,9 @@ export const BBSync = {
 
         _isCommitting = true;
         let commitOk = false;
+        const preview = (text ?? '').slice(0, 30);
+        console.log(`[AUTO-SYNC] commit start — textarea snapshot: "${preview}${(text ?? '').length > 30 ? '…' : ''}"`);
+        const commitStart = performance.now();
         try {
             // Save current textarea content first
             await BBVCS.save(state, text);
@@ -203,13 +208,15 @@ export const BBSync = {
                 this.deviceId
             );
             commitOk = true;
+            const elapsed = Math.round(performance.now() - commitStart);
+            console.log(`[AUTO-SYNC] commit OK (${elapsed}ms)`);
 
             // P1: Refresh branch list + chips so status shows "synced" immediately
             _onRemoteUpdate?.();
             _onBranchListUpdate?.();
         } catch (err) {
-            // P3: Show toast so user knows auto-commit failed (instead of silent swallow)
-            console.warn('[BBSync] Auto-commit failed:', err.message);
+            const elapsed = Math.round(performance.now() - commitStart);
+            console.warn(`[AUTO-SYNC] commit FAILED (${elapsed}ms):`, err.message);
             BBMessage.info(t('blackboard.autoSyncFailed'));
         } finally {
             _isCommitting = false;

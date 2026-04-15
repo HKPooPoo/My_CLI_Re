@@ -168,7 +168,6 @@ export async function initBoard() {
  * 步驟：1. 從 Core 抓取當前 Head 對應的紀錄 2. 更新文字框 3. 更新 UI 指標
  */
 async function syncView() {
-    // console.log("syncView called. isVirtual:", state.isVirtual);
     // [Fix]: 虛擬狀態處理 (New Page)
     if (state.isVirtual) {
         BBUI.setTextarea("");
@@ -179,7 +178,16 @@ async function syncView() {
     }
 
     const entry = await BBCore.getRecord(state.owner, state.branchId, state.currentHead);
-    BBUI.setTextarea(entry?.text ?? "");
+    const before = BBUI.elements.textarea?.value ?? '';
+    const after = entry?.text ?? '';
+    const isFocused = document.activeElement === BBUI.elements.textarea;
+    if (before !== after) {
+        const b = before.slice(0, 30) + (before.length > 30 ? '…' : '');
+        const a = after.slice(0, 30) + (after.length > 30 ? '…' : '');
+        const level = isFocused ? 'warn' : 'log';
+        console[level](`[AUTO-SYNC] syncView OVERWRITE textarea: "${b}" → "${a}"${isFocused ? ' (user is typing!)' : ''}`);
+    }
+    BBUI.setTextarea(after);
     BBUI.updateIndicators(state.branch || t('blackboard.branchNameFallback'), state.currentHead, true);
 
     // Sync attachment chip display (multi-file aware)

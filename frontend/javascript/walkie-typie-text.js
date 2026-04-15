@@ -567,7 +567,6 @@ export const WTText = {
      * WE display: Read from IndexedDB (same as Blackboard)
      */
     async refreshWE() {
-        // console.log("WTText: refreshWE called");
         if (!this.currentConnection) return;
 
         try {
@@ -580,7 +579,16 @@ export const WTText = {
                     this.weState.branchId,
                     this.weState.currentHead
                 );
-                this.elements.weTextarea.value = record?.text || "";
+                const before = this.elements.weTextarea?.value ?? '';
+                const after = record?.text || '';
+                const isFocused = document.activeElement === this.elements.weTextarea;
+                if (before !== after) {
+                    const b = before.slice(0, 30) + (before.length > 30 ? '…' : '');
+                    const a = after.slice(0, 30) + (after.length > 30 ? '…' : '');
+                    const level = isFocused ? 'warn' : 'log';
+                    console[level](`[WT-SYNC] refreshWE OVERWRITE textarea: "${b}" → "${a}"${isFocused ? ' (user is typing!)' : ''}`);
+                }
+                this.elements.weTextarea.value = after;
 
                 // Load Attachment
                 const bin = record?.file_hash || null;
@@ -639,10 +647,12 @@ export const WTText = {
     // =====================================================================
 
     /**
-     * Trigger a delayed commit (debounced).
+     * Trigger a delayed commit (debounced). Logs the scheduled delay.
      */
     triggerCommit(text) {
-        this.timers.schedule('commit', () => this.commitWE(text), T('frontend.input.wtCommitDebounce'));
+        const delay = T('frontend.input.wtCommitDebounce');
+        console.log(`[WT-SYNC] schedule commit in ${delay}ms`);
+        this.timers.schedule('commit', () => this.commitWE(text), delay);
     },
 
     /**
@@ -685,6 +695,9 @@ export const WTText = {
         const hasContent = (text && text.trim()) || this.currentBin;
         if (!this.currentConnection || !hasContent) return;
 
+        const preview = (text ?? '').slice(0, 30);
+        console.log(`[WT-SYNC] commit start — textarea snapshot: "${preview}${(text ?? '').length > 30 ? '…' : ''}"`);
+        const commitStart = performance.now();
         try {
             // Ensure current content is saved to IndexedDB first
             await WTVCS.save(this.weState, text || "");
@@ -693,12 +706,15 @@ export const WTText = {
                 branchId: this.currentConnection.my_branch_id,
                 branch: "WE"
             });
+            const elapsed = Math.round(performance.now() - commitStart);
+            console.log(`[WT-SYNC] commit OK (${elapsed}ms)`);
             // Refresh WE display so attachment chip transitions LOCAL → SYNC
             await this.refreshWE();
         } catch (err) {
             // Silently ignore "empty board" — nothing to commit is not an error
             if (!err.message?.includes('EMPTY') && !err.message?.includes('NOT FOUND')) {
-                console.error("WT: Commit Failed", err);
+                const elapsed = Math.round(performance.now() - commitStart);
+                console.warn(`[WT-SYNC] commit FAILED (${elapsed}ms):`, err.message);
                 BBMessage.error(t('walkieTypie.commitFailed'));
             }
         }
