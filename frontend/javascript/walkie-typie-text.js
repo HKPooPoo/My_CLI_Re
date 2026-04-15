@@ -715,7 +715,8 @@ export const WTText = {
             if (!err.message?.includes('EMPTY') && !err.message?.includes('NOT FOUND')) {
                 const elapsed = Math.round(performance.now() - commitStart);
                 console.warn(`[WT-SYNC] commit FAILED (${elapsed}ms):`, err.message);
-                BBMessage.error(t('walkieTypie.commitFailed'));
+                const isUserError = err.status >= 400 && err.status < 500;
+                BBMessage.error(isUserError ? (err.message || t('walkieTypie.commitFailed')) : t('walkieTypie.commitFailed'));
             }
         }
     }

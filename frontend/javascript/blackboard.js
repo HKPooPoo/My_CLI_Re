@@ -417,7 +417,8 @@ if (BBUI.elements.commitBtn) {
             } catch (e) {
                 console.error("SYNC ERROR:", e);
                 msg.close();
-                BBMessage.error(t('blackboard.syncFailed'));
+                const isUserError = e.status >= 400 && e.status < 500;
+                BBMessage.error(isUserError ? (e.message || t('blackboard.syncFailed')) : t('blackboard.syncFailed'));
             }
         }
     });
