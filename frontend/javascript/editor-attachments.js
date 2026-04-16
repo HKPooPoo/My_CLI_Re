@@ -428,13 +428,29 @@ export const EditorAttachments = {
 
             /**
              * Open file in browser (new tab preview).
+             *
+             * Prefers the server URL whenever the file is on the server, so the
+             * new tab keeps working as long as the user has it open (no blob
+             * URL revoke timeout to worry about). Falls back to a blob URL only
+             * if the file is local-only (offline / not yet uploaded), with a
+             * generous revoke timeout.
              */
             async openFile(hash) {
+                const localFile = await db.file_blobs.get(hash);
+                const isOnServer = localFile?.status === 'synced'
+                    || (await FileService.exists(hash).catch(() => false));
+
+                if (isOnServer) {
+                    window.open(FileService.downloadUrl(hash), '_blank');
+                    return;
+                }
+
+                // Offline / local-only fallback: blob URL with extended revoke.
                 const file = await this._ensureLocal(hash);
                 if (!file) return;
                 const url = URL.createObjectURL(file.blob);
                 window.open(url, '_blank');
-                setTimeout(() => URL.revokeObjectURL(url), T('frontend.timeout.blobUrlRevoke'));
+                setTimeout(() => URL.revokeObjectURL(url), T('frontend.timeout.blobUrlRevokeOffline'));
             },
 
             /**

@@ -46,7 +46,10 @@
       "_comment": "Hard limits — give up after this long.",
       "apiDefault": 15000,
       "fileUpload": 60000,
-      "blobUrlRevoke": 60000
+      "blobUrlRevoke": 60000,
+      "_comment_blobUrlRevoke": "Used by Save-As (60s is enough for the browser to start the download). openFile() uses the server URL when available — no blob URL involved.",
+      "blobUrlRevokeOffline": 600000,
+      "_comment_blobUrlRevokeOffline": "openFile() fallback when file is local-only (no server copy). 10 minutes — long enough to read a PDF/image."
     },
 
     "frontendCache": {

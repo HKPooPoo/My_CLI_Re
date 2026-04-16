@@ -41,6 +41,7 @@ const FALLBACKS = {
     'frontend.timeout.apiDefault': 15000,
     'frontend.timeout.fileUpload': 60000,
     'frontend.timeout.blobUrlRevoke': 60000,
+    'frontend.timeout.blobUrlRevokeOffline': 600000,
     'frontend.frontendCache.bcReaderCacheTTL': 4000,
 };
 
