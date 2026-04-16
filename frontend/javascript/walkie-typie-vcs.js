@@ -141,12 +141,14 @@ export const WTVCS = {
                 const localFile = await db.file_blobs.get(hash);
                 if (localFile && localFile.blob) {
                     if (localFile.status !== 'synced') {
+                        const toast = BBMessage.loading(t('walkieTypie.uploading', { name: fileName }));
                         try {
-                            BBMessage.info(t('walkieTypie.uploading', { name: fileName }));
                             await FileService.upload(localFile.blob);
                             await db.file_blobs.update(hash, { status: 'synced' });
+                            toast.update(t('walkieTypie.uploaded', { name: fileName }));
                         } catch (e) {
                             console.error(`WT Commit: Upload failed for ${hash}`, e);
+                            toast.close();
                             BBMessage.error(t('walkieTypie.uploadFailed', { name: fileName }));
                         }
                     }

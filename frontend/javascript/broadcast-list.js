@@ -223,12 +223,14 @@ export const BCList = {
                                 const localFile = await db.file_blobs.get(hash);
                                 if (localFile && localFile.blob) {
                                     if (localFile.status !== 'synced') {
+                                        const toast = BBMessage.loading(t('broadcast.uploading', { name: fileName }));
                                         try {
-                                            BBMessage.info(t('broadcast.uploading', { name: fileName }));
                                             await FileService.upload(localFile.blob);
                                             await db.file_blobs.update(hash, { status: 'synced' });
+                                            toast.update(t('broadcast.uploaded', { name: fileName }));
                                         } catch (err) {
                                             console.error(`BC Cast: Upload failed for ${hash}`, err);
+                                            toast.close();
                                             BBMessage.error(t('broadcast.uploadFailed', { name: fileName }));
                                             failedCount++;
                                         }

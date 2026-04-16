@@ -185,11 +185,19 @@ export const BBVCS = {
                         continue;
                     }
 
-                    // Per-file progress toast so large uploads don't look frozen.
+                    // Per-file lifecycle toast: loading → uploaded.
+                    // On failure the toast is closed silently; the outer
+                    // filesPartialFail summary toast reports the count.
                     const fileName = fileData.name || hash.substring(0, 8);
-                    BBMessage.info(t('blackboard.uploading', { name: fileName }));
-                    await FileService.upload(fileData.blob);
-                    await db.file_blobs.update(hash, { status: 'synced' });
+                    const toast = BBMessage.loading(t('blackboard.uploading', { name: fileName }));
+                    try {
+                        await FileService.upload(fileData.blob);
+                        await db.file_blobs.update(hash, { status: 'synced' });
+                        toast.update(t('blackboard.uploaded', { name: fileName }));
+                    } catch (err) {
+                        toast.close();
+                        throw err;
+                    }
                 } catch (err) {
                     console.error(`Failed to sync file ${hash}:`, err);
                     failedCount++;
