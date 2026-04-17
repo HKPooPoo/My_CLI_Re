@@ -64,6 +64,7 @@ Route::middleware('throttle:10,1')->group(function () {
 Route::middleware([/*'auth:sanctum'*/])->prefix('blackboard')->group(function () {
     Route::get('/branches', [BlackboardController::class, 'fetchBranches']);
     Route::get('/branches/{branchId}', [BlackboardController::class, 'fetchBranchDetails']);
+    Route::delete('/branches', [BlackboardController::class, 'destroyAllBranches']);
     Route::delete('/branches/{branchId}', [BlackboardController::class, 'destroyBranch']);
 });
 

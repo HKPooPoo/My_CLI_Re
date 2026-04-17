@@ -534,6 +534,47 @@ class BlackboardControllerTest extends TestCase
     }
 
     // =========================================================================
+    //  DELETE /api/blackboard/branches — DANGER ZONE: drop all of user's branches
+    // =========================================================================
+
+    #[Test]
+    public function destroy_all_branches_wipes_every_branch_for_user(): void
+    {
+        DB::table('blackboards')->insert([
+            ['user_id' => $this->user->id, 'branch_id' => 'a', 'branch_name' => 'A', 'timestamp' => 1000, 'text' => 'x', 'created_at' => now(), 'updated_at' => now()],
+            ['user_id' => $this->user->id, 'branch_id' => 'b', 'branch_name' => 'B', 'timestamp' => 1000, 'text' => 'y', 'created_at' => now(), 'updated_at' => now()],
+            ['user_id' => $this->user->id, 'branch_id' => 'b', 'branch_name' => 'B', 'timestamp' => 2000, 'text' => 'y2', 'created_at' => now(), 'updated_at' => now()],
+        ]);
+
+        $response = $this->actingAs($this->user)->deleteJson('/api/blackboard/branches');
+
+        $response->assertStatus(200)
+            ->assertJson(['message' => 'All remote branches deleted', 'count' => 3]);
+        $this->assertDatabaseMissing('blackboards', ['user_id' => $this->user->id]);
+    }
+
+    #[Test]
+    public function destroy_all_branches_does_not_affect_other_users(): void
+    {
+        $other = User::factory()->create(['uid' => 'other-user']);
+        DB::table('blackboards')->insert([
+            ['user_id' => $this->user->id, 'branch_id' => 'a', 'branch_name' => 'Mine', 'timestamp' => 1000, 'text' => 'mine', 'created_at' => now(), 'updated_at' => now()],
+            ['user_id' => $other->id, 'branch_id' => 'a', 'branch_name' => 'Theirs', 'timestamp' => 2000, 'text' => 'theirs', 'created_at' => now(), 'updated_at' => now()],
+        ]);
+
+        $this->actingAs($this->user)->deleteJson('/api/blackboard/branches')->assertStatus(200);
+
+        $this->assertDatabaseHas('blackboards', ['user_id' => $other->id, 'text' => 'theirs']);
+        $this->assertDatabaseMissing('blackboards', ['user_id' => $this->user->id]);
+    }
+
+    #[Test]
+    public function destroy_all_branches_returns_401_when_unauthenticated(): void
+    {
+        $this->deleteJson('/api/blackboard/branches')->assertStatus(401);
+    }
+
+    // =========================================================================
     //  End-to-end: commit then fetch round-trip
     // =========================================================================
 

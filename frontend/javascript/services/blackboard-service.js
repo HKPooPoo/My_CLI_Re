@@ -10,6 +10,9 @@ export const BlackboardService = {
     deleteBranch(branchId) {
         return apiRequest(`/blackboard/branches/${branchId}`, { method: 'DELETE' });
     },
+    deleteAllBranches() {
+        return apiRequest('/blackboard/branches', { method: 'DELETE' });
+    },
     commit(data) {
         return apiRequest('/blackboard/commit', {
             method: 'POST',

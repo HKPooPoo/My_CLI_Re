@@ -58,4 +58,13 @@ class BlackboardController extends Controller
         $this->blackboardService->deleteBranch($user, $branchId);
         return response()->json(['message' => 'Remote branch deleted']);
     }
+
+    public function destroyAllBranches()
+    {
+        $user = Auth::user();
+        if (!$user) return response()->json(['message' => 'Unauthorized'], 401);
+
+        $count = $this->blackboardService->deleteAllBranches($user);
+        return response()->json(['message' => 'All remote branches deleted', 'count' => $count]);
+    }
 }

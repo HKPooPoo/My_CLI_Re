@@ -231,6 +231,8 @@
     "dropDelete": "從本機永久移除此空白主題。無法復原。",
     "themeToggle": "切換深色/淺色主題。需要安裝 Light Theme MOD。",
     "shelfHandle": "擴充功能面板把手。向左拖展開更多，向右拖縮小。雙擊關閉。",
+    "wipeLocal": "清空本機所有 IndexedDB（Blackboard 主題、Walkie-Typie 紀錄、Broadcast 頻道、附件快取）。伺服器資料不動。執行後頁面會重新整理。兩段式確認。",
+    "dropAllBranches": "刪除伺服器上你名下所有 Blackboard 主題。需要登入。本機資料不動（如需一併清除請使用「清除本機資料」）。兩段式確認。",
     "wt": {
       "theyPush": "查看對方板上較新的紀錄（唯讀）。",
       "theyPull": "查看對方板上較舊的紀錄（唯讀）。",
@@ -312,7 +314,17 @@
     "globalAudioLabel": "全局音效",
     "sfxLabel": "操作音效",
     "localeName": "繁體中文",
-    "clearToast": "清除通知"
+    "clearToast": "清除通知",
+    "dangerZone": "── 危險區域 ──",
+    "wipeLocal": "清除本機資料",
+    "wipeLocalConfirm": "確定清除？",
+    "wipeLocalComplete": "本機資料已清除",
+    "wipeLocalFailed": "清除失敗",
+    "dropAllBranches": "刪除伺服器所有主題",
+    "dropAllBranchesConfirm": "確定刪除？",
+    "dropAllBranchesPending": "刪除中...",
+    "dropAllBranchesComplete": "已刪除伺服器 {count} 筆紀錄",
+    "dropAllBranchesFailed": "刪除失敗"
   },
   "mods": {
     "pageTitle": "模組管理器",

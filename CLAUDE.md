@@ -102,7 +102,7 @@ docker exec my-cli-api php artisan test                        # Run all tests (
 docker exec my-cli-api php artisan test --filter TestClassName # Run single test class
 ```
 
-### Test Suite (271 tests, 619 assertions)
+### Test Suite (274 tests, 626 assertions)
 
 | Test Class | Tests | What it covers |
 |------------|-------|----------------|
@@ -110,7 +110,7 @@ docker exec my-cli-api php artisan test --filter TestClassName # Run single test
 | `AuthControllerTest` | 32 | HTTP integration: register validation (10), login (4), logout, status (2), /passwd + /bind commands (6), reset/bind requests (7), lifecycle |
 | `BackendServiceControllerTest` | 22 | HTTP integration: status health check, translation validation + mock, speech validation + size limit, LLM chat validation + provider routing, ollama health mock + cache |
 | `BlackboardServiceTest` | 19 | LWW commit, blank skip, dedup, cache, events, CRUD |
-| `BlackboardControllerTest` | 33 | HTTP integration: commit validation, auth guards, response format, round-trip, LWW via HTTP, fetch filters unavailable file_hash (A5) |
+| `BlackboardControllerTest` | 36 | HTTP integration: commit validation, auth guards, response format, round-trip, LWW via HTTP, fetch filters unavailable file_hash (A5), DANGER ZONE delete-all-branches |
 | `BroadcastChannelServiceTest` | 19 | cast (DELETE+INSERT), rename, destroy, pin/unpin, title guard |
 | `BroadcastChannelControllerTest` | 34 | HTTP integration: public index/fetchBoards, cast validation + title guard, rename/destroy ownership, pin/unpin, lifecycle |
 | `FileControllerTest` | 25 | HTTP integration: upload + dedup, blocked extensions, download (happy + disk missing), status transitions (staged→committed via BB/WT/BC commit/cast), orphan detection across BB/WT/BC tables, clean command, full lifecycle |

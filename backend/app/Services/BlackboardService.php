@@ -153,4 +153,28 @@ class BlackboardService
 
         return $deleted;
     }
+
+    /**
+     * Delete ALL of the user's branches (nuclear option from DANGER ZONE).
+     * File blobs referenced by these branches are left to the orphan-cleanup
+     * cron to handle (per file lifecycle convention).
+     */
+    public function deleteAllBranches(User $user): int
+    {
+        $branchIds = DB::table('blackboards')
+            ->where('user_id', $user->id)
+            ->distinct()
+            ->pluck('branch_id');
+
+        $deleted = DB::table('blackboards')
+            ->where('user_id', $user->id)
+            ->delete();
+
+        Cache::forget("user:{$user->id}:branches");
+        foreach ($branchIds as $branchId) {
+            Cache::forget("bb:branch:{$user->id}:{$branchId}:details");
+        }
+
+        return $deleted;
+    }
 }

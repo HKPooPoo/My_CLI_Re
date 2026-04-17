@@ -133,6 +133,8 @@ export const MISC = {
         bbConfigContainer: document.getElementById('bb-config-container'),
         clearToastBtn: document.getElementById('misc-clear-toast-btn'),
         resetBtn: document.getElementById('misc-reset-btn'),
+        wipeLocalBtn: document.getElementById('misc-wipe-local-btn'),
+        dropAllBranchesBtn: document.getElementById('misc-drop-all-branches-btn'),
     },
 
     configs: {
@@ -251,6 +253,62 @@ export const MISC = {
                     BBMessage.success(t('config.resetComplete'));
                     this.renderBBConfig();
                     this.updateUI();
+                }
+            });
+        }
+
+        // DANGER ZONE — wipe all local IndexedDB (BB branches, WT records,
+        // BC channels/boards, file_blobs). Server data untouched. Page reloads
+        // so fresh state loads without stale in-memory references.
+        if (this.elements.wipeLocalBtn) {
+            new MultiStepButton(this.elements.wipeLocalBtn, {
+                sound: 'UISelectOff.mp3',
+                confirm: true,
+                confirmLabel: t('misc.wipeLocalConfirm'),
+                action: async () => {
+                    try {
+                        const db = (await import('./indexedDB.js')).default;
+                        await Promise.all([
+                            db.blackboard.clear(),
+                            db.walkie_typie.clear(),
+                            db.broadcast_channels.clear(),
+                            db.broadcast_boards.clear(),
+                            db.file_blobs.clear(),
+                        ]);
+                        BBMessage.success(t('misc.wipeLocalComplete'));
+                        // Reload so all modules pick up the empty state
+                        setTimeout(() => window.location.reload(), 500);
+                    } catch (e) {
+                        console.error('Wipe local failed:', e);
+                        BBMessage.error(t('misc.wipeLocalFailed'));
+                    }
+                }
+            });
+        }
+
+        // DANGER ZONE — drop all of the user's BB branches from the server.
+        // Requires login. Local IndexedDB untouched; the next commit of each
+        // branch would re-create it on the server.
+        if (this.elements.dropAllBranchesBtn) {
+            new MultiStepButton(this.elements.dropAllBranchesBtn, {
+                sound: 'UISelectOff.mp3',
+                confirm: true,
+                confirmLabel: t('misc.dropAllBranchesConfirm'),
+                action: async () => {
+                    if (!localStorage.getItem('currentUser')) {
+                        BBMessage.requireLogin();
+                        return;
+                    }
+                    const { BlackboardService } = await import('./services/blackboard-service.js');
+                    const msg = BBMessage.loading(t('misc.dropAllBranchesPending'));
+                    try {
+                        const result = await BlackboardService.deleteAllBranches();
+                        msg.update(t('misc.dropAllBranchesComplete', { count: result?.count ?? 0 }));
+                    } catch (e) {
+                        msg.close();
+                        console.error('Drop all branches failed:', e);
+                        BBMessage.error(e.message || t('misc.dropAllBranchesFailed'));
+                    }
                 }
             });
         }

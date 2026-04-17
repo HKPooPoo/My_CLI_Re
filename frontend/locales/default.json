@@ -231,6 +231,8 @@
     "dropDelete": "Permanently remove this empty branch from your device. Cannot be undone.",
     "themeToggle": "Toggle dark/light theme. Requires the Light Theme MOD.",
     "shelfHandle": "Extension panel grip. Drag left to expand, right to shrink. Double-click to close.",
+    "wipeLocal": "Nuke all local IndexedDB (BB branches, WT records, BC channels, file_blobs). Server untouched. Page reloads. Two-step confirm.",
+    "dropAllBranches": "DELETE all your BB branches on the server. Login required. Local data untouched. Two-step confirm.",
     "wt": {
       "theyPush": "View a newer record on your partner's board (read-only).",
       "theyPull": "View an older record on your partner's board (read-only).",
@@ -312,7 +314,17 @@
     "globalAudioLabel": "AUDIO",
     "sfxLabel": "SFX",
     "localeName": "GIT MODE",
-    "clearToast": "FLUSH LOG"
+    "clearToast": "FLUSH LOG",
+    "dangerZone": "── DANGER ZONE ──",
+    "wipeLocal": "WIPE ALL LOCAL",
+    "wipeLocalConfirm": "CONFIRM WIPE?",
+    "wipeLocalComplete": "LOCAL WIPED",
+    "wipeLocalFailed": "WIPE FAILED",
+    "dropAllBranches": "DROP ALL BRANCHES",
+    "dropAllBranchesConfirm": "CONFIRM DROP?",
+    "dropAllBranchesPending": "DROPPING...",
+    "dropAllBranchesComplete": "DROPPED {count} RECORDS",
+    "dropAllBranchesFailed": "DROP FAILED"
   },
   "mods": {
     "pageTitle": "MOD REGISTRY",

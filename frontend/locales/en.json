@@ -231,6 +231,8 @@
     "dropDelete": "Permanently delete this empty topic. Cannot be undone.",
     "themeToggle": "Switch between dark and light theme. Requires the Light Theme extension.",
     "shelfHandle": "Extension panel handle. Drag left to see more, right to see less. Double-click to close.",
+    "wipeLocal": "Clear all local IndexedDB data (Blackboard topics, Walkie-Typie records, Broadcast channels, file cache). Server data stays. Page reloads after. Two-step confirmation.",
+    "dropAllBranches": "Delete every Blackboard topic you own from the server. Login required. Local data stays (use 'Wipe Local Data' to clear that too). Two-step confirmation.",
     "wt": {
       "theyPush": "View a newer entry on your partner's board (read-only).",
       "theyPull": "View an older entry on your partner's board (read-only).",
@@ -312,7 +314,17 @@
     "globalAudioLabel": "Music",
     "sfxLabel": "Sound Effects",
     "localeName": "English",
-    "clearToast": "Clear Notifications"
+    "clearToast": "Clear Notifications",
+    "dangerZone": "── Danger Zone ──",
+    "wipeLocal": "Wipe Local Data",
+    "wipeLocalConfirm": "Confirm wipe?",
+    "wipeLocalComplete": "Local data wiped.",
+    "wipeLocalFailed": "Wipe failed.",
+    "dropAllBranches": "Delete All Topics (Server)",
+    "dropAllBranchesConfirm": "Confirm delete?",
+    "dropAllBranchesPending": "Deleting...",
+    "dropAllBranchesComplete": "Deleted {count} server records.",
+    "dropAllBranchesFailed": "Delete failed."
   },
   "mods": {
     "pageTitle": "Extensions",
