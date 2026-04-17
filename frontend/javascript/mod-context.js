@@ -366,8 +366,11 @@ export function createModContext(opts) {
 
         // ===================== File Operations =====================
         file: {
-            async upload(fileOrBlob) {
-                return await FileService.upload(fileOrBlob);
+            async upload(fileOrBlob, filename) {
+                // Filename required by server hash formula; File has .name but Blob does not.
+                const name = filename || fileOrBlob?.name;
+                if (!name) throw new Error('ctx.file.upload: filename required when passing Blob');
+                return await FileService.upload(fileOrBlob, name);
             },
             async download(hash) {
                 return await FileService.download(hash);

@@ -191,7 +191,7 @@ export const BBVCS = {
                     const fileName = fileData.name || hash.substring(0, 8);
                     const toast = BBMessage.loading(t('blackboard.uploading', { name: fileName }));
                     try {
-                        await FileService.upload(fileData.blob);
+                        await FileService.upload(fileData.blob, fileData.name);
                         await db.file_blobs.update(hash, { status: 'synced' });
                         toast.update(t('blackboard.uploaded', { name: fileName }));
                     } catch (err) {

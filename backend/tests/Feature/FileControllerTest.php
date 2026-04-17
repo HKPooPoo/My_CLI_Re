@@ -122,16 +122,31 @@ class FileControllerTest extends TestCase
     }
 
     #[Test]
-    public function upload_deduplicates_by_hash(): void
+    public function upload_deduplicates_by_content_and_name(): void
     {
+        // Hash incorporates filename; same content + same name → same hash
         $content = 'identical content for dedup test';
+        $file1 = UploadedFile::fake()->createWithContent('same.txt', $content);
+        $file2 = UploadedFile::fake()->createWithContent('same.txt', $content);
+
+        $r1 = $this->postJson('/api/files', ['file' => $file1]);
+        $r2 = $this->postJson('/api/files', ['file' => $file2]);
+
+        $this->assertEquals($r1->json('hash'), $r2->json('hash'));
+    }
+
+    #[Test]
+    public function upload_same_content_different_name_produces_different_hash(): void
+    {
+        // Per-record rename model: renaming a chip re-uploads under new hash
+        $content = 'identical content';
         $file1 = UploadedFile::fake()->createWithContent('a.txt', $content);
         $file2 = UploadedFile::fake()->createWithContent('b.txt', $content);
 
         $r1 = $this->postJson('/api/files', ['file' => $file1]);
         $r2 = $this->postJson('/api/files', ['file' => $file2]);
 
-        $this->assertEquals($r1->json('hash'), $r2->json('hash'));
+        $this->assertNotEquals($r1->json('hash'), $r2->json('hash'));
     }
 
     // =========================================================================

@@ -143,7 +143,7 @@ export const WTVCS = {
                     if (localFile.status !== 'synced') {
                         const toast = BBMessage.loading(t('walkieTypie.uploading', { name: fileName }));
                         try {
-                            await FileService.upload(localFile.blob);
+                            await FileService.upload(localFile.blob, localFile.name);
                             await db.file_blobs.update(hash, { status: 'synced' });
                             toast.update(t('walkieTypie.uploaded', { name: fileName }));
                         } catch (e) {

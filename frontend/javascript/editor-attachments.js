@@ -250,9 +250,13 @@ export const EditorAttachments = {
                     await this._detachPromise;
                 }
 
-                // Skip duplicate: if this hash is already attached, ignore
-                const preHash = await FileService.computeHash(file);
-                if (this.currentHashes.includes(preHash)) return;
+                // Skip duplicate: if this hash is already attached, ignore.
+                // Hash includes filename, so renaming a file yields a new hash.
+                const preHash = await FileService.computeHash(file, file.name);
+                if (this.currentHashes.includes(preHash)) {
+                    BBMessage.error(t('files.duplicateInRecord'));
+                    return;
+                }
 
                 this._appendLoadingChip();
 

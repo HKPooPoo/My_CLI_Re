@@ -17,8 +17,15 @@ class FileService
      */
     public function upload(UploadedFile $file, ?int $userId): File
     {
-        // 1. Compute SHA-256 hash from file content
-        $hash = hash_file('sha256', $file->getRealPath());
+        // 1. Compute SHA-256 hash from content + 0x00 + original_name.
+        // Name-sensitive so rename (re-upload under new name) yields a new
+        // hash — preserves per-user-perceived filename without requiring a
+        // server-side rename API.
+        $originalName = $file->getClientOriginalName();
+        $ctx = hash_init('sha256');
+        hash_update_file($ctx, $file->getRealPath());
+        hash_update($ctx, "\0" . $originalName);
+        $hash = hash_final($ctx);
 
         // 2. Deduplication: if same hash already exists, return existing record
         $existing = File::where('hash', $hash)->first();
@@ -27,7 +34,7 @@ class FileService
         }
 
         // 3. Determine storage path: files/{first 2 chars}/{next 2 chars}/{full hash}.{ext}
-        $ext = $file->getClientOriginalExtension() ?: 'bin';
+        $ext = pathinfo($originalName, PATHINFO_EXTENSION) ?: ($file->getClientOriginalExtension() ?: 'bin');
         $diskPath = sprintf(
             'files/%s/%s/%s.%s',
             substr($hash, 0, 2),
@@ -47,7 +54,7 @@ class FileService
         $newFile = File::create([
             'hash' => $hash,
             'user_id' => $userId,
-            'original_name' => $file->getClientOriginalName(),
+            'original_name' => $originalName,
             'mime_type' => $file->getClientMimeType() ?: 'application/octet-stream',
             'size' => $file->getSize(),
             'disk_path' => $diskPath,

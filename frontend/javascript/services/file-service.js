@@ -32,13 +32,22 @@ function makeTimeout(ms) {
 
 export const FileService = {
     /**
-     * Compute SHA-256 hash of a File or Blob.
+     * Compute SHA-256 hash of content + 0x00 + filename (UTF-8).
+     * Name-sensitive so renaming a file yields a new hash — matches server
+     * FileService::upload() formula. Two uploads with identical content but
+     * different names produce different hashes (no dedupe). Same content +
+     * same name → same hash → dedupe.
      */
-    async computeHash(blob) {
-        const buffer = await blob.arrayBuffer();
-        const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
-        const hashArray = Array.from(new Uint8Array(hashBuffer));
-        return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    async computeHash(blob, name) {
+        if (!name) throw new Error('computeHash: name is required');
+        const contentBuf = await blob.arrayBuffer();
+        const nameBuf = new TextEncoder().encode('\0' + name);
+        const combined = new Uint8Array(contentBuf.byteLength + nameBuf.byteLength);
+        combined.set(new Uint8Array(contentBuf), 0);
+        combined.set(nameBuf, contentBuf.byteLength);
+        const hashBuffer = await crypto.subtle.digest('SHA-256', combined);
+        return Array.from(new Uint8Array(hashBuffer))
+            .map(b => b.toString(16).padStart(2, '0')).join('');
     },
 
     /**
@@ -61,11 +70,15 @@ export const FileService = {
     },
 
     /**
-     * Upload a file to the server.
+     * Upload a file to the server. Filename required — server hashes
+     * content + name together, so the name sent must match what was used
+     * for client-side computeHash(blob, name).
      */
-    async upload(file) {
+    async upload(file, filename) {
+        const name = filename || file.name;
+        if (!name) throw new Error('upload: filename is required');
         const formData = new FormData();
-        formData.append('file', file);
+        formData.append('file', file, name);
 
         const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
         const headers = { 'Accept': 'application/json' };

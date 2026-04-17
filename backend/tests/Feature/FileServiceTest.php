@@ -46,16 +46,31 @@ class FileServiceTest extends TestCase
     }
 
     #[Test] /* F2 */
-    public function upload_deduplicates_by_hash(): void
+    public function upload_deduplicates_by_content_and_name(): void
     {
-        $file1 = UploadedFile::fake()->createWithContent('a.txt', 'identical content');
-        $file2 = UploadedFile::fake()->createWithContent('b.txt', 'identical content');
+        // Hash incorporates filename; same content + same name → dedupe
+        $file1 = UploadedFile::fake()->createWithContent('same.txt', 'identical content');
+        $file2 = UploadedFile::fake()->createWithContent('same.txt', 'identical content');
 
         $record1 = $this->service->upload($file1, $this->user->id);
         $record2 = $this->service->upload($file2, $this->user->id);
 
         $this->assertEquals($record1->id, $record2->id);
         $this->assertDatabaseCount('files', 1);
+    }
+
+    #[Test] /* F2b */
+    public function upload_same_content_different_name_creates_separate_records(): void
+    {
+        // Enables per-user rename without mutating others' records
+        $file1 = UploadedFile::fake()->createWithContent('a.txt', 'identical content');
+        $file2 = UploadedFile::fake()->createWithContent('b.txt', 'identical content');
+
+        $record1 = $this->service->upload($file1, $this->user->id);
+        $record2 = $this->service->upload($file2, $this->user->id);
+
+        $this->assertNotEquals($record1->hash, $record2->hash);
+        $this->assertDatabaseCount('files', 2);
     }
 
     #[Test] /* F3 */

@@ -225,7 +225,7 @@ export const BCList = {
                                     if (localFile.status !== 'synced') {
                                         const toast = BBMessage.loading(t('broadcast.uploading', { name: fileName }));
                                         try {
-                                            await FileService.upload(localFile.blob);
+                                            await FileService.upload(localFile.blob, localFile.name);
                                             await db.file_blobs.update(hash, { status: 'synced' });
                                             toast.update(t('broadcast.uploaded', { name: fileName }));
                                         } catch (err) {
