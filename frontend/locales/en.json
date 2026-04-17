@@ -209,7 +209,8 @@
     "downloadBtn": "[⬇]",
     "renameDuplicate": "This record already has a file with this name.",
     "renameFailed": "Rename failed.",
-    "duplicateInRecord": "This record already has this file."
+    "duplicateInRecord": "This record already has this file.",
+    "openBlocked": "Popup blocked — allow popups to open this local file."
   },
   "pwa": {
     "updateAvailable": "Update available"

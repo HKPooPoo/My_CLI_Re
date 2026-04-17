@@ -209,7 +209,8 @@
     "downloadBtn": "[⬇]",
     "renameDuplicate": "DUPLICATE FILE IN RECORD",
     "renameFailed": "RENAME FAILED",
-    "duplicateInRecord": "DUPLICATE FILE IN RECORD"
+    "duplicateInRecord": "DUPLICATE FILE IN RECORD",
+    "openBlocked": "POPUP BLOCKED — ALLOW POPUPS TO OPEN LOCAL FILE"
   },
   "pwa": {
     "updateAvailable": "UPDATE AVAILABLE"

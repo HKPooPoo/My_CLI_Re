@@ -463,29 +463,26 @@ export const EditorAttachments = {
             },
 
             /**
-             * Open file in browser (new tab preview).
+             * Open LOCAL-only chip (blob not on server yet) in a new tab.
              *
-             * Prefers the server URL whenever the file is on the server, so the
-             * new tab keeps working as long as the user has it open (no blob
-             * URL revoke timeout to worry about). Falls back to a blob URL only
-             * if the file is local-only (offline / not yet uploaded), with a
-             * generous revoke timeout.
+             * Called from the chip-icon click handler AFTER preventDefault on
+             * the anchor. Pre-opens a blank tab synchronously so the user
+             * gesture is preserved across the subsequent await — otherwise
+             * popup blockers demote window.open to same-tab navigation.
+             *
+             * SYNCED/CLOUD chips use the anchor's native target="_blank" so
+             * they never reach this path.
              */
-            async openFile(hash) {
-                const localFile = await db.file_blobs.get(hash);
-                const isOnServer = localFile?.status === 'synced'
-                    || (await FileService.exists(hash).catch(() => false));
-
-                if (isOnServer) {
-                    window.open(FileService.downloadUrl(hash), '_blank');
+            async _openLocalInNewTab(hash) {
+                const win = window.open('', '_blank');
+                if (!win) {
+                    BBMessage.error(t('files.openBlocked'));
                     return;
                 }
-
-                // Offline / local-only fallback: blob URL with extended revoke.
                 const file = await this._ensureLocal(hash);
-                if (!file) return;
+                if (!file) { win.close(); return; }
                 const url = URL.createObjectURL(file.blob);
-                window.open(url, '_blank');
+                win.location = url;
                 setTimeout(() => URL.revokeObjectURL(url), T('frontend.timeout.blobUrlRevokeOffline'));
             },
 
@@ -559,13 +556,18 @@ export const EditorAttachments = {
                     ? `<span class="attachment-chip-name"></span>`
                     : `<input class="attachment-chip-name" type="text" spellcheck="false" autocomplete="off" />`;
 
+                // Icon is an anchor to the server URL so the browser handles
+                // new-tab navigation natively — a sync click never loses the
+                // user gesture to await chains, so popup blockers don't demote
+                // us to same-tab navigation. For LOCAL-only files the click
+                // handler preventDefaults and uses a blob URL instead.
                 chip.innerHTML = `
                     <div class="attachment-chip-top">
                         ${nameInputHtml}
                         <span class="attachment-chip-download" data-hash="${hash}">${t('files.downloadBtn')}</span>
                     </div>
                     <div class="attachment-chip-bottom">
-                        <span class="attachment-chip-icon" style="cursor: pointer;">${iconText}</span>
+                        <a class="attachment-chip-icon" href="/api/files/${hash}" target="_blank" rel="noopener">${iconText}</a>
                         ${removeHtml}
                     </div>
                 `;
@@ -596,8 +598,19 @@ export const EditorAttachments = {
                     this.downloadFile(chip.dataset.hash);
                 });
 
-                chip.querySelector('.attachment-chip-icon').addEventListener('click', () => {
-                    this.openFile(chip.dataset.hash);
+                chip.querySelector('.attachment-chip-icon').addEventListener('click', (e) => {
+                    // Keep anchor href in sync with current hash (rename updates dataset.hash)
+                    e.currentTarget.setAttribute('href', '/api/files/' + chip.dataset.hash);
+                    // LOCAL-only chips: server has nothing at that hash yet.
+                    // Intercept and open the blob URL in a new tab instead.
+                    // Pre-open the tab synchronously BEFORE the awaits so the
+                    // user gesture isn't lost to popup blockers.
+                    const isSynced = chip.classList.contains('is-synced');
+                    const isLocalOnly = chip.classList.contains('is-local') && !isSynced;
+                    if (isLocalOnly) {
+                        e.preventDefault();
+                        this._openLocalInNewTab(chip.dataset.hash);
+                    }
                 });
 
                 container.appendChild(chip);
@@ -633,15 +646,25 @@ export const EditorAttachments = {
                 }
 
                 try {
-                    await db.file_blobs.put({
-                        hash: newHash,
-                        blob: local.blob,
-                        name: newName,
-                        type: local.blob.type,
-                        size: local.blob.size,
-                        status: 'local', // new hash not on server yet
-                        last_accessed: Date.now()
-                    });
+                    // If another record already introduced this exact
+                    // content+name pair earlier, the blob may already exist
+                    // (possibly as 'synced'). Preserve existing status +
+                    // metadata so the other record's chip doesn't regress
+                    // from [SYNC] back to [LOCAL] after this rename.
+                    const existing = await db.file_blobs.get(newHash);
+                    if (existing) {
+                        await db.file_blobs.update(newHash, { last_accessed: Date.now() });
+                    } else {
+                        await db.file_blobs.put({
+                            hash: newHash,
+                            blob: local.blob,
+                            name: newName,
+                            type: local.blob.type,
+                            size: local.blob.size,
+                            status: 'local',
+                            last_accessed: Date.now()
+                        });
+                    }
                 } catch (err) {
                     if (err.name === 'QuotaExceededError') {
                         BBMessage.error(t('files.storageFull'));
@@ -655,15 +678,25 @@ export const EditorAttachments = {
                 const idx = this.currentHashes.indexOf(oldHash);
                 if (idx !== -1) this.currentHashes[idx] = newHash;
 
-                // Update chip DOM: hash refs, status class/icon, name cache
+                // Update chip DOM: hash refs, status class/icon, name cache.
+                // Status reflects the ACTUAL blob state (may be 'synced' if
+                // another record already had this exact content+name pair).
+                const newBlob = await db.file_blobs.get(newHash);
+                const newStatus = newBlob?.status || 'local';
                 const chip = this._findChip(oldHash);
                 if (chip) {
                     chip.dataset.hash = newHash;
                     chip.dataset.name = newName;
-                    chip.classList.remove('is-synced');
-                    chip.classList.add('is-local');
+                    chip.classList.remove('is-local', 'is-synced');
                     const icon = chip.querySelector('.attachment-chip-icon');
-                    if (icon) icon.textContent = t('files.statusLocal');
+                    if (newStatus === 'synced') {
+                        chip.classList.add('is-synced');
+                        if (icon) icon.textContent = t('files.statusSync');
+                    } else {
+                        chip.classList.add('is-local');
+                        if (icon) icon.textContent = t('files.statusLocal');
+                    }
+                    if (icon) icon.setAttribute('href', '/api/files/' + newHash);
                     const dl = chip.querySelector('.attachment-chip-download');
                     if (dl) dl.dataset.hash = newHash;
                     const rm = chip.querySelector('.attachment-chip-remove');

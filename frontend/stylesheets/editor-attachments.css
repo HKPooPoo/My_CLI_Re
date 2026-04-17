@@ -125,12 +125,18 @@ input.attachment-chip-name {
     padding: 0;
     outline: none;
     width: 100%;
+    cursor: text;
 }
 
 input.attachment-chip-name:focus {
     outline: 1px dashed currentColor;
     outline-offset: 2px;
-    cursor: text;
+}
+
+.attachment-chip-icon {
+    text-decoration: none;
+    color: inherit;
+    cursor: pointer;
 }
 
 .attachment-chip-download {
