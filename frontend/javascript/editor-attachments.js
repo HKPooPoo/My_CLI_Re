@@ -42,6 +42,13 @@ function mimeIcon(mime) {
 // const BLOB_MAX = 50;
 const MAX_FILE_SIZE = 1 * 1024 * 1024 * 1024; // 1 GB
 
+// Keep in sync with backend FileController.php blocked extensions list.
+// Frontend check is UX-only (instant feedback); backend is the authority.
+const BLOCKED_EXTENSIONS = new Set([
+    'php', 'phtml', 'phar', 'exe', 'bat', 'cmd', 'sh',
+    'html', 'htm', 'xhtml', 'cgi', 'pl'
+]);
+
 // Disabled: blob pruning removed to avoid data loss for local-only users.
 // Synced blobs (server-backed) were evicted by LRU when count > BLOB_MAX,
 // but local blobs had no server backup and were never pruned anyway.
@@ -228,6 +235,12 @@ export const EditorAttachments = {
 
                 if (file.size > MAX_FILE_SIZE) {
                     BBMessage.error(t('files.tooLarge'));
+                    return;
+                }
+
+                const ext = (file.name || '').split('.').pop()?.toLowerCase();
+                if (ext && BLOCKED_EXTENSIONS.has(ext)) {
+                    BBMessage.error(t('files.unsupportedType'));
                     return;
                 }
 

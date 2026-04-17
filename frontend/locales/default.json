@@ -194,6 +194,7 @@
   "files": {
     "dropZoneHint": "DROP FILES HERE",
     "tooLarge": "FILE TOO LARGE: MAX 1 GB",
+    "unsupportedType": "FILE TYPE UNSUPPORTED",
     "limitReached": "FILE LIMIT REACHED",
     "storageFull": "STORAGE FULL",
     "attachFailed": "ATTACH FAILED",
