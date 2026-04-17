@@ -140,9 +140,18 @@ export const FileService = {
     },
 
     /**
-     * Get the direct download URL (for opening in new tab).
+     * Get the direct download URL. Sends Content-Disposition: attachment.
      */
     downloadUrl(hash) {
         return `/api/files/${hash}`;
+    },
+
+    /**
+     * Get the inline-preview URL (for opening in new tab). Sends
+     * Content-Disposition: inline so the browser displays the file
+     * natively if it can (PDF, image, text) instead of downloading it.
+     */
+    viewUrl(hash) {
+        return `/api/files/${hash}?inline=1`;
     }
 };

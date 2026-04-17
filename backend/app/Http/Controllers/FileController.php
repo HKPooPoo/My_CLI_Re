@@ -54,10 +54,12 @@ class FileController extends Controller
 
     /**
      * Download / stream a file by hash.
-     * GET /api/files/{hash}
+     * GET /api/files/{hash}         → Content-Disposition: attachment (forces Save As)
+     * GET /api/files/{hash}?inline=1 → Content-Disposition: inline (browser preview
+     *                                   in a new tab; used by the chip icon anchor)
      * Auth: none — the SHA-256 hash itself is the access token.
      */
-    public function download(string $hash)
+    public function download(string $hash, Request $request)
     {
         $file = $this->fileService->getByHash($hash);
         if (!$file) {
@@ -67,6 +69,14 @@ class FileController extends Controller
         $fullPath = $this->fileService->getFullPath($file);
         if (!$fullPath) {
             return response()->json(['message' => 'FILE MISSING FROM DISK'], 404);
+        }
+
+        if ($request->boolean('inline')) {
+            $safeName = str_replace('"', '\\"', $file->original_name);
+            return response()->file($fullPath, [
+                'Content-Type' => $file->mime_type,
+                'Content-Disposition' => 'inline; filename="' . $safeName . '"',
+            ]);
         }
 
         return response()->download(

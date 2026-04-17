@@ -230,6 +230,21 @@ class FileControllerTest extends TestCase
 
         $response->assertStatus(200);
         $this->assertStringContainsString('text/plain', $response->headers->get('content-type'));
+        $this->assertStringContainsString('attachment', $response->headers->get('content-disposition'));
+    }
+
+    #[Test]
+    public function download_inline_returns_inline_disposition(): void
+    {
+        $file = UploadedFile::fake()->createWithContent('preview.txt', 'Preview me');
+        $uploadResponse = $this->postJson('/api/files', ['file' => $file]);
+        $hash = $uploadResponse->json('hash');
+
+        $response = $this->get("/api/files/{$hash}?inline=1");
+
+        $response->assertStatus(200);
+        $this->assertStringContainsString('inline', $response->headers->get('content-disposition'));
+        $this->assertStringContainsString('preview.txt', $response->headers->get('content-disposition'));
     }
 
     #[Test]

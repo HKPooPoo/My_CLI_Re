@@ -556,18 +556,18 @@ export const EditorAttachments = {
                     ? `<span class="attachment-chip-name"></span>`
                     : `<input class="attachment-chip-name" type="text" spellcheck="false" autocomplete="off" />`;
 
-                // Icon is an anchor to the server URL so the browser handles
-                // new-tab navigation natively — a sync click never loses the
-                // user gesture to await chains, so popup blockers don't demote
-                // us to same-tab navigation. For LOCAL-only files the click
-                // handler preventDefaults and uses a blob URL instead.
+                // Icon is an anchor to the INLINE server URL (?inline=1) so
+                // the browser opens it as a preview in a new tab. The separate
+                // download button ([⬇]) triggers a blob Save-As. Native anchor
+                // navigation avoids the popup-blocker demotion that
+                // window.open suffers after async awaits.
                 chip.innerHTML = `
                     <div class="attachment-chip-top">
                         ${nameInputHtml}
                         <span class="attachment-chip-download" data-hash="${hash}">${t('files.downloadBtn')}</span>
                     </div>
                     <div class="attachment-chip-bottom">
-                        <a class="attachment-chip-icon" href="/api/files/${hash}" target="_blank" rel="noopener">${iconText}</a>
+                        <a class="attachment-chip-icon" href="${FileService.viewUrl(hash)}" target="_blank" rel="noopener">${iconText}</a>
                         ${removeHtml}
                     </div>
                 `;
@@ -600,7 +600,7 @@ export const EditorAttachments = {
 
                 chip.querySelector('.attachment-chip-icon').addEventListener('click', (e) => {
                     // Keep anchor href in sync with current hash (rename updates dataset.hash)
-                    e.currentTarget.setAttribute('href', '/api/files/' + chip.dataset.hash);
+                    e.currentTarget.setAttribute('href', FileService.viewUrl(chip.dataset.hash));
                     // LOCAL-only chips: server has nothing at that hash yet.
                     // Intercept and open the blob URL in a new tab instead.
                     // Pre-open the tab synchronously BEFORE the awaits so the
@@ -696,7 +696,7 @@ export const EditorAttachments = {
                         chip.classList.add('is-local');
                         if (icon) icon.textContent = t('files.statusLocal');
                     }
-                    if (icon) icon.setAttribute('href', '/api/files/' + newHash);
+                    if (icon) icon.setAttribute('href', FileService.viewUrl(newHash));
                     const dl = chip.querySelector('.attachment-chip-download');
                     if (dl) dl.dataset.hash = newHash;
                     const rm = chip.querySelector('.attachment-chip-remove');
