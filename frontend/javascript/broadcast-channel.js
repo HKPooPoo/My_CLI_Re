@@ -141,6 +141,18 @@ export const BCChannel = {
                         await BCDb.updateBinInPlace(this.state.localChannelId, entry.timestamp, null);
                     }
                 }
+            },
+            onRename: async (oldHash, newHash, meta) => {
+                if (!this.isOwnerMode || !this.currentChannel) return;
+                if (this.state.isVirtual) return;
+                const entry = await BCDb.getRecord(this.state.localChannelId, this.state.currentHead);
+                if (!entry) return;
+                const existing = entry.file_hash;
+                const h = (typeof existing === 'object') ? existing?.hash : existing;
+                if (h !== oldHash) return;
+                const binData = { hash: newHash, ...meta };
+                await BCDb.updateBinInPlace(this.state.localChannelId, entry.timestamp, binData);
+                this.updateIndicators();
             }
         });
     },

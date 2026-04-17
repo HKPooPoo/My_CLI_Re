@@ -206,7 +206,10 @@
     "statusCloud": "[雲端]",
     "statusWait": "[等待]",
     "removeBtn": "[X]",
-    "downloadBtn": "[⬇]"
+    "downloadBtn": "[⬇]",
+    "renameDuplicate": "此記錄已有同名檔案",
+    "renameFailed": "重新命名失敗",
+    "duplicateInRecord": "此記錄已有此檔案"
   },
   "pwa": {
     "updateAvailable": "有可用更新"

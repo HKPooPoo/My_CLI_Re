@@ -117,6 +117,22 @@
     cursor: pointer;
 }
 
+input.attachment-chip-name {
+    background: transparent;
+    border: none;
+    color: inherit;
+    font: inherit;
+    padding: 0;
+    outline: none;
+    width: 100%;
+}
+
+input.attachment-chip-name:focus {
+    outline: 1px dashed currentColor;
+    outline-offset: 2px;
+    cursor: text;
+}
+
 .attachment-chip-download {
     flex-shrink: 0;
     cursor: pointer;

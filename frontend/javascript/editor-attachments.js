@@ -76,6 +76,7 @@ export const EditorAttachments = {
      * @param {boolean} [config.readOnly=false] - If true, disable editing/removal
      * @param {Function} config.onAttach - Callback when file is attached (hash, meta)
      * @param {Function} config.onDetach - Callback when file is detached (hash)
+     * @param {Function} [config.onRename] - Callback when file is renamed (oldHash, newHash, meta)
      * @returns {Object} Attachment manager instance
      */
     create(config) {
@@ -89,6 +90,7 @@ export const EditorAttachments = {
             readOnly: config.readOnly || false,
             onAttach: config.onAttach || (() => { }),
             onDetach: config.onDetach || (() => { }),
+            onRename: config.onRename || (() => { }),
 
             /** Current attached file hashes (multi-file support) */
             currentHashes: [],
@@ -360,7 +362,24 @@ export const EditorAttachments = {
                     if (localFile) {
                         this._appendChip({ hash, status: localFile.status || 'local', name: localFile.name });
                     } else {
-                        this._appendChip({ hash, status: 'cloud' });
+                        // CLOUD chip: render immediately with hint name (from record),
+                        // then lazy-fetch server meta for authoritative name if no hint.
+                        const hintName = (hint && hint.hash === hash) ? hint.name : null;
+                        this._appendChip({ hash, status: 'cloud', name: hintName });
+                        if (!hintName) {
+                            FileService.meta(hash).then(meta => {
+                                if (version !== this._srVersion || !meta?.name) return;
+                                const chip = this._findChip(hash);
+                                if (!chip) return;
+                                chip.dataset.name = meta.name;
+                                const nameEl = chip.querySelector('.attachment-chip-name');
+                                if (nameEl) {
+                                    if (nameEl.tagName === 'INPUT') nameEl.value = meta.name;
+                                    else nameEl.textContent = meta.name;
+                                    nameEl.title = meta.name;
+                                }
+                            }).catch(() => { /* keep hash fallback */ });
+                        }
                     }
                 }
             },
@@ -519,6 +538,7 @@ export const EditorAttachments = {
                 const chip = document.createElement('div');
                 chip.className = 'attachment-chip';
                 chip.dataset.hash = hash;
+                chip.dataset.name = name || '';
 
                 let iconText;
                 if (status === 'local') {
@@ -535,10 +555,13 @@ export const EditorAttachments = {
                     `<button class="attachment-chip-remove" data-hash="${hash}" title="Remove">${t('files.removeBtn')}</button>`;
 
                 const displayName = name || hash.substring(0, 8) + '…';
+                const nameInputHtml = this.readOnly
+                    ? `<span class="attachment-chip-name"></span>`
+                    : `<input class="attachment-chip-name" type="text" spellcheck="false" autocomplete="off" />`;
 
                 chip.innerHTML = `
                     <div class="attachment-chip-top">
-                        <span class="attachment-chip-name"></span>
+                        ${nameInputHtml}
                         <span class="attachment-chip-download" data-hash="${hash}">${t('files.downloadBtn')}</span>
                     </div>
                     <div class="attachment-chip-bottom">
@@ -547,21 +570,120 @@ export const EditorAttachments = {
                     </div>
                 `;
 
-                // Set name via textContent to prevent XSS from file names
                 const nameEl = chip.querySelector('.attachment-chip-name');
-                nameEl.textContent = displayName;
+                if (this.readOnly) {
+                    nameEl.textContent = displayName;
+                } else {
+                    nameEl.value = displayName;
+                    nameEl.addEventListener('keydown', (e) => {
+                        if (e.key === 'Enter') { e.preventDefault(); nameEl.blur(); }
+                        else if (e.key === 'Escape') { nameEl.value = chip.dataset.name || displayName; nameEl.blur(); }
+                    });
+                    nameEl.addEventListener('change', async () => {
+                        const proposed = nameEl.value.trim();
+                        const prev = chip.dataset.name || displayName;
+                        if (!proposed || proposed === prev) {
+                            nameEl.value = prev;
+                            return;
+                        }
+                        const ok = await this._renameFile(chip.dataset.hash, proposed);
+                        if (!ok) nameEl.value = prev;
+                    });
+                }
                 nameEl.title = name || hash;
 
                 chip.querySelector('.attachment-chip-download').addEventListener('click', () => {
-                    this.downloadFile(hash);
+                    this.downloadFile(chip.dataset.hash);
                 });
 
                 chip.querySelector('.attachment-chip-icon').addEventListener('click', () => {
-                    this.openFile(hash);
+                    this.openFile(chip.dataset.hash);
                 });
 
                 container.appendChild(chip);
                 container.classList.add('has-items');
+            },
+
+            /**
+             * Rename a file: re-upload its blob under a new (content+name) hash.
+             * The old hash in the record is swapped for the new hash via onRename
+             * callback. Old server blob becomes orphan-eligible (24h cleanup);
+             * local blob is kept (may still be referenced by history records).
+             *
+             * Returns true on success, false on failure/no-op so the UI can
+             * revert the input value.
+             */
+            async _renameFile(oldHash, newName) {
+                // Ensure local blob is available (downloads if CLOUD)
+                const local = await this._ensureLocal(oldHash);
+                if (!local || !local.blob) {
+                    BBMessage.error(t('files.renameFailed'));
+                    return false;
+                }
+
+                const newHash = await FileService.computeHash(local.blob, newName);
+
+                // Same hash means same content+name — no-op
+                if (newHash === oldHash) return false;
+
+                // Per-record uniqueness: reject if another chip already uses newHash
+                if (this.currentHashes.includes(newHash)) {
+                    BBMessage.error(t('files.renameDuplicate'));
+                    return false;
+                }
+
+                try {
+                    await db.file_blobs.put({
+                        hash: newHash,
+                        blob: local.blob,
+                        name: newName,
+                        type: local.blob.type,
+                        size: local.blob.size,
+                        status: 'local', // new hash not on server yet
+                        last_accessed: Date.now()
+                    });
+                } catch (err) {
+                    if (err.name === 'QuotaExceededError') {
+                        BBMessage.error(t('files.storageFull'));
+                    } else {
+                        BBMessage.error(t('files.renameFailed'));
+                    }
+                    return false;
+                }
+
+                // Swap hash in currentHashes
+                const idx = this.currentHashes.indexOf(oldHash);
+                if (idx !== -1) this.currentHashes[idx] = newHash;
+
+                // Update chip DOM: hash refs, status class/icon, name cache
+                const chip = this._findChip(oldHash);
+                if (chip) {
+                    chip.dataset.hash = newHash;
+                    chip.dataset.name = newName;
+                    chip.classList.remove('is-synced');
+                    chip.classList.add('is-local');
+                    const icon = chip.querySelector('.attachment-chip-icon');
+                    if (icon) icon.textContent = t('files.statusLocal');
+                    const dl = chip.querySelector('.attachment-chip-download');
+                    if (dl) dl.dataset.hash = newHash;
+                    const rm = chip.querySelector('.attachment-chip-remove');
+                    if (rm) rm.dataset.hash = newHash;
+                    const nameEl = chip.querySelector('.attachment-chip-name');
+                    if (nameEl) nameEl.title = newName;
+                }
+
+                // Notify host to update its record's file_hash and trigger commit
+                try {
+                    await this.onRename(oldHash, newHash, {
+                        name: newName,
+                        size: local.blob.size,
+                        mime: local.blob.type
+                    });
+                } catch (err) {
+                    console.error('onRename host callback failed:', err);
+                }
+
+                return true;
             },
 
             _appendLoadingChip() {

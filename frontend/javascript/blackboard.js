@@ -118,6 +118,21 @@ const bbAttach = EditorAttachments.create({
         }
         BBSync.scheduleAutoCommit();
     },
+    onRename: async (oldHash, newHash, meta) => {
+        const entry = await BBCore.getRecord(state.owner, state.branchId, state.currentHead);
+        if (!entry) return;
+
+        const binData = { hash: newHash, ...meta };
+        const swap = (item) => {
+            const h = (typeof item === 'object') ? item?.hash : item;
+            return h === oldHash ? binData : item;
+        };
+
+        const existing = entry.file_hash;
+        const updated = Array.isArray(existing) ? existing.map(swap) : swap(existing);
+        await db.blackboard.update([entry.owner, entry.branch_id, entry.timestamp], { file_hash: updated });
+        BBSync.scheduleAutoCommit();
+    },
 });
 
 /**

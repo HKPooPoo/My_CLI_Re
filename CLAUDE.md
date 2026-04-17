@@ -61,6 +61,8 @@ Known risk on shared devices: Bob logging in after Alice will see Alice's locall
 
 **File blobs also persist on logout.** `db.file_blobs` caches downloaded attachments by hash. Since hashes are content-addressed (SHA-256), a cached blob from Alice is readable by Bob if Bob encounters the same hash — harmless for shared server-committed files (both were authorized to see them), but worth noting when considering strict-isolation scenarios.
 
+**File hash is name-sensitive: `SHA-256(content || 0x00 || original_name)`.** Two uploads with identical content but different filenames produce different hashes (no dedupe). Same content + same name → same hash → dedupe. This enables per-record file rename without a server rename endpoint: the chip name input is editable (Enter/blur commits), `editor-attachments._renameFile()` recomputes the hash under the new name, puts the blob under the new hash in `file_blobs` (status='local'), and fires `onRename(oldHash, newHash, meta)` so the host (BB/WT/BC) swaps the hash in the record's `file_hash` field. Next auto-commit uploads the new blob; the old server hash becomes orphan-eligible via the 24h cleanup. **Per-record uniqueness:** the same hash cannot appear twice in one record — attach/rename that would collide shows `files.duplicateInRecord` / `files.renameDuplicate` toast and is rejected. **Client and server must compute the same hash** — `FileService.upload(blob, filename)` sends the explicit filename so Blob uploads don't degrade to `"blob"` on the server.
+
 ## Development Commands
 
 ```bash
@@ -102,7 +104,7 @@ docker exec my-cli-api php artisan test                        # Run all tests (
 docker exec my-cli-api php artisan test --filter TestClassName # Run single test class
 ```
 
-### Test Suite (274 tests, 626 assertions)
+### Test Suite (276 tests, 629 assertions)
 
 | Test Class | Tests | What it covers |
 |------------|-------|----------------|
@@ -113,8 +115,8 @@ docker exec my-cli-api php artisan test --filter TestClassName # Run single test
 | `BlackboardControllerTest` | 36 | HTTP integration: commit validation, auth guards, response format, round-trip, LWW via HTTP, fetch filters unavailable file_hash (A5), DANGER ZONE delete-all-branches |
 | `BroadcastChannelServiceTest` | 19 | cast (DELETE+INSERT), rename, destroy, pin/unpin, title guard |
 | `BroadcastChannelControllerTest` | 34 | HTTP integration: public index/fetchBoards, cast validation + title guard, rename/destroy ownership, pin/unpin, lifecycle |
-| `FileControllerTest` | 25 | HTTP integration: upload + dedup, blocked extensions, download (happy + disk missing), status transitions (staged→committed via BB/WT/BC commit/cast), orphan detection across BB/WT/BC tables, clean command, full lifecycle |
-| `FileServiceTest` | 14 | upload dedup, markCommitted, markOrphaned, cleanupOrphaned |
+| `FileControllerTest` | 26 | HTTP integration: upload + name-sensitive dedup (same name dedupes, different name creates separate hashes), blocked extensions, download (happy + disk missing), status transitions (staged→committed via BB/WT/BC commit/cast), orphan detection across BB/WT/BC tables, clean command, full lifecycle |
+| `FileServiceTest` | 15 | name-sensitive upload dedup (same content + same name dedupes; same content + different name → separate rows), markCommitted, markOrphaned, cleanupOrphaned |
 | `WalkieTypieControllerTest` | 40 | HTTP integration: connection CRUD, signal, tag update (incl. non-connected 404), board commit/fetch, lifecycle round-trip |
 | `WalkieTypieBoardServiceTest` | 12 | LWW commit, partner signal, connection access control |
 

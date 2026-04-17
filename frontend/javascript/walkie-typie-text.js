@@ -184,6 +184,23 @@ export const WTText = {
 
                 // Trigger Commit
                 this.triggerCommit(this.elements.weTextarea.value);
+            },
+            onRename: async (oldHash, newHash, meta) => {
+                if (!this.currentConnection) return;
+                const binData = { hash: newHash, ...meta };
+                this.currentBin = binData;
+                if (!this.weState.isVirtual) {
+                    const entry = await WTDb.getRecord(this.weState.branchId, this.weState.currentHead);
+                    if (entry) {
+                        const existing = entry.file_hash;
+                        const h = (typeof existing === 'object') ? existing?.hash : existing;
+                        if (h === oldHash) {
+                            await WTDb.updateBin(entry.branch_id, entry.timestamp, binData);
+                        }
+                    }
+                }
+                this.broadcastSignal(this.elements.weTextarea.value);
+                this.triggerCommit(this.elements.weTextarea.value);
             }
         });
 

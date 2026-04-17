@@ -206,7 +206,10 @@
     "statusCloud": "[CLOUD]",
     "statusWait": "[WAIT]",
     "removeBtn": "[X]",
-    "downloadBtn": "[⬇]"
+    "downloadBtn": "[⬇]",
+    "renameDuplicate": "DUPLICATE FILE IN RECORD",
+    "renameFailed": "RENAME FAILED",
+    "duplicateInRecord": "DUPLICATE FILE IN RECORD"
   },
   "pwa": {
     "updateAvailable": "UPDATE AVAILABLE"

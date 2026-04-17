@@ -206,7 +206,10 @@
     "statusCloud": "[Cloud]",
     "statusWait": "[Waiting]",
     "removeBtn": "[X]",
-    "downloadBtn": "[⬇]"
+    "downloadBtn": "[⬇]",
+    "renameDuplicate": "This record already has a file with this name.",
+    "renameFailed": "Rename failed.",
+    "duplicateInRecord": "This record already has this file."
   },
   "pwa": {
     "updateAvailable": "Update available"
