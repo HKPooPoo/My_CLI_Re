@@ -20,10 +20,16 @@ precacheAndRoute(self.__WB_MANIFEST);
 cleanupOutdatedCaches();
 
 // --- SPA navigation fallback: serve cached /index.html for all routes ---
-// Denylist /pages/ so standalone pages are NOT hijacked back to main SPA
+// Denylist:
+//   /pages/ — standalone pages NOT hijacked back to main SPA
+//   /api/   — file downloads opened in new tab (e.g., clicking a SYNCED
+//             chip icon navigates to /api/files/{hash}); without this
+//             exclusion the SW returns cached index.html instead of the
+//             actual file, and the browser renders the SPA shell under
+//             the /api/files/ path where relative CSS links 404.
 registerRoute(new NavigationRoute(
   createHandlerBoundToURL('/index.html'),
-  { denylist: [/\/pages\//] }
+  { denylist: [/\/pages\//, /^\/api\//] }
 ));
 
 // --- Runtime SWR for non-precached same-origin requests (MOD files, etc.) ---
