@@ -33,6 +33,7 @@ import { T } from './timing.js';
 import * as Settings from './settings.js';
 import { registerMetadataProvider } from './mod-board-provider.js';
 import { TimerGroup } from './timer-group.js';
+import * as CrossTabSync from './cross-tab-sync.js';
 
 export const WTText = {
     elements: {
@@ -189,6 +190,7 @@ export const WTText = {
                 if (!this.currentConnection) return;
                 const binData = { hash: newHash, ...meta };
                 this.currentBin = binData;
+                let touchedTimestamp = null;
                 if (!this.weState.isVirtual) {
                     const entry = await WTDb.getRecord(this.weState.branchId, this.weState.currentHead);
                     if (entry) {
@@ -196,11 +198,16 @@ export const WTText = {
                         const h = (typeof existing === 'object') ? existing?.hash : existing;
                         if (h === oldHash) {
                             await WTDb.updateBin(entry.branch_id, entry.timestamp, binData);
+                            touchedTimestamp = entry.timestamp;
                         }
                     }
                 }
                 this.broadcastSignal(this.elements.weTextarea.value);
                 this.triggerCommit(this.elements.weTextarea.value);
+                CrossTabSync.broadcast('wt:record:mutated', {
+                    branchId: this.weState.branchId,
+                    timestamp: touchedTimestamp
+                });
             }
         });
 
@@ -212,6 +219,16 @@ export const WTText = {
     },
 
     bindEvents() {
+        // --- Cross-tab sync: another tab on this device mutated a WT
+        //     record (rename, attach/detach, text save). Refresh our WE
+        //     view if the change is for the connection we're viewing.
+        CrossTabSync.on('wt:record:mutated', (detail) => {
+            if (!detail || !this.currentConnection) return;
+            if (detail.branchId !== this.weState.branchId) return;
+            const isTyping = document.activeElement === this.elements.weTextarea;
+            if (!isTyping) this.refreshWE();
+        });
+
         // --- Auth Lifecycle: wipe all WT state on login/logout ---
         // WTCore.releaseEcho() already handles channel disconnection;
         // we just need to clear local state, timers, and boards.

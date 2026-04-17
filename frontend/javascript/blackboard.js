@@ -27,6 +27,7 @@ import * as Settings from './settings.js';
 import { registerMetadataProvider } from './mod-board-provider.js';
 import { BBSync } from './blackboard-sync.js';
 import { TimerGroup } from './timer-group.js';
+import * as CrossTabSync from './cross-tab-sync.js';
 
 // --- 全域狀態聲明 ---
 const state = {
@@ -130,8 +131,33 @@ const bbAttach = EditorAttachments.create({
 
         const existing = entry.file_hash;
         const updated = Array.isArray(existing) ? existing.map(swap) : swap(existing);
-        await db.blackboard.update([entry.owner, entry.branch_id, entry.timestamp], { file_hash: updated });
+
+        // Downgrade owner tag to asynced: the record now references a hash
+        // the server does not have yet. Leaving it as [synced] misleads any
+        // observer (including other tabs) into seeing a branch that looks
+        // server-consistent while local content has actually diverged.
+        // Commit will re-promote to [synced] once the upload succeeds.
+        let newOwner = entry.owner;
+        if (typeof entry.owner === 'string' && entry.owner.endsWith('[synced]')) {
+            newOwner = entry.owner.replace('[synced]', '[asynced]');
+        }
+
+        if (newOwner !== entry.owner) {
+            // Primary key includes owner → use modify() so Dexie handles the
+            // delete+put required to change it.
+            await db.blackboard.where('[owner+branch_id+timestamp]')
+                .equals([entry.owner, entry.branch_id, entry.timestamp])
+                .modify({ file_hash: updated, owner: newOwner });
+            if (state.owner === entry.owner) state.owner = newOwner;
+        } else {
+            await db.blackboard.update([entry.owner, entry.branch_id, entry.timestamp], { file_hash: updated });
+        }
+
         BBSync.scheduleAutoCommit();
+        CrossTabSync.broadcast('bb:record:mutated', {
+            branchId: entry.branch_id,
+            timestamp: entry.timestamp
+        });
     },
 });
 
@@ -769,6 +795,28 @@ document.addEventListener('visibilitychange', () => {
     } else {
         BBSync.recover();
     }
+});
+
+/**
+ * Cross-tab sync: another tab on this device mutated a BB record
+ * (rename, attach/detach, text save) → re-render current view and
+ * refresh the branch list so [synced]/[asynced] tags reflect reality.
+ * Guarded against overwriting an actively-typing user.
+ */
+CrossTabSync.on('bb:record:mutated', async (detail) => {
+    if (!detail || detail.branchId !== state.branchId) return;
+    // Another tab may have flipped the owner tag ([synced]↔[asynced]).
+    // Re-derive state.owner from DB so subsequent getRecord() calls hit
+    // the right composite key.
+    const anyRecord = await db.blackboard.where('branch_id').equals(state.branchId).first();
+    if (anyRecord && anyRecord.owner !== state.owner) {
+        state.owner = anyRecord.owner;
+    }
+    const isTyping = document.activeElement === BBUI.elements.textarea;
+    if (!isTyping) {
+        syncView();
+    }
+    updateBranchList();
 });
 
 /**

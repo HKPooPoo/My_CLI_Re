@@ -38,6 +38,7 @@ import { T } from './timing.js';
 import * as Settings from './settings.js';
 import { registerMetadataProvider } from './mod-board-provider.js';
 import { TimerGroup } from './timer-group.js';
+import * as CrossTabSync from './cross-tab-sync.js';
 
 const _readerCache = new Map();  // serverChannelId → { records, fetchedAt }
 
@@ -153,6 +154,22 @@ export const BCChannel = {
                 const binData = { hash: newHash, ...meta };
                 await BCDb.updateBinInPlace(this.state.localChannelId, entry.timestamp, binData);
                 this.updateIndicators();
+                CrossTabSync.broadcast('bc:record:mutated', {
+                    localChannelId: this.state.localChannelId,
+                    timestamp: entry.timestamp
+                });
+            }
+        });
+
+        // Cross-tab sync: another tab on this device mutated a BC record.
+        // Refresh owner view if the change is for the channel we're viewing.
+        CrossTabSync.on('bc:record:mutated', (detail) => {
+            if (!detail || !this.isOwnerMode || !this.currentChannel) return;
+            if (detail.localChannelId !== this.state.localChannelId) return;
+            const textarea = this.elements?.textarea;
+            const isTyping = textarea && document.activeElement === textarea;
+            if (!isTyping && this.currentChannel) {
+                this.loadOwnerMode(this.currentChannel);
             }
         });
     },
