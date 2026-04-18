@@ -270,7 +270,7 @@
                     <div class="auth-title crt-text-orange" data-i18n="auth.pageTitle">ACCOUNT AUTHENTICATION</div>
 
                     <div class="auth-login-register-container" style="display: none;">
-                        <input type="text" id="auth-uid" class="auth-input" placeholder="UID" maxlength="64"
+                        <input type="text" id="auth-uid" class="auth-input" placeholder="UID" maxlength="32"
                             autocomplete="off" data-i18n-placeholder="auth.uidPlaceholder">
                         <input type="password" id="auth-passcode" class="auth-input" placeholder="PASSCODE"
                             maxlength="64" autocomplete="new-password" data-i18n-placeholder="auth.passcodePlaceholder">
@@ -293,7 +293,7 @@
                         <!--later 32 + regex -> max length-->
                         <!--If email is registered, then placeholder = email-->
                         <input type="text" id="auth-register-email" class="auth-input" placeholder="EMAIL"
-                            maxlength="64" data-i18n-placeholder="auth.emailPlaceholder">
+                            maxlength="288" data-i18n-placeholder="auth.emailPlaceholder">
                         <button id="btn-register-email" class="auth-btn crt-text-green"
                             data-i18n="auth.registerBtn">REGISTER</button>
                     </div>

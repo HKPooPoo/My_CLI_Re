@@ -154,34 +154,60 @@ class AuthServiceTest extends TestCase
     public function bind_command_binds_email_on_valid_token(): void
     {
         $user = User::factory()->create(['uid' => 'carol']);
-        Cache::put("bind_carol_tok456", 'carol', now()->addMinutes(10));
+        Cache::put('bind_current_carol', [
+            'token' => 'tok456',
+            'email' => 'carol@test.com',
+        ], now()->addMinutes(10));
 
         $result = $this->service->executeCommand('/bind --token tok456 --email carol@test.com', $user);
 
         $this->assertEquals('EMAIL BOUND SUCCESSFULLY.', $result);
         $user->refresh();
         $this->assertEquals('carol@test.com', $user->email);
-        $this->assertNull(Cache::get("bind_carol_tok456"));
+        $this->assertNull(Cache::get('bind_current_carol'));
     }
 
     #[Test] /* A7 */
-    public function bind_command_rejects_token_uid_mismatch(): void
+    public function bind_command_rejects_wrong_token(): void
     {
         $user = User::factory()->create(['uid' => 'carol']);
-        // Token belongs to 'someone_else', not 'carol'
-        Cache::put("bind_carol_tok789", 'someone_else', now()->addMinutes(10));
+        Cache::put('bind_current_carol', [
+            'token' => 'realtoken',
+            'email' => 'carol@test.com',
+        ], now()->addMinutes(10));
 
         $this->expectException(\Exception::class);
         $this->expectExceptionMessage('INVALID OR EXPIRED TOKEN');
 
-        $this->service->executeCommand('/bind --token tok789 --email carol@test.com', $user);
+        $this->service->executeCommand('/bind --token wrongtoken --email carol@test.com', $user);
+    }
+
+    #[Test] /* A7b — email substitution attack */
+    public function bind_command_rejects_email_substitution(): void
+    {
+        $user = User::factory()->create(['uid' => 'carol']);
+        // Cache records we sent the /bind command to carol's legit address.
+        Cache::put('bind_current_carol', [
+            'token' => 'toksub',
+            'email' => 'legit@carol.com',
+        ], now()->addMinutes(10));
+
+        $this->expectException(\Exception::class);
+        $this->expectExceptionMessage('INVALID OR EXPIRED TOKEN');
+
+        // Attacker tries to re-use the token with a different email (e.g.
+        // observed the command, swapped the address). Must be rejected.
+        $this->service->executeCommand('/bind --token toksub --email attacker@evil.com', $user);
     }
 
     #[Test] /* A8 */
     public function bind_command_rejects_invalid_email(): void
     {
         $user = User::factory()->create(['uid' => 'dave']);
-        Cache::put("bind_dave_tokABC", 'dave', now()->addMinutes(10));
+        Cache::put('bind_current_dave', [
+            'token' => 'tokABC',
+            'email' => 'dave@test.com',
+        ], now()->addMinutes(10));
 
         $this->expectException(\Exception::class);
         $this->expectExceptionMessage('INVALID EMAIL FORMAT');
@@ -259,5 +285,57 @@ class AuthServiceTest extends TestCase
         $this->expectExceptionMessage('UID NOT FOUND OR EMAIL NOT BOUND');
 
         $this->service->requestPasswordReset('nonexistent');
+    }
+
+    #[Test] /* A19 — single-token policy on reset */
+    public function second_reset_request_invalidates_first_token(): void
+    {
+        Mail::fake();
+        User::factory()->withEmail('x@test.com')->create(['uid' => 'rep']);
+
+        $this->service->requestPasswordReset('rep');
+        $firstToken = Cache::get('reset_current_rep');
+        $this->assertNotNull($firstToken);
+        $this->assertEquals('rep', Cache::get("reset_token:{$firstToken}"));
+
+        $this->service->requestPasswordReset('rep');
+        $secondToken = Cache::get('reset_current_rep');
+
+        $this->assertNotEquals($firstToken, $secondToken);
+        // First token's lookup must have been cleared.
+        $this->assertNull(Cache::get("reset_token:{$firstToken}"));
+        // Second token is still live.
+        $this->assertEquals('rep', Cache::get("reset_token:{$secondToken}"));
+    }
+
+    #[Test] /* A20 — single-token policy on bind */
+    public function second_bind_request_overwrites_first(): void
+    {
+        Mail::fake();
+        $user = User::factory()->create(['uid' => 'rebind']);
+
+        $this->service->requestEmailBinding('first@test.com', $user);
+        $first = Cache::get('bind_current_rebind');
+        $this->assertEquals('first@test.com', $first['email']);
+
+        $this->service->requestEmailBinding('second@test.com', $user);
+        $second = Cache::get('bind_current_rebind');
+
+        $this->assertEquals('second@test.com', $second['email']);
+        $this->assertNotEquals($first['token'], $second['token']);
+    }
+
+    #[Test] /* A21 — token length is 8 chars */
+    public function generated_tokens_are_8_chars_long(): void
+    {
+        Mail::fake();
+        User::factory()->withEmail('tok@test.com')->create(['uid' => 'tok']);
+
+        $this->service->requestPasswordReset('tok');
+        $this->assertEquals(8, strlen(Cache::get('reset_current_tok')));
+
+        $user = User::find(User::where('uid', 'tok')->value('id'));
+        $this->service->requestEmailBinding('new@test.com', $user);
+        $this->assertEquals(8, strlen(Cache::get('bind_current_tok')['token']));
     }
 }

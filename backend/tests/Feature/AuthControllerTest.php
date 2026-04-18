@@ -306,8 +306,11 @@ class AuthControllerTest extends TestCase
     public function bind_command_binds_email_via_http(): void
     {
         $user = User::factory()->create(['uid' => 'binder']);
-        $token = 'bindtoken123';
-        Cache::put("bind_binder_{$token}", 'binder', now()->addMinutes(10));
+        $token = 'bindtkn1';
+        Cache::put('bind_current_binder', [
+            'token' => $token,
+            'email' => 'test@example.com',
+        ], now()->addMinutes(10));
 
         $response = $this->actingAs($user)->postJson('/api/auth/command', [
             'command' => "/bind --token {$token} --email test@example.com",

@@ -42,8 +42,20 @@ class AuthService
             throw new \Exception('UID NOT FOUND OR EMAIL NOT BOUND.');
         }
 
-        $token = Str::random(32);
-        Cache::put("reset_{$user->uid}_{$token}", $user->uid, now()->addMinutes(10));
+        // Single-token policy: if this uid already has an outstanding reset
+        // request, invalidate its token so only the newest email works. Stops
+        // the "click 4 times → 4 usable emails × 10-min TTL" attack surface.
+        $previousToken = Cache::pull("reset_current_{$user->uid}");
+        if ($previousToken) {
+            Cache::forget("reset_token:{$previousToken}");
+        }
+
+        $token = Str::random(8);
+        // Dual key: reset_token:{token} is the lookup path used by /passwd
+        // (no login context, so we resolve token → uid there). reset_current
+        // gives us the reverse (uid → current token) so we can invalidate
+        // the previous token on a re-request.
+        Cache::put("reset_current_{$user->uid}", $token, now()->addMinutes(10));
         Cache::put("reset_token:{$token}", $user->uid, now()->addMinutes(10));
 
         $command = "/passwd --token {$token} --new YOUR_NEW_PASSCODE";
@@ -52,8 +64,16 @@ class AuthService
 
     public function requestEmailBinding(string $email, User $user)
     {
-        $token = Str::random(32);
-        Cache::put("bind_{$user->uid}_{$token}", $user->uid, now()->addMinutes(10));
+        // Single key per uid: Cache::put overwrites, so a rapid 4-click burst
+        // leaves only the newest token usable (older emails' tokens silently
+        // expire). The cache value also pins the target email so /bind exec
+        // can't be tricked into setting a different address than the one
+        // the email was actually sent to.
+        $token = Str::random(8);
+        Cache::put("bind_current_{$user->uid}", [
+            'token' => $token,
+            'email' => $email,
+        ], now()->addMinutes(10));
 
         $command = "/bind --token {$token} --email {$email}";
         Mail::to($email)->send(new BindEmailMail($command));
@@ -84,8 +104,8 @@ class AuthService
             $userToUpdate->passcode = Hash::make($newPass);
             $userToUpdate->save();
 
-            Cache::forget("reset_{$uid}_{$token}");
             Cache::forget("reset_token:{$token}");
+            Cache::forget("reset_current_{$uid}");
             return 'PASSCODE UPDATED SUCCESSFULLY.';
         }
 
@@ -102,16 +122,25 @@ class AuthService
                 throw new \Exception('INVALID EMAIL FORMAT.');
             }
 
-            $cacheKey = "bind_{$user->uid}_{$token}";
-            $tokenUid = Cache::get($cacheKey);
-            if (!$tokenUid || $tokenUid !== $user->uid) {
+            $cached = Cache::get("bind_current_{$user->uid}");
+            // Three conditions must all line up: the stored token, the
+            // stored target email, and the requester's uid (implicit via
+            // the key). Any mismatch — wrong token, token from a previous
+            // now-invalidated request, or an email that doesn't match the
+            // one we actually sent to — bounces with the same generic
+            // message so the caller can't distinguish them.
+            if (!$cached || $cached['token'] !== $token || $cached['email'] !== $email) {
                 throw new \Exception('INVALID OR EXPIRED TOKEN.');
             }
 
-            $user->email = $email;
+            // Use the cached target email, not the one the user typed into
+            // the command. They should match at this point, but reading
+            // from cache makes the "what email we actually sent to" the
+            // authoritative source.
+            $user->email = $cached['email'];
             $user->save();
 
-            Cache::forget($cacheKey);
+            Cache::forget("bind_current_{$user->uid}");
             return 'EMAIL BOUND SUCCESSFULLY.';
         }
 
