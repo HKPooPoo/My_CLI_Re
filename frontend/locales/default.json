@@ -51,6 +51,8 @@
     "registerComplete": "REGISTRATION COMPLETE",
     "registerFailed": "ERROR: REGISTRATION FAILED",
     "logoutComplete": "LOGOUT COMPLETE",
+    "loggingOut": "LOGGING OUT...",
+    "logoutFailed": "ERROR: LOGOUT FAILED",
     "executing": "EXECUTING...",
     "tooManyAttempts": "TOO MANY ATTEMPTS",
     "uidRequired": "UID REQUIRED",

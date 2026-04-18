@@ -227,13 +227,34 @@ export const AuthManager = {
         }
 
         // --- 登出邏輯 ---
+        // Previously fire-and-forget (updateUI(null) ran before the POST
+        // even went out). That created two race paths:
+        //   1. User refreshes another tab immediately — that tab's cookie
+        //      is still the pre-logout one, /auth-status sees a live
+        //      session, UI "reverts" to logged-in.
+        //   2. User refreshes THIS tab before POST lands — browser
+        //      navigation cancels the in-flight XHR, server never
+        //      receives logout at all. Session lives forever.
+        // Await the POST first so the server is guaranteed to have
+        // destroyed the session (and returned a Set-Cookie for the new
+        // empty session) before we touch local state.
         if (this.elements.logoutBtn) {
             new MultiStepButton(this.elements.logoutBtn, {
                 sound: "UISelectOff.mp3",
                 action: async () => {
-                    this.updateUI(null);
-                    BBMessage.success(t('auth.logoutComplete'));
-                    AuthService.logout().catch(() => {});
+                    const msg = BBMessage.loading(t('auth.loggingOut'));
+                    try {
+                        await AuthService.logout();
+                        msg.update(t('auth.logoutComplete'), 2000);
+                        this.updateUI(null);
+                    } catch (e) {
+                        msg.close();
+                        console.error("LOGOUT ERROR:", e);
+                        BBMessage.error(t('auth.logoutFailed'));
+                        // Intentionally leave local UI alone — server
+                        // session likely still alive, so showing the user
+                        // as logged out here would create a new mismatch.
+                    }
                 }
             });
         }

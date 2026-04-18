@@ -51,6 +51,8 @@
     "registerComplete": "Registration complete!",
     "registerFailed": "Registration failed.",
     "logoutComplete": "Logged out.",
+    "loggingOut": "Signing out...",
+    "logoutFailed": "Couldn't sign out. Try again.",
     "executing": "Executing...",
     "tooManyAttempts": "Too many attempts. Try again later.",
     "uidRequired": "Username is required.",

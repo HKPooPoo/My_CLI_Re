@@ -51,6 +51,8 @@
     "registerComplete": "註冊成功",
     "registerFailed": "註冊失敗",
     "logoutComplete": "已登出",
+    "loggingOut": "登出中...",
+    "logoutFailed": "登出失敗",
     "executing": "執行中...",
     "tooManyAttempts": "嘗試次數過多",
     "uidRequired": "請輸入使用者名稱",
