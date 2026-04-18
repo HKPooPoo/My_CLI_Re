@@ -70,8 +70,12 @@ overlay.addEventListener("click", () => {
     overlay.dataset.handled = '1';
 
     // Session changed in another tab → reload instead of the standard
-    // restore-last-nav flow. Short-circuits before any further action.
+    // restore-last-nav flow. Set a sessionStorage flag so the next
+    // page load skips the Press Start overlay entirely (no point making
+    // the user tap twice). sessionStorage is tab-scoped, so the flag
+    // lives through this tab's reload but never leaks to other tabs.
     if (forceReloadOnDismiss) {
+        sessionStorage.setItem('skipPressStart', '1');
         window.location.reload();
         return;
     }
@@ -129,6 +133,38 @@ window.addEventListener("blur", () => {
 });
 
 // 初始頁面載入：overlay 一開始是可見的（開機畫面）
-window.dispatchEvent(new CustomEvent('screensaver:activated', {
-    detail: { initial: true }
-}));
+// Exception: if the previous session hit showForReload(), it stashed a
+// 'skipPressStart' flag in sessionStorage before reloading. Honour it
+// by silently dismissing the overlay and restoring navigation straight
+// away — the user already "pressed start" in the logical sense by
+// clicking the forced overlay, and a second click on reload is just
+// noise.
+if (sessionStorage.getItem('skipPressStart') === '1') {
+    sessionStorage.removeItem('skipPressStart');
+    overlay.style.display = "none";
+    overlay.dataset.handled = '1';
+    firstTriggered = true;
+
+    const restoreNav = () => {
+        if (!localStorage.getItem("navi-item-head")) {
+            localStorage.setItem("navi-item-head", "blackboard");
+        }
+        const lastNaviItem = localStorage.getItem("navi-item-head");
+        const $targetItem = document.querySelector(`.navi-item[data-navi-item="${lastNaviItem}"]`);
+        if ($targetItem) {
+            setActiveNaviItem($targetItem);
+            updateNaviPosition(lastNaviItem);
+        }
+        window.dispatchEvent(new CustomEvent('screensaver:deactivated'));
+    };
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', restoreNav, { once: true });
+    } else {
+        restoreNav();
+    }
+} else {
+    window.dispatchEvent(new CustomEvent('screensaver:activated', {
+        detail: { initial: true }
+    }));
+}
