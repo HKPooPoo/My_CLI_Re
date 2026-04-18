@@ -42,6 +42,14 @@
     border-radius: 2px;
 }
 
+/* Action button group — sibling to .misc-list-container.
+   Global flex-column default handles direction; gap + align-self stretch
+   replace per-button inline margin-top / width rules. */
+.misc-action-container {
+    gap: 8px;
+    margin-top: 8px;
+}
+
 .misc-list-item {
     padding: calc(var(--panel-gap) / 2);
     display: flex;
