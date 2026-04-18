@@ -87,6 +87,70 @@ export const AuthManager = {
                 : null;
             this.updateUI(fallback);
         }
+
+        this._setupCrossTabSync();
+    },
+
+    /**
+     * Cross-tab session awareness.
+     *
+     * Same-origin browser tabs share cookies and localStorage, so there's
+     * only ever one authenticated session per browser — but each tab keeps
+     * its own in-memory UI state. That means a logout (or a second login)
+     * in Tab B can leave Tab A cheerfully painting an old user's name and
+     * sending requests under whoever the current session actually belongs
+     * to. Two signals re-align this tab with reality:
+     *
+     *   • storage event on "currentUser" — fires in OTHER tabs the moment
+     *     any tab writes/removes the key (i.e., another tab logged in or
+     *     out). We re-check with the server and repaint.
+     *   • visibilitychange → visible — catches the case where the user
+     *     switched away, did auth elsewhere, and came back. Same re-check
+     *     path.
+     *
+     * The re-check is a single /auth-status call (4s Redis-cached on the
+     * backend, so not expensive). We only toast + updateUI when the
+     * server's view actually differs from our local view — no toast spam
+     * for first-load or consistent states.
+     */
+    _setupCrossTabSync() {
+        if (this.crossTabSyncBound) return;
+        this.crossTabSyncBound = true;
+
+        window.addEventListener("storage", (e) => {
+            if (e.key === "currentUser") {
+                this._syncSessionState(true);
+            }
+        });
+
+        document.addEventListener("visibilitychange", () => {
+            if (document.visibilityState === "visible") {
+                this._syncSessionState(true);
+            }
+        });
+    },
+
+    async _syncSessionState(toastOnChange = false) {
+        try {
+            const data = await AuthService.getStatus();
+            const serverUid = data.is_logged_in ? data.uid : null;
+            const currentUid = localStorage.getItem("currentUser");
+
+            if (serverUid !== currentUid) {
+                if (toastOnChange) {
+                    if (serverUid) {
+                        BBMessage.info(t('auth.sessionChanged', { uid: serverUid }));
+                    } else if (currentUid) {
+                        BBMessage.info(t('auth.sessionEnded'));
+                    }
+                }
+                this.updateUI(data.is_logged_in ? data : null);
+            }
+        } catch (e) {
+            // Network error / offline: leave current state alone. Re-sync
+            // will happen on the next visibility/storage tick when the
+            // network comes back.
+        }
     },
 
     /**

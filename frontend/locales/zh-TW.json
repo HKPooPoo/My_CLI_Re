@@ -71,7 +71,9 @@
     "deleteConfirm": "確定注銷？",
     "deleting": "注銷中...",
     "deleteComplete": "帳號已注銷",
-    "deleteFailed": "注銷失敗"
+    "deleteFailed": "注銷失敗",
+    "sessionChanged": "登入狀態變更 — 目前為 {uid}",
+    "sessionEnded": "登入已結束 — 其他分頁登出了"
   },
   "blackboard": {
     "pageTitle": "主題管理",

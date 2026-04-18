@@ -71,7 +71,9 @@
     "deleteConfirm": "Delete account?",
     "deleting": "Deleting...",
     "deleteComplete": "Account deleted.",
-    "deleteFailed": "Couldn't delete. Try again."
+    "deleteFailed": "Couldn't delete. Try again.",
+    "sessionChanged": "Session changed — now signed in as {uid}.",
+    "sessionEnded": "Session ended — signed out in another tab."
   },
   "blackboard": {
     "pageTitle": "Topic Manager",

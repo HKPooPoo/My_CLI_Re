@@ -71,7 +71,9 @@
     "deleteConfirm": "CONFIRM DELETE?",
     "deleting": "DELETING...",
     "deleteComplete": "ACCOUNT DELETED",
-    "deleteFailed": "ERROR: DELETE FAILED"
+    "deleteFailed": "ERROR: DELETE FAILED",
+    "sessionChanged": "SESSION CHANGED — NOW {uid}",
+    "sessionEnded": "SESSION ENDED — LOGGED OUT ELSEWHERE"
   },
   "blackboard": {
     "pageTitle": "BRANCH CONTROLLER",

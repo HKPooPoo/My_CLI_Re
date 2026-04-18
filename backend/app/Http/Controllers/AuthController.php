@@ -55,9 +55,26 @@ class AuthController extends Controller
         }
     }
 
-    public function logout()
+    public function logout(Request $request)
     {
+        // Auth::logout() on its own just unsets the user reference from the
+        // session payload — the session itself survives with the same ID and
+        // cookie. That matters for multi-tab: Tab1 logs in, Tab2 opens and
+        // inherits the cookie, Tab2 clicks logout → without invalidate() the
+        // shared session lingers and Tab1's next request still walks into a
+        // session that happens to be empty but could be re-filled by any
+        // subsequent login in Tab2. Explicit invalidate + regenerateToken
+        // destroys the session row in Redis and forces a fresh CSRF token.
         Auth::logout();
+        // Session middleware only attaches on stateful requests (Sanctum's
+        // EnsureFrontendRequestsAreStateful gates this on matching the
+        // SANCTUM_STATEFUL_DOMAINS origin list). Real browser requests from
+        // the SPA always qualify; test suite's postJson does not, so guard
+        // with hasSession() instead of crashing the whole response.
+        if ($request->hasSession()) {
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+        }
         return response()->json(['message' => 'LOGGED OUT']);
     }
 
