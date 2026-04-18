@@ -737,6 +737,24 @@ function bindEvents() {
         }
     });
 
+    // Mod list search — matches the row's full visible content plus any
+    // input's current value, so a user can filter by template name,
+    // instance display name, category label, or any status word printed
+    // on the row (e.g. "active", "code-failed").
+    const $modSearch = document.getElementById('mods-search');
+    $modSearch?.addEventListener('input', () => {
+        const query = $modSearch.value.toLowerCase().trim();
+        const items = document.querySelectorAll('.mods-list-item');
+        items.forEach(item => {
+            if (!query) { item.style.display = ''; return; }
+            let text = item.innerText.toLowerCase();
+            item.querySelectorAll('input, textarea').forEach(el => {
+                if (el.value) text += ' ' + el.value.toLowerCase();
+            });
+            item.style.display = text.includes(query) ? '' : 'none';
+        });
+    });
+
     // InfiniteList selection → bifurcate: instance vs catalog item
     window.addEventListener('list:selectionChanged', ({ detail }) => {
         if (!elements.listContainer?.contains(detail.item)) return;

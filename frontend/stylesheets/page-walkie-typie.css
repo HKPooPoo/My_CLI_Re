@@ -85,6 +85,18 @@
     border: var(--border-line);
 }
 
+/* Search input row — mirrors .vcs-search-input / .broadcast-search-input. */
+.walkie-typie-search-input {
+    border-bottom: var(--border-line);
+    padding: calc(var(--panel-gap) / 2);
+    font-size: var(--font-size);
+    width: 100%;
+}
+
+.walkie-typie-search-input:focus {
+    border-bottom-color: var(--text-orange);
+}
+
 .walkie-typie-list-title,
 .walkie-typie-add-title {
     position: absolute;

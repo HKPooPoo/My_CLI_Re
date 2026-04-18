@@ -143,6 +143,16 @@ export const AuthManager = {
                     } else if (currentUid) {
                         BBMessage.info(t('auth.sessionEnded'));
                     }
+                    // In-memory state on this tab (BB branches, WT
+                    // connections, MOD instances, IndexedDB cursors) still
+                    // reflects the previous session. Re-painting UI from
+                    // /auth-status alone would leave that stale data
+                    // around. Force Press Start: first click does a full
+                    // window.location.reload(), which drops every module's
+                    // in-memory state and starts fresh.
+                    const ps = await import('./pressStart.js').catch(() => null);
+                    ps?.showForReload?.();
+                    return;
                 }
                 this.updateUI(data.is_logged_in ? data : null);
             }

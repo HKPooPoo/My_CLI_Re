@@ -97,6 +97,13 @@
     color: var(--bg-primary);
 }
 
+/* Non-owner channel rows: same dim / default-cursor treatment as
+   .vcs-list-branch[readonly] and input.attachment-chip-name[readonly]. */
+.broadcast-list-tag[readonly] {
+    opacity: 0.6;
+    cursor: default;
+}
+
 .broadcast-list-list-item.active .broadcast-list-title {
     color: var(--bg-primary);
 }

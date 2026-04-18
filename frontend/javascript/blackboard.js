@@ -805,15 +805,34 @@ window.addEventListener('settings:changed', (e) => {
 });
 
 // --- Branch Search ---
+// Match against every visible label on the row (name input, timestamp,
+// owner display e.g. "local, online/alice [synced]"), so the user can
+// filter by status words like "synced", "asynced", "local" in addition
+// to the branch name.
 const $vcsSearch = document.getElementById('vcs-search');
 $vcsSearch?.addEventListener('input', () => {
     const query = $vcsSearch.value.toLowerCase().trim();
     const items = document.querySelectorAll('.vcs-list-item');
     items.forEach(item => {
-        const name = item.querySelector('.vcs-list-branch')?.value?.toLowerCase() || '';
-        item.style.display = name.includes(query) ? '' : 'none';
+        item.style.display = matchesQuery(item, query) ? '' : 'none';
     });
 });
+
+/**
+ * Shared list-item filter helper: collects every piece of user-visible
+ * text on a row (static DOM text + any input's current value) and
+ * returns true if the lowercased query is a substring of it. Empty
+ * query always matches (no filter active).
+ */
+function matchesQuery(item, query) {
+    if (!query) return true;
+    let text = item.innerText.toLowerCase();
+    item.querySelectorAll('input, textarea').forEach(el => {
+        const v = el.value;
+        if (v) text += ' ' + v.toLowerCase();
+    });
+    return text.includes(query);
+}
 
 // --- 系統啟動 ---
 initBoard();

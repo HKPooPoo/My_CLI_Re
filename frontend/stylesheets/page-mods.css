@@ -22,6 +22,18 @@
     /* transition: left var(--transition-normal) ease-in, transform var(--transition-normal) ease-in; */
 }
 
+/* Search input row — mirrors .vcs-search-input / .broadcast-search-input. */
+.mods-search-input {
+    border-bottom: var(--border-line);
+    padding: calc(var(--panel-gap) / 2);
+    font-size: var(--font-size);
+    width: 100%;
+}
+
+.mods-search-input:focus {
+    border-bottom-color: var(--text-orange);
+}
+
 /* === mods-list page — scrollable list with InfiniteList cursor === */
 /* Scrollbar → .mod-scrollbar class (mod-shared.css) */
 .mods-list-container {

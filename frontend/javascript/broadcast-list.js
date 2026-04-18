@@ -482,6 +482,13 @@ export const BCList = {
             nameInput.placeholder = t('broadcast.channelNamePlaceholder');
             nameInput.name = 'broadcast-list-tag';
             nameInput.value = ch.name;
+            // Non-owners can't rename — lock the input at the HTML level
+            // (visible via dim opacity in CSS) instead of letting them type
+            // and then bouncing the change with a toast. Same pattern as
+            // .vcs-list-branch[readonly].
+            if (!this.isOwnerOf(ch)) {
+                nameInput.readOnly = true;
+            }
 
             nameInput.addEventListener('change', async (e) => {
                 const newName = e.target.value.trim();
@@ -582,13 +589,20 @@ export const BCList = {
 };
 
 // --- Channel Search ---
+// Match against the full row content: channel name (input), last-signal
+// timestamp, owner title/uid, pin state. User can filter by any word
+// they see on the row, not just the channel name.
 const $bcSearch = document.getElementById('broadcast-search');
 $bcSearch?.addEventListener('input', () => {
     const query = $bcSearch.value.toLowerCase().trim();
     const items = document.querySelectorAll('.broadcast-list-list-item');
     items.forEach(item => {
-        const name = item.querySelector('.broadcast-list-tag')?.value?.toLowerCase() || '';
-        item.style.display = name.includes(query) ? '' : 'none';
+        if (!query) { item.style.display = ''; return; }
+        let text = item.innerText.toLowerCase();
+        item.querySelectorAll('input, textarea').forEach(el => {
+            if (el.value) text += ' ' + el.value.toLowerCase();
+        });
+        item.style.display = text.includes(query) ? '' : 'none';
     });
 });
 

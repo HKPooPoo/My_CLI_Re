@@ -21,6 +21,29 @@ const overlay = document.getElementById("press-start-overlay");
 let justGainedFocus = false;
 let focusTimer;
 let firstTriggered = false;
+// When set, the NEXT click that dismisses the overlay triggers a full
+// page reload instead of the normal "restore last nav + navigate" flow.
+// Used when a cross-tab session change invalidates this tab's in-memory
+// state (BB branches, WT connections, MOD instances, etc.) — a clean
+// reload is safer than patching half the modules.
+let forceReloadOnDismiss = false;
+
+/**
+ * Force the Press Start overlay back to screen. The next click on the
+ * overlay will perform a full page reload. If the overlay is already
+ * visible (e.g. screensaver already fired), we just promote its dismiss
+ * action to a reload.
+ */
+export function showForReload() {
+    forceReloadOnDismiss = true;
+    if (overlay.style.display !== "flex") {
+        overlay.classList.add("crt-switch-on");
+        overlay.style.display = "flex";
+        window.dispatchEvent(new CustomEvent('screensaver:activated', {
+            detail: { initial: false }
+        }));
+    }
+}
 
 /**
  * 查詢螢幕保護是否啟動中
@@ -45,6 +68,13 @@ window.addEventListener("focus", () => {
 overlay.addEventListener("click", () => {
     if (overlay.style.display === "none" || justGainedFocus) return;
     overlay.dataset.handled = '1';
+
+    // Session changed in another tab → reload instead of the standard
+    // restore-last-nav flow. Short-circuits before any further action.
+    if (forceReloadOnDismiss) {
+        window.location.reload();
+        return;
+    }
 
     window.dispatchEvent(new CustomEvent('screensaver:deactivated'));
 

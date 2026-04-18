@@ -179,6 +179,24 @@ export const WTList = {
                 this.fetchConnections();
             }
         });
+
+        // Connection search — matches the row's full visible content
+        // (tag input, partner uid, last signal timestamp) + any input's
+        // current value, so e.g. filtering by a partner's uid works
+        // even if the user hasn't set a friendly tag for them.
+        const $wtSearch = document.getElementById('walkie-typie-search');
+        $wtSearch?.addEventListener('input', () => {
+            const query = $wtSearch.value.toLowerCase().trim();
+            const items = document.querySelectorAll('.walkie-typie-list-list-item');
+            items.forEach(item => {
+                if (!query) { item.style.display = ''; return; }
+                let text = item.innerText.toLowerCase();
+                item.querySelectorAll('input, textarea').forEach(el => {
+                    if (el.value) text += ' ' + el.value.toLowerCase();
+                });
+                item.style.display = text.includes(query) ? '' : 'none';
+            });
+        });
     },
 
     async fetchConnections() {
