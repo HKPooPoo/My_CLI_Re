@@ -96,17 +96,13 @@
     transition: all var(--transition-normal);
 }
 
-@media (hover: hover) {
-    .misc-toggle-btn:hover {
-        background: var(--text-green);
-        color: var(--bg-primary);
-        box-shadow: 0 0 10px var(--text-green);
-        /* CRT halo on hover: dark glow around dark text reads as a visible
-           rim on the green fill (the default .crt-text-* text-shadow is the
-           same color as the fill, so it disappears without this override). */
-        text-shadow: 0 0 4px var(--bg-primary);
-    }
-}
+/* .misc-toggle-btn inherits the standard hover from the global
+   button:hover rule in style.css (green fill + dark text + green glow).
+   No per-rule override — same pattern as .auth-btn / .mod-btn /
+   .mods-toggle-btn / the refresh buttons. The .crt-text-* text-shadow
+   technically still applies on hover but vanishes into the matching
+   green fill, which is the intended "clean dark-on-green" look
+   consistent across the app. */
 
 /* Range input group — label left, slider + value right */
 .misc-range-group {
