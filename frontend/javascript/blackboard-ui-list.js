@@ -125,9 +125,16 @@ export class InfiniteList {
     /**
      * 數據同步 (Sync Heartbeat)
      * 邏輯：重新抓取所有符合選擇器的 DOM 項，並嘗試恢復先前的 Active 狀態，若丟失則歸零。
+     *
+     * Items hidden via inline `display: none` (e.g. search-filtered rows)
+     * are excluded — wheel navigation and cursor positioning should only
+     * ever visit visually-present rows. Without this filter, arrow/wheel
+     * navigation skips into invisible items and the .active highlight
+     * appears to "disappear".
      */
     refresh() {
-        this.items = Array.from(this.container.querySelectorAll(this.itemSelector));
+        this.items = Array.from(this.container.querySelectorAll(this.itemSelector))
+            .filter(item => item.style.display !== 'none');
 
         // 嘗試從現實 DOM 中找回靈魂
         const domActiveIndex = this.items.findIndex(item => item.classList.contains("active"));

@@ -196,6 +196,8 @@ export const WTList = {
                 });
                 item.style.display = text.includes(query) ? '' : 'none';
             });
+            // Keep cursor + wheel navigation on visible rows only.
+            this.infiniteList?.refresh();
         });
     },
 

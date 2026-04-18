@@ -604,6 +604,8 @@ $bcSearch?.addEventListener('input', () => {
         });
         item.style.display = text.includes(query) ? '' : 'none';
     });
+    // Keep InfiniteList's item array + cursor in sync with visible rows.
+    BCList.infiniteList?.refresh();
 });
 
 // Init

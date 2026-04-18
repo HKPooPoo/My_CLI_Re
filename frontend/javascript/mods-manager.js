@@ -755,6 +755,8 @@ function bindEvents() {
             });
             item.style.display = text.includes(query) ? '' : 'none';
         });
+        // Keep cursor + wheel navigation on visible rows only.
+        infiniteList?.refresh();
     });
 
     // InfiniteList selection → bifurcate: instance vs catalog item

@@ -816,6 +816,9 @@ $vcsSearch?.addEventListener('input', () => {
     items.forEach(item => {
         item.style.display = matchesQuery(item, query) ? '' : 'none';
     });
+    // Refresh InfiniteList so wheel + .active navigation only visits the
+    // visible rows — otherwise the cursor can jump to filtered-out items.
+    listInstances.get(document.querySelector('.vcs-list-container'))?.refresh();
 });
 
 /**
