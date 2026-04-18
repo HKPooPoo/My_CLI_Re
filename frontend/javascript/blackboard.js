@@ -269,6 +269,10 @@ async function syncView() {
  * 步驟：1. 抓取本地分支 2. 抓取遠端分支 3. 透過 Map 進行 ID 合併 4. 判斷 IsDirty 狀態 5. 排序並渲染
  */
 let _listBusy = false;
+// Signature of the last render: skip the DOM rebuild when a poll/broadcast
+// produces data identical to what's already on screen. Keeps DevTools
+// inspection, hover, and text selection stable across the 2s poll cycle.
+let _lastRenderedBranchesSig = null;
 async function updateBranchList() {
     if (_listBusy) return;
     _listBusy = true;
@@ -350,7 +354,19 @@ async function updateBranchList() {
         const currentSelection = getSelectedBranchInfo();
         const targetSelectionId = currentSelection ? currentSelection.id : state.branchId;
 
-        BBUI.renderBranchList(combinedBranches, targetSelectionId, state.owner, state.branchId);
+        // Skip the DOM rewrite when this render would produce the same output
+        // as the last one. Without this, the 2s background poll (and every
+        // cross-tab broadcast) rebuilds the full list and wipes DevTools
+        // selection, hover, and in-flight UI state. Signature covers the
+        // render inputs: per-branch identity + the three state params.
+        const signature = JSON.stringify({
+            b: combinedBranches.map(b => [b.id, b.name, b.owner, b.lastUpdate, b.isLocal, b.isServer, b.isDirty, b.serverOwner]),
+            s: [state.branchId, state.owner, targetSelectionId]
+        });
+        if (signature !== _lastRenderedBranchesSig) {
+            _lastRenderedBranchesSig = signature;
+            BBUI.renderBranchList(combinedBranches, targetSelectionId, state.owner, state.branchId);
+        }
 
         // Return whether server has newer data for the current branch (for poll fallback)
         const currentBranch = branchMap.get(state.branchId);

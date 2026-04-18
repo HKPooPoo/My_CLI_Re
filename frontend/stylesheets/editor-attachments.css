@@ -133,6 +133,13 @@ input.attachment-chip-name:focus {
     outline-offset: 2px;
 }
 
+/* CLOUD chips: name is locked until the blob is downloaded (icon click).
+   Same dim/default-cursor pattern as .vcs-list-branch[readonly]. */
+input.attachment-chip-name[readonly] {
+    opacity: 0.6;
+    cursor: default;
+}
+
 .attachment-chip-icon {
     text-decoration: none;
     color: inherit;

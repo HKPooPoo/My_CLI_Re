@@ -72,6 +72,10 @@
         background: var(--text-green);
         color: var(--bg-primary);
         box-shadow: 0 0 10px var(--text-green);
+        /* CRT halo on hover: dark glow around dark text reads as a visible
+           rim on the green fill (the default .crt-text-* text-shadow is the
+           same color as the fill, so it disappears without this override). */
+        text-shadow: 0 0 4px var(--bg-primary);
     }
 }
 

@@ -443,13 +443,19 @@ export const EditorAttachments = {
                     const chip = this._findChip(hash);
                     if (chip) {
                         chip.classList.remove('is-local');
+                        chip.classList.remove('is-cloud');
                         chip.classList.add('is-synced');
                         const icon = chip.querySelector('.attachment-chip-icon');
                         if (icon) icon.textContent = t('files.statusSync');
                         const nameEl = chip.querySelector('.attachment-chip-name');
-                        if (nameEl && meta.name) {
-                            nameEl.textContent = meta.name;
-                            nameEl.title = meta.name;
+                        if (nameEl) {
+                            nameEl.removeAttribute('readonly');
+                            if (meta.name) {
+                                if (nameEl.tagName === 'INPUT') nameEl.value = meta.name;
+                                else nameEl.textContent = meta.name;
+                                nameEl.title = meta.name;
+                                chip.dataset.name = meta.name;
+                            }
                         }
                     }
 
@@ -546,15 +552,20 @@ export const EditorAttachments = {
                     chip.classList.add('is-synced');
                 } else {
                     iconText = t('files.statusCloud');
+                    chip.classList.add('is-cloud');
                 }
 
                 const removeHtml = this.readOnly ? '' :
                     `<button class="attachment-chip-remove" data-hash="${hash}" title="Remove">${t('files.removeBtn')}</button>`;
 
                 const displayName = name || hash.substring(0, 8) + '…';
+                // CLOUD chips: name is readonly until the blob is on this device.
+                // Renaming needs the blob (we hash content + new name locally), so we
+                // force the user to promote CLOUD → SYNC first by clicking the icon.
+                const readonlyAttr = status === 'cloud' ? ' readonly' : '';
                 const nameInputHtml = this.readOnly
                     ? `<span class="attachment-chip-name"></span>`
-                    : `<input class="attachment-chip-name" type="text" spellcheck="false" autocomplete="off" />`;
+                    : `<input class="attachment-chip-name" type="text" spellcheck="false" autocomplete="off"${readonlyAttr} />`;
 
                 // Icon is an anchor to the INLINE server URL (?inline=1) so
                 // the browser opens it as a preview in a new tab. The separate
@@ -601,15 +612,23 @@ export const EditorAttachments = {
                 chip.querySelector('.attachment-chip-icon').addEventListener('click', (e) => {
                     // Keep anchor href in sync with current hash (rename updates dataset.hash)
                     e.currentTarget.setAttribute('href', FileService.viewUrl(chip.dataset.hash));
-                    // LOCAL-only chips: server has nothing at that hash yet.
-                    // Intercept and open the blob URL in a new tab instead.
-                    // Pre-open the tab synchronously BEFORE the awaits so the
-                    // user gesture isn't lost to popup blockers.
                     const isSynced = chip.classList.contains('is-synced');
                     const isLocalOnly = chip.classList.contains('is-local') && !isSynced;
+                    const isCloud = chip.classList.contains('is-cloud');
                     if (isLocalOnly) {
+                        // LOCAL-only chips: server has nothing at that hash yet.
+                        // Intercept and open the blob URL in a new tab instead.
+                        // Pre-open the tab synchronously BEFORE the awaits so
+                        // the user gesture isn't lost to popup blockers.
                         e.preventDefault();
                         this._openLocalInNewTab(chip.dataset.hash);
+                    } else if (isCloud) {
+                        // CLOUD chips: first click downloads the blob into
+                        // file_blobs (promoting the chip to [SYNC]) instead of
+                        // opening a preview. Second click (now [SYNC]) opens
+                        // preview via the anchor's native target="_blank".
+                        e.preventDefault();
+                        this._ensureLocal(chip.dataset.hash);
                     }
                 });
 
