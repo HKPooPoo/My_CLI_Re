@@ -184,7 +184,12 @@ export const BCList = {
                     this.render();
                 } catch (e) {
                     console.error('PIN ERROR:', e);
-                    BBMessage.error(t('broadcast.pinFailed'));
+                    // Mirror the 4xx-passthrough pattern used by CAST /
+                    // DELETE / rename: let the backend's human-readable
+                    // message reach the user when the failure is on their
+                    // side, fall back to the generic toast on 5xx/network.
+                    const isUserError = e.status >= 400 && e.status < 500;
+                    BBMessage.error(isUserError ? (e.message || t('broadcast.pinFailed')) : t('broadcast.pinFailed'));
                 }
             });
         }

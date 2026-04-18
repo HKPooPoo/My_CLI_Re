@@ -733,10 +733,17 @@ window.addEventListener("blackboard:branchRename", async (e) => {
     await BBCore.renameBranch("local", branchId, newName);
     if (branchId === state.branchId) {
         state.branch = newName;
+        // renameBranch flipped every [synced] record's owner to [asynced]; if
+        // our in-memory state.owner matched the old tag for this branch, align
+        // it so subsequent getRecord() calls hit the right composite key.
+        state.owner = markAsynced(state.owner);
         BBUI.updateIndicators(state.branch || t('blackboard.branchNameFallback'), state.currentHead, true);
     }
     await updateBranchList();
     BBSync.scheduleAutoCommit();
+    // Notify sibling tabs: they re-derive state.owner from DB and repaint
+    // the branch tag (now asynced) via the same listener attach/detach use.
+    CrossTabSync.broadcast('bb:record:mutated', { branchId, timestamp: null });
 });
 
 // 監聽授權變動 (登入/登出)

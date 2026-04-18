@@ -132,19 +132,33 @@ export const BBCore = {
 
     /**
      * 分支改名 (對該 branch_id 下的所有紀錄進行改名)
+     *
+     * Also downgrades every [synced] record in the branch to [asynced] via
+     * markAsynced(), same asynced-on-divergence rule that onAttach/onDetach/
+     * onRename already follow — the local branch name now differs from the
+     * server's (commit sends branch_name per record), so leaving the tag as
+     * [synced] would falsely advertise server-consistency. Function-form
+     * .modify() is used because each record's new owner depends on its
+     * CURRENT owner value (records could be mixed [synced]/[asynced]/local).
      */
     async renameBranch(owner, branchId, newName) {
         if (owner === "local") {
             return await db.blackboard.where('[branch_id+timestamp]')
                 .between([branchId, Dexie.minKey], [branchId, Dexie.maxKey])
                 .and(item => item.owner.startsWith('local'))
-                .modify({ branch: newName });
+                .modify((record) => {
+                    record.branch = newName;
+                    record.owner = markAsynced(record.owner);
+                });
         }
 
         return await db.blackboard
             .where('[owner+branch_id+timestamp]')
             .between([owner, branchId, Dexie.minKey], [owner, branchId, Dexie.maxKey])
-            .modify({ branch: newName });
+            .modify((record) => {
+                record.branch = newName;
+                record.owner = markAsynced(record.owner);
+            });
     },
 
     /**
