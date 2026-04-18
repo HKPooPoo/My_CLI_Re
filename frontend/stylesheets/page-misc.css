@@ -60,7 +60,9 @@
     flex-shrink: 0;
     gap: 8px;
     margin-top: 8px;
-    height: calc(var(--sub-navi-height) * 3);
+    height: clamp(192px / 2, calc(var(--container-width) / 1.56) / 2, 56vh / 2);
+    overflow-y: auto;
+    overflow-x: hidden;
 }
 
 .misc-list-item {
