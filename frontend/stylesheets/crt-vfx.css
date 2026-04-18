@@ -60,6 +60,22 @@
     text-shadow: var(--text-shadow-yellow)
 }
 
+/* On hover, buttons fill green and their text colour flips to
+   bg-primary (dark). The per-variant text-shadow from .crt-text-*
+   would leave an orange/red/cyan/yellow halo drifting around dark
+   text over the green fill — the halo no longer matches anything
+   on screen. Clear it for the non-green variants. The .crt-text-green
+   case naturally disappears because green halo on green fill is
+   invisible, so we skip it. */
+@media (hover: hover) {
+    button.crt-text-orange:hover,
+    button.crt-text-cyan:hover,
+    button.crt-text-red:hover,
+    button.crt-text-yellow:hover {
+        text-shadow: none;
+    }
+}
+
 /*press start*/
 #press-start-overlay {
     position: absolute;

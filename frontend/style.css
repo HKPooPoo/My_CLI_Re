@@ -41,7 +41,7 @@
     /*scaffold*/
     --scaffold-left-gap: 16vw;
     /* Toast */
-    --toast-bg: rgba(0, 17, 0, 0.85);
+    --toast-bg: rgba(0, 17, 0, 0.69);
 
     /* Transparency variants */
     --text-green-10: rgba(50, 255, 50, 0.1);
