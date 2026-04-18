@@ -60,19 +60,35 @@
     text-shadow: var(--text-shadow-yellow)
 }
 
-/* On hover, buttons fill green and their text colour flips to
-   bg-primary (dark). The per-variant text-shadow from .crt-text-*
-   would leave an orange/red/cyan/yellow halo drifting around dark
-   text over the green fill — the halo no longer matches anything
-   on screen. Clear it for the non-green variants. The .crt-text-green
-   case naturally disappears because green halo on green fill is
-   invisible, so we skip it. */
+/* Per-variant hover palette: the fill + outer glow match the button's
+   own text colour instead of the app-default green. The text itself
+   flips to --bg-primary via the inherited button:hover rule in
+   style.css, so on hover each variant looks like its dark-on-variant
+   mirror — orange button → orange fill, red → red fill, etc.
+   The per-variant text-shadow (e.g. orange halo) stays active but
+   vanishes into the matching-colour fill, same way .crt-text-green's
+   green halo already vanishes into the green hover fill today. No
+   special text-shadow override needed.
+   Light theme safety: light-theme/theme.css remaps every
+   --text-<colour> var to `black`, so these rules naturally collapse
+   to black fill + black glow in light mode, matching the rest of the
+   monochrome light palette. */
 @media (hover: hover) {
-    button.crt-text-orange:hover,
-    button.crt-text-cyan:hover,
-    button.crt-text-red:hover,
+    button.crt-text-orange:hover {
+        background: var(--text-orange);
+        box-shadow: 0 0 10px var(--text-orange);
+    }
+    button.crt-text-cyan:hover {
+        background: var(--text-cyan);
+        box-shadow: 0 0 10px var(--text-cyan);
+    }
+    button.crt-text-red:hover {
+        background: var(--text-red);
+        box-shadow: 0 0 10px var(--text-red);
+    }
     button.crt-text-yellow:hover {
-        text-shadow: none;
+        background: var(--text-yellow);
+        box-shadow: 0 0 10px var(--text-yellow);
     }
 }
 
