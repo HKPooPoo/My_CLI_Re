@@ -67,6 +67,26 @@ Known risk on shared devices: Bob logging in after Alice will see Alice's locall
 
 **`GET /api/files/{hash}?inline=1`** uses `response()->file()` with `Content-Disposition: inline`; without the flag it uses `response()->download()` with `Content-Disposition: attachment`.
 
+**Branch tag and file-chip status are independent state machines.** They look similar (both have three states, both describe "sync-ness") but answer different questions and update on different triggers. Confusing them leads to wrong mental models.
+
+| Aspect | Branch tag (`owner` column) | File-chip status |
+|--------|----------------------------|------------------|
+| Question answered | *"When did this device last reconcile with the server for this branch?"* | *"Right now, does this blob live on this device, the server, or both?"* |
+| Stored? | Yes — written into `owner` on record insert/update | No — recomputed from `file_blobs[hash].status` every render |
+| Triggers that write it | commit success / commit partial-failure / checkout / rename (by our `onRename`) | N/A — derived state |
+| States | `local` · `local, online/{uid} [synced]` · `local, online/{uid} [asynced]` | `[LOCAL]` · `[SYNC]` · `[CLOUD]` |
+| Detects remote divergence? | **No.** Stays `[synced]` even when another device has committed over this branch, until this device pulls. | N/A — chip is local-existence only. |
+
+Both machines are deliberately passive about "what is on the server right this moment". Neither will fabricate a state by querying the server to make the UI look fresher. The server is the source of truth only when the user (or auto-sync) triggers a pull (checkout / recover / 5s branch-list poll / visibilitychange / online event / WebSocket `BlackboardUpdated`).
+
+**Consequences to keep in mind:**
+- Three chip states can coexist in one record — a page can show `[LOCAL]` (just attached), `[SYNC]` (previously uploaded and cached), and `[CLOUD]` (another device uploaded, not yet downloaded here) side by side. This is correct; do not normalise.
+- A branch tag of `[synced]` **does not** mean "server has not moved" — it means "last time we reconciled, we were equal". Fresh data may be one pull away.
+- A device that only receives server updates (never mutates locally) should not be marked `[asynced]` — the tag is about *my* outgoing divergence, not *their* incoming changes. "Behind the server" has no tag today; users discover it when they pull.
+- `[LOCAL]` chip does not imply `[asynced]` branch. A file can be `[LOCAL]` (newly attached) while the branch is still `[synced]` from a previous commit — the branch's tag only flips when an explicit trigger fires. Our `onRename` is the one place where a file-level mutation flips the branch tag immediately, because rename fundamentally changes what the branch *references* on the server.
+
+This is a Local-First trade-off: UI states are honest snapshots of local knowledge, not optimistic queries against a live server. The alternative (reactive polling per chip / per tag) was rejected because it creates race conditions, burns bandwidth, and makes offline behaviour degrade poorly. The fix path when staleness matters is always "pull", not "compute harder".
+
 ### Service Worker NavigationRoute
 
 `sw-src.js` registers a `NavigationRoute` that serves cached `/index.html` for all top-level navigations. The denylist MUST include **`/^\/api\//`** or file downloads opened in a new tab (e.g. clicking a SYNCED chip icon) would be hijacked into the SPA shell under `/api/files/...`, where relative `<link>` paths 404 and the user sees an unstyled page. Also denies `/^\/pages\//` so standalone pages stay standalone.
