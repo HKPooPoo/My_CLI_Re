@@ -5,7 +5,8 @@
     "local": "本機",
     "head": "---",
     "push": "較新",
-    "pull": "較舊"
+    "pull": "較舊",
+    "nameEmpty": "名稱不能留空"
   },
   "nav": {
     "blackboard": "黑板",

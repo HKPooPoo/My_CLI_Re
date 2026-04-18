@@ -13,6 +13,7 @@
  */
 
 import { t } from './i18n.js';
+import { BBMessage } from './blackboard-msg.js';
 
 export const BBUI = {
     // --- DOM 引用清單 ---
@@ -112,11 +113,19 @@ export const BBUI = {
                 <div class="vcs-list-owner">${ownerDisplay}</div>
             `;
 
-            // 改名監聽：由 UI 對象直接捕捉並向上廣播自定義事件，不處理具體資料邏輯
+            // 改名監聽：由 UI 對象直接捕捉並向上廣播自定義事件，不處理具體資料邏輯。
+            // 空白值：立即把 input 還原為原名 + toast（與 .attachment-chip-name /
+            // .broadcast-list-tag 一致，不再讓 input 顯示空白等下一次 poll 重繪）。
             const input = item.querySelector(".vcs-list-branch");
             if (!isReadonly) {
                 input.addEventListener("change", (e) => {
-                    const newName = e.target.value.trim() || branch.name;
+                    const newName = e.target.value.trim();
+                    if (!newName) {
+                        e.target.value = branch.name;
+                        BBMessage.error(t('common.nameEmpty'));
+                        return;
+                    }
+                    if (newName === branch.name) return;
                     window.dispatchEvent(new CustomEvent("blackboard:branchRename", {
                         detail: { branchId: branch.id, newName }
                     }));

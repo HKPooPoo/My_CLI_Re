@@ -5,7 +5,8 @@
     "local": "LOCAL",
     "head": "---",
     "push": "PUSH",
-    "pull": "PULL"
+    "pull": "PULL",
+    "nameEmpty": "ERROR: NAME CANNOT BE EMPTY"
   },
   "nav": {
     "blackboard": "BLACKBOARD",

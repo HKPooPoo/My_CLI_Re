@@ -5,7 +5,8 @@
     "local": "Local",
     "head": "---",
     "push": "Newer",
-    "pull": "Older"
+    "pull": "Older",
+    "nameEmpty": "Name cannot be empty."
   },
   "nav": {
     "blackboard": "MY LOG",

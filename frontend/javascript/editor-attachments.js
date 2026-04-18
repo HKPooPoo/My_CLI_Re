@@ -595,7 +595,12 @@ export const EditorAttachments = {
                     nameEl.addEventListener('change', async () => {
                         const proposed = nameEl.value.trim();
                         const prev = chip.dataset.name || displayName;
-                        if (!proposed || proposed === prev) {
+                        if (!proposed) {
+                            nameEl.value = prev;
+                            BBMessage.error(t('common.nameEmpty'));
+                            return;
+                        }
+                        if (proposed === prev) {
                             nameEl.value = prev;
                             return;
                         }
