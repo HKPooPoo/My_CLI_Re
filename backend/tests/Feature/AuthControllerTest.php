@@ -368,7 +368,7 @@ class AuthControllerTest extends TestCase
         $response->assertStatus(200)
             ->assertJson(['message' => 'RESTORE COMMAND SENT TO REGISTERED EMAIL.']);
 
-        Mail::assertSent(\App\Mail\ResetPasscodeMail::class);
+        Mail::assertQueued(\App\Mail\ResetPasscodeMail::class);
     }
 
     #[Test]
@@ -419,7 +419,7 @@ class AuthControllerTest extends TestCase
         $response->assertStatus(200)
             ->assertJson(['message' => 'VERIFICATION COMMAND SENT.']);
 
-        Mail::assertSent(\App\Mail\BindEmailMail::class);
+        Mail::assertQueued(\App\Mail\BindEmailMail::class);
     }
 
     #[Test]

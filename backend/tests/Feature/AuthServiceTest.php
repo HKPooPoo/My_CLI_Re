@@ -234,7 +234,9 @@ class AuthServiceTest extends TestCase
 
         $this->service->requestPasswordReset('alice');
 
-        Mail::assertSent(ResetPasscodeMail::class, function ($mail) {
+        // ResetPasscodeMail implements ShouldQueue so Mail::fake() captures
+        // it via assertQueued, not assertSent.
+        Mail::assertQueued(ResetPasscodeMail::class, function ($mail) {
             return $mail->hasTo('alice@test.com');
         });
     }
