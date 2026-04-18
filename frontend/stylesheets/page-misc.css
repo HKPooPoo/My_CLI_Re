@@ -12,6 +12,11 @@
     padding: var(--panel-padding);
     border: var(--border-line);
     position: relative;
+    /* Shared sizing base for the two scrollable children below. Defining
+       it once here and dividing in .misc-action-container keeps the 2:1
+       list-to-action height ratio locked across every viewport — no
+       matter how the clamp lands, action is always half of list. */
+    --misc-list-height: clamp(192px, calc(var(--container-width) / 1.56), 56vh);
 }
 
 .misc-title {
@@ -27,42 +32,42 @@
 
 .misc-list-container {
     border-bottom: var(--border-line);
-    height: clamp(192px, calc(var(--container-width) / 1.56), 56vh);
+    height: var(--misc-list-height);
     overflow-y: auto;
     overflow-x: hidden;
     scrollbar-width: thin;
     scrollbar-color: var(--text-green) var(--bg-primary);
 }
 
-.misc-list-container::-webkit-scrollbar {
+/* Action-button stack mirrors the sizing/overflow/scrollbar behavior of
+   .misc-list-container above, with height pinned at half the list —
+   both children therefore respond to viewport changes in lockstep. gap
+   is kept for button-to-button spacing inside (list items self-border
+   so the list doesn't need gap). */
+.misc-action-container {
+    border-bottom: var(--border-line);
+    height: calc(var(--misc-list-height) / 2);
+    overflow-y: auto;
+    overflow-x: hidden;
+    scrollbar-width: thin;
+    scrollbar-color: var(--text-green) var(--bg-primary);
+    gap: 8px;
+}
+
+.misc-list-container::-webkit-scrollbar,
+.misc-action-container::-webkit-scrollbar {
     width: 4px;
 }
 
-.misc-list-container::-webkit-scrollbar-track {
+.misc-list-container::-webkit-scrollbar-track,
+.misc-action-container::-webkit-scrollbar-track {
     background: var(--bg-primary);
 }
 
-.misc-list-container::-webkit-scrollbar-thumb {
+.misc-list-container::-webkit-scrollbar-thumb,
+.misc-action-container::-webkit-scrollbar-thumb {
     background-color: var(--text-green);
     border-radius: 2px;
-}
-
-/* Action button group — sibling to .misc-list-container.
-   Global flex-column default handles direction; gap + align-self stretch
-   replace per-button inline margin-top / width rules.
-   Height: four compact action buttons (~28px each) + three 8px gaps fit
-   inside three sub-navi rows (3 * 48px = 144px), with ~8px breathing
-   room. Referencing --sub-navi-height keeps the stack tied to the site-
-   wide control sizing so a later nav-height change also re-scales here.
-   flex-shrink: 0 prevents the list-container above from squeezing this
-   row off-screen when the container runs short. */
-.misc-action-container {
-    flex-shrink: 0;
-    gap: 8px;
-    margin-top: 8px;
-    height: clamp(192px / 2, calc(var(--container-width) / 1.56) / 2, 56vh / 2);
-    overflow-y: auto;
-    overflow-x: hidden;
 }
 
 .misc-list-item {
