@@ -3,6 +3,11 @@
     gap: var(--panel-gap);
     width: var(--container-width);
     max-width: var(--container-max-width);
+    /* Pin the container to the viewport-derived shell height defined in
+       style.css so the action-button row below the scrollable list never
+       gets pushed off-screen on short viewports. */
+    height: var(--container-height);
+    max-height: var(--container-max-height);
     margin: var(--container-margin);
     padding: var(--panel-padding);
     border: var(--border-line);
@@ -44,10 +49,18 @@
 
 /* Action button group — sibling to .misc-list-container.
    Global flex-column default handles direction; gap + align-self stretch
-   replace per-button inline margin-top / width rules. */
+   replace per-button inline margin-top / width rules.
+   Height: four compact action buttons (~28px each) + three 8px gaps fit
+   inside three sub-navi rows (3 * 48px = 144px), with ~8px breathing
+   room. Referencing --sub-navi-height keeps the stack tied to the site-
+   wide control sizing so a later nav-height change also re-scales here.
+   flex-shrink: 0 prevents the list-container above from squeezing this
+   row off-screen when the container runs short. */
 .misc-action-container {
+    flex-shrink: 0;
     gap: 8px;
     margin-top: 8px;
+    height: calc(var(--sub-navi-height) * 3);
 }
 
 .misc-list-item {

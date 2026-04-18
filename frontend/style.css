@@ -61,6 +61,23 @@
     /* --container-width: 48vw; */
     --container-width: clamp(300px, 86vw, 512px);
     --container-max-width: 512px;
+    /* Fits inside .page-container on any viewport: deducts the global
+       header/footer plus the in-body navi + sub-navi rows, then removes
+       the container's own symmetric top/bottom margin. Uses the clamp
+       ceilings (--navi-height / --sub-navi-height) so we slightly over-
+       estimate nav overhead on small viewports — err on no-overflow. */
+    --container-height: calc(100vh
+        - var(--header-height)
+        - var(--footer-height)
+        - var(--navi-height)
+        - var(--sub-navi-height)
+        - 2 * max(4vh, 32px));
+    --container-max-height: calc(100vh
+        - var(--header-height)
+        - var(--footer-height)
+        - var(--navi-height)
+        - var(--sub-navi-height)
+        - 2 * max(4vh, 32px));
     --container-margin: max(4vh, 32px) auto;
     --panel-padding: 16px;
     --panel-gap: 2vh;
