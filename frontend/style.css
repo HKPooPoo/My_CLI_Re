@@ -105,10 +105,16 @@ input {
 }
 
 @media (hover: hover) {
+    /* Default button hover: green fill + dark text, no outer glow. The
+       10px green box-shadow used to live here but clashed with
+       non-green .crt-text-* variants (orange / cyan / red buttons got
+       a green aura around their non-green text). Individual hover
+       rules (.mod-btn, .mods-toggle-btn, .btn-armed, etc.) still set
+       their own box-shadow where a glow is intentionally part of
+       their design. */
     button:hover {
         background: var(--text-green);
         color: var(--bg-primary);
-        box-shadow: 0 0 10px var(--text-green);
     }
 }
 
