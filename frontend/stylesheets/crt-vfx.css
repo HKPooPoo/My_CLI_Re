@@ -60,6 +60,18 @@
     text-shadow: var(--text-shadow-yellow)
 }
 
+/* Base-state border-colour: when a button carries a non-green
+   .crt-text-<variant> class, its border follows the variant too,
+   not the default green from --border-line. Scoped to <button> so
+   non-interactive text keeping the same classes (titles, labels,
+   counters) doesn't get affected — most have no border anyway, but
+   this keeps the cascade tidy. Light theme still ends up with a
+   black border because --text-<variant> remaps to black. */
+button.crt-text-orange { border-color: var(--text-orange); }
+button.crt-text-cyan   { border-color: var(--text-cyan); }
+button.crt-text-red    { border-color: var(--text-red); }
+button.crt-text-yellow { border-color: var(--text-yellow); }
+
 /* Per-variant hover palette: the fill + outer glow match the button's
    own text colour instead of the app-default green. The text itself
    flips to --bg-primary via the inherited button:hover rule in
