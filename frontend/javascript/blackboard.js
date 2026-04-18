@@ -293,7 +293,8 @@ async function updateBranchList() {
                     isLocal: true,
                     isServer: false,
                     isDirty: false,
-                    serverOwner: ""
+                    serverOwner: "",
+                    hasAsyncedRecord: !!b.hasAsyncedRecord
                 });
             });
         }
@@ -313,8 +314,13 @@ async function updateBranchList() {
                             existing.isServer = true;
                             existing.serverOwner = sb.uid;
                             existing.serverLastUpdate = serverLastUpdate;
-                            // 無腦比對：只要時間戳不一致，就是 asynced
-                            existing.isDirty = (serverLastUpdate !== existing.lastUpdate);
+                            // Dirty if either timestamps disagree OR any local
+                            // record in this branch already carries an
+                            // [asynced] owner tag (attach/detach/rename flip
+                            // the owner without changing the timestamp, so the
+                            // timestamp check alone misses that divergence).
+                            existing.isDirty = (serverLastUpdate !== existing.lastUpdate)
+                                || existing.hasAsyncedRecord;
                         } else {
                             branchMap.set(sid, {
                                 id: sid,

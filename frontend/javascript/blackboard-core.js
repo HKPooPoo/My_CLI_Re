@@ -188,6 +188,12 @@ export const BBCore = {
 
     /**
      * 獲取所有分支清單 (兼容本地與同步標籤)
+     *
+     * hasAsyncedRecord flags any branch where at least one record carries
+     * an [asynced] owner tag. Attach/detach/rename flip a single record's
+     * owner without bumping its timestamp, so the upstream timestamp-only
+     * isDirty check in updateBranchList() can miss the divergence; this
+     * per-branch summary lets the caller OR it in.
      */
     async getAllBranches(owner) {
         const branches = new Map();
@@ -202,14 +208,23 @@ export const BBCore = {
         await collection.each(record => {
             const branchId = record.branch_id;
             const timestamp = record.timestamp;
+            const isAsynced = typeof record.owner === 'string' && record.owner.endsWith('[asynced]');
             const existing = branches.get(branchId);
-            if (!existing || timestamp > existing.lastUpdate) {
+            if (!existing) {
                 branches.set(branchId, {
                     id: branchId,
                     name: record.branch,
                     owner: record.owner,
-                    lastUpdate: timestamp
+                    lastUpdate: timestamp,
+                    hasAsyncedRecord: isAsynced
                 });
+            } else {
+                if (isAsynced) existing.hasAsyncedRecord = true;
+                if (timestamp > existing.lastUpdate) {
+                    existing.name = record.branch;
+                    existing.owner = record.owner;
+                    existing.lastUpdate = timestamp;
+                }
             }
         });
 
@@ -218,7 +233,8 @@ export const BBCore = {
             name: info.name,
             owner: info.owner,
             lastUpdate: info.lastUpdate,
-            displayTime: getHKTTimestamp(info.id)
+            displayTime: getHKTTimestamp(info.id),
+            hasAsyncedRecord: info.hasAsyncedRecord
         }));
 
         return result.sort((a, b) => b.lastUpdate - a.lastUpdate);
