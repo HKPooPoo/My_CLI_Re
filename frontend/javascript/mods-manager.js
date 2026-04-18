@@ -738,13 +738,15 @@ function bindEvents() {
     });
 
     // Mod list search — matches the row's full visible content plus any
-    // input's current value, so a user can filter by template name,
-    // instance display name, category label, or any status word printed
-    // on the row (e.g. "active", "code-failed").
+    // input's current value. Target .mods-navigable (not .mods-list-item)
+    // so both sections are covered: active instances use
+    // .mods-list-item.mods-navigable and the catalog uses
+    // .mods-catalog-item.mods-navigable. Using .mods-list-item alone
+    // would miss the entire AVAILABLE MODS section.
     const $modSearch = document.getElementById('mods-search');
     $modSearch?.addEventListener('input', () => {
         const query = $modSearch.value.toLowerCase().trim();
-        const items = document.querySelectorAll('.mods-list-item');
+        const items = document.querySelectorAll('.mods-navigable');
         items.forEach(item => {
             if (!query) { item.style.display = ''; return; }
             let text = item.innerText.toLowerCase();

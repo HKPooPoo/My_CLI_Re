@@ -117,12 +117,34 @@ export const AuthManager = {
         if (this.crossTabSyncBound) return;
         this.crossTabSyncBound = true;
 
-        window.addEventListener("storage", (e) => {
-            if (e.key === "currentUser") {
-                this._syncSessionState(true);
+        // Storage event: fires in OTHER tabs when localStorage changes.
+        // We DON'T re-query /auth-status here — localStorage is already
+        // shared across tabs, so by the time our handler runs both
+        // localStorage.currentUser and the server session agree on the
+        // new value. Comparing server-vs-local would always match and
+        // we'd miss the event. Instead, trust the event's own newValue
+        // vs oldValue: if they differ, a sibling tab just logged in,
+        // logged out, or switched identity, and this tab's in-memory
+        // state is stale — force Press Start so the next click
+        // reloads the page fresh for whatever the new identity is.
+        window.addEventListener("storage", async (e) => {
+            if (e.key !== "currentUser") return;
+            if (e.newValue === e.oldValue) return;
+            if (e.newValue) {
+                BBMessage.info(t('auth.sessionChanged', { uid: e.newValue }));
+            } else {
+                BBMessage.info(t('auth.sessionEnded'));
             }
+            const ps = await import('./pressStart.js').catch(() => null);
+            ps?.showForReload?.();
         });
 
+        // Visibilitychange catches the case where this tab was hidden /
+        // suspended and missed an event (rare; storage events normally
+        // fire on hidden tabs too). Here we DO need the server check —
+        // the storage event already fired and updated localStorage, so
+        // we're just looking for cases where the server session is
+        // silently different (manual cookie clear, expiry, etc.).
         document.addEventListener("visibilitychange", () => {
             if (document.visibilityState === "visible") {
                 this._syncSessionState(true);
