@@ -482,4 +482,175 @@ class AuthControllerTest extends TestCase
         $this->getJson('/api/auth-status')
             ->assertJson(['is_logged_in' => false]);
     }
+
+    // =========================================================================
+    //  POST /api/auth/unbind-email
+    // =========================================================================
+
+    #[Test]
+    public function unbind_email_clears_email_with_correct_passcode(): void
+    {
+        $user = User::factory()->withEmail('alice@test.com')->create([
+            'uid' => 'aliceU',
+            'passcode' => Hash::make('secret'),
+        ]);
+
+        $response = $this->actingAs($user)->postJson('/api/auth/unbind-email', [
+            'passcode' => 'secret',
+        ]);
+
+        $response->assertStatus(200)->assertJson(['message' => 'EMAIL UNBOUND.']);
+        $user->refresh();
+        $this->assertNull($user->email);
+    }
+
+    #[Test]
+    public function unbind_email_rejects_wrong_passcode(): void
+    {
+        $user = User::factory()->withEmail('alice@test.com')->create([
+            'uid' => 'aliceW',
+            'passcode' => Hash::make('secret'),
+        ]);
+
+        $response = $this->actingAs($user)->postJson('/api/auth/unbind-email', [
+            'passcode' => 'wrong',
+        ]);
+
+        $response->assertStatus(401)->assertJson(['message' => 'INVALID PASSCODE.']);
+        $user->refresh();
+        $this->assertEquals('alice@test.com', $user->email);
+    }
+
+    #[Test]
+    public function unbind_email_rejects_unauthenticated(): void
+    {
+        $response = $this->postJson('/api/auth/unbind-email', [
+            'passcode' => 'secret',
+        ]);
+
+        $response->assertStatus(401);
+    }
+
+    #[Test]
+    public function unbind_email_errors_when_no_email_bound(): void
+    {
+        $user = User::factory()->create([
+            'uid' => 'noemail',
+            'passcode' => Hash::make('secret'),
+        ]);
+
+        $response = $this->actingAs($user)->postJson('/api/auth/unbind-email', [
+            'passcode' => 'secret',
+        ]);
+
+        $response->assertStatus(400)->assertJson(['message' => 'NO EMAIL TO UNBIND.']);
+    }
+
+    #[Test]
+    public function unbind_email_forgets_pending_bind_token(): void
+    {
+        $user = User::factory()->withEmail('alice@test.com')->create([
+            'uid' => 'aliceP',
+            'passcode' => Hash::make('secret'),
+        ]);
+        Cache::put("bind_current_aliceP", [
+            'token' => 'staletok',
+            'email' => 'new@test.com',
+        ], now()->addMinutes(10));
+
+        $this->actingAs($user)->postJson('/api/auth/unbind-email', [
+            'passcode' => 'secret',
+        ])->assertStatus(200);
+
+        $this->assertNull(Cache::get("bind_current_aliceP"));
+    }
+
+    // =========================================================================
+    //  POST /api/auth/delete-account
+    // =========================================================================
+
+    #[Test]
+    public function delete_account_removes_user_with_correct_passcode(): void
+    {
+        $user = User::factory()->create([
+            'uid' => 'delme',
+            'passcode' => Hash::make('secret'),
+        ]);
+
+        $response = $this->actingAs($user)->postJson('/api/auth/delete-account', [
+            'passcode' => 'secret',
+        ]);
+
+        $response->assertStatus(200)->assertJson(['message' => 'ACCOUNT DELETED.']);
+        $this->assertDatabaseMissing('users', ['uid' => 'delme']);
+    }
+
+    #[Test]
+    public function delete_account_cascades_blackboards(): void
+    {
+        $user = User::factory()->create([
+            'uid' => 'delcascade',
+            'passcode' => Hash::make('secret'),
+        ]);
+        \DB::table('blackboards')->insert([
+            'user_id' => $user->id,
+            'branch_id' => '123',
+            'branch_name' => 'test',
+            'timestamp' => 1234567890000,
+            'text' => 'some content',
+            'file_hash' => null,
+        ]);
+
+        $this->actingAs($user)->postJson('/api/auth/delete-account', [
+            'passcode' => 'secret',
+        ])->assertStatus(200);
+
+        $this->assertDatabaseMissing('blackboards', ['user_id' => $user->id]);
+    }
+
+    #[Test]
+    public function delete_account_rejects_wrong_passcode(): void
+    {
+        $user = User::factory()->create([
+            'uid' => 'keepme',
+            'passcode' => Hash::make('secret'),
+        ]);
+
+        $response = $this->actingAs($user)->postJson('/api/auth/delete-account', [
+            'passcode' => 'wrong',
+        ]);
+
+        $response->assertStatus(401)->assertJson(['message' => 'INVALID PASSCODE.']);
+        $this->assertDatabaseHas('users', ['uid' => 'keepme']);
+    }
+
+    #[Test]
+    public function delete_account_rejects_unauthenticated(): void
+    {
+        $response = $this->postJson('/api/auth/delete-account', [
+            'passcode' => 'secret',
+        ]);
+
+        $response->assertStatus(401);
+    }
+
+    #[Test]
+    public function delete_account_forgets_pending_auth_tokens(): void
+    {
+        $user = User::factory()->create([
+            'uid' => 'deltok',
+            'passcode' => Hash::make('secret'),
+        ]);
+        Cache::put('reset_current_deltok', 'stale', now()->addMinutes(10));
+        Cache::put('reset_token:stale', 'deltok', now()->addMinutes(10));
+        Cache::put('bind_current_deltok', ['token' => 't', 'email' => 'e@x.com'], now()->addMinutes(10));
+
+        $this->actingAs($user)->postJson('/api/auth/delete-account', [
+            'passcode' => 'secret',
+        ])->assertStatus(200);
+
+        $this->assertNull(Cache::get('reset_current_deltok'));
+        $this->assertNull(Cache::get('reset_token:stale'));
+        $this->assertNull(Cache::get('bind_current_deltok'));
+    }
 }

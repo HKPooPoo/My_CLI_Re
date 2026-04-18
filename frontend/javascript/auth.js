@@ -31,7 +31,10 @@ export const AuthManager = {
         logoutContainer: document.querySelector(".auth-logout-container"),
         resetPasscodeBtn: document.getElementById("btn-reset-passcode"),
         emailInput: document.getElementById("auth-register-email"),
-        emailBindBtn: document.getElementById("btn-register-email")
+        emailBindBtn: document.getElementById("btn-register-email"),
+        confirmPasscodeInput: document.getElementById("auth-confirm-passcode"),
+        unbindEmailBtn: document.getElementById("btn-unbind-email"),
+        deleteAccountBtn: document.getElementById("btn-delete-account")
     },
 
     /**
@@ -280,6 +283,71 @@ export const AuthManager = {
                     }
                 } finally {
                     this.isBinding = false;
+                }
+            });
+        }
+
+        // --- 解綁 Email 邏輯 ---
+        // 兩段式確認 (armed → fire)；需要 re-enter passcode 作為破壞性動作閘門。
+        if (this.elements.unbindEmailBtn) {
+            new MultiStepButton(this.elements.unbindEmailBtn, {
+                sound: 'UISelectOff.mp3',
+                confirm: true,
+                confirmLabel: t('auth.unbindConfirm'),
+                action: async () => {
+                    const passcode = this.elements.confirmPasscodeInput?.value?.trim();
+                    if (!passcode) {
+                        BBMessage.error(t('auth.confirmPasscodeRequired'));
+                        return;
+                    }
+
+                    const msg = BBMessage.loading(t('auth.unbinding'));
+                    try {
+                        const data = await AuthService.unbindEmail({ passcode });
+                        msg.update(data.message || t('auth.unbindComplete'), 2000);
+                        this.elements.confirmPasscodeInput.value = "";
+                        // Refresh UI (email placeholder, user info) via status fetch.
+                        try {
+                            const status = await AuthService.getStatus();
+                            if (status?.is_logged_in) this.updateUI(status);
+                        } catch { /* best effort */ }
+                    } catch (e) {
+                        console.error("UNBIND ERROR:", e);
+                        msg.close();
+                        BBMessage.error(e.message || t('auth.unbindFailed'));
+                    }
+                }
+            });
+        }
+
+        // --- 注銷帳號邏輯 ---
+        // 兩段式確認 (armed → fire) + 伺服器端再驗 passcode。成功後本地登出狀態。
+        // 本地 IndexedDB (BB/WT/BC/檔案快取) 保留，對齊 logout 的 preserves-local-data
+        // 設計。使用者若要連本機一起洗乾淨，MISC 頁還有 WIPE LOCAL BRANCHES 按鈕。
+        if (this.elements.deleteAccountBtn) {
+            new MultiStepButton(this.elements.deleteAccountBtn, {
+                sound: 'UISelectOff.mp3',
+                confirm: true,
+                confirmLabel: t('auth.deleteConfirm'),
+                action: async () => {
+                    const passcode = this.elements.confirmPasscodeInput?.value?.trim();
+                    if (!passcode) {
+                        BBMessage.error(t('auth.confirmPasscodeRequired'));
+                        return;
+                    }
+
+                    const msg = BBMessage.loading(t('auth.deleting'));
+                    try {
+                        const data = await AuthService.deleteAccount({ passcode });
+                        msg.update(data.message || t('auth.deleteComplete'), 2000);
+                        this.elements.confirmPasscodeInput.value = "";
+                        // Server cleared; clear local session state too.
+                        this.updateUI(null);
+                    } catch (e) {
+                        console.error("DELETE ACCOUNT ERROR:", e);
+                        msg.close();
+                        BBMessage.error(e.message || t('auth.deleteFailed'));
+                    }
                 }
             });
         }

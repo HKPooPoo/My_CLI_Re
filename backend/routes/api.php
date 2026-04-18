@@ -58,6 +58,8 @@ Route::middleware('throttle:10,1')->group(function () {
     Route::post('/auth/command', [AuthController::class, 'executeCommand']);
     Route::post('/auth/request-reset', [AuthController::class, 'requestPasswordReset']);
     Route::post('/auth/request-bind', [AuthController::class, 'requestEmailBinding']);
+    Route::post('/auth/unbind-email', [AuthController::class, 'unbindEmail']);
+    Route::post('/auth/delete-account', [AuthController::class, 'deleteAccount']);
 });
 
 // Blackboard Sync — auth required

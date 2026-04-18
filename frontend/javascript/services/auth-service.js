@@ -36,5 +36,17 @@ export const AuthService = {
             method: 'POST',
             body: JSON.stringify(data)
         });
+    },
+    unbindEmail(data) {
+        return apiRequest('/auth/unbind-email', {
+            method: 'POST',
+            body: JSON.stringify(data)
+        });
+    },
+    deleteAccount(data) {
+        return apiRequest('/auth/delete-account', {
+            method: 'POST',
+            body: JSON.stringify(data)
+        });
     }
 };

@@ -59,7 +59,19 @@
     "emailRequired": "Email is required.",
     "invalidEmail": "Invalid email format.",
     "processing": "Processing...",
-    "offlineError": "You are offline."
+    "offlineError": "You are offline.",
+    "confirmPasscodePlaceholder": "Confirm passcode",
+    "confirmPasscodeRequired": "Enter your passcode first.",
+    "unbindBtn": "Unbind Email",
+    "unbindConfirm": "Unbind?",
+    "unbinding": "Unbinding...",
+    "unbindComplete": "Email unbound.",
+    "unbindFailed": "Couldn't unbind. Try again.",
+    "deleteBtn": "Delete Account",
+    "deleteConfirm": "Delete account?",
+    "deleting": "Deleting...",
+    "deleteComplete": "Account deleted.",
+    "deleteFailed": "Couldn't delete. Try again."
   },
   "blackboard": {
     "pageTitle": "Topic Manager",

@@ -59,7 +59,19 @@
     "emailRequired": "EMAIL REQUIRED",
     "invalidEmail": "INVALID EMAIL FORMAT",
     "processing": "PROCESSING...",
-    "offlineError": "OFFLINE"
+    "offlineError": "OFFLINE",
+    "confirmPasscodePlaceholder": "CONFIRM PASSCODE",
+    "confirmPasscodeRequired": "CONFIRM PASSCODE REQUIRED",
+    "unbindBtn": "UNBIND EMAIL",
+    "unbindConfirm": "CONFIRM UNBIND?",
+    "unbinding": "UNBINDING...",
+    "unbindComplete": "EMAIL UNBOUND",
+    "unbindFailed": "ERROR: UNBIND FAILED",
+    "deleteBtn": "DELETE ACCOUNT",
+    "deleteConfirm": "CONFIRM DELETE?",
+    "deleting": "DELETING...",
+    "deleteComplete": "ACCOUNT DELETED",
+    "deleteFailed": "ERROR: DELETE FAILED"
   },
   "blackboard": {
     "pageTitle": "BRANCH CONTROLLER",

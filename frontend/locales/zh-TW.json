@@ -59,7 +59,19 @@
     "emailRequired": "請填寫電子郵件",
     "invalidEmail": "電子郵件格式錯誤",
     "processing": "處理中...",
-    "offlineError": "離線"
+    "offlineError": "離線",
+    "confirmPasscodePlaceholder": "輸入密碼以確認",
+    "confirmPasscodeRequired": "請先輸入密碼",
+    "unbindBtn": "解除綁定",
+    "unbindConfirm": "確定解綁？",
+    "unbinding": "解綁中...",
+    "unbindComplete": "已解除 Email 綁定",
+    "unbindFailed": "解綁失敗",
+    "deleteBtn": "注銷帳號",
+    "deleteConfirm": "確定注銷？",
+    "deleting": "注銷中...",
+    "deleteComplete": "帳號已注銷",
+    "deleteFailed": "注銷失敗"
   },
   "blackboard": {
     "pageTitle": "主題管理",

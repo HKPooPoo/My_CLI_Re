@@ -9,6 +9,8 @@ use App\Http\Requests\Auth\ResetPasswordRequest;
 use App\Http\Requests\Auth\ExecuteCommandRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 
 class AuthController extends Controller
@@ -111,5 +113,78 @@ class AuthController extends Controller
             Log::error('Execute Command Error: ' . $e->getMessage());
             return response()->json(['message' => $e->getMessage()], 400);
         }
+    }
+
+    /**
+     * Remove the email binding from the currently-logged-in user.
+     * Passcode must be re-entered in the request body as the confirmation
+     * gate — owning a live session alone is not enough to unbind.
+     */
+    public function unbindEmail(Request $request)
+    {
+        $user = Auth::user();
+        if (!$user) {
+            return response()->json(['message' => 'AUTH REQUIRED.'], 401);
+        }
+
+        $request->validate(['passcode' => 'required|string']);
+
+        if (!Hash::check($request->input('passcode'), $user->passcode)) {
+            return response()->json(['message' => 'INVALID PASSCODE.'], 401);
+        }
+
+        if (!$user->email) {
+            return response()->json(['message' => 'NO EMAIL TO UNBIND.'], 400);
+        }
+
+        $user->email = null;
+        $user->save();
+
+        // A pending /bind token would now resolve to an email that nobody
+        // is waiting for — forget it so the stale command from the inbox
+        // can't be pasted to silently re-bind after an unbind.
+        Cache::forget("bind_current_{$user->uid}");
+
+        return response()->json(['message' => 'EMAIL UNBOUND.']);
+    }
+
+    /**
+     * Permanently delete the currently-logged-in user and everything the
+     * DB cascades from there (BB branches, WT connections + boards, BC
+     * channels + boards + pins). Passcode re-entry is the gate; session
+     * alone is not enough.
+     *
+     * Files owned by this user have user_id set to NULL (nullOnDelete),
+     * become unreferenced once the cascades above wipe BB/WT/BC records,
+     * and get picked up by the hourly orphan-cleanup cron for removal
+     * from disk within 24 hours.
+     */
+    public function deleteAccount(Request $request)
+    {
+        $user = Auth::user();
+        if (!$user) {
+            return response()->json(['message' => 'AUTH REQUIRED.'], 401);
+        }
+
+        $request->validate(['passcode' => 'required|string']);
+
+        if (!Hash::check($request->input('passcode'), $user->passcode)) {
+            return response()->json(['message' => 'INVALID PASSCODE.'], 401);
+        }
+
+        $uid = $user->uid;
+
+        // Clean any pending auth tokens in cache so they don't outlive
+        // the account row.
+        $resetToken = Cache::pull("reset_current_{$uid}");
+        if ($resetToken) {
+            Cache::forget("reset_token:{$resetToken}");
+        }
+        Cache::forget("bind_current_{$uid}");
+
+        Auth::logout();
+        $user->delete();  // triggers DB FK cascades
+
+        return response()->json(['message' => 'ACCOUNT DELETED.']);
     }
 }
