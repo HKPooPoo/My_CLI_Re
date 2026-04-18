@@ -15,8 +15,9 @@ const BCConfig = {
 
     init() {
         this.render();
-        if (this.container) {
-            createResetButton(this.container.parentElement, 'bc', () => this.render());
+        const action = document.getElementById('bc-config-action');
+        if (action) {
+            createResetButton(action, 'bc', () => this.render());
         }
         window.addEventListener('i18n:ready', () => this.render());
         window.addEventListener('settings:changed', (e) => {

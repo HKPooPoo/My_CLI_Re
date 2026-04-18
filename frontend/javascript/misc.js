@@ -106,7 +106,10 @@ export function createToggleControl(container, scope, key, labelKey, hintKey) {
 export function createResetButton(parentContainer, scope, onReset) {
     const btn = document.createElement('button');
     btn.className = 'misc-toggle-btn crt-text-orange';
-    btn.style.cssText = 'margin-top: 8px; width: 100%;';
+    // No inline width/margin — parent (.misc-action-container) uses its
+    // own flex gap + default cross-axis stretch to size the button, and
+    // clips any horizontal .misc-toggle-btn margin overflow via its own
+    // overflow-x: hidden.
     btn.setAttribute('data-i18n', 'config.reset');
     btn.textContent = t('config.reset');
     parentContainer.appendChild(btn);

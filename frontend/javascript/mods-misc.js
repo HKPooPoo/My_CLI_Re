@@ -13,8 +13,9 @@ const ModsMisc = {
 
     init() {
         this.render();
-        if (this.container) {
-            createResetButton(this.container.parentElement, 'mods', () => this.render());
+        const action = document.getElementById('mods-misc-action');
+        if (action) {
+            createResetButton(action, 'mods', () => this.render());
         }
         window.addEventListener('i18n:ready', () => this.render());
         window.addEventListener('settings:changed', (e) => {
