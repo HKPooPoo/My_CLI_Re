@@ -35,7 +35,7 @@
     height: var(--misc-list-height);
     overflow-y: auto;
     overflow-x: hidden;
-    scrollbar-width: thin;
+    /* scrollbar-width: thin; */
     scrollbar-color: var(--text-green) var(--bg-primary);
 }
 
@@ -49,7 +49,7 @@
     height: calc(var(--misc-list-height) / 2);
     overflow-y: auto;
     overflow-x: hidden;
-    scrollbar-width: thin;
+    /* scrollbar-width: thin; */
     scrollbar-color: var(--text-green) var(--bg-primary);
     gap: 8px;
 }
@@ -89,6 +89,7 @@
 .misc-toggle-btn {
     border: var(--border-line);
     padding: 4px 16px;
+    margin: 0 8px 0 8px;
     min-width: 120px;
     text-align: center;
     cursor: pointer;
