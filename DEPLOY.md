@@ -206,3 +206,39 @@ docker exec -it my-cli-ollama ollama pull qwen3.5:4b
 ```bash
 docker exec my-cli-ollama ollama list           # 列出已下載模型
 docker exec my-cli-ollama ollama run qwen3.5:4b "hello"  # 測試
+```
+
+---
+
+## Log Channel（Docker + bind-mount 踩坑紀錄）
+
+**症狀：** `POST /api/auth/command` 回 500 HTML，body 裡無限套娃的訊息：
+```
+The stream or file "/var/www/html/storage/logs/laravel.log" could not be
+opened in append mode: Failed to open stream: Permission denied
+```
+
+**原因：**
+1. `docker-compose.yml` 的 api / queue / scheduler 都把 `./backend:/var/www/html` bind-mount 進去
+2. Host 端檔案 owner 是 `yu`（uid 1000）
+3. Container 內 php-fpm 以 `www-data`（uid 33）執行，group 33 也不在 1000 裡
+4. Laravel default `LOG_CHANNEL=stack` → `single` handler 要寫 `storage/logs/laravel.log`
+5. Controller `catch` 裡的 `Log::error()` 失敗 → Laravel 把 log 失敗本身當 exception 再 log → 失敗訊息越堆越長 → 最後返回給客戶端是 500 HTML 而不是預期的 400 JSON
+
+**修法：`LOG_CHANNEL=stderr`**
+
+`docker-compose.yml` 三個 PHP 服務（api / queue / scheduler）各自注入：
+```yaml
+environment:
+  LOG_CHANNEL: stderr
+```
+
+Laravel 把日誌寫到 `php://stderr`，被 Docker 收進 `docker logs`。完全不碰檔案系統，uid mismatch 不存在。也是 [12-factor app](https://12factor.net/logs) 的建議作法。
+
+**檢視方式：**
+```bash
+docker logs -f my-cli-api    # 即時尾隨
+docker logs -f my-cli-queue
+```
+
+**要改回檔案式？** 若有需求（例如要 `fail2ban` 讀 log），可在容器內 `chmod 666 /var/www/html/storage/logs/laravel.log` 臨時修復，或改 Dockerfile entrypoint 自動 chown。但 stderr 是簡單且 container-native 的作法，建議保留。

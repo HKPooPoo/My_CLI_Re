@@ -33,6 +33,7 @@ services:
       APP_ENV: local
       APP_DEBUG: "true"
       APP_KEY: ${APP_KEY:-}
+      LOG_CHANNEL: stderr
       DB_CONNECTION: pgsql
       DB_HOST: db
       DB_PORT: 5432
@@ -84,6 +85,7 @@ services:
       APP_ENV: local
       APP_DEBUG: "true"
       APP_KEY: ${APP_KEY:-}
+      LOG_CHANNEL: stderr
       DB_CONNECTION: pgsql
       DB_HOST: db
       DB_PORT: 5432
@@ -127,6 +129,7 @@ services:
       APP_ENV: local
       APP_DEBUG: "true"
       APP_KEY: ${APP_KEY:-}
+      LOG_CHANNEL: stderr
       DB_CONNECTION: pgsql
       DB_HOST: db
       DB_PORT: 5432
@@ -193,6 +196,7 @@ services:
       APP_ENV: local
       APP_DEBUG: "true"
       APP_KEY: ${APP_KEY:-}
+      LOG_CHANNEL: stderr
       DB_CONNECTION: pgsql
       DB_HOST: db
       DB_PORT: 5432
