@@ -116,6 +116,7 @@ export const BCChannel = {
                 playAudio('Cassette.mp3');
                 const binData = { hash, ...meta };
 
+                let touchedTimestamp = null;
                 if (this.state.isVirtual) {
                     await BCDb.addRecord(this.state.localChannelId, this.elements.textarea?.value || '', binData);
                     this.state.isVirtual = false;
@@ -124,6 +125,7 @@ export const BCChannel = {
                     const entry = await BCDb.getRecord(this.state.localChannelId, this.state.currentHead);
                     if (entry) {
                         await BCDb.updateBinInPlace(this.state.localChannelId, entry.timestamp, binData);
+                        touchedTimestamp = entry.timestamp;
                     } else if (this.state.currentHead === 0) {
                         // Fresh channel — no record exists yet (nothing typed before attaching).
                         // Create a record now so the attachment is persisted.
@@ -132,16 +134,26 @@ export const BCChannel = {
                     }
                 }
                 this.updateIndicators();
+                CrossTabSync.broadcast('bc:record:mutated', {
+                    localChannelId: this.state.localChannelId,
+                    timestamp: touchedTimestamp
+                });
             },
             onDetach: async (hash) => {
                 if (!this.isOwnerMode || !this.currentChannel) return;
                 playAudio('Erase.mp3');
+                let touchedTimestamp = null;
                 if (!this.state.isVirtual) {
                     const entry = await BCDb.getRecord(this.state.localChannelId, this.state.currentHead);
                     if (entry) {
                         await BCDb.updateBinInPlace(this.state.localChannelId, entry.timestamp, null);
+                        touchedTimestamp = entry.timestamp;
                     }
                 }
+                CrossTabSync.broadcast('bc:record:mutated', {
+                    localChannelId: this.state.localChannelId,
+                    timestamp: touchedTimestamp
+                });
             },
             onRename: async (oldHash, newHash, meta) => {
                 if (!this.isOwnerMode || !this.currentChannel) return;

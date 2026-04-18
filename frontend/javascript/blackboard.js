@@ -11,7 +11,7 @@
  * =================================================================
  */
 
-import { BBCore, getHKTTimestamp, extractHashes } from "./blackboard-core.js";
+import { BBCore, getHKTTimestamp, extractHashes, markAsynced } from "./blackboard-core.js";
 import { BBVCS } from "./blackboard-vcs.js";
 import { BBUI } from "./blackboard-ui.js";
 import { BBMessage } from "./blackboard-msg.js";
@@ -64,18 +64,26 @@ const bbAttach = EditorAttachments.create({
     onAttach: async (hash, meta) => {
         const binData = { hash, ...meta };
 
+        // Adding a blob the server hasn't received yet means the branch is no
+        // longer byte-for-byte equal to its server copy. Downgrade the owner
+        // tag to asynced so observers (other tabs, next updateBranchList()
+        // re-derivation) don't keep seeing a [synced] branch that lies.
+        // Commit re-promotes to [synced] once upload succeeds.
         // [Fix]: Handle Virtual State (New Page)
         if (state.isVirtual) {
+            const newOwner = markAsynced(state.owner);
             await BBCore.addRecord(
-                state.owner,
+                newOwner,
                 state.branchId,
                 state.branch,
                 BBUI.getTextareaValue() || "",
                 binData
             );
+            state.owner = newOwner;
             state.isVirtual = false;
             state.currentHead = 0;
             BBUI.updateIndicators(state.branch || t('blackboard.branchNameFallback'), state.currentHead, true);
+            CrossTabSync.broadcast('bb:record:mutated', { branchId: state.branchId, timestamp: null });
         } else {
             const entry = await BBCore.getRecord(state.owner, state.branchId, state.currentHead);
             if (entry) {
@@ -89,11 +97,23 @@ const bbAttach = EditorAttachments.create({
                 } else {
                     fileHashes = [binData];
                 }
-                await db.blackboard.update([entry.owner, entry.branch_id, entry.timestamp], { file_hash: fileHashes });
+                const newOwner = markAsynced(entry.owner);
+                if (newOwner !== entry.owner) {
+                    // Primary key includes owner → modify() handles the
+                    // delete+put required to change it.
+                    await db.blackboard.where('[owner+branch_id+timestamp]')
+                        .equals([entry.owner, entry.branch_id, entry.timestamp])
+                        .modify({ file_hash: fileHashes, owner: newOwner });
+                    if (state.owner === entry.owner) state.owner = newOwner;
+                } else {
+                    await db.blackboard.update([entry.owner, entry.branch_id, entry.timestamp], { file_hash: fileHashes });
+                }
+                CrossTabSync.broadcast('bb:record:mutated', { branchId: entry.branch_id, timestamp: entry.timestamp });
             } else if (state.currentHead === 0) {
                 await BBCore.addRecord("local", state.branchId, state.branch, BBUI.getTextareaValue() || "", [binData]);
                 state.owner = "local";
                 state.currentHead = 0;
+                CrossTabSync.broadcast('bb:record:mutated', { branchId: state.branchId, timestamp: null });
             }
         }
         BBSync.scheduleAutoCommit();
@@ -102,22 +122,34 @@ const bbAttach = EditorAttachments.create({
         const entry = await BBCore.getRecord(state.owner, state.branchId, state.currentHead);
         if (!entry) return;
 
+        // Same asynced-on-divergence rule as onAttach: removing a file from a
+        // [synced] record means the branch diverges from the server copy
+        // until commit re-uploads the modified record.
         const existing = entry.file_hash;
+        let updated;
         if (Array.isArray(existing)) {
             const filtered = existing.filter(f => {
                 const h = (typeof f === 'object') ? f.hash : f;
                 return h !== hash;
             });
-            await db.blackboard.update([entry.owner, entry.branch_id, entry.timestamp], {
-                file_hash: filtered.length > 0 ? filtered : null
-            });
+            updated = filtered.length > 0 ? filtered : null;
         } else {
             const currentHash = (typeof existing === 'object') ? existing?.hash : existing;
-            if (currentHash === hash) {
-                await db.blackboard.update([entry.owner, entry.branch_id, entry.timestamp], { file_hash: null });
-            }
+            if (currentHash !== hash) return;
+            updated = null;
+        }
+
+        const newOwner = markAsynced(entry.owner);
+        if (newOwner !== entry.owner) {
+            await db.blackboard.where('[owner+branch_id+timestamp]')
+                .equals([entry.owner, entry.branch_id, entry.timestamp])
+                .modify({ file_hash: updated, owner: newOwner });
+            if (state.owner === entry.owner) state.owner = newOwner;
+        } else {
+            await db.blackboard.update([entry.owner, entry.branch_id, entry.timestamp], { file_hash: updated });
         }
         BBSync.scheduleAutoCommit();
+        CrossTabSync.broadcast('bb:record:mutated', { branchId: entry.branch_id, timestamp: entry.timestamp });
     },
     onRename: async (oldHash, newHash, meta) => {
         const entry = await BBCore.getRecord(state.owner, state.branchId, state.currentHead);
@@ -132,15 +164,9 @@ const bbAttach = EditorAttachments.create({
         const existing = entry.file_hash;
         const updated = Array.isArray(existing) ? existing.map(swap) : swap(existing);
 
-        // Downgrade owner tag to asynced: the record now references a hash
-        // the server does not have yet. Leaving it as [synced] misleads any
-        // observer (including other tabs) into seeing a branch that looks
-        // server-consistent while local content has actually diverged.
-        // Commit will re-promote to [synced] once the upload succeeds.
-        let newOwner = entry.owner;
-        if (typeof entry.owner === 'string' && entry.owner.endsWith('[synced]')) {
-            newOwner = entry.owner.replace('[synced]', '[asynced]');
-        }
+        // Same asynced-on-divergence rule as onAttach/onDetach: renaming
+        // points the record at a hash the server doesn't have yet.
+        const newOwner = markAsynced(entry.owner);
 
         if (newOwner !== entry.owner) {
             // Primary key includes owner → use modify() so Dexie handles the

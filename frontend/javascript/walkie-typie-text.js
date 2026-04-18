@@ -128,6 +128,7 @@ export const WTText = {
                 this.currentBin = binData;
 
                 // 1. Ensure Record Exists (Handle Virtual State)
+                let touchedTimestamp = null;
                 if (this.weState.isVirtual) {
                     await WTDb.addRecord(
                         this.weState.branchId,
@@ -142,6 +143,7 @@ export const WTText = {
                     const entry = await WTDb.getRecord(this.weState.branchId, this.weState.currentHead);
                     if (entry) {
                         await WTDb.updateBin(entry.branch_id, entry.timestamp, binData);
+                        touchedTimestamp = entry.timestamp;
                     } else if (this.weState.currentHead === 0) {
                         // Fresh board — no record exists yet (e.g. new connection, nothing typed).
                         // Create a record now so the attachment is persisted.
@@ -165,6 +167,10 @@ export const WTText = {
 
                 // 3. Trigger Commit
                 this.triggerCommit(this.elements.weTextarea.value);
+                CrossTabSync.broadcast('wt:record:mutated', {
+                    branchId: this.weState.branchId,
+                    timestamp: touchedTimestamp
+                });
             },
             onDetach: async (hash) => {
                 if (!this.currentConnection) throw new Error("NO CONNECTION SELECTED");
@@ -173,10 +179,12 @@ export const WTText = {
                 this.currentBin = null;
 
                 // Remove bin from current record
+                let touchedTimestamp = null;
                 if (!this.weState.isVirtual) {
                     const entry = await WTDb.getRecord(this.weState.branchId, this.weState.currentHead);
                     if (entry) {
                         await WTDb.updateBin(entry.branch_id, entry.timestamp, null);
+                        touchedTimestamp = entry.timestamp;
                     }
                 }
 
@@ -185,6 +193,10 @@ export const WTText = {
 
                 // Trigger Commit
                 this.triggerCommit(this.elements.weTextarea.value);
+                CrossTabSync.broadcast('wt:record:mutated', {
+                    branchId: this.weState.branchId,
+                    timestamp: touchedTimestamp
+                });
             },
             onRename: async (oldHash, newHash, meta) => {
                 if (!this.currentConnection) return;
