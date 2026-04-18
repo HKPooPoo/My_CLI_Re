@@ -76,18 +76,22 @@
 @media (hover: hover) {
     button.crt-text-orange:hover {
         background: var(--text-orange);
+        border-color: var(--text-orange);
         box-shadow: 0 0 10px var(--text-orange);
     }
     button.crt-text-cyan:hover {
         background: var(--text-cyan);
+        border-color: var(--text-cyan);
         box-shadow: 0 0 10px var(--text-cyan);
     }
     button.crt-text-red:hover {
         background: var(--text-red);
+        border-color: var(--text-red);
         box-shadow: 0 0 10px var(--text-red);
     }
     button.crt-text-yellow:hover {
         background: var(--text-yellow);
+        border-color: var(--text-yellow);
         box-shadow: 0 0 10px var(--text-yellow);
     }
 }
