@@ -210,6 +210,8 @@
     "createComplete": "建立完成",
     "createFailed": "建立失敗",
     "deleteStep1": "刪除",
+    "deleteStep1X2": "刪除x2",
+    "deleteStep1Final": "刪除!",
     "deleting": "刪除中...",
     "deleteComplete": "刪除完成",
     "deleteFailed": "刪除失敗",

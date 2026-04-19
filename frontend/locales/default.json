@@ -210,6 +210,8 @@
     "createComplete": "CREATE COMPLETE",
     "createFailed": "ERROR: CREATE FAILED",
     "deleteStep1": "DELETE",
+    "deleteStep1X2": "DELETEx2",
+    "deleteStep1Final": "DELETE!",
     "deleting": "DELETING...",
     "deleteComplete": "DELETE COMPLETE",
     "deleteFailed": "ERROR: DELETE FAILED",

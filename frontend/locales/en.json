@@ -210,6 +210,8 @@
     "createComplete": "Created!",
     "createFailed": "Create failed.",
     "deleteStep1": "Delete",
+    "deleteStep1X2": "Deletex2",
+    "deleteStep1Final": "Delete!",
     "deleting": "Deleting...",
     "deleteComplete": "Deleted!",
     "deleteFailed": "Delete failed.",

@@ -351,6 +351,7 @@ export const BCList = {
         if (this.elements.deleteBtn) {
             new MultiStepButton(this.elements.deleteBtn, {
                 sound: 'UIGeneralCancel.mp3',
+                steps: 3,
                 action: async () => {
                     if (!this.hasTitle()) return BBMessage.error(t('broadcast.titleRequired'));
                     if (!this.selectedChannel) return BBMessage.error(t('broadcast.noTarget'));
