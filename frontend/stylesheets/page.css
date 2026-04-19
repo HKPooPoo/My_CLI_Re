@@ -60,6 +60,11 @@
 button[aria-busy="true"] {
     opacity: 0.6;
     pointer-events: none;
+    /* Fast actions (PUSH/PULL: ~30ms local IndexedDB) would otherwise flash
+       the dim on/off. Hold 1.0 for 150ms before snapping to 0.6 so only
+       server-round-trip actions (COMMIT, CAST, REGISTER…) produce a visible
+       loading state. */
+    transition: opacity 0ms 150ms;
 }
 
 .page-flex-direction-row {

@@ -337,6 +337,8 @@
     "screensaverTimeout": "IDLE TIMEOUT (SEC)",
     "crtBlendModeLabel": "CRT BLEND",
     "reset": "RESET CONFIG",
+    "resetX2": "RESET CONFIGx2",
+    "resetFinal": "RESET CONFIG!",
     "resetAll": "HARD RESET",
     "resetComplete": "RESET COMPLETE"
   },

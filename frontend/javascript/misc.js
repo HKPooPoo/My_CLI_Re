@@ -116,6 +116,7 @@ export function createResetButton(parentContainer, scope, onReset) {
 
     new MultiStepButton(btn, {
         sound: 'UIGeneralCancel.mp3',
+        steps: 3,
         action: async () => {
             Settings.resetScope(scope);
             BBMessage.success(t('config.resetComplete'));
@@ -250,6 +251,7 @@ export const MISC = {
         if (this.elements.resetBtn) {
             new MultiStepButton(this.elements.resetBtn, {
                 sound: 'UIGeneralCancel.mp3',
+                steps: 3,
                 action: async () => {
                     Settings.resetScope('bb');
                     Settings.resetGlobals();

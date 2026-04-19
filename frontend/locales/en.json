@@ -337,6 +337,8 @@
     "screensaverTimeout": "Screensaver Delay (sec)",
     "crtBlendModeLabel": "Soften CRT Lines",
     "reset": "Reset Config",
+    "resetX2": "Reset Configx2",
+    "resetFinal": "Reset Config!",
     "resetAll": "Reset All Settings",
     "resetComplete": "Settings reset to defaults."
   },
