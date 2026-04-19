@@ -97,18 +97,11 @@ export const BBUI = {
             let ownerDisplay = "";
             const localLabel = isHead ? t('blackboard.statusLocal') : t('blackboard.statusLocalOld');
 
-            // Sync-state tags get CRT colour so the user can scan state at
-            // a glance (matches BC's `[LOCAL]` / `[PIN]` colouring):
-            //   [synced]  green  — nothing to upload
-            //   [asynced] orange — local has outgoing divergence
             if (branch.isLocal && branch.isServer) {
-                const syncClass = branch.isDirty ? 'crt-text-orange' : 'crt-text-green';
                 const syncStatus = branch.isDirty ? t('blackboard.statusAsynced') : t('blackboard.statusSynced');
-                const syncTag = `<span class="${syncClass}">[${syncStatus}]</span>`;
-                ownerDisplay = `${localLabel}, <br>online/${this.escapeHTML(branch.serverOwner)} ${syncTag}`;
+                ownerDisplay = `${localLabel}, <br>online/${this.escapeHTML(branch.serverOwner)} [${syncStatus}]`;
             } else if (branch.isServer) {
-                const syncTag = `<span class="crt-text-orange">[${t('blackboard.statusAsynced')}]</span>`;
-                ownerDisplay = `online/${this.escapeHTML(branch.serverOwner)} ${syncTag}`;
+                ownerDisplay = `online/${this.escapeHTML(branch.serverOwner)} [${t('blackboard.statusAsynced')}]`;
             } else {
                 ownerDisplay = localLabel;
             }
