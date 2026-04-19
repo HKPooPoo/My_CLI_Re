@@ -8,7 +8,16 @@ node_modules/
 
 # Storage & Logs
 /backend/storage/logs
+/backend/storage/backups/*.sql
+/backend/storage/framework/cache/data
+/backend/storage/framework/sessions/*
+/backend/storage/framework/views/*
+!/backend/storage/framework/*/.gitkeep
 *.log
+
+# Stray empty files from shell mistyping (delete locally)
+/build:sw
+/node
 
 # Laravel caches
 /backend/bootstrap/cache/packages.php
