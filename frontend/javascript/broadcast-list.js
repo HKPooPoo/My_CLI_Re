@@ -72,6 +72,21 @@ export const BCList = {
     },
 
     /**
+     * Title to display on the channel row (row 3).
+     * Prefer the stored owner_title (from server or local create snapshot).
+     * For my-own channels without a stored title (legacy rows), fall back to
+     * my current title. Last resort: owner uid, then the common head marker.
+     */
+    resolveOwnerTitle(channel) {
+        if (channel.ownerTitle) return channel.ownerTitle;
+        const me = localStorage.getItem('currentUser');
+        if (channel.ownerUid && channel.ownerUid === me) {
+            return localStorage.getItem('currentTitle') || channel.ownerUid;
+        }
+        return channel.ownerUid || t('common.head');
+    },
+
+    /**
      * CAST, CREATE, DELETE only visible for uid with title.
      */
     lockTitleButtons() {
@@ -90,6 +105,15 @@ export const BCList = {
         window.addEventListener('auth:updated', () => {
             this.lockTitleButtons();
             this.selectedChannel = null; // Force selection reset — owner mode needs recalculation
+            this.fetchAndRender();
+        });
+
+        // BCChannel.loadChannel just bootstrapped local metadata for a
+        // previously server-only channel. Re-merge so the row flips from
+        // a pseudo (localId = -serverId, isLocal: false) entry to the real
+        // local one, and selectedChannel will resolve to the new object
+        // via the render()'s selectedLocalId lookup.
+        window.addEventListener('broadcast:localBootstrapped', () => {
             this.fetchAndRender();
         });
 
@@ -394,7 +418,7 @@ export const BCList = {
                     name: meta.name,
                     lastSignal: meta.last_signal ?? 0,
                     ownerUid: meta.owner_uid ?? '',
-                    ownerTitle: '',
+                    ownerTitle: meta.owner_title ?? '',
                     isPinned: false,
                     isLocal: true,
                     isLocalOnly: !meta.server_channel_id
@@ -534,13 +558,22 @@ export const BCList = {
             lastSignalEl.classList.add('broadcast-list-last-signal');
             lastSignalEl.textContent = ch.lastSignal ? getHKTTimestamp(ch.lastSignal) : t('common.head');
 
-            // Row 3: owner's title (or LOCAL if not yet cast) + pin tag
+            // Row 3: owner's title + tags. Show the owner even for uncast
+            // channels — identity doesn't depend on whether it's reached the
+            // server yet. `[LOCAL]` / `[PIN]` append as status tags (mirror).
             const titleEl = document.createElement('div');
             titleEl.classList.add('broadcast-list-title');
-            const ownerLabel = ch.isLocalOnly ? t('broadcast.statusLocal') : (ch.ownerTitle || ch.ownerUid || t('common.head'));
-            titleEl.textContent = ownerLabel;
-            if (ch.isPinned) {
+            titleEl.textContent = this.resolveOwnerTitle(ch);
+            if (ch.isLocalOnly || ch.isPinned) {
                 titleEl.style.flexDirection = 'row';
+            }
+            if (ch.isLocalOnly) {
+                const localTag = document.createElement('span');
+                localTag.classList.add('crt-text-orange');
+                localTag.textContent = ` [${t('broadcast.statusLocal')}]`;
+                titleEl.appendChild(localTag);
+            }
+            if (ch.isPinned) {
                 const pinTag = document.createElement('span');
                 pinTag.classList.add('crt-text-yellow');
                 pinTag.textContent = t('broadcast.pinLabel');

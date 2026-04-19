@@ -133,7 +133,49 @@ export const BCMeta = {
             name,
             server_channel_id: null,
             owner_uid: localStorage.getItem('currentUser') || '',
+            // Snapshot owner's title so an uncast channel row can show the
+            // creator's title even before the server has a record of it.
+            owner_title: localStorage.getItem('currentTitle') || '',
             last_signal: Date.now()
+        });
+    },
+
+    /**
+     * Build local metadata + records from a server channel. Used when the
+     * logged-in owner opens a channel they own but have no local copy of
+     * (cross-device / after WIPE LOCAL). Idempotent — if a local entry for
+     * this server_channel_id already exists, returns its local_id unchanged.
+     *
+     * @param {Object} serverSide   { id, name, owner_uid, owner_title, last_signal }
+     * @param {Array}  records      Server records (timestamp is the ordering key)
+     * @returns {number} local_id
+     */
+    async bootstrapFromServer(serverSide, records) {
+        return await db.transaction('rw', db.broadcast_channels, db.broadcast_boards, async () => {
+            const existing = await db.broadcast_channels
+                .where('server_channel_id')
+                .equals(serverSide.id)
+                .first();
+            if (existing) return existing.local_id;
+
+            const localId = await db.broadcast_channels.add({
+                name: serverSide.name,
+                server_channel_id: serverSide.id,
+                owner_uid: serverSide.owner_uid,
+                owner_title: serverSide.owner_title || '',
+                last_signal: serverSide.last_signal || Date.now()
+            });
+
+            if (records && records.length > 0) {
+                await db.broadcast_boards.bulkAdd(records.map(r => ({
+                    local_channel_id: localId,
+                    timestamp: parseInt(r.timestamp),
+                    text: r.text || '',
+                    file_hash: r.file_hash ?? null
+                })));
+            }
+
+            return localId;
         });
     },
 

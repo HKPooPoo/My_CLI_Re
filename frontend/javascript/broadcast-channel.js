@@ -335,7 +335,26 @@ export const BCChannel = {
 
         const me = localStorage.getItem('currentUser');
         const hasTitle = !!localStorage.getItem('currentTitle');
-        this.isOwnerMode = !!(me && hasTitle && channel.ownerUid === me && channel.isLocal);
+        const isOwner = !!(me && hasTitle && channel.ownerUid === me);
+
+        // Owner on this device but no local copy (cross-device / after WIPE
+        // LOCAL). Pull the server copy into IndexedDB so owner mode can work
+        // — otherwise `channel.isLocal` stays false and owner would be locked
+        // into reader mode on their own channel.
+        if (isOwner && !channel.isLocal && channel.serverChannelId) {
+            try {
+                await this._bootstrapLocalFromServer(channel);
+                window.dispatchEvent(new CustomEvent('broadcast:localBootstrapped', {
+                    detail: { serverChannelId: channel.serverChannelId }
+                }));
+            } catch (e) {
+                console.error('BC: bootstrap failed', e);
+                BBMessage.error(t('broadcast.fetchFailed'));
+                // channel.isLocal stays false → falls through to reader mode
+            }
+        }
+
+        this.isOwnerMode = !!(isOwner && channel.isLocal);
 
         if (this.isOwnerMode) {
             await this.loadOwnerMode(channel);
@@ -345,6 +364,31 @@ export const BCChannel = {
 
         // Subscribe for live updates (works for both owner and reader)
         this._subscribeToChannel(channel.serverChannelId);
+    },
+
+    /**
+     * Fetch server records for a channel the current user owns and build local
+     * metadata + records for it. Mutates `channel` in place so the rest of
+     * loadChannel sees `localId` (real positive id) and `isLocal: true`.
+     *
+     * Called only when the owner has no local copy (cross-device / WIPE LOCAL).
+     * Idempotent via BCMeta.bootstrapFromServer.
+     */
+    async _bootstrapLocalFromServer(channel) {
+        const data = await BroadcastService.fetchBoards(channel.serverChannelId);
+        const records = data?.records ?? [];
+
+        const localId = await BCMeta.bootstrapFromServer({
+            id: channel.serverChannelId,
+            name: channel.name,
+            owner_uid: channel.ownerUid,
+            owner_title: localStorage.getItem('currentTitle') || '',
+            last_signal: channel.lastSignal
+        }, records);
+
+        channel.localId = localId;
+        channel.isLocal = true;
+        channel.isLocalOnly = false;
     },
 
     async loadOwnerMode(channel) {
