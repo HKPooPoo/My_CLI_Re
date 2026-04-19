@@ -558,22 +558,18 @@ export const BCList = {
             lastSignalEl.classList.add('broadcast-list-last-signal');
             lastSignalEl.textContent = ch.lastSignal ? getHKTTimestamp(ch.lastSignal) : t('common.head');
 
-            // Row 3: owner's title + tags. Show the owner even for uncast
-            // channels — identity doesn't depend on whether it's reached the
-            // server yet. `[LOCAL]` / `[PIN]` append as status tags (mirror).
+            // Row 3: owner's title + status tag. Plain-text inline append for
+            // `[LOCAL]` mirrors BB's `local [HEAD]` / `[synced]` / `[asynced]`
+            // convention — no separately-coloured span. `[PIN]` keeps its
+            // pre-existing yellow span (not in scope of this change).
             const titleEl = document.createElement('div');
             titleEl.classList.add('broadcast-list-title');
             titleEl.textContent = this.resolveOwnerTitle(ch);
-            if (ch.isLocalOnly || ch.isPinned) {
-                titleEl.style.flexDirection = 'row';
-            }
             if (ch.isLocalOnly) {
-                const localTag = document.createElement('span');
-                localTag.classList.add('crt-text-orange');
-                localTag.textContent = ` [${t('broadcast.statusLocal')}]`;
-                titleEl.appendChild(localTag);
+                titleEl.textContent += ` [${t('broadcast.statusLocal')}]`;
             }
             if (ch.isPinned) {
+                titleEl.style.flexDirection = 'row';
                 const pinTag = document.createElement('span');
                 pinTag.classList.add('crt-text-yellow');
                 pinTag.textContent = t('broadcast.pinLabel');

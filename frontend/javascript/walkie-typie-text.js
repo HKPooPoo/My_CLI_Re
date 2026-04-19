@@ -421,10 +421,10 @@ export const WTText = {
 
     unlockBoards() {
         this.elements.weTextarea?.removeAttribute("disabled");
-        if (this.elements.theyTextarea) {
-            this.elements.theyTextarea.removeAttribute("disabled");
-            this.elements.theyTextarea.setAttribute("readonly", "true");
-        }
+        // THEY stays disabled (set by lockBoards) — matches BC reader-mode
+        // textarea behaviour. The previous readonly+remove-disabled trick let
+        // users focus the field and see a blinking caret even though typing
+        // is a no-op; users (correctly) flagged that as confusing.
     },
 
     clearBoards() {
