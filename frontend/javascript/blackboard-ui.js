@@ -106,9 +106,12 @@ export const BBUI = {
                 ownerDisplay = localLabel;
             }
 
+            // Remote-only branches: disabled (not readonly) so clicking the
+            // field doesn't produce a blinking caret for a dead-end edit.
+            // Same pattern as BC non-owner rename + WT THEY textarea.
             const isReadonly = !branch.isLocal;
             item.innerHTML = `
-                <input type="text" class="vcs-list-branch" value="${safeName}" placeholder="${t('blackboard.namePlaceholder')}" name="vcs-list-branch" maxlength="64" ${isReadonly ? 'readonly' : ''}>
+                <input type="text" class="vcs-list-branch" value="${safeName}" placeholder="${t('blackboard.namePlaceholder')}" name="vcs-list-branch" maxlength="64" ${isReadonly ? 'disabled' : ''}>
                 <div class="vcs-list-timestamp">${this.escapeHTML(String(branch.displayTime ?? ''))}</div>
                 <div class="vcs-list-owner">${ownerDisplay}</div>
             `;

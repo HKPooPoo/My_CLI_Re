@@ -77,7 +77,11 @@
     color: var(--bg-primary);
 }
 
-.vcs-list-branch[readonly] {
+/* Remote-only branches disabled (no caret on click) + dim for contrast.
+   `[readonly]` kept as sibling selector in case any historical flow still
+   produces readonly fields. */
+.vcs-list-branch[readonly],
+.vcs-list-branch:disabled {
     opacity: 0.6;
     cursor: default;
 }
