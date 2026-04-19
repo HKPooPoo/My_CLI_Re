@@ -98,8 +98,11 @@
 }
 
 /* Non-owner channel rows: same dim / default-cursor treatment as
-   .vcs-list-branch[readonly] and input.attachment-chip-name[readonly]. */
-.broadcast-list-tag[readonly] {
+   .vcs-list-branch[readonly] and input.attachment-chip-name[readonly].
+   `:disabled` covers the non-owner rename input (disabled so focusing
+   it doesn't produce a blinking caret for a dead-end edit). */
+.broadcast-list-tag[readonly],
+.broadcast-list-tag:disabled {
     opacity: 0.6;
     cursor: default;
 }
