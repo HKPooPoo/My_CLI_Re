@@ -593,10 +593,12 @@ export const BCList = {
 // timestamp, owner title/uid, pin state. User can filter by any word
 // they see on the row, not just the channel name.
 const $bcSearch = document.getElementById('broadcast-search');
-$bcSearch?.addEventListener('input', () => {
-    const query = $bcSearch.value.toLowerCase().trim();
-    const items = document.querySelectorAll('.broadcast-list-list-item');
-    items.forEach(item => {
+const $bcListContainerEl = document.querySelector('.broadcast-list-list-container');
+
+function applyBcSearch() {
+    if (!$bcListContainerEl) return;
+    const query = ($bcSearch?.value || '').toLowerCase().trim();
+    $bcListContainerEl.querySelectorAll('.broadcast-list-list-item').forEach(item => {
         if (!query) { item.style.display = ''; return; }
         let text = item.innerText.toLowerCase();
         item.querySelectorAll('input, textarea').forEach(el => {
@@ -604,9 +606,18 @@ $bcSearch?.addEventListener('input', () => {
         });
         item.style.display = text.includes(query) ? '' : 'none';
     });
-    // Keep InfiniteList's item array + cursor in sync with visible rows.
     BCList.infiniteList?.refresh();
-});
+}
+
+$bcSearch?.addEventListener('input', applyBcSearch);
+
+// Re-apply after any list re-render (fetchAndRender runs on poll / WS /
+// cast / create / delete). Rebuilt rows default to display:'' and would
+// otherwise drop the user's active filter.
+if ($bcListContainerEl) {
+    new MutationObserver(() => applyBcSearch())
+        .observe($bcListContainerEl, { childList: true });
+}
 
 // Init
 BCList.init();

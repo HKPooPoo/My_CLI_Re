@@ -185,10 +185,12 @@ export const WTList = {
         // current value, so e.g. filtering by a partner's uid works
         // even if the user hasn't set a friendly tag for them.
         const $wtSearch = document.getElementById('walkie-typie-search');
-        $wtSearch?.addEventListener('input', () => {
-            const query = $wtSearch.value.toLowerCase().trim();
-            const items = document.querySelectorAll('.walkie-typie-list-list-item');
-            items.forEach(item => {
+        const $wtListContainerEl = document.querySelector('.walkie-typie-list-list-container');
+
+        const applyWtSearch = () => {
+            if (!$wtListContainerEl) return;
+            const query = ($wtSearch?.value || '').toLowerCase().trim();
+            $wtListContainerEl.querySelectorAll('.walkie-typie-list-list-item').forEach(item => {
                 if (!query) { item.style.display = ''; return; }
                 let text = item.innerText.toLowerCase();
                 item.querySelectorAll('input, textarea').forEach(el => {
@@ -196,9 +198,18 @@ export const WTList = {
                 });
                 item.style.display = text.includes(query) ? '' : 'none';
             });
-            // Keep cursor + wheel navigation on visible rows only.
             this.infiniteList?.refresh();
-        });
+        };
+
+        $wtSearch?.addEventListener('input', applyWtSearch);
+
+        // Re-apply after any list re-render (fetchConnections / WS event /
+        // auth change). Rebuilt rows default to display:'' — without this
+        // the filter silently drops whenever the poll ticks.
+        if ($wtListContainerEl) {
+            new MutationObserver(() => applyWtSearch())
+                .observe($wtListContainerEl, { childList: true });
+        }
     },
 
     async fetchConnections() {

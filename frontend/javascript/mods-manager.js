@@ -744,10 +744,12 @@ function bindEvents() {
     // .mods-catalog-item.mods-navigable. Using .mods-list-item alone
     // would miss the entire AVAILABLE MODS section.
     const $modSearch = document.getElementById('mods-search');
-    $modSearch?.addEventListener('input', () => {
-        const query = $modSearch.value.toLowerCase().trim();
-        const items = document.querySelectorAll('.mods-navigable');
-        items.forEach(item => {
+    const $modsListContainerEl = elements.listContainer;
+
+    const applyModSearch = () => {
+        if (!$modsListContainerEl) return;
+        const query = ($modSearch?.value || '').toLowerCase().trim();
+        $modsListContainerEl.querySelectorAll('.mods-navigable').forEach(item => {
             if (!query) { item.style.display = ''; return; }
             let text = item.innerText.toLowerCase();
             item.querySelectorAll('input, textarea').forEach(el => {
@@ -755,9 +757,18 @@ function bindEvents() {
             });
             item.style.display = text.includes(query) ? '' : 'none';
         });
-        // Keep cursor + wheel navigation on visible rows only.
         infiniteList?.refresh();
-    });
+    };
+
+    $modSearch?.addEventListener('input', applyModSearch);
+
+    // Re-apply after renderListPage rebuilds the list (instance add /
+    // remove / reorder / settings-change). Without this, every render
+    // wipes the display:none filter set by the user's query.
+    if ($modsListContainerEl) {
+        new MutationObserver(() => applyModSearch())
+            .observe($modsListContainerEl, { childList: true });
+    }
 
     // InfiniteList selection → bifurcate: instance vs catalog item
     window.addEventListener('list:selectionChanged', ({ detail }) => {

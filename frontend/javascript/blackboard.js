@@ -810,16 +810,30 @@ window.addEventListener('settings:changed', (e) => {
 // filter by status words like "synced", "asynced", "local" in addition
 // to the branch name.
 const $vcsSearch = document.getElementById('vcs-search');
-$vcsSearch?.addEventListener('input', () => {
-    const query = $vcsSearch.value.toLowerCase().trim();
-    const items = document.querySelectorAll('.vcs-list-item');
-    items.forEach(item => {
+const $vcsListContainerEl = document.querySelector('.vcs-list-container');
+
+function applyVcsSearch() {
+    if (!$vcsListContainerEl) return;
+    const query = ($vcsSearch?.value || '').toLowerCase().trim();
+    $vcsListContainerEl.querySelectorAll('.vcs-list-item').forEach(item => {
         item.style.display = matchesQuery(item, query) ? '' : 'none';
     });
     // Refresh InfiniteList so wheel + .active navigation only visits the
     // visible rows — otherwise the cursor can jump to filtered-out items.
-    listInstances.get(document.querySelector('.vcs-list-container'))?.refresh();
-});
+    listInstances.get($vcsListContainerEl)?.refresh();
+}
+
+$vcsSearch?.addEventListener('input', applyVcsSearch);
+
+// Re-apply the filter automatically whenever the list re-renders.
+// updateBranchList() rebuilds every row on poll / broadcast / cursor-
+// driven signature change, and the fresh rows default to display:''.
+// Observing childList on the container lets us reinstate the filter
+// without having to instrument every render path explicitly.
+if ($vcsListContainerEl) {
+    new MutationObserver(() => applyVcsSearch())
+        .observe($vcsListContainerEl, { childList: true });
+}
 
 /**
  * Shared list-item filter helper: collects every piece of user-visible
