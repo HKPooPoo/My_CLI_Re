@@ -559,18 +559,25 @@ export const BCList = {
             lastSignalEl.classList.add('broadcast-list-last-signal');
             lastSignalEl.textContent = ch.lastSignal ? getHKTTimestamp(ch.lastSignal) : t('common.head');
 
-            // Row 3: owner's title + status tag. Plain-text inline append for
-            // `[LOCAL]` mirrors BB's `local [HEAD]` / `[synced]` / `[asynced]`
-            // convention — no separately-coloured span. `[PIN]` keeps its
-            // pre-existing yellow span (not in scope of this change).
+            // Row 3: owner's title + status indicator tags. Each tag uses its
+            // own CRT colour so the user can scan state at a glance:
+            //   [LOCAL]  orange  — not cast yet, private to this device
+            //   [PIN]    yellow  — bookmarked
+            // BB's `[synced]` / `[asynced]` follow the same colour scheme
+            // (green / orange respectively) in blackboard-ui.js.
             const titleEl = document.createElement('div');
             titleEl.classList.add('broadcast-list-title');
             titleEl.textContent = this.resolveOwnerTitle(ch);
+            if (ch.isLocalOnly || ch.isPinned) {
+                titleEl.style.flexDirection = 'row';
+            }
             if (ch.isLocalOnly) {
-                titleEl.textContent += ` [${t('broadcast.statusLocal')}]`;
+                const localTag = document.createElement('span');
+                localTag.classList.add('crt-text-orange');
+                localTag.textContent = ` [${t('broadcast.statusLocal')}]`;
+                titleEl.appendChild(localTag);
             }
             if (ch.isPinned) {
-                titleEl.style.flexDirection = 'row';
                 const pinTag = document.createElement('span');
                 pinTag.classList.add('crt-text-yellow');
                 pinTag.textContent = t('broadcast.pinLabel');
