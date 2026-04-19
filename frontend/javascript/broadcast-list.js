@@ -507,12 +507,13 @@ export const BCList = {
             nameInput.placeholder = t('broadcast.channelNamePlaceholder');
             nameInput.name = 'broadcast-list-tag';
             nameInput.value = ch.name;
-            // Non-owners can't rename — lock the input at the HTML level
-            // (visible via dim opacity in CSS) instead of letting them type
-            // and then bouncing the change with a toast. Same pattern as
-            // .vcs-list-branch[readonly].
+            // Non-owners can't rename — disable the input at the HTML level
+            // (dim opacity + no caret via CSS) instead of letting them focus,
+            // see a blinking cursor and type into a toast-bouncing dead-end.
+            // Matches BC channel textarea (disabled in reader mode) and the
+            // WT THEY textarea — no caret when the user can't actually edit.
             if (!this.isOwnerOf(ch)) {
-                nameInput.readOnly = true;
+                nameInput.disabled = true;
             }
 
             nameInput.addEventListener('change', async (e) => {
