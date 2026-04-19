@@ -564,10 +564,12 @@ export const BCList = {
             lastSignalEl.classList.add('broadcast-list-last-signal');
             lastSignalEl.textContent = ch.lastSignal ? getHKTTimestamp(ch.lastSignal) : t('common.head');
 
-            // Row 3: owner's title + status tags. `[LOCAL]` appends as plain
-            // text with a leading space, single text node — guarantees the
-            // space renders regardless of flex-direction on the parent.
-            // `[PIN]` keeps its pre-existing yellow span.
+            // Row 3: owner's title + status tags. All tags append as plain
+            // text with leading space (single text node), mirroring BB's
+            // inline `local [HEAD]` / `[synced]` / `[asynced]` convention:
+            //   testTitle [LOCAL]
+            //   testTitle [PIN]
+            // `pinLabel` locale value already starts with a space.
             const titleEl = document.createElement('div');
             titleEl.classList.add('broadcast-list-title');
             titleEl.textContent = this.resolveOwnerTitle(ch);
@@ -575,11 +577,7 @@ export const BCList = {
                 titleEl.textContent += ` [${t('broadcast.statusLocal')}]`;
             }
             if (ch.isPinned) {
-                titleEl.style.flexDirection = 'row';
-                const pinTag = document.createElement('span');
-                pinTag.classList.add('crt-text-yellow');
-                pinTag.textContent = t('broadcast.pinLabel');
-                titleEl.appendChild(pinTag);
+                titleEl.textContent += t('broadcast.pinLabel');
             }
 
             item.appendChild(nameInput);
