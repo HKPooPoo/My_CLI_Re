@@ -189,6 +189,7 @@
     "headFallback": "---",
     "noTarget": "請先選擇頻道",
     "loginRequired": "置頂需要登入",
+    "pinRequiresCast": "先廣播才可置頂",
     "unpinned": "已取消置頂",
     "pinned": "已置頂",
     "pinFailed": "置頂失敗",

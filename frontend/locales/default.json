@@ -189,6 +189,7 @@
     "headFallback": "---",
     "noTarget": "ERROR: NO TARGET",
     "loginRequired": "ERROR: LOGIN REQUIRED TO PIN",
+    "pinRequiresCast": "ERROR: CAST CHANNEL BEFORE PIN",
     "unpinned": "UNPINNED",
     "pinned": "PINNED",
     "pinFailed": "ERROR: PIN FAILED",

@@ -184,10 +184,14 @@ export const BCList = {
                 const ch = this.selectedChannel;
                 const isLoggedIn = !!localStorage.getItem('currentUser');
 
-                if (!isLoggedIn || !ch.serverChannelId) {
-                    // Cannot pin local-only or when not logged in
+                if (!isLoggedIn) {
                     playAudio('UIGeneralCancel.mp3');
                     return BBMessage.error(t('broadcast.loginRequired'));
+                }
+                if (!ch.serverChannelId) {
+                    // Local-only (uncast) channel — no server row to pin against.
+                    playAudio('UIGeneralCancel.mp3');
+                    return BBMessage.error(t('broadcast.pinRequiresCast'));
                 }
 
                 try {

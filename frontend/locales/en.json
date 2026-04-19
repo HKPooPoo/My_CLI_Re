@@ -189,6 +189,7 @@
     "headFallback": "---",
     "noTarget": "No channel selected.",
     "loginRequired": "Log in to pin channels.",
+    "pinRequiresCast": "Cast the channel before pinning.",
     "unpinned": "Unpinned.",
     "pinned": "Pinned!",
     "pinFailed": "Pin failed.",
