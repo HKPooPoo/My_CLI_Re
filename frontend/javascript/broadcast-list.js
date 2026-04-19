@@ -330,10 +330,17 @@ export const BCList = {
                         msg.update(t('broadcast.createComplete'));
                         await this.fetchAndRender();
 
-                        // Auto-select the new channel (it will be at top after sort)
+                        // Auto-select the new channel (it will be at top after sort).
+                        // fetchAndRender's internal render() already ran against the
+                        // OLD selectedChannel, so the `.active` class + InfiniteList
+                        // cursor still sit on the previously-selected row. Re-render
+                        // after updating selectedChannel so the cursor follows the
+                        // auto-selection — otherwise PIN/CAST/DELETE read newCh while
+                        // the user visually points at the previous row.
                         const newCh = this.channels.find(c => c.localId === localId);
                         if (newCh) {
                             this.selectedChannel = newCh;
+                            this.render();
                             this.updateNaviText(newCh.name);
                             window.dispatchEvent(new CustomEvent('broadcast:selected', { detail: newCh }));
                         }
