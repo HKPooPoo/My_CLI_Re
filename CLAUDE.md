@@ -309,23 +309,62 @@ Code-level identifiers (`commit`, `checkout`, `push`, `pull`, `branch`) remain u
 
 ### MultiStepButton (`multiStepButton.js`)
 
-- **INSTANT:** `new MultiStepButton(el, { action })` — single click fires
-- **CONFIRM:** `new MultiStepButton(el, { action, confirm: true, confirmLabel })` — first click arms (`.btn-armed`), second fires, auto-resets after 3s
-- Prevents double-fire via `aria-busy="true"` during async actions
-- **Do NOT use for dynamic-label buttons.** Constructor captures `originalLabel` at init time — external `textContent` changes conflict. Use raw `addEventListener` instead (see Dynamic Buttons below). However, static `data-i18n` labels ARE supported: MultiStepButton detects `data-i18n` and uses `t()` for label restoration, with `i18n:ready` listener to re-capture after locale loads.
+Standardised countdown-confirm button. N-step pattern (N = total clicks to fire):
+
+| Steps | Flow |
+|-------|------|
+| 1 (instant) | `Kill` → fire |
+| 2 | `Kill` → `Kill!` → fire |
+| 3 | `Kill` → `Killx2` → `Kill!` → fire |
+| 4 | `Kill` → `Killx3` → `Killx2` → `Kill!` → fire |
+| N | `Kill` → `Killx(N-1)` → … → `Killx2` → `Kill!` → fire |
+
+**API:**
+```js
+new MultiStepButton(el, {
+    action,              // async fn — executes on final click
+    sound,               // audio on every click
+    fireSound,           // audio on final click only (defaults to sound)
+    steps: 1,            // int ≥1 or () => int. 1 = instant, N = N-step countdown.
+    dynamicLabel: false, // if true, re-read base label from el.textContent each arming
+    timeout: 3000,       // ms before armed state auto-resets
+});
+
+btn.reset();             // public — force back to step 0
+```
+
+**Project standard:** every non-instant button uses `steps: 3`. Raise/lower per button only when UX justifies it — the component supports any N ≥ 1. 1-click stays for reversible or informational actions (PUSH, PULL, FORK, LOGIN, BC CREATE/DELETE, PIN, Mods ADD/UP/DOWN/DELETE, settings toggles, file chip remove/download, feature-shelf open/close). 3-click applies to destructive or heavy mutations (COMMIT, CAST, CUT, ADD, LOGOUT, REGISTER, BIND EMAIL, UNBIND EMAIL, DELETE ACCOUNT, WIPE LOCAL, DROP ALL BRANCHES, BB CHECKOUT/SWITCH, BB CLEAN).
+
+**Label derivation:**
+- **Static mode (default):** initial label from `data-i18n` → `t(key)`. Intermediate with `r` clicks left tries locale `{key}X{r}`; the final armed step (r=1) tries `{key}Final`. Formula fallback `{base}x{r}` / `{base}!` when the locale key is missing. This gives translators a per-state override hook without forcing every project to ship X/Final keys.
+  - Example: `data-i18n="auth.logoutBtn"` → `"LOGOUT"` → `t('auth.logoutBtnX2')` = `"LOGOUTx2"` → `t('auth.logoutBtnFinal')` = `"LOGOUT!"`.
+- **Dynamic mode (`dynamicLabel: true`):** base label is read from `el.textContent` fresh at the start of each arming cycle. Intermediate/final always use the formula (no locale lookup) so the countdown tracks whatever external code last wrote. Use for buttons where an external updater owns the label (CHECKOUT/SWITCH, CLEAN/DROP/DELETE).
+
+**Dynamic-button contract:** external code that mutates `textContent` MUST call `btn.reset()` BEFORE writing the new label. Otherwise the armed countdown lingers on top of a stale cached base (e.g. `CHECKOUTx2` → list selection flips to another branch → label becomes `SWITCH` but the step-2 armed action is still wired to CHECKOUT). `updateCheckoutButtonState()` and `updateDropButtonState()` in `blackboard.js` call `btn.reset()` as the first thing they do.
+
+**Dynamic step count:** pass `steps` as a function when different states of the same button need different confirmation depth. The function is resolved at click time. Example — BB DROP button triples only for CLEAN; DROP and DELETE stay 1-click:
+```js
+steps: () => currentDropAction === 'clean' ? 3 : 1
+```
+
+**Public `reset()`:** clears the timer, sets step back to 0, removes `.btn-armed`, restores `textContent` to the cached base label. Safe to call any time. Also wired to the auto-reset timer.
+
+**Double-fire protection:** `aria-busy="true"` during async action; internal `busy` flag blocks re-entry.
 
 ### Dynamic State Buttons (Blackboard)
 
-Buttons that change label/behavior based on list selection context. Use raw `addEventListener` + module-level state variables (NOT MultiStepButton). Remove `data-i18n` from HTML — text is set purely by JS.
+Buttons whose label/behaviour change based on list selection context. Now wired through `MultiStepButton` with `dynamicLabel: true` — the external `updateXButtonState()` owns the textContent, MultiStepButton owns the countdown state machine. Every updater calls `btn.reset()` first to drop any armed state before swapping the label.
 
-**Checkout/Switch** (`checkout-btn`): `updateCheckoutButtonState()` on `list:selectionChanged`
+**Checkout/Switch** (`checkout-btn`): `updateCheckoutButtonState()` on `list:selectionChanged`.
 - `selected.id === state.branchId` → **CHECKOUT** (re-download from server, `targetOwner="remote"`)
 - `selected.id !== state.branchId` → **SWITCH** (change branch, `targetOwner` based on `isLocal`)
+- Both states are 3-step — CHECKOUT overwrites local, SWITCH changes which branch the editor points at.
 
-**Clean/Drop/Delete** (`drop-btn`): `updateDropButtonState()` on `list:selectionChanged`
-- `isLocal && hasContent` → **CLEAN** (wipe records, keep branch)
-- `isServer` (no local content) → **DROP** (delete server copy)
-- `isLocal && !hasContent && !isServer` → **DELETE** (remove empty branch)
+**Clean/Drop/Delete** (`drop-btn`): `updateDropButtonState()` on `list:selectionChanged`.
+- `isLocal && hasContent` → **CLEAN** (wipe local records, keep branch) — **3-step** (destroys unsynced user content)
+- `isServer` (no local content) → **DROP** (delete server copy) — **1-click** (local copy survives, re-commit restores)
+- `isLocal && !hasContent && !isServer` → **DELETE** (remove empty branch) — **1-click** (branch was empty anyway)
+- `steps: () => currentDropAction === 'clean' ? 3 : 1`.
 
 ### Toast & Messages
 

@@ -228,34 +228,31 @@ export const AuthManager = {
 
         // --- 註冊邏輯 ---
         if (this.elements.registerBtn) {
-            new MultiStepButton(this.elements.registerBtn, [
-                { label: t('auth.registerStep1'), sound: "Click.mp3" },
-                { label: t('auth.registerStep2'), sound: "Click.mp3" },
-                { label: t('auth.registerStep3'), sound: "Click.mp3" },
-                {
-                    label: t('auth.registerStep4'),
-                    sound: "Cassette.mp3",
-                    action: async () => {
-                        const uid = this.elements.uidInput.value.trim();
-                        const passcode = this.elements.passcodeInput.value.trim();
+            new MultiStepButton(this.elements.registerBtn, {
+                sound: "Click.mp3",
+                fireSound: "Cassette.mp3",
+                steps: 3,
+                timeout: 4000,
+                action: async () => {
+                    const uid = this.elements.uidInput.value.trim();
+                    const passcode = this.elements.passcodeInput.value.trim();
 
-                        if (!uid || !passcode) {
-                            BBMessage.error(t('auth.inputRequired'));
-                            return;
-                        }
+                    if (!uid || !passcode) {
+                        BBMessage.error(t('auth.inputRequired'));
+                        return;
+                    }
 
-                        const msg = BBMessage.loading(t('auth.registering'));
-                        try {
-                            const data = await AuthService.register({ uid, passcode });
-                            msg.update(t('auth.registerComplete'), 2000);
-                        } catch (e) {
-                            console.error("REGISTER ERROR:", e);
-                            msg.close();
-                            BBMessage.error(e.message || t('auth.registerFailed'));
-                        }
+                    const msg = BBMessage.loading(t('auth.registering'));
+                    try {
+                        const data = await AuthService.register({ uid, passcode });
+                        msg.update(t('auth.registerComplete'), 2000);
+                    } catch (e) {
+                        console.error("REGISTER ERROR:", e);
+                        msg.close();
+                        BBMessage.error(e.message || t('auth.registerFailed'));
                     }
                 }
-            ], 4000);
+            });
         }
 
         // --- 登出邏輯 ---
@@ -273,6 +270,7 @@ export const AuthManager = {
         if (this.elements.logoutBtn) {
             new MultiStepButton(this.elements.logoutBtn, {
                 sound: "UISelectOff.mp3",
+                steps: 3,
                 action: async () => {
                     const msg = BBMessage.loading(t('auth.loggingOut'));
                     try {
@@ -346,31 +344,24 @@ export const AuthManager = {
         }
 
         // --- 郵件綁定邏輯 (方案 B: CLI 指令解析) ---
+        // 三段式確認 (Kill → Killx2 → Kill!) — action 只在最後一 click 跑;
+        // MultiStepButton 的 busy 旗標擔保不會重入,不需額外 isBinding 保護。
         if (this.elements.emailBindBtn) {
-            this.elements.emailBindBtn.addEventListener("click", async () => {
-                playAudio('UIGeneralFocus.mp3');
-                if (this.isBinding) return;
-                this.isBinding = true;
+            new MultiStepButton(this.elements.emailBindBtn, {
+                sound: 'UIGeneralFocus.mp3',
+                steps: 3,
+                action: async () => {
+                    const input = this.elements.emailInput.value.trim();
+                    if (!input) return BBMessage.error(t('auth.emailRequired'));
 
-                const input = this.elements.emailInput.value.trim();
-                if (!input) {
-                    this.isBinding = false;
-                    return BBMessage.error(t('auth.emailRequired'));
-                }
-
-                try {
                     const isCommand = input.startsWith("/bind");
 
                     if (!isCommand) {
                         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-                        if (!emailRegex.test(input)) {
-                            this.isBinding = false;
-                            return BBMessage.error(t('auth.invalidEmail'));
-                        }
+                        if (!emailRegex.test(input)) return BBMessage.error(t('auth.invalidEmail'));
                     }
 
                     const msg = BBMessage.loading(t('auth.processing'));
-
                     try {
                         let data;
                         if (isCommand) {
@@ -398,19 +389,16 @@ export const AuthManager = {
                             BBMessage.error(e.message || t('auth.offlineError'));
                         }
                     }
-                } finally {
-                    this.isBinding = false;
                 }
             });
         }
 
         // --- 解綁 Email 邏輯 ---
-        // 兩段式確認 (armed → fire)；需要 re-enter passcode 作為破壞性動作閘門。
+        // 三段式確認 (Kill → Killx2 → Kill!)；需要 re-enter passcode 作為破壞性動作閘門。
         if (this.elements.unbindEmailBtn) {
             new MultiStepButton(this.elements.unbindEmailBtn, {
                 sound: 'UISelectOff.mp3',
-                confirm: true,
-                confirmLabel: t('auth.unbindConfirm'),
+                steps: 3,
                 action: async () => {
                     const passcode = this.elements.confirmPasscodeInput?.value?.trim();
                     if (!passcode) {
@@ -438,14 +426,13 @@ export const AuthManager = {
         }
 
         // --- 注銷帳號邏輯 ---
-        // 兩段式確認 (armed → fire) + 伺服器端再驗 passcode。成功後本地登出狀態。
+        // 三段式確認 (Kill → Killx2 → Kill!) + 伺服器端再驗 passcode。成功後本地登出狀態。
         // 本地 IndexedDB (BB/WT/BC/檔案快取) 保留，對齊 logout 的 preserves-local-data
         // 設計。使用者若要連本機一起洗乾淨，MISC 頁還有 WIPE LOCAL BRANCHES 按鈕。
         if (this.elements.deleteAccountBtn) {
             new MultiStepButton(this.elements.deleteAccountBtn, {
                 sound: 'UISelectOff.mp3',
-                confirm: true,
-                confirmLabel: t('auth.deleteConfirm'),
+                steps: 3,
                 action: async () => {
                     const passcode = this.elements.confirmPasscodeInput?.value?.trim();
                     if (!passcode) {

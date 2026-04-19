@@ -266,8 +266,7 @@ export const MISC = {
         if (this.elements.wipeLocalBtn) {
             new MultiStepButton(this.elements.wipeLocalBtn, {
                 sound: 'UISelectOff.mp3',
-                confirm: true,
-                confirmLabel: t('misc.wipeLocalConfirm'),
+                steps: 3,
                 action: async () => {
                     try {
                         const db = (await import('./indexedDB.js')).default;
@@ -295,8 +294,7 @@ export const MISC = {
         if (this.elements.dropAllBranchesBtn) {
             new MultiStepButton(this.elements.dropAllBranchesBtn, {
                 sound: 'UISelectOff.mp3',
-                confirm: true,
-                confirmLabel: t('misc.dropAllBranchesConfirm'),
+                steps: 3,
                 action: async () => {
                     if (!localStorage.getItem('currentUser')) {
                         BBMessage.requireLogin();

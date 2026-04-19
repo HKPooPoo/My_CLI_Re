@@ -19,7 +19,6 @@ import { initAllInfiniteLists, listInstances } from "./blackboard-ui-list.js"
 import db from "./indexedDB.js"
 import { MultiStepButton } from "./multiStepButton.js";
 import { BlackboardService } from "./services/blackboard-service.js";
-import { playAudio } from "./audio.js";
 import { EditorAttachments } from "./editor-attachments.js";
 import { t } from './i18n.js';
 import { T } from './timing.js';
@@ -480,6 +479,7 @@ if (BBUI.elements.branchBtn) {
 if (BBUI.elements.commitBtn) {
     new MultiStepButton(BBUI.elements.commitBtn, {
         sound: "UIPipboyOKPress.mp3",
+        steps: 3,
         action: async () => {
             BBSync.cancelPendingCommit();
             const selected = getSelectedBranchInfo();
@@ -513,15 +513,23 @@ if (BBUI.elements.commitBtn) {
     });
 }
 
-// CHECKOUT/SWITCH: Dynamic dual-state button (like DROP's 3-state)
-// - Same branch as HEAD → CHECKOUT (re-download from server)
+// CHECKOUT/SWITCH: Dynamic dual-state button
+// - Same branch as HEAD → CHECKOUT (re-download from server, overwrites local)
 // - Different branch     → SWITCH  (change active branch)
+// 3-step confirm (Kill → Killx2 → Kill!) via MultiStepButton with dynamicLabel.
+// Label is set by updateCheckoutButtonState; MultiStepButton reads textContent
+// fresh each arming and applies the x2/! formula.
 const checkoutBtnEl = BBUI.elements.checkoutBtn;
 let currentCheckoutAction = null;
 let checkoutButtonTimer = null;
+let checkoutMsb = null;
 
 function updateCheckoutButtonState() {
     if (!checkoutBtnEl) return;
+
+    // Reset any armed state before swapping the label — otherwise CHECKOUTx2
+    // lingers as SWITCHx2 and the armed action is tied to the old branch.
+    checkoutMsb?.reset();
 
     const selected = getSelectedBranchInfo();
     if (!selected) {
@@ -546,47 +554,59 @@ function updateCheckoutButtonState() {
 }
 
 if (checkoutBtnEl) {
-    checkoutBtnEl.addEventListener("click", async () => {
-        if (!currentCheckoutAction) return;
-        const selected = getSelectedBranchInfo();
-        if (!selected) return;
+    checkoutMsb = new MultiStepButton(checkoutBtnEl, {
+        sound: "Click.mp3",
+        steps: 3,
+        dynamicLabel: true,
+        action: async () => {
+            if (!currentCheckoutAction) return;
+            const selected = getSelectedBranchInfo();
+            if (!selected) return;
 
-        BBSync.cancelPendingCommit();
-        playAudio("Click.mp3");
+            BBSync.cancelPendingCommit();
 
-        let msg;
-        try {
-            if (currentCheckoutAction === "checkout") {
-                // Re-download from server (always remote)
-                msg = BBMessage.loading(t('blackboard.loading'));
-                await BBVCS.checkout(state, selected.id, "remote");
-                msg.update(t('blackboard.loadComplete'));
-            } else {
-                // Switch to a different branch
-                msg = BBMessage.loading(t('blackboard.switching'));
-                const targetOwner = selected.isLocal ? "local" : "remote";
-                await BBVCS.checkout(state, selected.id, targetOwner);
-                msg.update(t('blackboard.switchComplete'));
+            let msg;
+            try {
+                if (currentCheckoutAction === "checkout") {
+                    // Re-download from server (always remote)
+                    msg = BBMessage.loading(t('blackboard.loading'));
+                    await BBVCS.checkout(state, selected.id, "remote");
+                    msg.update(t('blackboard.loadComplete'));
+                } else {
+                    // Switch to a different branch
+                    msg = BBMessage.loading(t('blackboard.switching'));
+                    const targetOwner = selected.isLocal ? "local" : "remote";
+                    await BBVCS.checkout(state, selected.id, targetOwner);
+                    msg.update(t('blackboard.switchComplete'));
+                }
+
+                await syncView();
+                await updateBranchList();
+                updateCheckoutButtonState();
+            } catch (e) {
+                console.error("CHECKOUT/SWITCH ERROR:", e);
+                if (msg) msg.close();
+                BBMessage.error(t('blackboard.loadFailed'));
             }
-
-            await syncView();
-            await updateBranchList();
-            updateCheckoutButtonState();
-        } catch (e) {
-            console.error("CHECKOUT/SWITCH ERROR:", e);
-            if (msg) msg.close();
-            BBMessage.error(t('blackboard.loadFailed'));
         }
     });
 }
 
-// DROP: 動態三階刪除 (基於選取狀態)
+// DROP: 動態三態按鈕 — CLEAN/DROP/DELETE 依選取狀態切換。
+// 3-step confirm (Kill → Killx2 → Kill!) 只在 CLEAN(會消滅本地未提交內容)時生效;
+// DROP(砍雲端副本,本地還在)和 DELETE(刪空白本地分支,雲端還在)都走 1-click instant,
+// 以 `steps: () => n` 動態決定。
 const dropBtnEl = document.getElementById("drop-btn");
 let currentDropAction = null;
 let dropButtonTimer = null;
+let dropMsb = null;
 
 async function updateDropButtonState() {
     if (!dropBtnEl) return;
+
+    // Reset any armed countdown before label swap — otherwise CLEANx2 can linger
+    // as DROPx2 with the wrong action wired up.
+    dropMsb?.reset();
 
     const selected = getSelectedBranchInfo();
     if (!selected) {
@@ -638,50 +658,53 @@ async function updateDropButtonState() {
 }
 
 if (dropBtnEl) {
-    // 點擊事件：執行當前決策的動作
-    dropBtnEl.addEventListener("click", async () => {
-        if (!currentDropAction) return;
+    dropMsb = new MultiStepButton(dropBtnEl, {
+        sound: "UIGeneralCancel.mp3",
+        steps: () => currentDropAction === 'clean' ? 3 : 1,
+        dynamicLabel: true,
+        action: async () => {
+            if (!currentDropAction) return;
 
-        const selected = getSelectedBranchInfo();
-        if (!selected) return;
+            const selected = getSelectedBranchInfo();
+            if (!selected) return;
 
-        BBSync.cancelPendingCommit();
-        playAudio("UIGeneralCancel.mp3");
+            BBSync.cancelPendingCommit();
 
-        let msg;
-        try {
-            if (currentDropAction === "clean") {
-                msg = BBMessage.loading(t('blackboard.cleaning'));
-                await BBCore.clearBranchRecords("local", selected.id);
-                // 若清理的是當前分支，需重置 Head
-                if (selected.id === state.branchId) {
-                    state.currentHead = 0;
-                    await syncView();
+            let msg;
+            try {
+                if (currentDropAction === "clean") {
+                    msg = BBMessage.loading(t('blackboard.cleaning'));
+                    await BBCore.clearBranchRecords("local", selected.id);
+                    // 若清理的是當前分支，需重置 Head
+                    if (selected.id === state.branchId) {
+                        state.currentHead = 0;
+                        await syncView();
+                    }
+                    msg.update(t('blackboard.cleanComplete'));
                 }
-                msg.update(t('blackboard.cleanComplete'));
-            }
-            else if (currentDropAction === "drop") {
-                msg = BBMessage.loading(t('blackboard.dropping'));
-                await BlackboardService.deleteBranch(selected.id);
-                msg.update(t('blackboard.dropComplete'));
-            }
-            else if (currentDropAction === "delete") {
-                msg = BBMessage.loading(t('blackboard.deleting'));
-                await BBCore.deleteLocalBranch("local", selected.id);
-
-                if (selected.id === state.branchId) {
-                    await initBoard();
+                else if (currentDropAction === "drop") {
+                    msg = BBMessage.loading(t('blackboard.dropping'));
+                    await BlackboardService.deleteBranch(selected.id);
+                    msg.update(t('blackboard.dropComplete'));
                 }
-                msg.update(t('blackboard.deleteComplete'));
-            }
+                else if (currentDropAction === "delete") {
+                    msg = BBMessage.loading(t('blackboard.deleting'));
+                    await BBCore.deleteLocalBranch("local", selected.id);
 
-            // 操作完成後刷新列表與按鈕狀態
-            await updateBranchList();
-            await updateDropButtonState();
-        } catch (e) {
-            console.error("DROP ACTION FAILED:", e);
-            if (msg) msg.close();
-            BBMessage.error(t('blackboard.actionFailed'));
+                    if (selected.id === state.branchId) {
+                        await initBoard();
+                    }
+                    msg.update(t('blackboard.deleteComplete'));
+                }
+
+                // 操作完成後刷新列表與按鈕狀態
+                await updateBranchList();
+                await updateDropButtonState();
+            } catch (e) {
+                console.error("DROP ACTION FAILED:", e);
+                if (msg) msg.close();
+                BBMessage.error(t('blackboard.actionFailed'));
+            }
         }
     });
 }

@@ -198,6 +198,7 @@ export const BCList = {
         if (this.elements.castBtn) {
             new MultiStepButton(this.elements.castBtn, {
                 sound: 'UIPipboyOK.mp3',
+                steps: 3,
                 action: async () => {
                     if (!this.hasTitle()) return BBMessage.error(t('broadcast.titleRequired'));
                     if (!this.selectedChannel) return BBMessage.error(t('broadcast.noTarget'));

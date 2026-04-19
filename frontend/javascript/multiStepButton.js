@@ -1,28 +1,51 @@
 /**
- * MultiStepButton Component
+ * MultiStepButton — standardised countdown-confirm button
  * =================================================================
- * Two modes:
+ * N-step pattern (N = total clicks required to fire):
+ *   1-step (instant): `Kill` → fire
+ *   2-step:           `Kill` → `Kill!` → fire
+ *   3-step:           `Kill` → `Killx2` → `Kill!` → fire
+ *   4-step:           `Kill` → `Killx3` → `Killx2` → `Kill!` → fire
+ *   N-step:           `Kill` → `Killx(N-1)` → … → `Killx2` → `Kill!` → fire
  *
- * 1. INSTANT — single click, fires immediately, no cooldown.
- *    new MultiStepButton(el, { sound, action })
+ * API
+ * ---
+ *   new MultiStepButton(el, {
+ *     action,              // async fn — executes on the final click
+ *     sound,               // audio played on every click (optional)
+ *     fireSound,           // override for final click (defaults to sound)
+ *     steps: 1,            // int ≥1 or () => int. 1 = instant, N = N-step countdown.
+ *     dynamicLabel: false, // if true, re-read base label from el.textContent on each arming
+ *     timeout: 3000,       // ms before armed state auto-resets
+ *   });
  *
- * 2. CONFIRM — click to arm, click again to fire. Auto-resets on timeout.
- *    new MultiStepButton(el, { sound, action, confirm: true })
- *    new MultiStepButton(el, { sound, action, confirm: true, confirmLabel: "SURE?" })
- *    new MultiStepButton(el, { sound, action, confirm: true, confirmLabel: "SURE?", confirmSound: "warn.mp3" })
+ *   btn.reset();           // public — force back to step 0
  *
- * Options:
- *   sound         — audio file to play on primary click
- *   action        — async callback executed on fire
- *   confirm       — if true, requires a second click to execute
- *   confirmLabel  — text shown while armed (default: "SURE?")
- *   confirmSound  — audio played on confirmation click (default: same as sound)
- *   timeout       — ms before armed state auto-resets (default: 3000)
+ * Label sources
+ * -------------
+ *   Static mode (default): initial label from `data-i18n` attribute via t(key).
+ *     Intermediate step with `remaining` clicks left:
+ *       - if remaining ≥ 2: try locale `{key}X{remaining}`, fall back to `{base}x{remaining}`
+ *       - if remaining === 1 (final): try locale `{key}Final`, fall back to `{base}!`
  *
- * During async action execution, the button is disabled to prevent
- * double-fire but remains visually unchanged (no artificial cooldown).
+ *   Dynamic mode (dynamicLabel: true): initial label read from el.textContent each
+ *   time arming starts. Intermediate/final use the formula (no locale lookup) so the
+ *   label tracks whatever external code last set.
  *
- * Dependencies: audio.js
+ *   External callers that mutate textContent (e.g. BB CHECKOUT/SWITCH, BB DROP/CLEAN)
+ *   MUST invoke `btn.reset()` BEFORE changing textContent, otherwise the armed state
+ *   and cached base label become stale (you would get "SWITCHx2" but the action is
+ *   the old armed CHECKOUT).
+ *
+ * Dynamic step count
+ * ------------------
+ *   Pass `steps` as a function when different states of the same button need
+ *   different depth. Example: BB's triple-purpose DROP button wants
+ *   3-step confirmation for CLEAN but 1-click (instant) for DROP and DELETE:
+ *     steps: () => currentDropAction === 'clean' ? 3 : 1
+ *   The value is resolved at click time, so it can read external state.
+ *
+ * Dependencies: audio.js, i18n.js
  * =================================================================
  */
 
@@ -31,102 +54,150 @@ import { t } from "./i18n.js";
 
 export class MultiStepButton {
     /**
-     * @param {HTMLElement} element
-     * @param {Object|Object[]} opts — config object, OR legacy steps array (backward compat)
-     * @param {number} [legacyTimeout] — only used for legacy array form
+     * @param {HTMLElement} el
+     * @param {Object} opts
      */
-    constructor(element, opts, legacyTimeout) {
-        if (!element) return;
-        this.el = element;
-
-        // --- Normalize legacy array API into new format ---
-        if (Array.isArray(opts)) {
-            this._initFromLegacy(opts, legacyTimeout);
-            return;
-        }
-
-        // --- New unified API ---
-        this.sound = opts.sound || null;
+    constructor(el, opts = {}) {
+        if (!el) return;
+        this.el = el;
         this.action = opts.action || (() => {});
-        this.isConfirm = !!opts.confirm;
-        this.confirmLabel = opts.confirmLabel || "SURE?";
-        this.confirmSound = opts.confirmSound || this.sound;
+        this.sound = opts.sound || null;
+        this.fireSound = opts.fireSound !== undefined ? opts.fireSound : this.sound;
         this.timeout = opts.timeout || 3000;
+        this.dynamicLabel = !!opts.dynamicLabel;
+        this._stepsConfig = opts.steps !== undefined ? opts.steps : 1;
 
         this.i18nKey = this.el.getAttribute('data-i18n') || null;
-        this.originalLabel = this.i18nKey ? t(this.i18nKey) : this.el.textContent;
-        this.armed = false;
+        this.baseLabel = this._computeBaseLabel();
+
+        this.step = 0;
         this.busy = false;
         this.timer = null;
 
-        // Re-capture label when i18n re-renders (locale loaded after construction)
-        if (this.i18nKey) {
+        // Static buttons: re-capture base label when i18n re-renders (locale loaded
+        // after construction, or user switched locale). Dynamic buttons rely on
+        // external state updaters to set textContent, so no i18n hook needed.
+        if (!this.dynamicLabel && this.i18nKey) {
             window.addEventListener('i18n:ready', () => {
-                if (!this.armed) {
-                    this.originalLabel = t(this.i18nKey);
-                    this.el.textContent = this.originalLabel;
+                if (this.step === 0) {
+                    this.baseLabel = t(this.i18nKey);
+                    this.el.textContent = this.baseLabel;
                 }
             });
         }
 
-        this.el.addEventListener("click", (e) => {
+        this.el.addEventListener('click', (e) => {
             e.preventDefault();
             this._onClick();
         });
     }
 
     // =================================================================
-    //  Core
+    //  Public API
     // =================================================================
+
+    /** Force the button back to step 0 and restore the base label. */
+    reset() {
+        if (this.step === 0 && !this.timer) return;
+        this._clearTimer();
+        this.step = 0;
+        this.el.classList.remove('btn-armed');
+        this.el.textContent = this.baseLabel;
+    }
+
+    // =================================================================
+    //  Internal
+    // =================================================================
+
+    _resolveSteps() {
+        const cfg = this._stepsConfig;
+        const n = typeof cfg === 'function' ? cfg() : cfg;
+        return Math.max(1, parseInt(n, 10) || 1);
+    }
+
+    _computeBaseLabel() {
+        if (this.dynamicLabel) return this.el.textContent || '';
+        if (this.i18nKey) return t(this.i18nKey);
+        return this.el.textContent || '';
+    }
+
+    /**
+     * Label for the given step within an N-step flow.
+     *   step 0              → base
+     *   step k (remaining = N-k):
+     *     remaining >= 2    → "{base}x{remaining}" (or locale `{key}X{remaining}`)
+     *     remaining === 1   → "{base}!"            (or locale `{key}Final`)
+     */
+    _labelAt(step, total) {
+        if (step === 0) return this.baseLabel;
+        const remaining = total - step;
+        if (remaining === 1) {
+            if (!this.dynamicLabel && this.i18nKey) {
+                const key = this.i18nKey + 'Final';
+                const str = t(key);
+                if (str !== key) return str;
+            }
+            return this.baseLabel + '!';
+        }
+        if (!this.dynamicLabel && this.i18nKey) {
+            const key = `${this.i18nKey}X${remaining}`;
+            const str = t(key);
+            if (str !== key) return str;
+        }
+        return this.baseLabel + 'x' + remaining;
+    }
 
     _onClick() {
         if (this.busy) return;
 
-        if (!this.isConfirm) {
-            // INSTANT mode — fire immediately, no cooldown
-            if (this.sound) playAudio(this.sound);
+        const total = this._resolveSteps();
+
+        // Instant (steps: 1) — fire without arming.
+        if (total <= 1) {
+            if (this.fireSound) playAudio(this.fireSound);
             this._fire();
             return;
         }
 
-        // CONFIRM mode
-        if (!this.armed) {
-            // First click: arm
+        // Start of arming — refresh base label (handles dynamic-mode textContent
+        // changes and any locale swap since construction).
+        if (this.step === 0) {
+            this.baseLabel = this._computeBaseLabel();
+        }
+
+        this.step += 1;
+
+        if (this.step < total) {
             if (this.sound) playAudio(this.sound);
-            this._arm();
+            this.el.textContent = this._labelAt(this.step, total);
+            this.el.classList.add('btn-armed');
+            this._startTimer();
         } else {
-            // Second click: execute
-            if (this.confirmSound) playAudio(this.confirmSound);
-            this._disarm();
+            if (this.fireSound) playAudio(this.fireSound);
+            this._clearTimer();
+            this.step = 0;
+            this.el.classList.remove('btn-armed');
+            this.el.textContent = this.baseLabel;
             this._fire();
         }
     }
 
-    _arm() {
-        this.armed = true;
-        this.el.textContent = this.confirmLabel;
-        this.el.classList.add("btn-armed");
-        this._startTimer();
-    }
-
-    _disarm() {
-        this.armed = false;
-        this.el.textContent = this.i18nKey ? t(this.i18nKey) : this.originalLabel;
-        this.el.classList.remove("btn-armed");
-        this._clearTimer();
-    }
-
     async _fire() {
         this.busy = true;
-        this.el.setAttribute("aria-busy", "true");
+        this.el.setAttribute('aria-busy', 'true');
         try {
             await this.action();
-        } catch (err) {
-            // Swallow — callers handle their own errors via BBMessage
+        } catch {
+            // Callers own their error UX (BBMessage / toasts / logging)
         } finally {
             this.busy = false;
-            this.el.removeAttribute("aria-busy");
+            this.el.removeAttribute('aria-busy');
         }
+    }
+
+    _startTimer() {
+        this._clearTimer();
+        this.timer = setTimeout(() => this.reset(), this.timeout);
     }
 
     _clearTimer() {
@@ -134,103 +205,5 @@ export class MultiStepButton {
             clearTimeout(this.timer);
             this.timer = null;
         }
-    }
-
-    // =================================================================
-    //  Legacy array API — full backward compatibility
-    //  Converts old [...steps] into the confirm pattern automatically.
-    // =================================================================
-
-    _initFromLegacy(steps, timeout) {
-        // Last step is the one with the real action
-        const lastStep = steps[steps.length - 1];
-        // First step provides the initial label and sound
-        const firstStep = steps[0];
-
-        this.i18nKey = this.el.getAttribute('data-i18n') || null;
-        this.originalLabel = firstStep.label || (this.i18nKey ? t(this.i18nKey) : this.el.textContent);
-        this.sound = firstStep.sound || null;
-        this.action = lastStep.action || (() => {});
-        this.confirmLabel = steps.length > 1 ? steps[steps.length - 1].label || "SURE?" : null;
-        this.confirmSound = lastStep.sound || this.sound;
-        this.timeout = timeout || 3000;
-
-        // Multi-step → confirm mode, single step → instant
-        this.isConfirm = steps.length > 1;
-
-        // For >2 steps (like register's 4-step), we simulate the countdown
-        this.allSteps = steps.length > 2 ? steps : null;
-        this.stepIndex = 0;
-
-        this.armed = false;
-        this.busy = false;
-        this.timer = null;
-
-        // Set initial label
-        this.el.textContent = this.originalLabel;
-
-        // Re-capture label when i18n re-renders (locale loaded after construction)
-        if (this.i18nKey && !firstStep.label) {
-            window.addEventListener('i18n:ready', () => {
-                if (!this.armed && this.stepIndex === 0) {
-                    this.originalLabel = t(this.i18nKey);
-                    this.el.textContent = this.originalLabel;
-                }
-            });
-        }
-
-        this.el.addEventListener("click", (e) => {
-            e.preventDefault();
-            if (this.allSteps) {
-                this._onClickMulti();
-            } else {
-                this._onClick();
-            }
-        });
-    }
-
-    /**
-     * Multi-step countdown (3+ steps, like REGISTER x 3 → x 2 → CONFIRM!)
-     */
-    _onClickMulti() {
-        if (this.busy) return;
-
-        const step = this.allSteps[this.stepIndex];
-        if (step.sound) playAudio(step.sound);
-
-        if (this.stepIndex < this.allSteps.length - 1) {
-            // Advance to next step
-            this.stepIndex++;
-            const nextStep = this.allSteps[this.stepIndex];
-            this.el.textContent = nextStep.label || this.el.textContent;
-            if (this.stepIndex > 0) {
-                this.el.classList.add("btn-armed");
-            }
-            this._startTimer();
-        } else {
-            // Final step: fire
-            this.el.classList.remove("btn-armed");
-            this._resetMulti();
-            this._fire();
-        }
-    }
-
-    _resetMulti() {
-        this._clearTimer();
-        this.stepIndex = 0;
-        this.el.textContent = this.i18nKey ? t(this.i18nKey) : this.originalLabel;
-        this.el.classList.remove("btn-armed");
-    }
-
-    // Override _disarm for multi-step to reset properly
-    _startTimer() {
-        this._clearTimer();
-        this.timer = setTimeout(() => {
-            if (this.allSteps) {
-                this._resetMulti();
-            } else {
-                this._disarm();
-            }
-        }, this.timeout);
     }
 }
