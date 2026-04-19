@@ -137,9 +137,12 @@ export const EditorAttachments = {
                 const fileInput = this._getEl('fileInput');
                 const chipsContainer = this._getEl('chipsContainer');
 
-                // --- Drag Events (Edit Mode Only) ---
-                if (!this.readOnly && dropZone) {
+                // --- Drag / Paste / File Input ---
+                // Always bind; runtime `this.readOnly` check inside each handler
+                // so setReadOnly() can flip behaviour without rebinding.
+                if (dropZone) {
                     dropZone.addEventListener('dragenter', (e) => {
+                        if (this.readOnly) return;
                         e.preventDefault();
                         this._dragCounter++;
                         if (this._dragCounter === 1) {
@@ -148,10 +151,12 @@ export const EditorAttachments = {
                     });
 
                     dropZone.addEventListener('dragover', (e) => {
+                        if (this.readOnly) return;
                         e.preventDefault();
                     });
 
                     dropZone.addEventListener('dragleave', (e) => {
+                        if (this.readOnly) return;
                         e.preventDefault();
                         this._dragCounter--;
                         if (this._dragCounter <= 0) {
@@ -161,6 +166,7 @@ export const EditorAttachments = {
                     });
 
                     dropZone.addEventListener('drop', async (e) => {
+                        if (this.readOnly) return;
                         e.preventDefault();
                         this._dragCounter = 0;
                         this._getEl('dropOverlay')?.classList.remove('active');
@@ -175,6 +181,7 @@ export const EditorAttachments = {
 
                     // --- Paste Images from Clipboard ---
                     dropZone.addEventListener('paste', async (e) => {
+                        if (this.readOnly) return;
                         const items = e.clipboardData?.items;
                         if (!items) return;
                         for (const item of items) {
@@ -189,6 +196,10 @@ export const EditorAttachments = {
                     // --- File Input (button trigger) ---
                     if (fileInput) {
                         fileInput.addEventListener('change', async (e) => {
+                            if (this.readOnly) {
+                                e.target.value = '';
+                                return;
+                            }
                             const files = e.target.files;
                             if (files && files.length > 0) {
                                 for (const file of files) {
@@ -201,8 +212,9 @@ export const EditorAttachments = {
                 }
 
                 // --- Chip Remove (event delegation) ---
-                if (!this.readOnly && chipsContainer) {
+                if (chipsContainer) {
                     chipsContainer.addEventListener('click', async (e) => {
+                        if (this.readOnly) return;
                         const removeBtn = e.target.closest('.attachment-chip-remove');
                         if (!removeBtn) return;
                         const hash = removeBtn.dataset.hash;
@@ -390,6 +402,43 @@ export const EditorAttachments = {
             clear() {
                 this.currentHashes = [];
                 this._clearChips();
+            },
+
+            /**
+             * Toggle the editable/readonly mode at runtime. Used by hosts whose
+             * permission changes between record selections (e.g. BC switching
+             * between owner and reader channels on the same attachment
+             * instance). Updates existing chips in place and ensures future
+             * `_appendChip` renders pick up the new value.
+             *
+             * Note: dropzone / file-input / remove-delegate listeners are now
+             * always bound at init() and gated on `this.readOnly` at runtime,
+             * so this method doesn't need to rebind them.
+             */
+            setReadOnly(value) {
+                const next = !!value;
+                if (this.readOnly === next) return;
+                this.readOnly = next;
+
+                const container = this._getEl('chipsContainer');
+                if (!container) return;
+
+                container.querySelectorAll('.attachment-chip').forEach(chip => {
+                    const removeBtn = chip.querySelector('.attachment-chip-remove');
+                    if (removeBtn) {
+                        removeBtn.style.display = this.readOnly ? 'none' : '';
+                    }
+                    const nameInput = chip.querySelector('input.attachment-chip-name');
+                    if (nameInput) {
+                        if (this.readOnly) {
+                            nameInput.setAttribute('readonly', 'true');
+                        } else if (!chip.classList.contains('is-cloud')) {
+                            // Cloud chips stay readonly (separate concern: name
+                            // editing requires the blob to be on this device).
+                            nameInput.removeAttribute('readonly');
+                        }
+                    }
+                });
             },
 
             /**

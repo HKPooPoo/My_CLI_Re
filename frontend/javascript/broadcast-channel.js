@@ -356,6 +356,13 @@ export const BCChannel = {
 
         this.isOwnerMode = !!(isOwner && channel.isLocal);
 
+        // Lock the chip UI for readers. Without this, the attachment instance
+        // (init'd with readOnly: false to support owner mode) renders the
+        // remove button and editable name input on every chip — reader clicks
+        // would remove chips from the DOM while the onDetach/onRename guards
+        // silently skip the DB write, causing UI/record desync until re-render.
+        this.bcAttach?.setReadOnly(!this.isOwnerMode);
+
         if (this.isOwnerMode) {
             await this.loadOwnerMode(channel);
         } else {
