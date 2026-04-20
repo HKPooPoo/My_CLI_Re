@@ -304,7 +304,7 @@
       "autoCleanBlanks": "Remove blank entries automatically when you navigate. Keeps things tidy.",
       "updateTimestamp": "Move an edited entry to the top (newest). OFF = it stays where it was.",
       "autoSync": "Auto-sync the current topic: uploads 2s after you stop typing; other devices see the change within 4s. Other topics sync when you switch to them. Requires login.",
-      "loopList": "Wrap around: scrolling past the last item goes back to the first, and vice versa.",
+      "loopList": "When you scroll past the last row of this page's list, the cursor jumps to the first row — and vice versa when scrolling up past the first. OFF = the cursor stops at the top / bottom and won't advance. Turn ON for faster navigation through long lists.",
       "boardSwap": "Put your board on top, partner's below. Default: partner's messages are on top.",
       "notifications": "Desktop notifications when a message arrives and the tab is backgrounded. Requires browser permission.",
       "screensaverTimeout": "Seconds after you leave this tab before the screensaver appears. Set to max to disable.",
