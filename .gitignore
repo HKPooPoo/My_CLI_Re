@@ -36,6 +36,10 @@ node_modules/
 /prototypes
 /documents
 
+# Diagram sources — diagrams live under documents/ which is already ignored;
+# this pattern belt-and-suspenders any stray .drawio placed elsewhere.
+*.drawio
+
 # AI Agent configs (local only)
 GEMINI.md
 .agent/
