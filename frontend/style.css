@@ -46,6 +46,7 @@
     /* Transparency variants */
     --text-green-10: rgba(50, 255, 50, 0.1);
     --text-orange-10: rgba(255, 176, 0, 0.1);
+    --text-cyan-10: rgba(0, 255, 204, 0.1);
     --overlay-bg: rgba(0, 17, 0, 0.85);
     --text-orange-accent: #B87300;
     --caret-color: white;

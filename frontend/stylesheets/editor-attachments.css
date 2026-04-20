@@ -154,16 +154,19 @@ input.attachment-chip-name[readonly] {
         text-shadow var(--transition-normal);
 }
 
+/* Download hover: glow tracks the chip's state colour. Text colour
+   inherits from the chip state — only the glow (text-shadow) changes
+   per state, so the whole chip reads as one palette on hover. */
 @media (hover: hover) {
     .attachment-chip-download:hover {
-        color: var(--text-cyan);
+        text-shadow: var(--text-shadow-green);
+    }
+    .attachment-chip.is-local .attachment-chip-download:hover {
+        text-shadow: var(--text-shadow-orange);
+    }
+    .attachment-chip.is-cloud .attachment-chip-download:hover {
         text-shadow: var(--text-shadow-cyan);
     }
-}
-
-.attachment-chip.is-local .attachment-chip-download:hover {
-    color: var(--text-orange);
-    text-shadow: var(--text-shadow-orange);
 }
 
 .attachment-chip-bottom {
@@ -185,6 +188,11 @@ input.attachment-chip-name[readonly] {
     height: 1.2em;
     padding: 0;
     border: none;
+    /* Override style.css `button { color: var(--text-green) }` so the X
+       tracks the chip's state colour (orange on LOCAL, green on SYNC,
+       cyan on CLOUD). The `:hover` rule below flips to red as the
+       universal destructive-action signal. */
+    color: inherit;
     cursor: pointer;
     font-size: calc(var(--font-size) * 0.85);
     display: flex;
@@ -224,9 +232,26 @@ input.attachment-chip-name[readonly] {
     }
 }
 
-/* [SYNC] — on server and cached locally (default green, same as [CLOUD]) */
+/* [SYNC] — on server and cached locally. Inherits the default green
+   from .attachment-chip; no override needed. */
 .attachment-chip.is-synced {
-    /* inherits default green from .attachment-chip */
+    /* intentionally empty — default chip styling is the SYNC palette */
+}
+
+/* [CLOUD] — on server but not cached locally. Cyan signals "remote,
+   needs fetch" (distinct from SYNC's "already here" green). Clicking
+   the icon or download button promotes this chip to SYNC. */
+.attachment-chip.is-cloud {
+    color: var(--text-cyan);
+    border-color: var(--text-cyan);
+    text-shadow: var(--text-shadow-cyan);
+}
+
+@media (hover: hover) {
+    .attachment-chip.is-cloud:hover {
+        background: var(--text-cyan-10);
+        box-shadow: 0 0 4px var(--text-cyan);
+    }
 }
 
 /* --- Drop Overlay --- */
