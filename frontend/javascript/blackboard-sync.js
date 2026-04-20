@@ -15,6 +15,7 @@ import { getEcho } from './echo-service.js';
 import { t } from './i18n.js';
 import { T } from './timing.js';
 import * as Settings from './settings.js';
+import * as CrossTabSync from './cross-tab-sync.js';
 
 // --- Per-tab device ID (survives refresh within same tab) ---
 const DEVICE_ID_KEY = 'bb-sync-device-id';
@@ -222,6 +223,16 @@ export const BBSync = {
             // P1: Refresh branch list + chips so status shows "synced" immediately
             _onRemoteUpdate?.();
             _onBranchListUpdate?.();
+
+            // Cross-tab notify: other tabs of this device need the same
+            // [asynced] → [synced] refresh. Mirrors the manual-COMMIT
+            // broadcast in blackboard.js; without it, another tab viewing
+            // (or listing) this branch sees a stale [asynced] tag until
+            // its next poll.
+            CrossTabSync.broadcast('bb:record:mutated', {
+                branchId: state.branchId,
+                timestamp: null
+            });
         } catch (err) {
             const elapsed = Math.round(performance.now() - commitStart);
             console.warn(`[AUTO-SYNC] commit FAILED (${elapsed}ms):`, err.message);

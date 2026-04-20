@@ -109,7 +109,9 @@ This is a Local-First trade-off: UI states are honest snapshots of local knowled
 
 `cross-tab-sync.js` wraps a `BroadcastChannel('mycli-sync')` event bus. Any tab on this device that mutates local IndexedDB state posts a typed event (`bb:record:mutated`, `wt:record:mutated`, `bc:record:mutated`) with the minimum identifying detail (branchId/localChannelId, timestamp). Receivers re-read from IndexedDB — the message is just a trigger, the DB is the source of truth. This covers cross-TAB updates; cross-DEVICE updates still go through WebSocket via Reverb.
 
-Wired atomic mutation points (one broadcast per user action): chip rename (Enter/blur), chip attach (drop / picker / paste), chip detach (`[×]` click). **Text save is a deliberate exception** — the textarea save is a 200ms debounce that fires mid-keystroke; broadcasting it would leak in-progress characters to the observer tab and produce per-keystroke flicker. Only atomic user actions cross the bus.
+Wired atomic mutation points (one broadcast per user action): chip rename (Enter/blur), chip attach (drop / picker / paste), chip detach (`[×]` click), branch rename, head-index reorder, CLEAN, COMMIT (both manual button and auto-sync path). **Text save is a deliberate exception** — the textarea save is a 200ms debounce that fires mid-keystroke; broadcasting it would leak in-progress characters to the observer tab and produce per-keystroke flicker. Only atomic user actions cross the bus.
+
+**Consumer-side gate**: the `bb:record:mutated` handler in `blackboard.js:956` splits two concerns — `updateBranchList()` runs **unconditionally** so the VCS list reflects mutations on ANY branch (Tab1 edits branch A → Tab2 viewing branch B still refreshes its list so branch A's row shows the new `[asynced]`/`[synced]` tag); only `state.owner` alignment + `syncView()` are gated on `detail.branchId === state.branchId` since those only make sense for the currently-viewed branch. An earlier implementation gated `updateBranchList()` too, which made cross-branch mutations silently invisible in observer tabs until the next 5 s poll.
 
 ## Development Commands
 

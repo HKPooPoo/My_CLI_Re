@@ -522,6 +522,12 @@ if (BBUI.elements.commitBtn) {
                 // P2: Refresh chips immediately so file status shows 'synced' after commit
                 if (selected.id === state.branchId) await syncView();
                 await updateBranchList();
+                // Cross-tab notify: other tabs of this device need to see the
+                // records' owner tag flip [asynced] → [synced] in their
+                // branch list. Without this, Tab2's branch stays stuck on
+                // [asynced] until its own 5s poll fires (or it happens to
+                // mutate something and trigger its own updateBranchList).
+                CrossTabSync.broadcast('bb:record:mutated', { branchId: selected.id, timestamp: null });
             } catch (e) {
                 console.error("SYNC ERROR:", e);
                 msg.close();
@@ -954,19 +960,29 @@ document.addEventListener('visibilitychange', () => {
  * Guarded against overwriting an actively-typing user.
  */
 CrossTabSync.on('bb:record:mutated', async (detail) => {
-    if (!detail || detail.branchId !== state.branchId) return;
-    // Another tab may have flipped some records' owner tag ([synced] ↔
-    // [asynced]). state.owner stays at the "local" literal catch-all so
-    // getRecord's startsWith('local') branch sees every tag variant.
-    // Previously we pulled anyRecord.owner as the new state.owner, but
-    // that picked up a single specific tag and broke navigation in
-    // mixed-ownership branches (see CLAUDE.md Branch-tag invariant).
+    if (!detail) return;
+
+    // updateBranchList ALWAYS runs — it renders the whole VCS list, so a
+    // cross-branch mutation (Tab1 edits branch A, Tab2 views branch B)
+    // must still refresh Tab2's list so branch A's [synced]/[asynced]
+    // tag reflects reality. Gating this on branchId === state.branchId
+    // was the bug: Tab2 never saw branch A flip to [asynced] until a
+    // poll fired 5s later (and only then if nothing else raced).
+    updateBranchList();
+
+    // Current-view mutations: only the same-branch case needs textarea
+    // repaint + state.owner realignment. Cross-branch events can't
+    // touch the current view anyway.
+    if (detail.branchId !== state.branchId) return;
+
+    // state.owner stays at the "local" literal catch-all in local mode
+    // (see CLAUDE.md Branch-tag invariant). Previous code pulled an
+    // arbitrary record's owner tag which broke mixed-ownership navigation.
     state.owner = "local";
     const isTyping = document.activeElement === BBUI.elements.textarea;
     if (!isTyping) {
         syncView();
     }
-    updateBranchList();
 });
 
 /**
