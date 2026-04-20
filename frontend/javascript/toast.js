@@ -92,10 +92,25 @@ export class ToastMessager {
     }
 
     /**
-     * 執行移除動畫
+     * 執行移除動畫 (或同步移除,若尚未顯示)
+     *
+     * Close-race contract: addMessage() defers adding the `.showing` class
+     * to a requestAnimationFrame callback. A caller that closes the handle
+     * synchronously (e.g. `msg.close()` in a catch block that ran before
+     * the rAF fired — typical for fast-fail paths like non-login commit)
+     * reaches removeMessage() while the toast is still in the DOM but
+     * hasn't yet transitioned in. The old `!showing` guard short-circuited
+     * those toasts and left them in the DOM forever. Now we split:
+     *   - showing → fade out via `.hiding` + transitionend (+ timeout fallback)
+     *   - not yet showing → remove from DOM synchronously, nothing to fade
      */
     removeMessage(toast) {
-        if (!toast || !toast.classList.contains('showing')) return;
+        if (!toast || !toast.parentElement) return;
+
+        if (!toast.classList.contains('showing')) {
+            toast.remove();
+            return;
+        }
 
         toast.classList.remove('showing');
         toast.classList.add('hiding');
