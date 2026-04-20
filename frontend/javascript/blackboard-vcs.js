@@ -113,7 +113,15 @@ export const BBVCS = {
         if (entry) {
             if (entry.text !== text) {
                 if (Settings.get('bb', 'updateTimestamp')) {
-                    if (state.currentHead > 0) {
+                    // Only purge the blank at head 0 when autoCleanBlanks is
+                    // ON. If it's OFF, leave it alone — updateText's
+                    // timestamp bump on the edited record pushes the edit
+                    // to head 0 naturally, and the blank falls to head 1
+                    // (the user-visible "swap" the setting promises).
+                    // Unconditional deletion here was the bug behind the
+                    // "my blank page vanished after editing a later one"
+                    // report.
+                    if (state.currentHead > 0 && Settings.get('bb', 'autoCleanBlanks')) {
                         const head0 = await BBCore.getRecord(state.owner, state.branchId, 0);
                         if (head0 && (!head0.text || head0.text.trim() === "") && !head0.file_hash) {
                             await db.blackboard.delete([head0.owner, head0.branch_id, head0.timestamp]);

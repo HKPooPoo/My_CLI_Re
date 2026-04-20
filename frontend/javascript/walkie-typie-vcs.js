@@ -87,7 +87,14 @@ export const WTVCS = {
         if (entry) {
             if (entry.text !== text) {
                 if (Settings.get('wt', 'updateTimestamp')) {
-                    if (state.currentHead > 0) {
+                    // autoCleanBlanks OFF → preserve the blank at head 0.
+                    // updateText's timestamp bump naturally pushes the
+                    // edited record to head 0 and the blank falls to
+                    // head 1 (the "swap" behaviour the user expects).
+                    // Same fix as blackboard-vcs.js:save() — unconditional
+                    // delete was wiping blanks even when the setting was
+                    // off.
+                    if (state.currentHead > 0 && Settings.get('wt', 'autoCleanBlanks')) {
                         const head0 = await WTDb.getRecord(state.branchId, 0);
                         if (head0 && (!head0.text || head0.text.trim() === "") && !head0.file_hash) {
                             await db.walkie_typie.delete([head0.branch_id, head0.timestamp]);
