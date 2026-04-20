@@ -134,18 +134,20 @@ export const BCDb = {
         if (records.length === 0) return -1;
         // getAllRecords already returns DESC (head 0 = newest)
         const maxHead = records.length - 1;
-        const from = Math.max(0, Math.min(fromHead, maxHead));
-        const to = Math.max(0, Math.min(toHead, maxHead));
-        if (from === to) return from;
-        const a = records[from];
-        const b = records[to];
+        // Reject out-of-range targets instead of clamping — matches the
+        // BB-core spec so the two reorders behave identically.
+        if (toHead < 0 || toHead > maxHead) return fromHead;
+        if (fromHead < 0 || fromHead > maxHead) return -1;
+        if (fromHead === toHead) return fromHead;
+        const a = records[fromHead];
+        const b = records[toHead];
         await db.transaction('rw', db.broadcast_boards, async () => {
             await db.broadcast_boards.delete([localChannelId, a.timestamp]);
             await db.broadcast_boards.delete([localChannelId, b.timestamp]);
             await db.broadcast_boards.put({ ...a, timestamp: b.timestamp });
             await db.broadcast_boards.put({ ...b, timestamp: a.timestamp });
         });
-        return to;
+        return toHead;
     }
 };
 
