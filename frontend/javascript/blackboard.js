@@ -679,9 +679,17 @@ if (dropBtnEl) {
                 if (currentDropAction === "clean") {
                     msg = BBMessage.loading(t('blackboard.cleaning'));
                     await BBCore.clearBranchRecords("local", selected.id);
-                    // 若清理的是當前分支，需重置 Head
+                    // 若清理的是當前分支，需重置 Head + state.owner
                     if (selected.id === state.branchId) {
                         state.currentHead = 0;
+                        // clearBranchRecords deletes everything startsWith('local')
+                        // and inserts a single blank placeholder with owner
+                        // "local" (literal). If state.owner was a specific tag
+                        // like [synced], syncView's exact-index lookup misses
+                        // the new placeholder entirely and paints blank — same
+                        // class of bug as the rename / reorder drift fixed
+                        // earlier. Drop to the "local" catch-all.
+                        state.owner = "local";
                         await syncView();
                     }
                     msg.update(t('blackboard.cleanComplete'));
