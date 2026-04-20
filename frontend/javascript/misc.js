@@ -140,7 +140,7 @@ export const MISC = {
         wipeLocalBtn: document.getElementById('misc-wipe-local-btn'),
         dropAllBranchesBtn: document.getElementById('misc-drop-all-branches-btn'),
         installAppBtn: document.getElementById('misc-install-app-btn'),
-        clearSiteDataBtn: document.getElementById('misc-clear-site-data-btn'),
+        updateAppBtn: document.getElementById('misc-update-app-btn'),
     },
 
     configs: {
@@ -262,22 +262,23 @@ export const MISC = {
             });
         }
 
-        // CLEAR SITE DATA — nuke every persisted surface for this origin
-        // (Cache API, Service Worker, IndexedDB, local/session storage),
-        // then reload. Equivalent to browser's DevTools → Application →
-        // Clear site data. Primary use case: force a freshly deployed
-        // build to take effect when Workbox precache is serving stale
-        // bundles, or when local state has corrupted beyond repair.
-        // 3-step confirm (destructive — loses settings + MOD instances +
-        // language choice). Clear order matters: caches → SW → IndexedDB
-        // → web storage → reload, so the reload's network fetches pass
-        // through to the server without any middleware intercepting.
-        if (this.elements.clearSiteDataBtn) {
-            new MultiStepButton(this.elements.clearSiteDataBtn, {
+        // UPDATE APP — clear every local cache surface (Cache API, Service
+        // Worker, IndexedDB, local/session storage) then reload, so the
+        // next load pulls the freshest app code from the server. Named
+        // "UPDATE" rather than "CLEAR SITE DATA" because cookies are
+        // untouched (laravel_session is HttpOnly, inaccessible from JS) —
+        // server session survives, user stays logged in. Matches the
+        // intent: "update my app; keep me signed in." 3-step confirm —
+        // loses settings, MOD instances, language choice, local drafts.
+        // Clear order: caches → SW → IndexedDB → web storage → reload,
+        // so the reload's fetches pass through to the server without any
+        // middleware intercepting.
+        if (this.elements.updateAppBtn) {
+            new MultiStepButton(this.elements.updateAppBtn, {
                 sound: 'UISelectOff.mp3',
                 steps: 3,
                 action: async () => {
-                    const msg = BBMessage.loading(t('misc.clearingSiteData'));
+                    const msg = BBMessage.loading(t('misc.updating'));
                     try {
                         // (1) Cache API — wipes Workbox precache + runtime-swr + legacy
                         const cacheNames = await caches.keys();
@@ -301,12 +302,12 @@ export const MISC = {
                         localStorage.clear();
                         sessionStorage.clear();
 
-                        msg.update(t('misc.clearSiteDataComplete'));
+                        msg.update(t('misc.updateComplete'));
                         setTimeout(() => window.location.reload(), 500);
                     } catch (e) {
-                        console.error('Clear site data failed:', e);
+                        console.error('Update app failed:', e);
                         msg.close();
-                        BBMessage.error(t('misc.clearSiteDataFailed'));
+                        BBMessage.error(t('misc.updateFailed'));
                     }
                 }
             });
