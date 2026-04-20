@@ -23,6 +23,31 @@ import { t } from './i18n.js';
 import { T } from './timing.js';
 import * as Settings from './settings.js';
 
+// Per-partner "has new signal" flags, in-memory only. Reload clears
+// all marks — simple by design (no localStorage round-trip).
+const _newMessagePartners = new Set();
+
+// Mark: server signal arrived for this partner. walkie-typie-core.js
+// dispatches this event with `detail = content_data` (unwrapped), so
+// sender_uid lives at e.detail.sender_uid — not under .content_data.
+window.addEventListener('walkie-typie:content-update', (e) => {
+    const uid = e.detail?.sender_uid;
+    if (!uid) return;
+    _newMessagePartners.add(uid);
+    WTList.render();
+});
+
+// Clear: user navigates into WT > Text with a partner selected.
+// Covers the flow "list item active → go to text sub-navi → [NEW] off".
+window.addEventListener('navi:pageChanged', (e) => {
+    if (e.detail?.page !== 'walkie-typie-text') return;
+    const sel = WTList.selectedConnection;
+    if (!sel) return;
+    if (_newMessagePartners.delete(sel.partner_uid)) {
+        WTList.render();
+    }
+});
+
 export const WTList = {
     elements: {
         container: document.querySelector(".walkie-typie-list-list-container"),
@@ -308,10 +333,13 @@ export const WTList = {
             lastSignal.classList.add("walkie-typie-list-last-signal");
             lastSignal.textContent = conn.last_signal ? getHKTTimestamp(conn.last_signal) : t('common.head');
 
-            // UID
+            // UID — appended with "[NEW]" when this partner has fired
+            // a content-update since the last time we opened their chat.
             const uid = document.createElement("div");
             uid.classList.add("walkie-typie-list-uid");
-            uid.textContent = conn.partner_uid;
+            uid.textContent = _newMessagePartners.has(conn.partner_uid)
+                ? `${conn.partner_uid} ${t('walkieTypie.statusNew')}`
+                : conn.partner_uid;
 
             item.appendChild(tagInput);
             item.appendChild(lastSignal);

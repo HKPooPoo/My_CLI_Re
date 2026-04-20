@@ -35,6 +35,17 @@ import { registerMetadataProvider } from './mod-board-provider.js';
 import { TimerGroup } from './timer-group.js';
 import * as CrossTabSync from './cross-tab-sync.js';
 
+// Single-slot "beep" state. First signal while the tab is backgrounded
+// pushes a notification and locks the slot; further signals are
+// silenced until the user returns to the tab (visibilitychange →
+// visible). Walkie-talkie semantics: one call-tone per away session.
+let _notificationStackActive = false;
+if (typeof window !== 'undefined') {
+    window.addEventListener('visibilitychange', () => {
+        if (!document.hidden) _notificationStackActive = false;
+    });
+}
+
 export const WTText = {
     elements: {
         container: document.querySelector(".page[data-page='walkie-typie-text']"),
@@ -372,7 +383,7 @@ export const WTText = {
                     this.theyLiveText = text;
                     if (this.theyState.currentHead === 0) {
                         this.elements.theyTextarea.value = text;
-                        if (document.hidden) this.notify(this.currentConnection.partner_uid, text);
+                        if (document.hidden) this.notify(this.currentConnection.partner_uid, this.currentConnection.partner_tag);
                     }
                     // Silently refresh theyRecords[] in background for accurate history
                     this.syncTHEY();
@@ -398,20 +409,21 @@ export const WTText = {
         }
     },
 
-    notify(sender, text) {
-        // Respect the WT config toggle (wt > NOTIFICATIONS). Browser-level
-        // permission is still required on top, but if the user switched the
-        // setting off we short-circuit before even attempting.
+    notify(senderUid, senderTag) {
+        // Short-circuits, in order:
+        //   1. user disabled notifications in WT config
+        //   2. browser permission not granted
+        //   3. tab is in the foreground — user is already here, no beep
+        //   4. stack already locked — first sender keeps the slot until
+        //      the user returns to the tab (walkie-talkie semantics)
         if (!Settings.get('wt', 'notifications')) return;
-        if ("Notification" in window && Notification.permission === "granted") {
-            const title = t('walkieTypie.newMessage', { sender });
-            const options = {
-                body: text ? (text.length > 50 ? text.substring(0, 50) + "..." : text) : t('walkieTypie.contentUpdated'),
-                icon: "/images/favicon.ico",
-                tag: "wt-message" // Prevent stacking
-            };
-            new Notification(title, options);
-        }
+        if (!("Notification" in window) || Notification.permission !== "granted") return;
+        if (!document.hidden) return;
+        if (_notificationStackActive) return;
+
+        const sender = senderTag || senderUid;
+        new Notification(t('walkieTypie.newSignal', { sender }));
+        _notificationStackActive = true;
     },
 
     // =====================================================================
@@ -509,7 +521,7 @@ export const WTText = {
                 this.wtTheyAttach?.setFromRecord(bin?.hash, bin);
 
                 if (document.hidden) {
-                    this.notify(partnerUid, text);
+                    this.notify(partnerUid, connection.partner_tag);
                 }
             });
         }
