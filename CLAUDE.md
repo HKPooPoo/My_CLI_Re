@@ -63,6 +63,11 @@ Known risk on shared devices: Bob logging in after Alice will see Alice's locall
 
 **File hash is name-sensitive: `SHA-256(content || 0x00 || original_name)`.** Two uploads with identical content but different filenames produce different hashes (no dedupe). Same content + same name → same hash → dedupe. This enables per-record file rename without a server rename endpoint: the chip name input is editable (Enter/blur commits), `editor-attachments._renameFile()` recomputes the hash under the new name, puts the blob under the new hash in `file_blobs` (status='local'), and fires `onRename(oldHash, newHash, meta)` so the host (BB/WT/BC) swaps the hash in the record's `file_hash` field. Next auto-commit uploads the new blob; the old server hash becomes orphan-eligible via the 24h cleanup. **Per-record uniqueness:** the same hash cannot appear twice in one record — attach/rename that would collide shows `files.duplicateInRecord` / `files.renameDuplicate` toast and is rejected. **Client and server must compute the same hash** — `FileService.upload(blob, filename)` sends the explicit filename so Blob uploads don't degrade to `"blob"` on the server. **BB attach / detach / file-rename / branch-rename all downgrade owner tag from `[synced]` to `[asynced]`** — each of these mutations makes the record (or every record in the branch, for branch-rename) reference content that diverges from what the server has: a new file attached, an existing file removed, a chip renamed to a new hash, or the branch itself re-labelled (commit sends `branch_name` per record, so a local label change is a real divergence). Leaving the tag as `[synced]` would mislead observers (including other tabs) into seeing a branch that looks server-consistent. All four paths use the shared `markAsynced` helper in `blackboard-core.js`; the composite primary key `[owner+branch_id+timestamp]` forces `.modify()` to delete+put, so state.owner is re-aligned if it matched the old owner. Commit re-promotes back to `[synced]` once upload succeeds. `blackboard-ui.js` renders the visible `[synced]`/`[asynced]` tag from `branch.isDirty`, which is true when either (a) local max record timestamp disagrees with the server's, or (b) `getAllBranches()` flagged any record in this branch with an `[asynced]` owner. Condition (b) covers file-chip mutations and branch-rename that don't move timestamps, so the branch tag now repaints the moment any of the four mutations fires.
 
+**File chip status guards — must stay in sync with the attach / commit / rename paths:**
+- **Attach path (`editor-attachments.js:280`)** checks `db.file_blobs.get(hash)` BEFORE `put`. If the row already exists (possibly `status: 'synced'`) only `last_accessed` is updated; status is preserved. Without this guard, re-attaching the same `(content + name)` pair anywhere on the device regressed the chip to `[LOCAL]` because `put` overwrote status. Mirrors the same guard long held by `_renameFile` (line 733-746).
+- **BB commit `exists(hash)` skip (`blackboard-vcs.js:186-196`)** also *promotes* a stale `status: 'local'` to `'synced'` when it skips the upload. Without this, a chip once stuck on `[LOCAL]` (from attach regressions, cross-record dedupe, etc.) never self-healed — every subsequent commit re-skipped, never reconciled. WT / BC commit paths use a `status !== 'synced'` gate instead of `exists()`, so they redundantly re-upload but always promote on success; no equivalent bug there.
+- **Extension whitelist.** All file entry points go through `FileService.isAllowedExtension(name)` (`file-service.js`). `ALLOWED_EXTENSIONS` is a 33-entry set (text / docs / images / audio / video / archives). Unknown / missing / trailing-dot extensions are rejected. Enforcement points: (1) `EditorAttachments.handleFile` — covers drag / drop / paste / picker (all converge there), (2) `_renameFile` — prevents chip rename to a forbidden extension, (3) `FileService.upload` — defence-in-depth for any MOD or direct caller that bypasses the two client gates. Backend `FileController.php:31-46` re-checks authoritatively. The older blacklist (retained as commented-out reference in both front and back) couldn't cover disguised-binary uploads by design — a `.exe` renamed to `.md` before drag slipped through.
+
 **File chip icon vs download button.** Two buttons, two intents, no overlap:
 - **Icon** (`<a href="/api/files/{hash}?inline=1" target="_blank" rel="noopener">`) — single-click contract: `source → IDB (if needed) → browser inline preview`. Click behaviour is state-dependent:
   - `[SYNC]`: no preventDefault; native anchor navigation opens the inline URL — server renders preview directly, IDB already has the blob cached from prior use.
@@ -89,6 +94,7 @@ Both machines are deliberately passive about "what is on the server right this m
 - A branch tag of `[synced]` **does not** mean "server has not moved" — it means "last time we reconciled, we were equal". Fresh data may be one pull away.
 - A device that only receives server updates (never mutates locally) should not be marked `[asynced]` — the tag is about *my* outgoing divergence, not *their* incoming changes. "Behind the server" has no tag today; users discover it when they pull.
 - `[LOCAL]` chip does not imply `[asynced]` branch. A file can be `[LOCAL]` (newly attached) while the branch is still `[synced]` from a previous commit — the branch's tag only flips when an explicit trigger fires. Our `onRename` is the one place where a file-level mutation flips the branch tag immediately, because rename fundamentally changes what the branch *references* on the server.
+- **`state.owner` must drop to the `"local"` literal after any branch-wide mutation that touches multiple records (rename, reorder).** Rationale: `BBCore.getRecord` / `getAllRecordsForBranch` / `countRecords` / `cleanupOldRecords` use `startsWith('local')` **only when** `owner === 'local'` literally; any specific tag (`[synced]`, `[asynced]`) is indexed exactly via `[owner+branch_id+timestamp]`. Rename iterates `startsWith('local')` records and `markAsynced`s each one — pure `"local"` records stay `"local"`, `[synced]` flip to `[asynced]`, `[asynced]` are untouched. A branch commonly ends up with mixed tags the first time a user edits a synced record (that record goes `[asynced]`, newly-typed records are pure `"local"`). After rename / reorder, setting `state.owner` to `markAsynced(state.owner)` (e.g. `[synced]→[asynced]`) locks queries to a subset of the branch — pure-`"local"` records become invisible, navigation and `syncView` paint blank, user reads it as "my records got deleted". Drop-to-`"local"` avoids the trap; `addRecord` writes under `"local"` which is semantically correct for a fresh local record anyway.
 
 This is a Local-First trade-off: UI states are honest snapshots of local knowledge, not optimistic queries against a live server. The alternative (reactive polling per chip / per tag) was rejected because it creates race conditions, burns bandwidth, and makes offline behaviour degrade poorly. The fix path when staleness matters is always "pull", not "compute harder".
 
@@ -268,6 +274,8 @@ Two-level hierarchy: main navi (`data-navi-item`: blackboard, walkie-typie, broa
 | `broadcast:channelRenamed` | broadcast-channel.js, broadcast-list.js | `{ channelId, newName }` | Channel renamed |
 | `broadcast:signalUpdated` | broadcast-channel.js | `{ channelId }` | Board content updated |
 | `blackboard:branchRename` | blackboard-ui.js | `{ branchId, newName }` | Branch name edited |
+| `branchHead:reorderRequested` | hud.js | `{ target }` | User typed a target head position in `.branch-head` + Enter; BB/BC listener swaps records by timestamp |
+| `branchHead:syncRequested` | hud.js | — | User blurred / Escaped / invalid input; consumer repaints the true current head value |
 | `pwa:installable` | pwa.js | — | PWA install prompt available |
 | `i18n:ready` | i18n.js | — | Locale loaded and DOM rendered |
 | `settings:changed` | settings.js | `{ scope, key, value }` | Any setting changed |
@@ -371,6 +379,30 @@ Buttons whose label/behaviour change based on list selection context. Now wired 
 - `isLocal && !hasContent && !isServer` → **DELETE** (remove empty branch) — **1-click** (branch was empty anyway)
 - `steps: () => currentDropAction === 'clean' ? 3 : 1`.
 
+### Head Indicator Interactions
+
+The `.head-indicator` strip (right-side vertical label on BB-log and BC-channel pages — shared DOM, page-gated behaviour) holds three divs:
+- `.branch-is-saved` — read-only `[SAVED]` / `[UNSAVED]` marker
+- `.branch-name` — current branch name (BB) or channel name (BC). **Read-only here; rename happens via the row input on the list page.**
+- `.branch-head` — current head index (0 = newest)
+
+**`.branch-head` inline reorder** (`hud.js`):
+- Attribute: `contenteditable="plaintext-only" spellcheck="false" inputmode="numeric"`.
+- `keydown Enter` → parseInt textContent, blur, dispatch `branchHead:reorderRequested { target }`; non-numeric falls through to `branchHead:syncRequested`.
+- `keydown Escape` → blur (which fires `branchHead:syncRequested`).
+- `blur` → always fires `branchHead:syncRequested` to let the active page repaint the true current head.
+- Direct click → default caret placement (lets users micro-edit a digit rather than overwrite).
+
+**`.branch-name` click proxy** (`hud.js`): clicking the name block runs `_focusAndSelectHeadIndex()` — focuses `.branch-head` and selects its text via `Range + Selection`. The whole name block becomes a large click target for the 1-2-digit head field; typing a number overwrites immediately. There is no "rename branch from the HUD" mechanism — renaming always happens on the list page. The hint (`hints.branchName`) documents this.
+
+**Consumer listeners** (only the active page acts; others no-op):
+- `blackboard.js:954` — gates on `blackboard-log` + non-virtual; calls `BBCore.swapRecordsByHead(state.owner, state.branchId, state.currentHead, target)`. After swap, `state.owner = 'local'` (see mixed-ownership invariant above) + `syncView` + `updateBranchList` + `scheduleAutoCommit`.
+- `broadcast-channel.js:326` — gates on `broadcast-channel` + `isOwnerMode` + non-virtual; calls `BCDb.swapRecordsByHead(localChannelId, currentHead, target)`.
+
+**Swap mechanics** (`blackboard-core.js:282` / `broadcast-db.js:132`): pick `records[from]` and `records[to]` from the DESC-sorted list; delete both by PK; `put` back with timestamps exchanged. BB also `markAsynced`s both records' owner (divergence from server). Out-of-range clamp: `target > maxHead` → swap with oldest; `target < 0` → swap with newest; `from === to` → no-op return.
+
+**Mid-type guard**: `BBUI.updateIndicators` / `BCChannel.updateIndicators` skip writing `.branch-head.textContent` when `document.activeElement === .branch-head`, so a concurrent poll / WS event doesn't clobber user input.
+
 ### Toast & Messages
 
 - `toast.addMessage(text, duration, type, loading)` — creates animated toast, returns `{ update(text, duration), close() }`
@@ -378,6 +410,16 @@ Buttons whose label/behaviour change based on list selection context. Now wired 
 - `BBMessage.loading(text)` — prefixes "SYSTEM > ", sets `data-loading="true"` on toast element. `.update()` auto-removes `data-loading`. Use for async operations that show progress (auth, sync, fork, etc.)
 - `BBMessage.requireLogin()` — standard login-required message
 - **ModContext:** `ctx.ui.toast()`, `ctx.ui.toastError()`, `ctx.ui.toastSuccess()`, `ctx.ui.toastLoading()`
+
+**Lifecycle & close-race contract** (`toast.js`):
+1. `addMessage` creates the `.toast` div and appends it to `#toast-container` — **no `.showing` class yet**.
+2. `requestAnimationFrame(() => toast.classList.add('showing'))` — the class lands **one frame later**, which triggers the fade-in transition.
+3. Auto-remove timer fires on `duration` (or never if `duration === 0`, the loading case).
+4. `close()` calls `removeMessage(toast)` which transitions `.showing` → `.hiding` + DOM removal via `transitionend`.
+
+**Race hazard — fast-fail paths.** Any async call site that creates a loading toast and immediately catches + closes it (e.g. `msg.close()` after `await BBVCS.commit()` throws synchronously at its `!loggedInUser` check) can reach `close()` BEFORE step 2's rAF fires. If `removeMessage` short-circuits on `!toast.classList.contains('showing')`, the toast stays in the DOM forever. `removeMessage` MUST handle the pre-shown case: transition-via-`.hiding` when `.showing` is set, immediate DOM removal otherwise.
+
+Any new caller relying on `BBMessage.loading(...)` + `msg.close()` in a catch block inherits this contract — the toast primitive is authoritative on cleanup; don't add bespoke removal workarounds at call sites.
 
 ### CSS Architecture (`stylesheets/`)
 
@@ -388,6 +430,32 @@ Buttons whose label/behaviour change based on list selection context. Now wired 
 **Layout:** `--container-width: clamp(300px, 86vw, 512px)`, `--font-size: clamp(0.875rem, ...)`, fixed `--navi-height: 64px`, `--sub-navi-height: 48px`
 
 **Global flex-column default:** `style.css` lines 113-124 set all `body`, `nav`, `div`, `span`, `.header`, `.body`, `.footer` to `display: flex; flex-direction: column; position: relative`. This means every div/span defaults to vertical flex layout. `justify-content` acts on the vertical axis, `align-items` on horizontal. For horizontal layout, explicitly set `flex-direction: row`. All elements have `position: relative` by default.
+
+### Save & Navigation Contracts (BB / WT / BC)
+
+The three boards share the same save and push/pull patterns. Divergences are bugs.
+
+**Save (textarea → IndexedDB)** — `BBVCS.save` / `WTVCS.save` / `BCChannel.save`:
+- `state.isVirtual`: create a new record only when textarea is non-empty.
+- Otherwise fetch record at `state.currentHead`; no-op if identical text.
+- `updateTimestamp` ON → `updateText` (delete + re-insert with bumped timestamp) moves the edited record to head 0.
+  - **`autoCleanBlanks` gate**: only delete a pre-existing blank at head 0 when `autoCleanBlanks` is ON. When OFF, the blank is preserved — the edit's bumped timestamp pushes it to head 0 naturally, and the blank falls to head 1 (the "swap" users expect with the setting off). Applies to BB + WT; BC save has no such delete to begin with.
+- `updateTimestamp` OFF → `updateTextInPlace`, no position change.
+
+**Push / Pull (navigation)** — `BBVCS.push/pull` / `WTVCS.push/pull` / `BCChannel.ownerPush/ownerPull`:
+1. Save first (unless read-only).
+2. Pre-scrub snapshot: `entryBefore = getRecord(currentHead)`.
+3. `autoCleanBlanks` ON → `scrubBranch`; OFF → `cleanupOldRecords` (oldest-by-maxSlot only).
+4. Five-step revalidation ladder:
+   - `count === 0` → `state.currentHead = 0; state.isVirtual = true; return true`.
+   - `currentHead >= count` → clamp to `count - 1; return true` (don't navigate further).
+   - `entryAfter = getRecord(currentHead)`; if `entryBefore.timestamp !== entryAfter.timestamp` → scrub shifted contents into this slot → `return true` without moving cursor (caller refreshes).
+   - Otherwise advance cursor (`currentHead--` for push, `currentHead++` for pull).
+   - Push at head 0 → `state.isVirtual = true`; pull at `count - 1` → stay.
+
+Reader-mode navigation (BC `readerPush/Pull`, WT THEY board) walks an in-memory array — no scrub, no defenses needed.
+
+Any new board type or navigation variant MUST reproduce this ladder; missing step 4 was the root cause of "pages silently disappear after push on a blank record" class of bugs.
 
 ### Real-Time (WebSocket)
 
@@ -407,6 +475,27 @@ Buttons whose label/behaviour change based on list selection context. Now wired 
 
 **WT layers:** Whisper (20ms) → IndexedDB save (200ms) → Server commit (2s) + signal event → partner re-sync.
 
+### WT Notification Stack + `[NEW]` Indicator
+
+Two decoupled features over the WT incoming-signal flow. Walkie-talkie semantic: one call-tone per away session + per-partner unread marker.
+
+**Desktop notification stack** (`walkie-typie-text.js`) — single-slot gate over the native `Notification` API. Module-level boolean `_notificationStackActive`. `notify(senderUid, senderTag)` has four short-circuits, in order:
+1. `Settings.get('wt', 'notifications')` must be true — the WT config page NOTIFY toggle (`SCOPE_DEFAULTS.wt.notifications = true`; wired via `walkie-typie-config.js:39`'s `createToggleControl` → `hints.config.notifications`).
+2. `Notification.permission === 'granted'` — browser-level.
+3. `document.hidden` — if the tab is foreground the user already sees the chat, no beep.
+4. `!_notificationStackActive` — first sender of the current away session owns the slot; subsequent senders silenced.
+
+All four pass → `new Notification(t('walkieTypie.newSignal', { sender: senderTag || senderUid }))` (no body, no preview — walkie-talkie is tone-only, content is not duplicated to the OS), set `_notificationStackActive = true`. Reset ONLY on `visibilitychange` → `!document.hidden`. Entering MyCLI = clearing the pending-call light.
+
+Called from two sites in `walkie-typie-text.js`: committed-content path (line ~386) and whisper path (line ~512). Both pass `currentConnection.partner_uid + partner_tag`.
+
+**Per-partner `[NEW]` indicator** (`walkie-typie-list.js`) — in-memory `Set<partner_uid>` (`_newMessagePartners`), not persisted; reload clears.
+
+- **Mark trigger**: window `walkie-typie:content-update` event. Reads `e.detail.sender_uid` (the event payload is the unwrapped `content_data`, not wrapped in `{content_data}` — `walkie-typie-core.js:45` strips the wrapper). Add to set.
+- **DOM update is surgical**: `_applyNewTagToRow(partnerUid)` finds the row via `[data-partner-uid="..."]` and rewrites only the `.walkie-typie-list-uid` textContent. **NOT** a `WTList.render()` call. The reason: full render wipes `innerHTML`, destroys the `.active` class on the currently-selected partner, triggers `InfiniteList.refresh` → `setCursor(0, true)` → `list:selectionChanged` → 500ms debounce → `walkie-typie:selected` → `WTText.loadConnection` → **SFX and board re-sync on every inbound signal**. Surgical patch avoids the cascade.
+- **Clear trigger**: window `navi:pageChanged` event; if new page is `walkie-typie-text` and `WTList.selectedConnection` is set, remove that partner's uid from the set and patch the row. Matches the user flow "list item active → go to text sub-navi → `[NEW]` off".
+- **Full-render consistency**: `WTList.render()` also consults the set when building each row (display `{uid} [NEW]` when set contains it), so the other entry points (fetchConnections / handleUpdate / handleDelete) stay consistent. `WTList.render` also now preserves the `.active` class from `selectedConnection?.partner_uid` to avoid the same InfiniteList cascade (matches BB / BC render behaviour).
+
 ### PWA & Service Worker (Workbox)
 
 **`sw.js` is auto-generated — never edit it directly.** Edit `sw-src.js` instead and run `npm run build:sw`.
@@ -419,6 +508,21 @@ Buttons whose label/behaviour change based on list selection context. Now wired 
 - **MOD files are NOT precached.** `mods/mod-loader.js` is the only MOD entry point in the precache. All other MOD files (`mods/*/`) are cached lazily by the runtime SWR handler on first page load.
 - **Glob config** is in `scripts/build-sw.js`. `globIgnores` excludes `javascript/vendor/textmode.js` (large WebGL2 lib, ascii-animator MOD only).
 - **Legacy cleanup:** Activate handler deletes old `blackboard-*` caches from before Workbox migration.
+
+### MISC Page Action Buttons
+
+`.misc-action-container` on the blackboard-misc page holds six reset / install / wipe actions, ordered by blast radius (top = per-scope; bottom = full-device). Colour intent: orange = reversible config, cyan = UI only, green = safe install, red = destructive.
+
+| # | Button | Steps | Scope | Action |
+|---|---|---|---|---|
+| 1 | **RESET CONFIG** (orange) | 3 | Active scope (BB/WT/BC) | `Settings.resetScope(scope)` → `SCOPE_DEFAULTS[scope]`. Config toggles only; local data untouched. |
+| 2 | **FLUSH TOAST** (cyan) | 1 | UI | `toast.clearAll()`. Dismisses every visible toast. Useful when a loading toast is stuck. |
+| 3 | **INSTALL APP** (green) | 1 | PWA | `pwa.js::triggerInstallFromMisc()`. Branches: already-standalone → info toast; `deferredPrompt` available → `prompt()` + `userChoice`; iOS Safari → "Share → Add to Home Screen" hint; else → "install unavailable" hint. |
+| 4 | **WIPE LOCAL BRANCHES** (red) | 3 | Device IDB | `db.blackboard.clear()` + `walkie_typie.clear()` + `broadcast_channels.clear()` + `broadcast_boards.clear()` + `file_blobs.clear()` → reload. localStorage / sessionStorage / Cache API / Service Worker / login cookie all SURVIVE. |
+| 5 | **DROP ALL BRANCHES** (red) | 3 | Server (BB) | `DELETE /api/blackboard/branches` — server wipes all of the user's BB branches. Requires login. Local IDB untouched; next commit per branch re-creates on server. |
+| 6 | **INITIALIZE WEBSITE DATA** (red) | 3 | Device (full) | Cache API `caches.keys() → delete` all + `serviceWorker.getRegistrations().unregister()` all + `indexedDB.deleteDatabase(name)` (schema + version reset) + `localStorage.clear()` + `sessionStorage.clear()` → reload. Login cookie is HttpOnly so Sanctum session survives; `/auth/status` re-hydrates on next boot. Equivalent to DevTools → Application → Clear site data minus cookies. |
+
+Semantic spread: action 4's clear is a subset of action 6's erase. 4 preserves settings / language / theme / navi state / MOD instances; 6 returns the device to a first-visit baseline. Do NOT collapse them.
 
 ## MOD System v2.1 (Instance-Based, ADD/DELETE Model)
 
