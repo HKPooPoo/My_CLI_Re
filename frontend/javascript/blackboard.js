@@ -64,21 +64,30 @@ const bbAttach = EditorAttachments.create({
         const binData = { hash, ...meta };
 
         // Adding a blob the server hasn't received yet means the branch is no
-        // longer byte-for-byte equal to its server copy. Downgrade the owner
-        // tag to asynced so observers (other tabs, next updateBranchList()
-        // re-derivation) don't keep seeing a [synced] branch that lies.
-        // Commit re-promotes to [synced] once upload succeeds.
-        // [Fix]: Handle Virtual State (New Page)
+        // longer byte-for-byte equal to its server copy. The RECORD's owner
+        // tag is downgraded to [asynced] on existing records so observers
+        // (other tabs, next updateBranchList() re-derivation) don't keep
+        // seeing a [synced] branch that lies. Commit re-promotes to [synced]
+        // once upload succeeds.
+        //
+        // State.owner, by contrast, stays at the literal "local" catch-all
+        // at all times in local mode — see "state.owner must be the 'local'
+        // literal" invariant in CLAUDE.md Branch-tag section. BBCore.getRecord
+        // only hits the startsWith('local') branch when owner === 'local'
+        // literally; any specific tag takes the exact-index path and misses
+        // records with other tags in mixed-ownership branches.
         if (state.isVirtual) {
-            const newOwner = markAsynced(state.owner);
+            // Brand-new record — inherently local. Branch-dirty detection
+            // catches the addition via timestamp mismatch; no need to
+            // stamp [asynced] on a record the server has never seen.
             await BBCore.addRecord(
-                newOwner,
+                "local",
                 state.branchId,
                 state.branch,
                 BBUI.getTextareaValue() || "",
                 binData
             );
-            state.owner = newOwner;
+            state.owner = "local";
             state.isVirtual = false;
             state.currentHead = 0;
             BBUI.updateIndicators(state.branch || t('blackboard.branchNameFallback'), state.currentHead, true);
@@ -99,14 +108,19 @@ const bbAttach = EditorAttachments.create({
                 const newOwner = markAsynced(entry.owner);
                 if (newOwner !== entry.owner) {
                     // Primary key includes owner → modify() handles the
-                    // delete+put required to change it.
+                    // delete+put required to change it. Record tag stays
+                    // load-bearing for hasAsyncedRecord dirty detection
+                    // (file-only mutations don't bump timestamp).
                     await db.blackboard.where('[owner+branch_id+timestamp]')
                         .equals([entry.owner, entry.branch_id, entry.timestamp])
                         .modify({ file_hash: fileHashes, owner: newOwner });
-                    if (state.owner === entry.owner) state.owner = newOwner;
                 } else {
                     await db.blackboard.update([entry.owner, entry.branch_id, entry.timestamp], { file_hash: fileHashes });
                 }
+                // Defensive: keep state.owner at 'local' regardless of what
+                // the record just became. Self-heals if another path drifted
+                // state.owner to a specific tag.
+                state.owner = "local";
                 CrossTabSync.broadcast('bb:record:mutated', { branchId: entry.branch_id, timestamp: entry.timestamp });
             } else if (state.currentHead === 0) {
                 await BBCore.addRecord("local", state.branchId, state.branch, BBUI.getTextareaValue() || "", [binData]);
@@ -143,10 +157,13 @@ const bbAttach = EditorAttachments.create({
             await db.blackboard.where('[owner+branch_id+timestamp]')
                 .equals([entry.owner, entry.branch_id, entry.timestamp])
                 .modify({ file_hash: updated, owner: newOwner });
-            if (state.owner === entry.owner) state.owner = newOwner;
         } else {
             await db.blackboard.update([entry.owner, entry.branch_id, entry.timestamp], { file_hash: updated });
         }
+        // See onAttach: state.owner stays 'local' literal regardless of the
+        // record's new tag. Mixed-ownership branches break exact-index
+        // navigation otherwise.
+        state.owner = "local";
         BBSync.scheduleAutoCommit();
         CrossTabSync.broadcast('bb:record:mutated', { branchId: entry.branch_id, timestamp: entry.timestamp });
     },
@@ -173,10 +190,12 @@ const bbAttach = EditorAttachments.create({
             await db.blackboard.where('[owner+branch_id+timestamp]')
                 .equals([entry.owner, entry.branch_id, entry.timestamp])
                 .modify({ file_hash: updated, owner: newOwner });
-            if (state.owner === entry.owner) state.owner = newOwner;
         } else {
             await db.blackboard.update([entry.owner, entry.branch_id, entry.timestamp], { file_hash: updated });
         }
+
+        // See onAttach: state.owner stays 'local' literal (query catch-all).
+        state.owner = "local";
 
         BBSync.scheduleAutoCommit();
         CrossTabSync.broadcast('bb:record:mutated', {
@@ -936,13 +955,13 @@ document.addEventListener('visibilitychange', () => {
  */
 CrossTabSync.on('bb:record:mutated', async (detail) => {
     if (!detail || detail.branchId !== state.branchId) return;
-    // Another tab may have flipped the owner tag ([synced]↔[asynced]).
-    // Re-derive state.owner from DB so subsequent getRecord() calls hit
-    // the right composite key.
-    const anyRecord = await db.blackboard.where('branch_id').equals(state.branchId).first();
-    if (anyRecord && anyRecord.owner !== state.owner) {
-        state.owner = anyRecord.owner;
-    }
+    // Another tab may have flipped some records' owner tag ([synced] ↔
+    // [asynced]). state.owner stays at the "local" literal catch-all so
+    // getRecord's startsWith('local') branch sees every tag variant.
+    // Previously we pulled anyRecord.owner as the new state.owner, but
+    // that picked up a single specific tag and broke navigation in
+    // mixed-ownership branches (see CLAUDE.md Branch-tag invariant).
+    state.owner = "local";
     const isTyping = document.activeElement === BBUI.elements.textarea;
     if (!isTyping) {
         syncView();
