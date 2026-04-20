@@ -520,11 +520,35 @@ export const BCChannel = {
     async ownerPush() {
         if (this.state.isVirtual) return;
 
+        // Pre-scrub snapshot — matches BB push defenses. Lets us tell
+        // whether the record at currentHead survived scrubbing.
+        const entryBefore = await BCDb.getRecord(this.state.localChannelId, this.state.currentHead);
+
         // Scrub + cleanup on push (conditional)
         if (Settings.get('bc', 'autoCleanBlanks')) {
             await BCDb.scrubBranch(this.state.localChannelId, this.state.maxSlot);
         } else {
             await BCDb.cleanupOldRecords(this.state.localChannelId, this.state.maxSlot);
+        }
+
+        // Post-scrub revalidation (three defenses from BB).
+        const count = await BCDb.countRecords(this.state.localChannelId);
+        if (count === 0) {
+            this.state.currentHead = 0;
+            this.state.isVirtual = true;
+            await this.syncOwnerView();
+            return;
+        }
+        if (this.state.currentHead >= count) {
+            this.state.currentHead = count - 1;
+            await this.syncOwnerView();
+            return;
+        }
+        const entryAfter = await BCDb.getRecord(this.state.localChannelId, this.state.currentHead);
+        if (!entryBefore || !entryAfter || entryBefore.timestamp !== entryAfter.timestamp) {
+            // Scrub shifted contents into this slot — refresh, don't navigate further.
+            await this.syncOwnerView();
+            return;
         }
 
         if (this.state.currentHead > 0) {
@@ -549,6 +573,9 @@ export const BCChannel = {
             return;
         }
 
+        // Pre-scrub snapshot — matches BB pull defenses.
+        const entryBefore = await BCDb.getRecord(this.state.localChannelId, this.state.currentHead);
+
         // Scrub + cleanup on pull (conditional)
         if (Settings.get('bc', 'autoCleanBlanks')) {
             await BCDb.scrubBranch(this.state.localChannelId, this.state.maxSlot);
@@ -557,6 +584,25 @@ export const BCChannel = {
         }
 
         const count = await BCDb.countRecords(this.state.localChannelId);
+
+        // Post-scrub revalidation (three defenses from BB).
+        if (count === 0) {
+            this.state.currentHead = 0;
+            this.state.isVirtual = true;
+            await this.syncOwnerView();
+            return;
+        }
+        if (this.state.currentHead >= count) {
+            this.state.currentHead = count - 1;
+            await this.syncOwnerView();
+            return;
+        }
+        const entryAfter = await BCDb.getRecord(this.state.localChannelId, this.state.currentHead);
+        if (!entryBefore || !entryAfter || entryBefore.timestamp !== entryAfter.timestamp) {
+            await this.syncOwnerView();
+            return;
+        }
+
         if (this.state.currentHead < count - 1) {
             this.state.currentHead++;
             await this.syncOwnerView();

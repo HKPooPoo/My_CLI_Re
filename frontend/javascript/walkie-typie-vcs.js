@@ -22,10 +22,31 @@ export const WTVCS = {
             await this.save(state, currentText);
         }
 
+        // Pre-scrub snapshot so we can tell whether the record at
+        // currentHead survived scrubbing. Mirrors BB push defenses.
+        const entryBefore = await WTDb.getRecord(state.branchId, state.currentHead);
+
         if (Settings.get('wt', 'autoCleanBlanks')) {
             await WTDb.scrubBranch(state.branchId, state.maxSlot);
         } else {
             await WTDb.cleanupOldRecords(state.branchId, state.maxSlot);
+        }
+
+        // Post-scrub revalidation (three defenses from BB).
+        const count = await WTDb.countRecords(state.branchId);
+        if (count === 0) {
+            state.currentHead = 0;
+            state.isVirtual = true;
+            return true;
+        }
+        if (state.currentHead >= count) {
+            state.currentHead = count - 1;
+            return true;
+        }
+        const entryAfter = await WTDb.getRecord(state.branchId, state.currentHead);
+        if (!entryBefore || !entryAfter || entryBefore.timestamp !== entryAfter.timestamp) {
+            // Scrub shifted contents into this slot — caller just refreshes view.
+            return true;
         }
 
         if (state.currentHead > 0) {
@@ -55,6 +76,9 @@ export const WTVCS = {
             await this.save(state, currentText);
         }
 
+        // Pre-scrub snapshot — matches BB pull defenses.
+        const entryBefore = await WTDb.getRecord(state.branchId, state.currentHead);
+
         if (Settings.get('wt', 'autoCleanBlanks')) {
             await WTDb.scrubBranch(state.branchId, state.maxSlot);
         } else {
@@ -62,6 +86,21 @@ export const WTVCS = {
         }
 
         const count = await WTDb.countRecords(state.branchId);
+
+        // Post-scrub revalidation (three defenses from BB).
+        if (count === 0) {
+            state.currentHead = 0;
+            state.isVirtual = true;
+            return true;
+        }
+        if (state.currentHead >= count) {
+            state.currentHead = count - 1;
+            return true;
+        }
+        const entryAfter = await WTDb.getRecord(state.branchId, state.currentHead);
+        if (!entryBefore || !entryAfter || entryBefore.timestamp !== entryAfter.timestamp) {
+            return true;
+        }
 
         if (state.currentHead < count - 1) {
             state.currentHead++;
