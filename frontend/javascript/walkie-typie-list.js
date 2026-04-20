@@ -27,14 +27,32 @@ import * as Settings from './settings.js';
 // all marks — simple by design (no localStorage round-trip).
 const _newMessagePartners = new Set();
 
+// Surgical DOM patch for a single row — avoids WTList.render() which
+// wipes innerHTML and makes InfiniteList lose its active cursor, which
+// cascades to a fresh loadConnection() (SFX + full board reload).
+function _applyNewTagToRow(partnerUid) {
+    const container = WTList.elements?.container;
+    if (!container) return;
+    const item = container.querySelector(
+        `.walkie-typie-list-list-item[data-partner-uid="${CSS.escape(partnerUid)}"]`
+    );
+    if (!item) return;
+    const uidEl = item.querySelector('.walkie-typie-list-uid');
+    if (!uidEl) return;
+    uidEl.textContent = _newMessagePartners.has(partnerUid)
+        ? `${partnerUid} ${t('walkieTypie.statusNew')}`
+        : partnerUid;
+}
+
 // Mark: server signal arrived for this partner. walkie-typie-core.js
 // dispatches this event with `detail = content_data` (unwrapped), so
 // sender_uid lives at e.detail.sender_uid — not under .content_data.
 window.addEventListener('walkie-typie:content-update', (e) => {
     const uid = e.detail?.sender_uid;
     if (!uid) return;
+    if (_newMessagePartners.has(uid)) return;  // already marked, skip DOM touch
     _newMessagePartners.add(uid);
-    WTList.render();
+    _applyNewTagToRow(uid);
 });
 
 // Clear: user navigates into WT > Text with a partner selected.
@@ -44,7 +62,7 @@ window.addEventListener('navi:pageChanged', (e) => {
     const sel = WTList.selectedConnection;
     if (!sel) return;
     if (_newMessagePartners.delete(sel.partner_uid)) {
-        WTList.render();
+        _applyNewTagToRow(sel.partner_uid);
     }
 });
 
