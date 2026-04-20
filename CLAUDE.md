@@ -356,9 +356,9 @@ steps: () => currentDropAction === 'clean' ? 3 : 1
 Buttons whose label/behaviour change based on list selection context. Now wired through `MultiStepButton` with `dynamicLabel: true` — the external `updateXButtonState()` owns the textContent, MultiStepButton owns the countdown state machine. Every updater calls `btn.reset()` first to drop any armed state before swapping the label.
 
 **Checkout/Switch** (`checkout-btn`): `updateCheckoutButtonState()` on `list:selectionChanged`.
-- `selected.id === state.branchId` → **CHECKOUT** (re-download from server, `targetOwner="remote"`)
-- `selected.id !== state.branchId` → **SWITCH** (change branch, `targetOwner` based on `isLocal`)
-- Both states are 3-step — CHECKOUT overwrites local, SWITCH changes which branch the editor points at.
+- `selected.id === state.branchId` → **CHECKOUT** (re-download from server, `targetOwner="remote"`) — **3-step** (overwrites local with server)
+- `selected.id !== state.branchId` → **SWITCH** (change branch, `targetOwner` based on `isLocal`) — **1-click** (reversible — just moves the editor pointer; local data untouched either way)
+- `steps: () => currentCheckoutAction === 'checkout' ? 3 : 1`.
 
 **Clean/Drop/Delete** (`drop-btn`): `updateDropButtonState()` on `list:selectionChanged`.
 - `isLocal && hasContent` → **CLEAN** (wipe local records, keep branch) — **3-step** (destroys unsynced user content)
