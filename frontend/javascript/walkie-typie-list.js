@@ -313,11 +313,21 @@ export const WTList = {
     render() {
         if (!this.elements.container) return;
 
+        // Preserve selection across the wipe so InfiniteList.refresh()
+        // finds .active in the DOM and does NOT fall through to
+        // setCursor(0, true), which dispatches list:selectionChanged
+        // → walkie-typie:selected → loadConnection (SFX + double board
+        // re-sync). Matches the BB/BC render pattern.
+        const activeUid = this.selectedConnection?.partner_uid ?? null;
+
         this.elements.container.innerHTML = "";
 
         this.connections.forEach(conn => {
             const item = document.createElement("div");
             item.classList.add("walkie-typie-list-list-item");
+            if (activeUid && conn.partner_uid === activeUid) {
+                item.classList.add("active");
+            }
             item.dataset.partnerUid = conn.partner_uid;
 
             // Tag input (nickname)
