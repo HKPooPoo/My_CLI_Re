@@ -176,7 +176,7 @@
   },
   "broadcast": {
     "pageTitle": "Channels",
-    "listTab": "BROWSE",
+    "listTab": "Channel",
     "channelTab": "CHANNEL",
     "pinBtn": "Pin",
     "unpinBtn": "Unpin",
