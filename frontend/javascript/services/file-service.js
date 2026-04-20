@@ -12,6 +12,20 @@
 
 import { T } from '../timing.js';
 
+// Keep in sync with backend FileController.php $allowed list.
+// Frontend check is UX-level (instant toast); backend is the authority.
+// Whitelist semantics: unknown / missing / trailing-dot extensions are
+// rejected — safer default than the previous blacklist, which let any
+// disguised executable (.exe renamed to .md) through.
+const ALLOWED_EXTENSIONS = new Set([
+    'txt', 'md', 'csv', 'json', 'xml', 'yaml', 'yml',
+    'pdf', 'docx', 'xlsx', 'pptx',
+    'jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'tiff', 'tif', 'ico',
+    'mp3', 'wav', 'ogg', 'm4a', 'flac', 'aac',
+    'mp4', 'webm', 'mov', 'mkv', 'm4v',
+    'zip', 'tar', '7z', 'rar',
+]);
+
 let _lastRateLimitEvent = 0;
 
 function check429(response) {
@@ -31,6 +45,17 @@ function makeTimeout(ms) {
 }
 
 export const FileService = {
+    /**
+     * Check if a filename's extension is on the whitelist.
+     * Returns false for empty ext, trailing dot, or unknown ext.
+     */
+    isAllowedExtension(name) {
+        if (!name) return false;
+        const dotIdx = name.lastIndexOf('.');
+        if (dotIdx === -1 || dotIdx === name.length - 1) return false;
+        return ALLOWED_EXTENSIONS.has(name.slice(dotIdx + 1).toLowerCase());
+    },
+
     /**
      * Compute SHA-256 hash of content + 0x00 + filename (UTF-8).
      * Name-sensitive so renaming a file yields a new hash — matches server
@@ -77,6 +102,12 @@ export const FileService = {
     async upload(file, filename) {
         const name = filename || file.name;
         if (!name) throw new Error('upload: filename is required');
+        // Defense-in-depth: MOD callers (ctx.file.upload) and any other
+        // consumers that bypass handleFile/_renameFile still get gated.
+        // Backend re-checks authoritatively.
+        if (!this.isAllowedExtension(name)) {
+            throw new Error('upload: file type not allowed');
+        }
         const formData = new FormData();
         formData.append('file', file, name);
 

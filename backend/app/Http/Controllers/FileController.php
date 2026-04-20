@@ -28,9 +28,23 @@ class FileController extends Controller
                 'file',
                 'max:1048576',  // 1 GB in kilobytes
                 function ($attribute, $value, $fail) {
-                    $blocked = ['php', 'phtml', 'phar', 'exe', 'bat', 'cmd', 'sh', 'html', 'htm', 'xhtml', 'cgi', 'pl'];
+                    // Old blacklist — let disguised executables (e.g.
+                    // abc.exe renamed to abc.md on disk) through because
+                    // it only inspected the declared extension.
+                    // $blocked = ['php', 'phtml', 'phar', 'exe', 'bat', 'cmd', 'sh', 'html', 'htm', 'xhtml', 'cgi', 'pl'];
+                    // if (in_array($ext, $blocked)) { $fail(...); }
+
+                    // Keep in sync with frontend file-service.js ALLOWED_EXTENSIONS.
+                    $allowed = [
+                        'txt', 'md', 'csv', 'json', 'xml', 'yaml', 'yml',
+                        'pdf', 'docx', 'xlsx', 'pptx',
+                        'jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'tiff', 'tif', 'ico',
+                        'mp3', 'wav', 'ogg', 'm4a', 'flac', 'aac',
+                        'mp4', 'webm', 'mov', 'mkv', 'm4v',
+                        'zip', 'tar', '7z', 'rar',
+                    ];
                     $ext = strtolower($value->getClientOriginalExtension());
-                    if (in_array($ext, $blocked)) {
+                    if (!in_array($ext, $allowed)) {
                         $fail("File type .{$ext} is not allowed.");
                     }
                 },

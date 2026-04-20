@@ -42,12 +42,12 @@ function mimeIcon(mime) {
 // const BLOB_MAX = 50;
 const MAX_FILE_SIZE = 1 * 1024 * 1024 * 1024; // 1 GB
 
-// Keep in sync with backend FileController.php blocked extensions list.
-// Frontend check is UX-only (instant feedback); backend is the authority.
-const BLOCKED_EXTENSIONS = new Set([
-    'php', 'phtml', 'phar', 'exe', 'bat', 'cmd', 'sh',
-    'html', 'htm', 'xhtml', 'cgi', 'pl'
-]);
+// Extension whitelist now lives in FileService.isAllowedExtension().
+// Old blacklist removed — see file-service.js for the allowed set.
+// const BLOCKED_EXTENSIONS = new Set([
+//     'php', 'phtml', 'phar', 'exe', 'bat', 'cmd', 'sh',
+//     'html', 'htm', 'xhtml', 'cgi', 'pl'
+// ]);
 
 // Disabled: blob pruning removed to avoid data loss for local-only users.
 // Synced blobs (server-backed) were evicted by LRU when count > BLOB_MAX,
@@ -252,8 +252,7 @@ export const EditorAttachments = {
                     return;
                 }
 
-                const ext = (file.name || '').split('.').pop()?.toLowerCase();
-                if (ext && BLOCKED_EXTENSIONS.has(ext)) {
+                if (!FileService.isAllowedExtension(file.name || '')) {
                     BBMessage.error(t('files.unsupportedType'));
                     return;
                 }
@@ -700,6 +699,13 @@ export const EditorAttachments = {
              * revert the input value.
              */
             async _renameFile(oldHash, newName) {
+                // Reject at the UI boundary so user sees instant toast
+                // instead of a silent commit failure later.
+                if (!FileService.isAllowedExtension(newName)) {
+                    BBMessage.error(t('files.unsupportedType'));
+                    return false;
+                }
+
                 // Ensure local blob is available (downloads if CLOUD)
                 const local = await this._ensureLocal(oldHash);
                 if (!local || !local.blob) {

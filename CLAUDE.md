@@ -138,7 +138,7 @@ docker exec my-cli-api php artisan test                        # Run all tests (
 docker exec my-cli-api php artisan test --filter TestClassName # Run single test class
 ```
 
-### Test Suite (291 tests, 669 assertions)
+### Test Suite (293 tests, 674 assertions)
 
 | Test Class | Tests | What it covers |
 |------------|-------|----------------|
@@ -149,7 +149,7 @@ docker exec my-cli-api php artisan test --filter TestClassName # Run single test
 | `BlackboardControllerTest` | 36 | HTTP integration: commit validation, auth guards, response format, round-trip, LWW via HTTP, fetch filters unavailable file_hash (A5), DANGER ZONE delete-all-branches |
 | `BroadcastChannelServiceTest` | 19 | cast (DELETE+INSERT), rename, destroy, pin/unpin, title guard |
 | `BroadcastChannelControllerTest` | 34 | HTTP integration: public index/fetchBoards, cast validation + title guard, rename/destroy ownership, pin/unpin, lifecycle |
-| `FileControllerTest` | 27 | HTTP integration: upload + name-sensitive dedup (same name dedupes, different name creates separate hashes), blocked extensions, download (happy + disk missing), status transitions (staged→committed via BB/WT/BC commit/cast), orphan detection across BB/WT/BC tables, clean command, full lifecycle |
+| `FileControllerTest` | 29 | HTTP integration: upload + name-sensitive dedup (same name dedupes, different name creates separate hashes), extension whitelist (script/exec types rejected, unknown/extensionless rejected, common doc/media types accepted), download (happy + disk missing), status transitions (staged→committed via BB/WT/BC commit/cast), orphan detection across BB/WT/BC tables, clean command, full lifecycle |
 | `FileServiceTest` | 15 | name-sensitive upload dedup (same content + same name dedupes; same content + different name → separate rows), markCommitted, markOrphaned, cleanupOrphaned |
 | `WalkieTypieControllerTest` | 40 | HTTP integration: connection CRUD, signal, tag update (incl. non-connected 404), board commit/fetch, lifecycle round-trip |
 | `WalkieTypieBoardServiceTest` | 12 | LWW commit, partner signal, connection access control |

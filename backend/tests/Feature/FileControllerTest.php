@@ -66,7 +66,7 @@ class FileControllerTest extends TestCase
     }
 
     #[Test]
-    public function upload_rejects_blocked_php_extension(): void
+    public function upload_rejects_not_whitelisted_php_extension(): void
     {
         $file = UploadedFile::fake()->create('evil.php', 10, 'text/plain');
 
@@ -77,7 +77,7 @@ class FileControllerTest extends TestCase
     }
 
     #[Test]
-    public function upload_rejects_blocked_exe_extension(): void
+    public function upload_rejects_not_whitelisted_exe_extension(): void
     {
         $file = UploadedFile::fake()->create('malware.exe', 10, 'application/octet-stream');
 
@@ -88,7 +88,7 @@ class FileControllerTest extends TestCase
     }
 
     #[Test]
-    public function upload_rejects_blocked_html_extension(): void
+    public function upload_rejects_not_whitelisted_html_extension(): void
     {
         $file = UploadedFile::fake()->create('xss.html', 10, 'text/html');
 
@@ -99,7 +99,7 @@ class FileControllerTest extends TestCase
     }
 
     #[Test]
-    public function upload_rejects_blocked_sh_extension(): void
+    public function upload_rejects_not_whitelisted_sh_extension(): void
     {
         $file = UploadedFile::fake()->create('script.sh', 10, 'text/plain');
 
@@ -110,7 +110,32 @@ class FileControllerTest extends TestCase
     }
 
     #[Test]
-    public function upload_accepts_safe_extensions(): void
+    public function upload_rejects_unknown_extension_under_whitelist(): void
+    {
+        // Extensions that the old blacklist let through but the whitelist
+        // blocks. Proves behaviour switch: unknown = rejected by default.
+        $unknownFiles = ['iso.iso', 'image.dmg', 'payload.bin', 'archive.cab'];
+
+        foreach ($unknownFiles as $name) {
+            $file = UploadedFile::fake()->create($name, 10);
+            $response = $this->postJson('/api/files', ['file' => $file]);
+            $response->assertStatus(422);
+        }
+    }
+
+    #[Test]
+    public function upload_rejects_extensionless_file(): void
+    {
+        // Whitelist semantics: no extension = unknown = rejected.
+        $file = UploadedFile::fake()->create('noext', 10);
+
+        $response = $this->postJson('/api/files', ['file' => $file]);
+
+        $response->assertStatus(422);
+    }
+
+    #[Test]
+    public function upload_accepts_whitelisted_extensions(): void
     {
         $safeFiles = ['doc.pdf', 'pic.png', 'photo.jpg', 'data.json', 'sheet.csv'];
 
