@@ -304,7 +304,7 @@
       "autoCleanBlanks": "Auto-remove blank records when navigating. Keeps history clean.",
       "updateTimestamp": "Move edited record to newest position. OFF = stays in place.",
       "autoSync": "Two-way sync for the CURRENT branch only: auto-commit 2s after idle, remote changes appear in ~4s via WS/poll. Other branches sync when you switch to them. Requires login.",
-      "loopList": "Wheel-scroll past the list end wraps around — scroll down past the last row → row 1, scroll up past row 1 → last row. OFF = hard stop at both ends.",
+      "loopList": "Wheel-scroll past the list end wraps around — scroll down past the last row → row 1, scroll up past row 1 → last row. For example: Blackboard's branch list. OFF = hard stop at both ends.",
       "boardSwap": "Your board on top, partner below. OFF = partner on top (default).",
       "notifications": "Desktop notifications when a message arrives and the tab is backgrounded. Requires browser permission.",
       "screensaverTimeout": "Seconds after leaving the tab before screensaver activates. Max value disables it.",
