@@ -284,18 +284,11 @@ export const BBCore = {
         if (records.length === 0) return -1;
         records.sort((a, b) => b.timestamp - a.timestamp);
         const maxHead = records.length - 1;
-        // Reject out-of-range targets instead of clamping. Clamping silently
-        // swapped records[0] with records[maxHead] on any wild number, which
-        // read to the user as "pages are being moved/deleted behind my back".
-        // The three valid input cases per the spec:
-        //   toHead < 0       → no-op
-        //   toHead > maxHead → no-op
-        //   0..maxHead       → swap
-        if (toHead < 0 || toHead > maxHead) return fromHead;
-        if (fromHead < 0 || fromHead > maxHead) return -1;
-        if (fromHead === toHead) return fromHead;
-        const a = records[fromHead];
-        const b = records[toHead];
+        const from = Math.max(0, Math.min(fromHead, maxHead));
+        const to = Math.max(0, Math.min(toHead, maxHead));
+        if (from === to) return from;
+        const a = records[from];
+        const b = records[to];
         const aNewOwner = markAsynced(a.owner);
         const bNewOwner = markAsynced(b.owner);
         await db.transaction('rw', db.blackboard, async () => {
@@ -304,7 +297,7 @@ export const BBCore = {
             await db.blackboard.put({ ...a, timestamp: b.timestamp, owner: aNewOwner });
             await db.blackboard.put({ ...b, timestamp: a.timestamp, owner: bNewOwner });
         });
-        return toHead;
+        return to;
     },
 
     /**

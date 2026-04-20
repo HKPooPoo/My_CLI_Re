@@ -156,22 +156,6 @@ function _focusAndSelectHeadIndex() {
 }
 
 if ($branchHeadEl) {
-    // Cap the field at 4 chars. contenteditable has no native maxlength,
-    // so we truncate post-input and move the caret to the end. Covers
-    // both typing and paste in one listener.
-    $branchHeadEl.addEventListener('input', () => {
-        const MAX = 4;
-        const text = $branchHeadEl.textContent;
-        if (text.length <= MAX) return;
-        $branchHeadEl.textContent = text.slice(0, MAX);
-        const range = document.createRange();
-        range.selectNodeContents($branchHeadEl);
-        range.collapse(false);
-        const sel = window.getSelection();
-        sel.removeAllRanges();
-        sel.addRange(range);
-    });
-
     $branchHeadEl.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') { e.preventDefault(); $branchHeadEl.blur(); return; }
         if (e.key !== 'Enter') return;

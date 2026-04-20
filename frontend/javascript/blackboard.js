@@ -972,8 +972,14 @@ window.addEventListener('branchHead:reorderRequested', async (e) => {
             return;
         }
         state.currentHead = newHead;
-        // Re-align state.owner — the record may have been promoted from
-        // [synced] to [asynced] by the swap.
+        // swapRecordsByHead marks both touched records [synced] → [asynced].
+        // If state.owner was [synced], it's now pointing at a tag that no
+        // record carries. Pre-align it the same way the branch-rename
+        // handler does (see blackboard:branchRename listener) — without
+        // this, the subsequent getRecord() query misses (exact-owner index
+        // lookup) and syncView() paints a blank textarea, which reads to
+        // the user as "records got deleted".
+        state.owner = markAsynced(state.owner);
         const entry = await BBCore.getRecord(state.owner, state.branchId, state.currentHead);
         if (entry && entry.owner !== state.owner) state.owner = entry.owner;
         await syncView();
