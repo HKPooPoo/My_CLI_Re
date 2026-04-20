@@ -760,10 +760,15 @@ window.addEventListener("blackboard:branchRename", async (e) => {
     await BBCore.renameBranch("local", branchId, newName);
     if (branchId === state.branchId) {
         state.branch = newName;
-        // renameBranch flipped every [synced] record's owner to [asynced]; if
-        // our in-memory state.owner matched the old tag for this branch, align
-        // it so subsequent getRecord() calls hit the right composite key.
-        state.owner = markAsynced(state.owner);
+        // Force state.owner back to the "local" literal catch-all.
+        // renameBranch applies markAsynced() per record, which changes
+        // [synced] → [asynced] but leaves pure-'local' records untouched.
+        // That leaves the branch with mixed owner tags, so any specific
+        // tag on state.owner only matches a subset of records and breaks
+        // navigation (getRecord goes to exact-index lookup for non-'local'
+        // owners). The 'local' literal triggers the startsWith('local')
+        // branch in getRecord which sees every variant.
+        state.owner = "local";
         BBUI.updateIndicators(state.branch || t('blackboard.branchNameFallback'), state.currentHead, true);
     }
     await updateBranchList();
@@ -972,16 +977,16 @@ window.addEventListener('branchHead:reorderRequested', async (e) => {
             return;
         }
         state.currentHead = newHead;
-        // swapRecordsByHead marks both touched records [synced] → [asynced].
-        // If state.owner was [synced], it's now pointing at a tag that no
-        // record carries. Pre-align it the same way the branch-rename
-        // handler does (see blackboard:branchRename listener) — without
-        // this, the subsequent getRecord() query misses (exact-owner index
-        // lookup) and syncView() paints a blank textarea, which reads to
-        // the user as "records got deleted".
-        state.owner = markAsynced(state.owner);
-        const entry = await BBCore.getRecord(state.owner, state.branchId, state.currentHead);
-        if (entry && entry.owner !== state.owner) state.owner = entry.owner;
+        // swapRecordsByHead promotes the two touched records
+        // [synced] → [asynced] while other records in the branch keep
+        // their existing tag. Same mixed-ownership outcome as rename, so
+        // the same fix applies: drop state.owner to the 'local' catch-all
+        // (startsWith semantics in getRecord) rather than a specific tag
+        // that would only match a subset. Keeping a specific [asynced]
+        // tag here was what made the user's "records got deleted" bug:
+        // exact-index lookup missed the pure-'local' records that
+        // swapRecordsByHead didn't touch.
+        state.owner = "local";
         await syncView();
         await updateBranchList();
         BBSync.scheduleAutoCommit();
