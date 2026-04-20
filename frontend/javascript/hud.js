@@ -108,6 +108,17 @@ function stopHeartbeat() {
 
 startHeartbeat();
 
+// First heartbeat tick may run before i18n.initI18n() finishes fetching the
+// locale JSON. i18n.js::t() falls back to returning the raw key when lookup
+// misses, so `t('hud.online')` writes the literal string "hud.online" into
+// the DOM. Once i18n is ready, reset previousStatus so the dedup guard
+// (isStatusHasNoChange) doesn't early-exit, then re-run the status update —
+// refetch is cheap and handles ONLINE / OFFLINE / error alike.
+window.addEventListener('i18n:ready', () => {
+    previousStatus = '';
+    updateDatabaseStatus();
+});
+
 document.addEventListener('visibilitychange', () => {
     if (document.hidden) {
         stopHeartbeat();
