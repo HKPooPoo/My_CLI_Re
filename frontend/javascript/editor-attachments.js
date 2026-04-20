@@ -277,15 +277,28 @@ export const EditorAttachments = {
                     const hash = preHash;
 
                     try {
-                        await db.file_blobs.put({
-                            hash: hash,
-                            blob: file,
-                            name: file.name,
-                            type: file.type,
-                            size: file.size,
-                            status: 'local',
-                            last_accessed: Date.now()
-                        });
+                        // Preserve existing status + metadata if this exact
+                        // (content+name) blob was already attached from another
+                        // record — possibly already [SYNC]. A blind put() with
+                        // status:'local' would regress the chip to [LOCAL] even
+                        // though the server has the blob, and future commits
+                        // would skip the upload (exists=true) without fixing
+                        // the stale status. Mirrors the _renameFile() guard at
+                        // line 733-746.
+                        const existing = await db.file_blobs.get(hash);
+                        if (existing) {
+                            await db.file_blobs.update(hash, { last_accessed: Date.now() });
+                        } else {
+                            await db.file_blobs.put({
+                                hash: hash,
+                                blob: file,
+                                name: file.name,
+                                type: file.type,
+                                size: file.size,
+                                status: 'local',
+                                last_accessed: Date.now()
+                            });
+                        }
                     } catch (dbErr) {
                         if (dbErr.name === 'QuotaExceededError') {
                             BBMessage.error(t('files.storageFull'));

@@ -184,7 +184,18 @@ export const BBVCS = {
             for (const hash of uniqueHashes) {
                 try {
                     const exists = await FileService.exists(hash);
-                    if (exists) continue;
+                    if (exists) {
+                        // Server already has the blob — no upload needed, but
+                        // the local file_blobs row may still say status:'local'
+                        // (e.g., re-attached in another record, dedupe case).
+                        // Promote to 'synced' so the chip shows [SYNC] on next
+                        // render instead of staying stuck at [LOCAL] forever.
+                        const local = await db.file_blobs.get(hash);
+                        if (local && local.status !== 'synced') {
+                            await db.file_blobs.update(hash, { status: 'synced' });
+                        }
+                        continue;
+                    }
 
                     const fileData = await db.file_blobs.get(hash);
                     if (!fileData || !fileData.blob) {
