@@ -140,6 +140,7 @@ export const MISC = {
         wipeLocalBtn: document.getElementById('misc-wipe-local-btn'),
         dropAllBranchesBtn: document.getElementById('misc-drop-all-branches-btn'),
         installAppBtn: document.getElementById('misc-install-app-btn'),
+        updateAppBtn: document.getElementById('misc-update-app-btn'),
     },
 
     configs: {
@@ -257,6 +258,53 @@ export const MISC = {
                 action: async () => {
                     const { triggerInstallFromMisc } = await import('./pwa.js');
                     await triggerInstallFromMisc();
+                }
+            });
+        }
+
+        // UPDATE APP — full site-data reset + reload. Nukes Cache API,
+        // Service Worker, IndexedDB, localStorage, sessionStorage. Next load
+        // is equivalent to first visit. Primary use case: force a freshly
+        // deployed build to take effect when Workbox precache keeps serving
+        // the old bundle. 3-step confirm (destructive). Clears in this
+        // order: caches → SW → IndexedDB → web storage → reload, so the
+        // reload's network fetches are not intercepted by anything.
+        if (this.elements.updateAppBtn) {
+            new MultiStepButton(this.elements.updateAppBtn, {
+                sound: 'UISelectOff.mp3',
+                steps: 3,
+                action: async () => {
+                    const msg = BBMessage.loading(t('misc.updating'));
+                    try {
+                        // (1) Cache API — wipes Workbox precache + runtime-swr + legacy
+                        const cacheNames = await caches.keys();
+                        await Promise.all(cacheNames.map(n => caches.delete(n)));
+
+                        // (2) Service Worker — unregister ALL registrations
+                        const regs = await navigator.serviceWorker.getRegistrations();
+                        await Promise.all(regs.map(r => r.unregister()));
+
+                        // (3) IndexedDB — deleteDatabase is stronger than
+                        // per-table .clear(); resets schema + version so
+                        // migrations replay clean on next boot.
+                        const dbMod = await import('./indexedDB.js');
+                        dbMod.default.close();
+                        await new Promise(resolve => {
+                            const req = indexedDB.deleteDatabase(dbMod.default.name);
+                            req.onsuccess = req.onerror = req.onblocked = () => resolve();
+                        });
+
+                        // (4) Web Storage — user wants "like never accessed"
+                        localStorage.clear();
+                        sessionStorage.clear();
+
+                        msg.update(t('misc.updateComplete'));
+                        setTimeout(() => window.location.reload(), 500);
+                    } catch (e) {
+                        console.error('Update app failed:', e);
+                        msg.close();
+                        BBMessage.error(t('misc.updateFailed'));
+                    }
                 }
             });
         }
