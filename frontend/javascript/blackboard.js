@@ -556,7 +556,11 @@ function updateCheckoutButtonState() {
 if (checkoutBtnEl) {
     checkoutMsb = new MultiStepButton(checkoutBtnEl, {
         sound: "Click.mp3",
-        steps: 3,
+        // CHECKOUT overwrites local with the server copy — 3-step confirm.
+        // SWITCH just moves the editor pointer to another branch; if the
+        // new branch is local, no data is destroyed; if it's remote, the
+        // initial fetch is a read, not an overwrite. 1-click.
+        steps: () => currentCheckoutAction === 'checkout' ? 3 : 1,
         dynamicLabel: true,
         action: async () => {
             if (!currentCheckoutAction) return;
