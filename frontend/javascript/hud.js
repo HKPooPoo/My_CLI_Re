@@ -141,9 +141,10 @@ const $branchHeadEl = document.querySelector('.branch-head');
 const $branchNameEl = document.querySelector('.branch-name');
 
 // QoL: focus .branch-head and highlight its current value so the user
-// can type a replacement number immediately. .branch-name acts as a
-// larger proxy click target since .branch-head is a small field and
-// the nearby branch-name is a big, easy-to-hit region.
+// can type a replacement number immediately. Only wired to the
+// .branch-name proxy — direct clicks on .branch-head keep the native
+// caret-at-click behaviour so users can still insert / tweak a digit
+// without overwriting the whole value.
 function _focusAndSelectHeadIndex() {
     if (!$branchHeadEl) return;
     $branchHeadEl.focus();
@@ -155,8 +156,6 @@ function _focusAndSelectHeadIndex() {
 }
 
 if ($branchHeadEl) {
-    $branchHeadEl.addEventListener('click', _focusAndSelectHeadIndex);
-
     $branchHeadEl.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') { e.preventDefault(); $branchHeadEl.blur(); return; }
         if (e.key !== 'Enter') return;
