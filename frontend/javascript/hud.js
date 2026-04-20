@@ -139,6 +139,19 @@ document.addEventListener('visibilitychange', () => {
 // ========================================================================
 const $branchHeadEl = document.querySelector('.branch-head');
 if ($branchHeadEl) {
+    // QoL: click highlights the existing index so the user can just
+    // type a replacement number — no manual select-all / triple-click.
+    // Native contenteditable on a div places the caret at the click
+    // point by default, which makes "type-to-overwrite" feel fiddly
+    // on a tiny field like this.
+    $branchHeadEl.addEventListener('click', () => {
+        const range = document.createRange();
+        range.selectNodeContents($branchHeadEl);
+        const sel = window.getSelection();
+        sel.removeAllRanges();
+        sel.addRange(range);
+    });
+
     $branchHeadEl.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') { e.preventDefault(); $branchHeadEl.blur(); return; }
         if (e.key !== 'Enter') return;
