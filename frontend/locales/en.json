@@ -358,7 +358,7 @@
     "clearToast": "Flush Toasts",
     "installApp": "Install App",
     "installedAlready": "App is already installed.",
-    "installUnavailable": "Install option not available right now — try refreshing.",
+    "installUnavailable": "Install not available — needs a Chromium-based browser (Chrome, Edge, Brave, Opera); Firefox desktop doesn't support this. On Chromium, the browser only offers install after you've used the app a bit.",
     "installIosHint": "On iOS: tap Share → Add to Home Screen to install.",
     "updateApp": "Update App",
     "updateAppX2": "Update Appx2",
