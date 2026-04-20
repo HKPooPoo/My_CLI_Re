@@ -141,7 +141,7 @@ export const MISC = {
         wipeLocalBtn: document.getElementById('misc-wipe-local-btn'),
         dropAllBranchesBtn: document.getElementById('misc-drop-all-branches-btn'),
         installAppBtn: document.getElementById('misc-install-app-btn'),
-        updateAppBtn: document.getElementById('misc-update-app-btn'),
+        initDataBtn: document.getElementById('misc-init-data-btn'),
     },
 
     configs: {
@@ -263,23 +263,22 @@ export const MISC = {
             });
         }
 
-        // UPDATE APP — clear every local cache surface (Cache API, Service
-        // Worker, IndexedDB, local/session storage) then reload, so the
-        // next load pulls the freshest app code from the server. Named
-        // "UPDATE" rather than "CLEAR SITE DATA" because cookies are
+        // INITIALIZE WEBSITE DATA — clear every local surface (Cache API,
+        // Service Worker, IndexedDB, local/session storage) then reload,
+        // returning the device to a first-visit baseline. Cookies are
         // untouched (laravel_session is HttpOnly, inaccessible from JS) —
-        // server session survives, user stays logged in. Matches the
-        // intent: "update my app; keep me signed in." 3-step confirm —
-        // loses settings, MOD instances, language choice, local drafts.
+        // server session survives, user stays logged in via /auth/status
+        // re-hydrate. 3-step confirm — loses every local-only thing:
+        // settings, MOD instances, language choice, unposted drafts.
         // Clear order: caches → SW → IndexedDB → web storage → reload,
         // so the reload's fetches pass through to the server without any
         // middleware intercepting.
-        if (this.elements.updateAppBtn) {
-            new MultiStepButton(this.elements.updateAppBtn, {
+        if (this.elements.initDataBtn) {
+            new MultiStepButton(this.elements.initDataBtn, {
                 sound: 'UISelectOff.mp3',
                 steps: 3,
                 action: async () => {
-                    const msg = BBMessage.loading(t('misc.updating'));
+                    const msg = BBMessage.loading(t('misc.initializingWebsiteData'));
                     try {
                         // (1) Cache API — wipes Workbox precache + runtime-swr + legacy
                         const cacheNames = await caches.keys();
@@ -303,12 +302,12 @@ export const MISC = {
                         localStorage.clear();
                         sessionStorage.clear();
 
-                        msg.update(t('misc.updateComplete'));
+                        msg.update(t('misc.initializeWebsiteDataComplete'));
                         setTimeout(() => window.location.reload(), 500);
                     } catch (e) {
-                        console.error('Update app failed:', e);
+                        console.error('Initialize website data failed:', e);
                         msg.close();
-                        BBMessage.error(t('misc.updateFailed'));
+                        BBMessage.error(t('misc.initializeWebsiteDataFailed'));
                     }
                 }
             });

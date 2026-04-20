@@ -398,9 +398,9 @@ Buttons whose label/behaviour change based on list selection context. Now wired 
 | `WalkieTypieContentUpdated` | `walkie-typie.content` | Private `App.Models.User.{uid}` | `{ content_data: { text, branch_id, sender_uid } }` |
 | `WalkieTypieSignal` | `walkie-typie.content` | Private `App.Models.User.{partnerUid}` | `{ content_data: { branch_id, sender_uid, timestamp, text: null } }` |
 
-**Client whisper** (no server): `'typing'` on private `walkie-typie.{uid1}.{uid2}` (sorted), 50ms debounce.
+**Client whisper** (no server): `'typing'` on private `walkie-typie.{uid1}.{uid2}` (sorted), 20ms debounce (`timing.json` → `frontend.input.wtWhisperDebounce`).
 
-**WT layers:** Whisper (50ms) → IndexedDB save (200ms) → Server commit (2s) + signal event → partner re-sync.
+**WT layers:** Whisper (20ms) → IndexedDB save (200ms) → Server commit (2s) + signal event → partner re-sync.
 
 ### PWA & Service Worker (Workbox)
 
