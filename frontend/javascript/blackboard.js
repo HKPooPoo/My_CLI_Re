@@ -941,6 +941,55 @@ window.addEventListener('online', () => {
 });
 
 /**
+ * Inline head-index reorder on the HUD .branch-head field.
+ * hud.js captures the keystroke and dispatches the two events below.
+ * This listener only fires when BB-LOG is the active page; the BC
+ * listener in broadcast-channel.js handles its own case. Virtual mode
+ * (NEW) rejects the input — there's no backing record to swap.
+ */
+window.addEventListener('branchHead:reorderRequested', async (e) => {
+    const activePage = document.querySelector('.page.active');
+    if (activePage?.dataset?.page !== 'blackboard-log') return;
+    if (state.isVirtual) {
+        BBMessage.error(t('blackboard.reorderVirtual'));
+        syncView();
+        return;
+    }
+    const target = e.detail?.target;
+    if (typeof target !== 'number' || isNaN(target)) {
+        syncView();
+        return;
+    }
+    try {
+        const newHead = await BBCore.swapRecordsByHead(state.owner, state.branchId, state.currentHead, target);
+        if (newHead < 0) {
+            BBMessage.error(t('blackboard.reorderFailed'));
+            syncView();
+            return;
+        }
+        state.currentHead = newHead;
+        // Re-align state.owner — the record may have been promoted from
+        // [synced] to [asynced] by the swap.
+        const entry = await BBCore.getRecord(state.owner, state.branchId, state.currentHead);
+        if (entry && entry.owner !== state.owner) state.owner = entry.owner;
+        await syncView();
+        await updateBranchList();
+        BBSync.scheduleAutoCommit();
+        CrossTabSync.broadcast('bb:record:mutated', { branchId: state.branchId, timestamp: null });
+    } catch (err) {
+        console.error('BB reorder failed:', err);
+        BBMessage.error(t('blackboard.reorderFailed'));
+        syncView();
+    }
+});
+
+window.addEventListener('branchHead:syncRequested', () => {
+    const activePage = document.querySelector('.page.active');
+    if (activePage?.dataset?.page !== 'blackboard-log') return;
+    syncView();
+});
+
+/**
  * 輪詢：每 5s 刷新分支清單（輕量 GET）。
  * 即時內容同步靠 WebSocket (BBSync._handleRemoteEvent)。
  */

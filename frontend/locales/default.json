@@ -121,6 +121,8 @@
     "dropComplete": "DROP COMPLETE",
     "deleteComplete": "DELETE COMPLETE",
     "actionFailed": "ERROR: ACTION FAILED",
+    "reorderVirtual": "CANNOT REORDER — VIRTUAL (NEW) PAGE HAS NO RECORD TO SWAP",
+    "reorderFailed": "ERROR: REORDER FAILED",
     "syncingFiles": "SYNCING FILES...",
     "noData": "ERROR: NO DATA",
     "uploading": "COMMIT: UPLOADING {name}",
@@ -220,6 +222,8 @@
     "renameFailed": "ERROR: RENAME FAILED",
     "syncFailed": "SYNC FAILED",
     "fetchFailed": "FETCH FAILED",
+    "reorderVirtual": "CANNOT REORDER — VIRTUAL (NEW) PAGE HAS NO RECORD TO SWAP",
+    "reorderFailed": "ERROR: REORDER FAILED",
     "searchPlaceholder": "SEARCH CHANNEL..."
   },
   "files": {

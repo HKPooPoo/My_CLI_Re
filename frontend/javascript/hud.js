@@ -126,3 +126,35 @@ document.addEventListener('visibilitychange', () => {
         startHeartbeat();
     }
 });
+
+// ========================================================================
+// .branch-head inline edit — type a target head position and press Enter
+// to swap the current record with the one at that index. Fires two
+// custom events for consumer pages to listen to:
+//   branchHead:reorderRequested — user pressed Enter with a valid number
+//   branchHead:syncRequested    — user blurred without committing / had
+//                                 an invalid value; consumer should
+//                                 repaint the correct head value
+// BB and BC each listen; each no-ops unless its own page is active.
+// ========================================================================
+const $branchHeadEl = document.querySelector('.branch-head');
+if ($branchHeadEl) {
+    $branchHeadEl.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') { e.preventDefault(); $branchHeadEl.blur(); return; }
+        if (e.key !== 'Enter') return;
+        e.preventDefault();
+        const raw = ($branchHeadEl.textContent || '').trim();
+        $branchHeadEl.blur();
+        const target = parseInt(raw, 10);
+        if (isNaN(target)) {
+            window.dispatchEvent(new CustomEvent('branchHead:syncRequested'));
+            return;
+        }
+        window.dispatchEvent(new CustomEvent('branchHead:reorderRequested', { detail: { target } }));
+    });
+    $branchHeadEl.addEventListener('blur', () => {
+        // Ensure the field reflects the true current state after any
+        // uncommitted edit — the active page's listener will repaint.
+        window.dispatchEvent(new CustomEvent('branchHead:syncRequested'));
+    });
+}

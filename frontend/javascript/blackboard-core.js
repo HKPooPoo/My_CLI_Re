@@ -272,6 +272,35 @@ export const BBCore = {
     },
 
     /**
+     * Swap two records' head positions by exchanging timestamps. Used by
+     * the inline .branch-head reorder UI. Head 0 = newest. `toHead` is
+     * clamped to `[0, records.length - 1]`. Both records' owner tags get
+     * downgraded to [asynced] (order change diverges from server copy).
+     * Returns the new head index of the record that was at `fromHead`
+     * (so the caller can follow its content). -1 on empty branch.
+     */
+    async swapRecordsByHead(owner, branchId, fromHead, toHead) {
+        const records = await this.getAllRecordsForBranch(owner, branchId);
+        if (records.length === 0) return -1;
+        records.sort((a, b) => b.timestamp - a.timestamp);
+        const maxHead = records.length - 1;
+        const from = Math.max(0, Math.min(fromHead, maxHead));
+        const to = Math.max(0, Math.min(toHead, maxHead));
+        if (from === to) return from;
+        const a = records[from];
+        const b = records[to];
+        const aNewOwner = markAsynced(a.owner);
+        const bNewOwner = markAsynced(b.owner);
+        await db.transaction('rw', db.blackboard, async () => {
+            await db.blackboard.delete([a.owner, a.branch_id, a.timestamp]);
+            await db.blackboard.delete([b.owner, b.branch_id, b.timestamp]);
+            await db.blackboard.put({ ...a, timestamp: b.timestamp, owner: aNewOwner });
+            await db.blackboard.put({ ...b, timestamp: a.timestamp, owner: bNewOwner });
+        });
+        return to;
+    },
+
+    /**
      * Fork 分支：複製所有歷史紀錄到新 ID
      */
     async forkBranch(oldOwner, oldBranchId, newId) {

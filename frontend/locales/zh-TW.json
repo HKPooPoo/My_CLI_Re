@@ -121,6 +121,8 @@
     "dropComplete": "已從雲端移除",
     "deleteComplete": "刪除完成",
     "actionFailed": "操作失敗",
+    "reorderVirtual": "無法重排 — NEW 頁還不是真的紀錄",
+    "reorderFailed": "重排失敗",
     "syncingFiles": "同步檔案中...",
     "noData": "沒有可上傳的內容",
     "uploading": "提交：上傳中 {name}",
@@ -220,6 +222,8 @@
     "renameFailed": "重新命名失敗",
     "syncFailed": "同步失敗",
     "fetchFailed": "取得資料失敗",
+    "reorderVirtual": "無法重排 — NEW 頁還不是真的紀錄",
+    "reorderFailed": "重排失敗",
     "searchPlaceholder": "搜尋頻道..."
   },
   "files": {

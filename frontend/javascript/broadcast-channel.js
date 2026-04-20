@@ -318,6 +318,55 @@ export const BCChannel = {
                 this.updateIndicators();
             }, T('frontend.input.bcSaveDebounce'));
         });
+
+        // Inline head-index reorder via .branch-head field. hud.js captures
+        // the keystroke and dispatches the events below. Owner mode only —
+        // reader mode has no authority to mutate records; virtual (NEW) has
+        // no backing record to swap.
+        window.addEventListener('branchHead:reorderRequested', async (e) => {
+            const activePage = document.querySelector('.page.active');
+            if (activePage?.dataset?.page !== 'broadcast-channel') return;
+            if (!this.currentChannel) { this.updateIndicators(); return; }
+            if (!this.isOwnerMode) {
+                BBMessage.error(t('broadcast.notOwner'));
+                this.updateIndicators();
+                return;
+            }
+            if (this.state.isVirtual) {
+                BBMessage.error(t('broadcast.reorderVirtual'));
+                this.updateIndicators();
+                return;
+            }
+            const target = e.detail?.target;
+            if (typeof target !== 'number' || isNaN(target)) {
+                this.updateIndicators();
+                return;
+            }
+            try {
+                const newHead = await BCDb.swapRecordsByHead(this.state.localChannelId, this.state.currentHead, target);
+                if (newHead < 0) {
+                    BBMessage.error(t('broadcast.reorderFailed'));
+                    this.updateIndicators();
+                    return;
+                }
+                this.state.currentHead = newHead;
+                await this.syncOwnerView();
+                CrossTabSync.broadcast('bc:record:mutated', {
+                    localChannelId: this.state.localChannelId,
+                    timestamp: null
+                });
+            } catch (err) {
+                console.error('BC reorder failed:', err);
+                BBMessage.error(t('broadcast.reorderFailed'));
+                this.updateIndicators();
+            }
+        });
+
+        window.addEventListener('branchHead:syncRequested', () => {
+            const activePage = document.querySelector('.page.active');
+            if (activePage?.dataset?.page !== 'broadcast-channel') return;
+            this.updateIndicators();
+        });
     },
 
     // =====================================================================
@@ -643,7 +692,9 @@ export const BCChannel = {
         const head = headOverride !== undefined
             ? headOverride
             : (this.isOwnerMode ? this.state.currentHead : this.readerHead);
-        if ($branchHead) $branchHead.textContent = head;
+        // Skip repainting head-index when user is editing it — otherwise a
+        // mid-type sync would clobber their input.
+        if ($branchHead && document.activeElement !== $branchHead) $branchHead.textContent = head;
 
         if ($savedStatus) {
             if (this.isOwnerMode) {

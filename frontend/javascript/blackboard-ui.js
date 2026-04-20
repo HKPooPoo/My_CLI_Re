@@ -34,7 +34,11 @@ export const BBUI = {
      */
     updateIndicators(branch, head, isSaved = true) {
         if (this.elements.branchName && branch !== undefined) this.elements.branchName.textContent = branch;
-        if (this.elements.headIndex && head !== undefined) this.elements.headIndex.textContent = head;
+        // Skip repainting head-index when user is editing it — otherwise a
+        // mid-type sync would clobber their input.
+        if (this.elements.headIndex && head !== undefined && document.activeElement !== this.elements.headIndex) {
+            this.elements.headIndex.textContent = head;
+        }
         if (this.elements.savedStatus) {
             this.elements.savedStatus.textContent = isSaved ? t('blackboard.statusSaved') : t('blackboard.statusUnsaved');
         }

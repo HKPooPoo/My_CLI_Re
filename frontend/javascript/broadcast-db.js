@@ -120,6 +120,32 @@ export const BCDb = {
             } : null
         }));
         return await db.broadcast_boards.bulkPut(rows);
+    },
+
+    /**
+     * Swap two records' head positions by exchanging timestamps. Used by
+     * the inline .branch-head reorder UI (owner mode only). Head 0 =
+     * newest. `toHead` is clamped to `[0, records.length - 1]`. Returns
+     * the new head index of the record that was at `fromHead`. -1 on
+     * empty channel.
+     */
+    async swapRecordsByHead(localChannelId, fromHead, toHead) {
+        const records = await this.getAllRecords(localChannelId);
+        if (records.length === 0) return -1;
+        // getAllRecords already returns DESC (head 0 = newest)
+        const maxHead = records.length - 1;
+        const from = Math.max(0, Math.min(fromHead, maxHead));
+        const to = Math.max(0, Math.min(toHead, maxHead));
+        if (from === to) return from;
+        const a = records[from];
+        const b = records[to];
+        await db.transaction('rw', db.broadcast_boards, async () => {
+            await db.broadcast_boards.delete([localChannelId, a.timestamp]);
+            await db.broadcast_boards.delete([localChannelId, b.timestamp]);
+            await db.broadcast_boards.put({ ...a, timestamp: b.timestamp });
+            await db.broadcast_boards.put({ ...b, timestamp: a.timestamp });
+        });
+        return to;
     }
 };
 

@@ -121,6 +121,8 @@
     "dropComplete": "Deleted from cloud!",
     "deleteComplete": "Deleted!",
     "actionFailed": "Action failed.",
+    "reorderVirtual": "Can't reorder — the NEW page isn't a real entry yet.",
+    "reorderFailed": "Reorder failed.",
     "syncingFiles": "Syncing files...",
     "noData": "Nothing to upload. Write something first.",
     "uploading": "COMMIT: Uploading {name}",
@@ -220,6 +222,8 @@
     "renameFailed": "Rename failed.",
     "syncFailed": "Sync failed.",
     "fetchFailed": "Failed to load data.",
+    "reorderVirtual": "Can't reorder — the NEW page isn't a real entry yet.",
+    "reorderFailed": "Reorder failed.",
     "searchPlaceholder": "Search channels..."
   },
   "files": {
