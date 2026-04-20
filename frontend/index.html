@@ -176,10 +176,10 @@
                             <div class="sub-navi-item-text" data-i18n="mods.listTab">LIST</div>
                         </div>
                         <div class="sub-navi-item" data-sub-navi-item="mods-config">
-                            <div class="sub-navi-item-text" data-i18n="mods.miscTab">MISC</div>
+                            <div class="sub-navi-item-text" data-i18n="mods.configTab">CONFIG</div>
                         </div>
                         <div class="sub-navi-item" data-sub-navi-item="mods-misc">
-                            <div class="sub-navi-item-text" data-i18n="mods.configTab">CONFIG</div>
+                            <div class="sub-navi-item-text" data-i18n="mods.miscTab">MISC</div>
                         </div>
                     </div>
                 </div>
@@ -301,8 +301,10 @@
                             placeholder="CONFIRM PASSCODE" maxlength="64" autocomplete="current-password"
                             data-i18n-placeholder="auth.confirmPasscodePlaceholder">
                         <button id="btn-unbind-email" class="auth-btn crt-text-orange"
+                            data-hint="hints.unbindEmail"
                             data-i18n="auth.unbindBtn">UNBIND EMAIL</button>
                         <button id="btn-delete-account" class="auth-btn crt-text-red"
+                            data-hint="hints.deleteAccount"
                             data-i18n="auth.deleteBtn">DELETE ACCOUNT</button>
                     </div>
 
@@ -338,21 +340,17 @@
                     </div>
                     <div class="misc-action-container">
                         <button class="misc-toggle-btn crt-text-orange" id="misc-reset-btn"
+                            data-hint="hints.resetConfig"
                             data-i18n="config.reset">RESET CONFIG</button>
                         <button class="misc-toggle-btn crt-text-cyan" id="misc-clear-toast-btn"
+                            data-hint="hints.clearToast"
                             data-i18n="misc.clearToast">FLUSH TOAST</button>
-                        <button class="misc-toggle-btn crt-text-green" id="misc-install-app-btn"
-                            data-hint="hints.installApp"
-                            data-i18n="misc.installApp">INSTALL APP</button>
                         <button class="misc-toggle-btn crt-text-red" id="misc-wipe-local-btn"
                             data-hint="hints.wipeLocal"
                             data-i18n="misc.wipeLocal">WIPE LOCAL BRANCHES</button>
                         <button class="misc-toggle-btn crt-text-red" id="misc-drop-all-branches-btn"
                             data-hint="hints.dropAllBranches"
                             data-i18n="misc.dropAllBranches">DROP ALL BRANCHES</button>
-                        <button class="misc-toggle-btn crt-text-red" id="misc-update-app-btn"
-                            data-hint="hints.updateApp"
-                            data-i18n="misc.updateApp">UPDATE APP</button>
                     </div>
 
                     <div class="misc-platform-version" id="platform-version"></div>
@@ -427,7 +425,9 @@
                 <!-- <div class="walkie-typie-feature-container"> -->
                 <!-- </div> -->
                 <div class="walkie-typie-blackboard">
-                    <div class="walkie-typie-blackboard-they-title crt-text-orange" data-i18n="walkieTypie.theyBoard">
+                    <div class="walkie-typie-blackboard-they-title crt-text-orange"
+                        data-hint="hints.wt.theyBoard"
+                        data-i18n="walkieTypie.theyBoard">
                         THEIR BLACKBOARD</div>
                     <button class="they-push-btn" data-hint="hints.wt.theyPush" data-i18n="common.push">PUSH</button>
                     <div class="attachment-chips readonly" id="wt-they-attachments"></div>

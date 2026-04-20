@@ -31,7 +31,7 @@ const BCConfig = {
 
         this.controls = {
             maxSlot: createRangeControl(this.container, 'bc', 'maxSlot', 'config.maxSlotLabel', 10, 100, 10, 'hints.config.maxSlot'),
-            maxFiles: createRangeControl(this.container, 'bc', 'maxFiles', 'config.maxFilesLabel', 1, 20, 1),
+            maxFiles: createRangeControl(this.container, 'bc', 'maxFiles', 'config.maxFilesLabel', 1, 20, 1, 'hints.config.maxFiles'),
             autoClean: createToggleControl(this.container, 'bc', 'autoCleanBlanks', 'config.autoCleanBlanks', 'hints.config.autoCleanBlanks'),
             updateTs: createToggleControl(this.container, 'bc', 'updateTimestamp', 'config.updateTimestamp', 'hints.config.updateTimestamp'),
             loopList: createToggleControl(this.container, 'bc', 'loopList', 'config.loopList', 'hints.config.loopList'),

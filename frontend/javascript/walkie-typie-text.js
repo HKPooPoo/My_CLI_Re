@@ -399,10 +399,6 @@ export const WTText = {
     },
 
     notify(sender, text) {
-        // Respect the WT config toggle (wt > NOTIFICATIONS). Browser-level
-        // permission is still required on top, but if the user switched the
-        // setting off we short-circuit before even attempting.
-        if (!Settings.get('wt', 'notifications')) return;
         if ("Notification" in window && Notification.permission === "granted") {
             const title = t('walkieTypie.newMessage', { sender });
             const options = {

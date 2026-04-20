@@ -627,7 +627,7 @@ export const EditorAttachments = {
                         <span class="attachment-chip-download" data-hash="${hash}">${t('files.downloadBtn')}</span>
                     </div>
                     <div class="attachment-chip-bottom">
-                        <a class="attachment-chip-icon" href="${FileService.viewUrl(hash)}" target="_blank" rel="noopener">${iconText}</a>
+                        <a class="attachment-chip-icon" href="${FileService.viewUrl(hash)}" target="_blank" rel="noopener" data-hint="hints.chipStatus">${iconText}</a>
                         ${removeHtml}
                     </div>
                 `;

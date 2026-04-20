@@ -111,6 +111,7 @@ export function createResetButton(parentContainer, scope, onReset) {
     // clips any horizontal .misc-toggle-btn margin overflow via its own
     // overflow-x: hidden.
     btn.setAttribute('data-i18n', 'config.reset');
+    btn.setAttribute('data-hint', 'hints.resetConfig');
     btn.textContent = t('config.reset');
     parentContainer.appendChild(btn);
 
@@ -165,12 +166,12 @@ export const MISC = {
 
         this.bbControls = {
             maxSlot: createRangeControl(container, 'bb', 'maxSlot', 'config.maxSlotLabel', 10, 100, 10, 'hints.config.maxSlot'),
-            maxFiles: createRangeControl(container, 'bb', 'maxFiles', 'config.maxFilesLabel', 1, 20, 1),
+            maxFiles: createRangeControl(container, 'bb', 'maxFiles', 'config.maxFilesLabel', 1, 20, 1, 'hints.config.maxFiles'),
             autoClean: createToggleControl(container, 'bb', 'autoCleanBlanks', 'config.autoCleanBlanks', 'hints.config.autoCleanBlanks'),
             updateTs: createToggleControl(container, 'bb', 'updateTimestamp', 'config.updateTimestamp', 'hints.config.updateTimestamp'),
             autoSync: createToggleControl(container, 'bb', 'autoSync', 'config.autoSync', 'hints.config.autoSync'),
             loopList: createToggleControl(container, 'bb', 'loopList', 'config.loopList', 'hints.config.loopList'),
-            showHints: createToggleControl(container, 'global', 'showHints', 'config.showHints'),
+            showHints: createToggleControl(container, 'global', 'showHints', 'config.showHints', 'hints.config.showHints'),
             screensaverTimeout: createRangeControl(container, 'global', 'screensaverTimeout', 'config.screensaverTimeout', 10, 310, 10, 'hints.config.screensaverTimeout',
                 (v) => v >= 310 ? t('mods.disabled') : v),
             crtBlendMode: createToggleControl(container, 'global', 'crtBlendMode', 'config.crtBlendModeLabel', 'hints.config.crtBlendMode'),
