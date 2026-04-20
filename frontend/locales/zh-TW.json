@@ -292,6 +292,7 @@
       "autoSync": "自動同步當前主題：停止編輯 2 秒後自動上傳，其他裝置約 4 秒內看到。切換到其他主題時才會同步該主題。需要登入。",
       "loopList": "循環捲動：滑過最後一項跳回第一項，反之亦然。",
       "boardSwap": "將你的板顯示在上方、對方在下方。關閉 = 對方在上方（預設）。",
+      "notifications": "分頁失焦時,對方傳訊息會跳桌面通知。需瀏覽器允許通知權限。",
       "screensaverTimeout": "離開此分頁幾秒後啟動螢幕保護。設最大值可停用。",
       "crtBlendMode": "完整 CRT 掃描線。關閉 = 掃描線與內容混合，文字處淡化。"
     },
@@ -336,6 +337,7 @@
     "autoSync": "自動同步（多裝置）",
     "loopList": "列表循環捲動",
     "boardSwap": "我的訊息優先",
+    "notifications": "新訊息通知",
     "showHints": "按鈕提示",
     "screensaverTimeout": "螢幕保護延遲（秒）",
     "crtBlendModeLabel": "柔化掃描線",

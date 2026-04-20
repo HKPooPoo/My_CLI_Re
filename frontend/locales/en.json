@@ -292,6 +292,7 @@
       "autoSync": "Auto-sync the current topic: uploads 2s after you stop typing; other devices see the change within 4s. Other topics sync when you switch to them. Requires login.",
       "loopList": "Wrap around: scrolling past the last item goes back to the first, and vice versa.",
       "boardSwap": "Put your board on top, partner's below. Default: partner's messages are on top.",
+      "notifications": "Desktop notifications when a message arrives and the tab is backgrounded. Requires browser permission.",
       "screensaverTimeout": "Seconds after you leave this tab before the screensaver appears. Set to max to disable.",
       "crtBlendMode": "Full CRT screen lines. OFF = lines blend with content and fade on text."
     },
@@ -336,6 +337,7 @@
     "autoSync": "Auto-Sync (Multi-Device)",
     "loopList": "Loop List Navigation",
     "boardSwap": "Show My Messages First",
+    "notifications": "Notifications",
     "showHints": "Button Hints",
     "screensaverTimeout": "Screensaver Delay (sec)",
     "crtBlendModeLabel": "Soften CRT Lines",

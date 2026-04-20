@@ -292,6 +292,7 @@
       "autoSync": "Two-way sync for the CURRENT branch only: auto-commit 2s after idle, remote changes appear in ~4s via WS/poll. Other branches sync when you switch to them. Requires login.",
       "loopList": "Wrap around: past the last item → first, and vice versa.",
       "boardSwap": "Your board on top, partner below. OFF = partner on top (default).",
+      "notifications": "Desktop notifications when a message arrives and the tab is backgrounded. Requires browser permission.",
       "screensaverTimeout": "Seconds after leaving the tab before screensaver activates. Max value disables it.",
       "crtBlendMode": "Full CRT scanlines. OFF = scanlines blend with content and fade on text."
     },
@@ -336,6 +337,7 @@
     "autoSync": "AUTO SYNC",
     "loopList": "CYCLE LIST",
     "boardSwap": "LOCAL FIRST",
+    "notifications": "NOTIFY",
     "showHints": "VERBOSE",
     "screensaverTimeout": "IDLE TIMEOUT (SEC)",
     "crtBlendModeLabel": "CRT BLEND",
