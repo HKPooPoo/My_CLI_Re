@@ -682,20 +682,38 @@ export const EditorAttachments = {
                     const isLocalOnly = chip.classList.contains('is-local') && !isSynced;
                     const isCloud = chip.classList.contains('is-cloud');
                     if (isLocalOnly) {
-                        // LOCAL-only chips: server has nothing at that hash yet.
-                        // Intercept and open the blob URL in a new tab instead.
-                        // Pre-open the tab synchronously BEFORE the awaits so
-                        // the user gesture isn't lost to popup blockers.
+                        // [LOCAL]: server has nothing yet, so use the local
+                        // blob as the preview source. preventDefault + pre-open
+                        // blank tab synchronously to keep the user gesture
+                        // before any await, then navigate to blob URL.
                         e.preventDefault();
                         this._openLocalInNewTab(chip.dataset.hash);
                     } else if (isCloud) {
-                        // CLOUD chips: first click downloads the blob into
-                        // file_blobs (promoting the chip to [SYNC]) instead of
-                        // opening a preview. Second click (now [SYNC]) opens
-                        // preview via the anchor's native target="_blank".
+                        // [CLOUD]: single-click "server → IDB → browser".
+                        // Pre-open a blank tab synchronously (popup-blocker
+                        // gesture), await _ensureLocal to pull the blob into
+                        // file_blobs (chip promotes to [SYNC] in place), then
+                        // navigate the pre-opened tab to the server inline URL
+                        // for preview. Previously (ed2d0c1) this was a
+                        // two-click flow — download first, click again to
+                        // preview — which broke the "one click = preview"
+                        // contract that the [LOCAL]/[SYNC] paths already hold.
                         e.preventDefault();
-                        this._ensureLocal(chip.dataset.hash);
+                        const win = window.open('', '_blank');
+                        if (!win) {
+                            BBMessage.error(t('files.openBlocked'));
+                            return;
+                        }
+                        this._ensureLocal(chip.dataset.hash)
+                            .then(file => {
+                                if (!file) { win.close(); return; }
+                                win.location = FileService.viewUrl(chip.dataset.hash);
+                            })
+                            .catch(() => { win.close(); });
                     }
+                    // [SYNC]: fall through, native anchor navigation opens
+                    // /api/files/{hash}?inline=1 in the new tab — inline
+                    // preview served directly from the server.
                 });
 
                 container.appendChild(chip);
