@@ -138,19 +138,24 @@ document.addEventListener('visibilitychange', () => {
 // BB and BC each listen; each no-ops unless its own page is active.
 // ========================================================================
 const $branchHeadEl = document.querySelector('.branch-head');
+const $branchNameEl = document.querySelector('.branch-name');
+
+// QoL: focus .branch-head and highlight its current value so the user
+// can type a replacement number immediately. .branch-name acts as a
+// larger proxy click target since .branch-head is a small field and
+// the nearby branch-name is a big, easy-to-hit region.
+function _focusAndSelectHeadIndex() {
+    if (!$branchHeadEl) return;
+    $branchHeadEl.focus();
+    const range = document.createRange();
+    range.selectNodeContents($branchHeadEl);
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+}
+
 if ($branchHeadEl) {
-    // QoL: click highlights the existing index so the user can just
-    // type a replacement number — no manual select-all / triple-click.
-    // Native contenteditable on a div places the caret at the click
-    // point by default, which makes "type-to-overwrite" feel fiddly
-    // on a tiny field like this.
-    $branchHeadEl.addEventListener('click', () => {
-        const range = document.createRange();
-        range.selectNodeContents($branchHeadEl);
-        const sel = window.getSelection();
-        sel.removeAllRanges();
-        sel.addRange(range);
-    });
+    $branchHeadEl.addEventListener('click', _focusAndSelectHeadIndex);
 
     $branchHeadEl.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') { e.preventDefault(); $branchHeadEl.blur(); return; }
@@ -170,4 +175,11 @@ if ($branchHeadEl) {
         // uncommitted edit — the active page's listener will repaint.
         window.dispatchEvent(new CustomEvent('branchHead:syncRequested'));
     });
+}
+
+// Clicking anywhere on .branch-name redirects focus to the head index.
+// The branch-name div is bigger and easier to hit; users who want to
+// reorder tend to click the most prominent HUD element anyway.
+if ($branchNameEl) {
+    $branchNameEl.addEventListener('click', _focusAndSelectHeadIndex);
 }
