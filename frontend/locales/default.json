@@ -279,6 +279,7 @@
     "unbindEmail": "Disconnect your email from this account. You can rebind later via the register-email flow.",
     "deleteAccount": "Permanently erase this account and all server data. Cannot be undone. Login session ends.",
     "chipStatus": "File status: [LOCAL] only on this device, [SYNC] on both device and server, [CLOUD] server only (click to download). Click the icon to preview.",
+    "branchName": "Current branch (BB) / channel (BC) name on this page. Read-only here — rename via the row input in the list page. Clicking anywhere on this block is a shortcut: focus jumps to the head-index field to the right with the current number pre-selected, so you can type a replacement head position and press Enter to swap records by timestamp (reorder). Bigger click target than the tiny index digit itself.",
     "wt": {
       "theyPush": "View a newer record on your partner's board (read-only).",
       "theyPull": "View an older record on your partner's board (read-only).",

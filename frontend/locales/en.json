@@ -279,6 +279,7 @@
     "unbindEmail": "Disconnect your email from this account. You can register it again later via the email register flow.",
     "deleteAccount": "Permanently delete this account and everything on the server. Can't be undone. You'll be signed out.",
     "chipStatus": "File status: [Local] on this device only, [Synced] on both device and cloud, [Cloud] only on the server (click to download). Click the icon to preview.",
+    "branchName": "Shows the current topic (Blackboard) or channel (Broadcast) name for this page. Read-only here — to rename, edit the row in the list page. Clicking anywhere on the name block is a shortcut: the cursor jumps to the head-index number to the right, and the current number is pre-selected. Type a new head position and press Enter to reorder — the current record swaps timestamps with the record at that position. Bigger click target than the tiny head-index digit, so it's easier to hit.",
     "wt": {
       "theyPush": "View a newer entry on your partner's board (read-only).",
       "theyPull": "View an older entry on your partner's board (read-only).",
