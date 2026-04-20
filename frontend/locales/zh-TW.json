@@ -268,6 +268,7 @@
     "shelfHandle": "擴充功能面板把手。向左拖展開更多，向右拖縮小。雙擊關閉。",
     "wipeLocal": "清空本機所有 IndexedDB（Blackboard 主題、Walkie-Typie 紀錄、Broadcast 頻道、附件快取）。伺服器資料不動。執行後頁面會重新整理。三段式確認。",
     "dropAllBranches": "刪除伺服器上你名下所有 Blackboard 主題。需要登入。本機資料不動（如需一併清除請使用「清除本機資料」）。三段式確認。",
+    "installApp": "把應用程式安裝到裝置上 — 可離線使用、獨立視窗啟動。iOS 請透過 Safari 的「加到主畫面」。",
     "wt": {
       "theyPush": "查看對方板上較新的紀錄（唯讀）。",
       "theyPull": "查看對方板上較舊的紀錄（唯讀）。",
@@ -354,6 +355,10 @@
     "sfxLabel": "操作音效",
     "localeName": "繁體中文",
     "clearToast": "清除通知",
+    "installApp": "安裝應用程式",
+    "installedAlready": "應用程式已安裝",
+    "installUnavailable": "目前無法安裝 — 請重新整理頁面",
+    "installIosHint": "iOS：點分享按鈕 → 加到主畫面",
     "wipeLocal": "清除本機主題",
     "wipeLocalX2": "清除本機主題x2",
     "wipeLocalFinal": "清除本機主題!",

@@ -268,6 +268,7 @@
     "shelfHandle": "Extension panel grip. Drag left to expand, right to shrink. Double-click to close.",
     "wipeLocal": "Nuke all local IndexedDB (BB branches, WT records, BC channels, file_blobs). Server untouched. Page reloads. Three-step confirm.",
     "dropAllBranches": "DELETE all your BB branches on the server. Login required. Local data untouched. Three-step confirm.",
+    "installApp": "Install the app to your device for offline access and native-window launch. On iOS use Safari's Add to Home Screen.",
     "wt": {
       "theyPush": "View a newer record on your partner's board (read-only).",
       "theyPull": "View an older record on your partner's board (read-only).",
@@ -354,6 +355,10 @@
     "sfxLabel": "SFX",
     "localeName": "GIT MODE",
     "clearToast": "FLUSH TOAST",
+    "installApp": "INSTALL APP",
+    "installedAlready": "ALREADY INSTALLED",
+    "installUnavailable": "INSTALL PROMPT UNAVAILABLE — REFRESH THE PAGE",
+    "installIosHint": "iOS: SHARE BUTTON → ADD TO HOME SCREEN",
     "wipeLocal": "WIPE LOCAL BRANCHES",
     "wipeLocalX2": "WIPE LOCAL BRANCHESx2",
     "wipeLocalFinal": "WIPE LOCAL BRANCHES!",

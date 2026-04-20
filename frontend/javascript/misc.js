@@ -139,6 +139,7 @@ export const MISC = {
         resetBtn: document.getElementById('misc-reset-btn'),
         wipeLocalBtn: document.getElementById('misc-wipe-local-btn'),
         dropAllBranchesBtn: document.getElementById('misc-drop-all-branches-btn'),
+        installAppBtn: document.getElementById('misc-install-app-btn'),
     },
 
     configs: {
@@ -244,6 +245,19 @@ export const MISC = {
             this.elements.clearToastBtn.addEventListener('click', () => {
                 playAudio('UISelectOff.mp3');
                 toastMessager.clearAll();
+            });
+        }
+
+        // PWA install trigger — always visible (no hide when installed, per
+        // user preference). pwa.js's helper handles the installed / iOS /
+        // prompt-unavailable branches with toasts.
+        if (this.elements.installAppBtn) {
+            new MultiStepButton(this.elements.installAppBtn, {
+                sound: 'UIGeneralOK.mp3',
+                action: async () => {
+                    const { triggerInstallFromMisc } = await import('./pwa.js');
+                    await triggerInstallFromMisc();
+                }
             });
         }
 

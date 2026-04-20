@@ -69,3 +69,32 @@ window.installPWA = async () => {
         deferredPrompt = null;
     }
 };
+
+/**
+ * Triggered from the MISC "INSTALL APP" button. Covers four cases:
+ *   (1) Already running as PWA (display-mode: standalone) → info toast
+ *   (2) deferredPrompt available → prompt directly
+ *   (3) iOS Safari (beforeinstallprompt never fires) → show Add-to-Home-Screen hint
+ *   (4) fallback (prompt already consumed or unsupported browser) → refresh hint
+ * Called via dynamic `import()` from misc.js so the button stays working even
+ * if pwa.js's registration failed at boot.
+ */
+export async function triggerInstallFromMisc() {
+    if (window.matchMedia('(display-mode: standalone)').matches) {
+        BBMessage.info(t('misc.installedAlready'));
+        return;
+    }
+    if (deferredPrompt) {
+        deferredPrompt.prompt();
+        await deferredPrompt.userChoice;
+        deferredPrompt = null;
+        return;
+    }
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+                  (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    if (isIOS) {
+        BBMessage.info(t('misc.installIosHint'));
+        return;
+    }
+    BBMessage.info(t('misc.installUnavailable'));
+}

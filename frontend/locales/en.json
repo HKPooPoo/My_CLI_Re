@@ -268,6 +268,7 @@
     "shelfHandle": "Extension panel handle. Drag left to see more, right to see less. Double-click to close.",
     "wipeLocal": "Clear all local IndexedDB data (Blackboard topics, Walkie-Typie records, Broadcast channels, file cache). Server data stays. Page reloads after. Three-step confirmation.",
     "dropAllBranches": "Delete every Blackboard topic you own from the server. Login required. Local data stays (use 'Wipe Local Data' to clear that too). Three-step confirmation.",
+    "installApp": "Install the app to your device for offline access and a native-window launch. On iOS, use Safari's Add to Home Screen.",
     "wt": {
       "theyPush": "View a newer entry on your partner's board (read-only).",
       "theyPull": "View an older entry on your partner's board (read-only).",
@@ -354,6 +355,10 @@
     "sfxLabel": "Sound Effects",
     "localeName": "English",
     "clearToast": "Flush Toasts",
+    "installApp": "Install App",
+    "installedAlready": "App is already installed.",
+    "installUnavailable": "Install option not available right now — try refreshing.",
+    "installIosHint": "On iOS: tap Share → Add to Home Screen to install.",
     "wipeLocal": "Wipe Local Branches",
     "wipeLocalX2": "Wipe Local Branchesx2",
     "wipeLocalFinal": "Wipe Local Branches!",
