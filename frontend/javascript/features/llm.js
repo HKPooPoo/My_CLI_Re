@@ -120,29 +120,51 @@ function composeSchedulePrompt() {
                 : '');
         taskSection =
             'TASK:\n' +
-            '- Propose a 7-day study plan STARTING FROM THE CURRENT DATE ABOVE.\n' +
-            '- Every day needs an explicit date (YYYY-MM-DD) and weekday label.\n' +
-            '- Respect the user\'s upcoming events — show them on their actual dates, do not overlap them.\n' +
+            'Plan 7 days starting from the current date above. Every day needs a date and weekday.\n' +
             '\n' +
-            'HARD CONSTRAINTS (violating any of these is a failure):\n' +
-            '1. Every suggested study block MUST reference a literal event from the calendar above by its EXACT title. If an event title is "Logic Test", the block must say "Study for Logic Test" or "Review for Logic Test" — NOT "Review Logic Fundamentals" or any paraphrase.\n' +
-            '2. Do NOT invent specific activities. Forbidden: "mock exam", "sample essay", "past papers", "peer review", "practice questions", "concept mapping", "full-length mock", "draft essay", textbook chapters, teacher names, course materials, or any concrete artefact the user didn\'t write in the calendar.\n' +
-            '3. Allowed block types ONLY:\n' +
-            '   • Study for <exact event title>\n' +
-            '   • Review for <exact event title>\n' +
-            '   • Prepare for <exact event title>\n' +
-            '   • Free study time\n' +
-            '   • Rest day\n' +
-            '4. Max 3 blocks per day. One line each. No commentary or explanation paragraphs.\n' +
-            '5. If the user has only ONE upcoming event, most days should contain just "Free study time" or "Rest day" plus at most one study block referencing that event. Do NOT fill every day with study activity — the user gave you ONE data point, not a curriculum.\n' +
-            '6. Never add sub-bullets, action descriptions, or rationale text under a block. The bullet itself is the entire entry.\n' +
+            'BLOCK TYPES (the ONLY allowed line formats):\n' +
+            '• "- <EXACT event title>"           ← use ON THE DATE of that event\n' +
+            '• "- Review for <EXACT event>"      ← use 2 days BEFORE the event\n' +
+            '• "- Prepare for <EXACT event>"     ← use 1 day BEFORE the event\n' +
+            '• "- Free study time"               ← filler for other days\n' +
+            '• "- Rest day"                      ← filler for other days\n' +
             '\n' +
-            'OUTPUT FORMAT (strict):\n' +
-            '### YYYY-MM-DD (Weekday)\n' +
-            '- <allowed block>\n' +
-            '- <allowed block>\n' +
+            'RULES:\n' +
+            '1. On a day with an event from the calendar: ONE bullet, showing the event title verbatim. Nothing else that day.\n' +
+            '2. 1–2 days before an event: one Review/Prepare bullet (optional — skip if the exam is tomorrow and today is busy).\n' +
+            '3. Days with no relationship to any event: exactly ONE bullet, either "Free study time" or "Rest day". Alternate between the two across days — do not repeat the same filler three days in a row.\n' +
+            '4. NEVER repeat the same bullet on the same day. 1–2 bullets per day is NORMAL; 3 is the absolute max and rarely needed.\n' +
+            '5. Do NOT invent activities, courses, essay titles, mock exams, past papers, or any word not in the calendar. Forbidden: "mock exam", "sample essay", "peer review", "practice questions", "concept mapping", "draft essay", "textbook", teacher names, course materials.\n' +
+            '6. Do NOT write commentary, rationale, or sub-bullets.\n' +
             '\n' +
-            'No introduction, no closing remark. Only the 7 dated blocks.';
+            'EXAMPLE (this is what correct output looks like):\n' +
+            'Input events:  { "2026-04-23": "Logic Test" }\n' +
+            'Today:         2026-04-21\n' +
+            '\n' +
+            '### 2026-04-21 (Tuesday)\n' +
+            '- Review for Logic Test\n' +
+            '\n' +
+            '### 2026-04-22 (Wednesday)\n' +
+            '- Prepare for Logic Test\n' +
+            '\n' +
+            '### 2026-04-23 (Thursday)\n' +
+            '- Logic Test\n' +
+            '\n' +
+            '### 2026-04-24 (Friday)\n' +
+            '- Rest day\n' +
+            '\n' +
+            '### 2026-04-25 (Saturday)\n' +
+            '- Free study time\n' +
+            '\n' +
+            '### 2026-04-26 (Sunday)\n' +
+            '- Rest day\n' +
+            '\n' +
+            '### 2026-04-27 (Monday)\n' +
+            '- Free study time\n' +
+            '\n' +
+            'Notice how the example has 1 bullet per day, not 3. Follow this density.\n' +
+            '\n' +
+            'Output ONLY the 7 dated sections. No preamble, no closing.';
     }
 
     return [
