@@ -68,15 +68,16 @@
     z-index: 996;
 }
 
-/* When the auth overlay is active on a page, elevate the ENTIRE .page
-   so its overlay clears siblings inside page-container:
-     .feature-container (998), .push-btn / .pull-btn (997), .head-indicator.
-   The overlay's own 998 is local to the .page stacking context — it
-   only wins sibling comparisons if the .page itself is elevated. */
-.page.auth-locked {
-    z-index: 999;
+/* Global auth-locked overlay lives inside .page-container. Its z-index
+   only competes with page-container siblings (max 998), so 1500 is a
+   comfortable margin while staying below press-start (1999). */
+#auth-locked-overlay {
+    z-index: 1500;
 }
 
+/* Walkie-Typie still uses its own per-page overlay via .page-auth-overlay
+   + WTCore.updateAuthOverlay. Keep its z-index high enough to cover the
+   WT board area. */
 .page-auth-overlay {
     z-index: 998;
 }

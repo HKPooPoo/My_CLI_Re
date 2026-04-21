@@ -1,69 +1,60 @@
 /**
- * Auth Landing — redirect logic tied to authentication state.
+ * Auth Landing — redirect logic + global auth-locked overlay.
  * =================================================================
  * Responsibilities:
  * 1. On first press-start dismiss: if not logged in, send the user to
- *    the Auth sub-page under Notebook main-nav. If logged in, restore
- *    the last visited nav (fallback: broadcast-list).
+ *    the Auth sub-page under Notebook. If logged in, restore the last
+ *    visited main nav (fallback: broadcast).
  * 2. On login success: redirect to Announcement list.
- * 3. Toggle the generic page-auth-overlay on locked content pages
- *    (Notebook log, Announcement channel, Announcement list) whenever
- *    the auth state flips.
+ * 3. Toggle the single #auth-locked-overlay over .page-container
+ *    when the user is signed out AND the active page is one that
+ *    requires authentication. Nav stays outside page-container so
+ *    it is never covered — user can always navigate away.
+ * 4. Apply `inert` to all other page-container children when locked
+ *    so F12-deleting the overlay still leaves the underlying UI
+ *    non-interactive (defense in depth).
  * =================================================================
  */
 
 import { setActiveNaviItem, updateNaviPosition, setSubNaviHead } from './navi.js';
+
+const LOCKED_PAGES = new Set([
+    'blackboard-log',
+    'blackboard-branch',
+    'broadcast-channel',
+    'broadcast-list',
+]);
+
+const $overlay  = document.getElementById('auth-locked-overlay');
+const $container = document.querySelector('.page-container');
 
 function checkLoggedIn() {
     const uid = localStorage.getItem('currentUser');
     return !!uid && uid !== 'local';
 }
 
-function updateAuthOverlays() {
+function activePageName() {
+    return document.querySelector('.page.active')?.dataset.page || null;
+}
+
+function updateLockState() {
+    if (!$overlay || !$container) return;
     const isLoggedIn = checkLoggedIn();
-    document
-        .querySelectorAll('.blackboard-auth-overlay, .broadcast-auth-overlay')
-        .forEach(overlay => {
-            overlay.style.display = isLoggedIn ? 'none' : 'flex';
-            const page = overlay.closest('.page');
-            if (!page) return;
+    const page = activePageName();
+    const shouldLock = !isLoggedIn && page && LOCKED_PAGES.has(page);
 
-            // Elevate the entire .page when locked so the overlay beats
-            // its siblings (feature-container, push/pull, head-indicator)
-            // in the page-container stacking context. See layer.css.
-            page.classList.toggle('auth-locked', !isLoggedIn);
+    $overlay.classList.toggle('active', shouldLock);
 
-            // Defense-in-depth: `inert` attribute on sibling content of the
-            // overlay. `inert` is a browser-native attribute that disables
-            // ALL pointer / keyboard / focus interaction on the subtree.
-            // Even if the overlay is F12-deleted, the underlying content
-            // stays non-interactive until `inert` itself is removed.
-            Array.from(page.children).forEach(child => {
-                if (child === overlay) return;
-                if (isLoggedIn) {
-                    child.removeAttribute('inert');
-                } else {
-                    child.setAttribute('inert', '');
-                }
-            });
-
-            // Also inert the siblings of .page that sit inside page-container
-            // — push/pull buttons and head-indicator live there. Without this
-            // they'd still be tab-focusable even though the overlay covers
-            // them visually.
-            const pageContainer = page.parentElement;
-            if (!pageContainer) return;
-            // Only apply when THIS page is the active one; otherwise other
-            // pages would incorrectly inert the shared push/pull row.
-            if (!page.classList.contains('active')) return;
-            const sharedSiblings = pageContainer.querySelectorAll(
-                '.push-btn, .pull-btn, .head-indicator, .feature-container'
-            );
-            sharedSiblings.forEach(el => {
-                if (isLoggedIn) el.removeAttribute('inert');
-                else el.setAttribute('inert', '');
-            });
-        });
+    // Defense in depth: `inert` on all page-container children except the
+    // overlay. `inert` is a browser-native attribute that disables all
+    // pointer / keyboard / focus interaction on a subtree. Even if the
+    // overlay is removed via DevTools, the underlying content stays
+    // non-interactive until `inert` itself is cleared.
+    Array.from($container.children).forEach(child => {
+        if (child === $overlay) return;
+        if (shouldLock) child.setAttribute('inert', '');
+        else child.removeAttribute('inert');
+    });
 }
 
 function navigateTo(naviItem, subName) {
@@ -75,8 +66,7 @@ function navigateTo(naviItem, subName) {
 }
 
 /**
- * Called by pressStart.js on first dismiss instead of the old fixed
- * "restore navi-item-head" block. Picks the landing page based on
+ * Called by pressStart.js on first dismiss. Picks landing page based on
  * login state.
  */
 export function resolveLandingNav() {
@@ -88,7 +78,7 @@ export function resolveLandingNav() {
     navigateTo(last);
 }
 
-// Login transitions: logged-out → logged-in should pop user to Announce.
+// Login transitions: logged-out → logged-in auto-lands on Announce list.
 let _previouslyLoggedIn = checkLoggedIn();
 window.addEventListener('auth:updated', () => {
     const isLoggedIn = checkLoggedIn();
@@ -96,8 +86,14 @@ window.addEventListener('auth:updated', () => {
         navigateTo('broadcast', 'broadcast-list');
     }
     _previouslyLoggedIn = isLoggedIn;
-    updateAuthOverlays();
+    updateLockState();
 });
 
-// Initial overlay sync (pages may render before auth:updated fires)
-updateAuthOverlays();
+// Re-evaluate lock on page change (a locked → unlocked navigation should
+// hide the overlay, and vice versa).
+window.addEventListener('navi:pageChanged', updateLockState);
+
+// Initial sync. navi:pageChanged fires later once the user dismisses
+// press-start, but do a best-effort pass now so the overlay doesn't
+// flash briefly as locked if the landing page is unlocked.
+updateLockState();

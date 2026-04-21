@@ -277,6 +277,37 @@ a:hover {
     background: var(--bg-card);
 }
 
+/* Auth-locked overlay — Press Start clone, scoped to .page-container so
+   the main + sub nav above stay visible and clickable. Driven by
+   auth-landing.js; shown only on locked pages (BB log / BB branch /
+   BC channel / BC list) while signed out. */
+#auth-locked-overlay {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    background-color: var(--bg-page);
+    justify-content: center;
+    align-items: center;
+    font-size: calc(var(--textbox-font-size) * 1.4);
+    font-weight: 600;
+    color: var(--brand);
+    letter-spacing: 0.08em;
+    user-select: none;
+    display: none;
+}
+
+#auth-locked-overlay.active {
+    display: flex;
+}
+
+#auth-locked-label {
+    padding: 24px 48px;
+    border: 2px solid var(--brand);
+    border-radius: var(--border-radius);
+    background: var(--bg-card);
+}
+
 /* Overlay fade animations fire `animationend` which pressStart.js uses
    to remove the class + hide the element. A simple fade keeps the
    lifecycle intact without the original CRT switch-off effect. */

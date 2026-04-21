@@ -151,6 +151,12 @@
         <!--navi.js-->
         <script type="module" src="javascript/navi.js"></script>
         <div class="page-container" id="page-container">
+            <!-- Global auth lock overlay — shown on locked pages when not signed in.
+                 Same visual as Press Start; lives inside .page-container so it
+                 never covers the main or sub nav above. Driven by auth-landing.js. -->
+            <div id="auth-locked-overlay">
+                <div id="auth-locked-label" data-i18n="auth.loginRequiredOverlay">SIGN IN TO CONTINUE</div>
+            </div>
             <div class="feature-container" style="display: flex;">
                 <!-- Feature buttons and shelf panels are created dynamically by MOD loader -->
                 <div class="feature-shelf-container frosted-glass">
@@ -165,9 +171,6 @@
                 <div class="branch-head" contenteditable="plaintext-only" spellcheck="false" inputmode="numeric">&#36;{branch_head}</div>
             </div>
             <div class="page can-push-pull have-feature show-branch" data-page="blackboard-log">
-                <div class="page-auth-overlay blackboard-auth-overlay">
-                    <div data-i18n="auth.loginRequiredOverlay">SIGN IN TO CONTINUE</div>
-                </div>
                 <div class="editor-wrapper" id="bb-drop-zone">
                     <div class="attachment-chips" id="bb-attachment-chips"></div>
                     <textarea name="" id="log-textarea" data-i18n-placeholder="blackboard.textPlaceholder"
@@ -177,9 +180,6 @@
                 </div>
             </div>
             <div class="page show-branch have-feature" data-page="blackboard-branch">
-                <div class="page-auth-overlay blackboard-auth-overlay">
-                    <div data-i18n="auth.loginRequiredOverlay">SIGN IN TO CONTINUE</div>
-                </div>
                 <div class="vcs-container">
                     <div class="vcs-title crt-text-orange" data-i18n="blackboard.pageTitle">BRANCH CONTROLLER</div>
                     <input type="text" class="vcs-search-input" id="vcs-search"
@@ -426,9 +426,6 @@
             </div>
             <!---->
             <div class="page can-push-pull have-feature show-branch" data-page="broadcast-channel">
-                <div class="page-auth-overlay broadcast-auth-overlay">
-                    <div data-i18n="auth.loginRequiredOverlay">SIGN IN TO CONTINUE</div>
-                </div>
                 <div class="editor-wrapper" id="bc-drop-zone">
                     <div class="attachment-chips" id="bc-attachment-chips"></div>
                     <textarea name="" id="channel-textarea" placeholder="Enter..."
@@ -438,9 +435,6 @@
                 </div>
             </div>
             <div class="page have-feature show-branch" data-page="broadcast-list">
-                <div class="page-auth-overlay broadcast-auth-overlay">
-                    <div data-i18n="auth.loginRequiredOverlay">SIGN IN TO CONTINUE</div>
-                </div>
                 <div class="broadcast-list-container">
                     <div class="broadcast-list-title crt-text-orange" data-i18n="broadcast.pageTitle">CHANNEL MODULATION
                     </div>
