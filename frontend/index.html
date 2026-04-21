@@ -25,7 +25,6 @@
     <link rel="apple-touch-icon" href="./images/favicon.ico">
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="stylesheets/hud.css">
-    <link rel="stylesheet" href="stylesheets/crt-vfx.css">
     <link rel="stylesheet" href="stylesheets/navi.css">
     <link rel="stylesheet" href="stylesheets/page.css">
     <link rel="stylesheet" href="stylesheets/page-auth.css">
@@ -44,21 +43,6 @@
     <link rel="stylesheet" href="stylesheets/@media.css">
     <link rel="stylesheet" href="stylesheets/layer.css">
     <link rel="stylesheet" href="stylesheets/caret.css">
-    <!-- Anti-FOUC: restore theme class + load MOD CSS before first paint -->
-    <script>
-        (function () {
-            var s = localStorage.getItem('theme-engine-state');
-            var l = localStorage.getItem('data-theme');
-            if (s === 'active' || l === 'light') {
-                document.documentElement.classList.add('theme-light');
-                var link = document.createElement('link');
-                link.rel = 'stylesheet';
-                link.id = 'light-theme-css';
-                link.href = '/mods/light-theme/theme.css';
-                document.head.appendChild(link);
-            }
-        })();
-    </script>
 </head>
 
 <body>
@@ -71,15 +55,10 @@
             <div id="db-status-bar">DB: <div id="db-status-display">Connecting...</div>
             </div>
         </div>
-        <button id="theme-change-btn" aria-label="Toggle theme" data-hint="hints.themeToggle"></button>
         <!--hud.js-->
         <script type="module" src="./javascript/hud.js"></script>
     </div>
     <div class="body">
-        <!--crt-vfx.css-->
-        <div class="crt-scanner"></div>
-        <div class="crt-noise-layer"></div>
-        <!--crt-vfx.css-->
         <!--pressStart.js-->
         <div id="press-start-overlay">
             <div id="press-start-label" data-i18n="pressStart.label">PRESS START</div>
@@ -539,7 +518,6 @@
             <script type="module">
                 import { ModState } from './javascript/mod-state.js';
                 import { loadAllMods } from './mods/mod-loader.js';
-                import { ThemeEngine } from './javascript/theme-engine.js';
                 ModState.init();
 
                 let _modsLoaded = false;
@@ -551,8 +529,6 @@
                 window.addEventListener('i18n:ready', bootMods);
                 // Fallback: if i18n:ready already fired, boot after a tick
                 setTimeout(bootMods, 0);
-                // Theme engine: init after all MODs are loaded and registered
-                window.addEventListener('mods:loaded', () => ThemeEngine.init());
             </script>
             <script type="module" src="./javascript/mods-manager.js"></script>
             <script type="module" src="./javascript/mods-misc.js"></script>

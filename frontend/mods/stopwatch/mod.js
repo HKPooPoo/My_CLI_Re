@@ -113,8 +113,6 @@ const SW_CSS = `
     .sw-btn-lap:hover { box-shadow: 0 0 6px var(--text-orange); }
     .sw-btn-reset:hover { box-shadow: 0 0 6px var(--text-red); }
 }
-
-.theme-light .sw-display { text-shadow: none; }
 `;
 
 export default {

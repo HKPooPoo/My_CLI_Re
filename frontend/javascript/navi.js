@@ -178,15 +178,6 @@ export function updateNaviPosition($naviItem, silent = false, instant = false, s
         updatePage($subNaviItems[subNaviHeadIndex].dataset.subNaviItem);
     }
 
-    // 觸發 CRT 抖動特效 (Glitch Effect)
-    const $noiseLayer = document.getElementsByClassName("crt-noise-layer")[0];
-    if ($noiseLayer) {
-        $noiseLayer.classList.remove("glitchEffect");
-        void $noiseLayer.offsetWidth; // 強制重繪
-        $noiseLayer.classList.add("glitchEffect");
-        setTimeout(() => { $noiseLayer.classList.remove("glitchEffect") }, T('frontend.ui.crtGlitchDuration'));
-    }
-
     saveNaviItemPositionToLocalStorage();
 }
 

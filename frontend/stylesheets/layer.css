@@ -1,12 +1,5 @@
 /* style.css */
 
-/* crt-vfx.css */
-.crt-scanner,
-.crt-noise-layer {
-    z-index: 1999;
-    pointer-events: none;
-}
-
 #press-start-overlay {
     z-index: 1999;
     /* display: flex; */

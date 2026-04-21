@@ -114,10 +114,6 @@ const CALC_CSS = `
         box-shadow: 0 0 6px var(--text-red);
     }
 }
-
-.theme-light .calc-display {
-    text-shadow: none;
-}
 `;
 
 export default {

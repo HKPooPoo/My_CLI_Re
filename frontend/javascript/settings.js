@@ -22,7 +22,6 @@ const GLOBAL_DEFAULTS = {
     sfx: '100',
     showHints: true,
     screensaverTimeout: 60,
-    crtBlendMode: true,
 };
 
 // --- Key helpers ---

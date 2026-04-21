@@ -27,29 +27,3 @@
     white-space: nowrap;
 }
 
-/* Theme Change Button — hidden by default, shown by theme-engine.js when MODs need it */
-#theme-change-btn {
-    display: none;
-    position: absolute;
-    justify-self: center;
-    top: 0px;
-    right: 0px;
-    width: 64px;
-    height: 64px;
-    padding: 1vh;
-    margin: 1vh;
-    cursor: pointer;
-    border: none;
-    background-color: var(--text-green);
-    -webkit-mask: url('../images/theme_switch.svg');
-    mask: url('../images/theme_switch.svg');
-    transition: all 0.16s ease-in;
-}
-
-@media (hover: hover) {
-    #theme-change-btn:hover {
-        opacity: 1;
-        background-color: var(--feature-shelf-btn-color);
-        box-shadow: 0 0 10px var(--feature-shelf-btn-color);
-    }
-}

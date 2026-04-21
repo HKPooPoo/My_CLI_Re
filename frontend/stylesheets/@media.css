@@ -1,9 +1,3 @@
-@media (max-height: 128px) {
-    #theme-change-btn {
-        top: -128px;
-    }
-}
-
 @media (max-height: 256px) {
     .push-btn {
         top: -64px;
@@ -42,14 +36,6 @@
     #log-textarea {
         /*follow push and pull btn height (by margin)*/
         margin: calc(4vh + 0.4rem) 4vw;
-    }
-}
-
-@media (max-width: 768px) or (max-height: 256px) {
-    #theme-change-btn {
-        width: 48px;
-        height: 48px;
-        transform: translateX(calc(-2 * (48vw - 48%)));
     }
 }
 
