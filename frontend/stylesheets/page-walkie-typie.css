@@ -246,29 +246,5 @@
     flex-direction: column-reverse;
 }
 
-/* Page auth overlay — reuses the Press Start visual style.
-   Solid background, full coverage. Siblings get `inert` attribute
-   via auth-landing.js so F12-deleting this element still leaves the
-   underlying content non-interactive. Defense in depth. */
-.page-auth-overlay {
-    position: absolute;
-    inset: 0;
-    background-color: var(--bg-page);
-    display: none;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    font-size: calc(var(--textbox-font-size) * 1.4);
-    font-weight: 600;
-    color: var(--brand);
-    letter-spacing: 0.08em;
-    user-select: none;
-    /* Z-index is handled in layer.css */
-}
-
-.page-auth-overlay > div {
-    padding: 24px 48px;
-    border: 2px solid var(--brand);
-    border-radius: var(--border-radius);
-    background: var(--bg-card);
-}
+/* Old .page-auth-overlay retired — auth overlay is now the single
+   #auth-locked-overlay inside .page-container (see style.css). */

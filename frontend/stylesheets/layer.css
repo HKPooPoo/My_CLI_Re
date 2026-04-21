@@ -75,13 +75,6 @@
     z-index: 1500;
 }
 
-/* Walkie-Typie still uses its own per-page overlay via .page-auth-overlay
-   + WTCore.updateAuthOverlay. Keep its z-index high enough to cover the
-   WT board area. */
-.page-auth-overlay {
-    z-index: 998;
-}
-
 /* editor-attachments.css */
 .drop-overlay {
     z-index: 995;

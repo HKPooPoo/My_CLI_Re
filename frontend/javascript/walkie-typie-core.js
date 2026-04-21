@@ -16,16 +16,9 @@ export const WTCore = {
     uid: null,
     echo: null,
 
-    updateAuthOverlay() {
-        const uid = localStorage.getItem("currentUser");
-        const isLoggedIn = !!uid && uid !== "local";
-        document.querySelectorAll('.walkie-typie-auth-overlay').forEach(el => {
-            el.style.display = isLoggedIn ? 'none' : 'flex';
-        });
-    },
-
     async init() {
-        this.updateAuthOverlay();
+        // Auth overlay is now handled globally by auth-landing.js via the
+        // #auth-locked-overlay element. No per-page overlay toggle here.
         this.uid = localStorage.getItem("currentUser");
         if (!this.uid || this.uid === "local") return;
         try {

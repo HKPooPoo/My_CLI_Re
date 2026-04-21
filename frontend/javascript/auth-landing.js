@@ -19,10 +19,12 @@
 import { setActiveNaviItem, updateNaviPosition, setSubNaviHead } from './navi.js';
 
 const LOCKED_PAGES = new Set([
-    'blackboard-log',
-    'blackboard-branch',
-    'broadcast-channel',
-    'broadcast-list',
+    'blackboard-log',      // NOTEBOOK → NOTE
+    'blackboard-branch',   // NOTEBOOK → NOTEBOOKS
+    'walkie-typie-list',   // CHAT → CONTACTS
+    'walkie-typie-text',   // CHAT → MESSAGES
+    'broadcast-channel',   // ANNOUNCE → POSTS
+    'broadcast-list',      // ANNOUNCE → CHANNELS
 ]);
 
 const $overlay  = document.getElementById('auth-locked-overlay');
