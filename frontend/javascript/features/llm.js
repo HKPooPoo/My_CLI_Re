@@ -205,8 +205,8 @@ export const feature = {
                 <div class="feature-title">AI TUTOR</div>
                 <label class="llm-field-label">Action</label>
                 <div class="llm-action-row">
-                    <select class="llm-prompt-select">${options}</select>
                     <button class="llm-send-btn" type="button">SEND</button>
+                    <select class="llm-prompt-select">${options}</select>
                 </div>
                 <label class="llm-field-label">Output</label>
                 <div class="llm-output"><div class="llm-empty">READY</div></div>
