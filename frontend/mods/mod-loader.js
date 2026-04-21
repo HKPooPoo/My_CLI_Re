@@ -344,7 +344,7 @@ export async function rescanTemplates() {
  */
 async function loadModLocale(tpl, locale) {
     const basePath = `/mods/${tpl.id}/locales`;
-    const candidates = [locale, 'en', 'default'].filter((v, i, a) => a.indexOf(v) === i);
+    const candidates = [locale, 'default'].filter((v, i, a) => a.indexOf(v) === i);
 
     for (const candidate of candidates) {
         try {

@@ -8,7 +8,7 @@
  * =================================================================
  */
 
-import { setLocale, getActiveLocale, t } from './i18n.js';
+import { t } from './i18n.js';
 import { playAudio } from './audio.js';
 import * as Settings from './settings.js';
 import { MultiStepButton } from './multiStepButton.js';
@@ -132,7 +132,6 @@ export function createResetButton(parentContainer, scope, onReset) {
 
 export const MISC = {
     elements: {
-        langBtn: document.getElementById('misc-toggle-lang'),
         globalAudioBtn: document.getElementById('misc-toggle-global-audio'),
         sfxBtn: document.getElementById('misc-toggle-sfx'),
         bbConfigContainer: document.getElementById('bb-config-container'),
@@ -145,7 +144,6 @@ export const MISC = {
     },
 
     configs: {
-        locale: ['default', 'zh-TW', 'en'],
         globalAudio: ['100', '0', '50'],
         sfx: ['100', '0', '50']
     },
@@ -153,7 +151,7 @@ export const MISC = {
     bbControls: null,
 
     init() {
-        if (!this.elements.langBtn) return;
+        if (!this.elements.globalAudioBtn) return;
         this.renderBBConfig();
         this.updateUI();
         this.bindEvents();
@@ -178,9 +176,6 @@ export const MISC = {
     },
 
     updateUI() {
-        // Lang
-        this.elements.langBtn.textContent = t('misc.localeName');
-
         // Global Audio
         const currentAudio = String(Settings.getGlobal('globalAudio'));
         this.elements.globalAudioBtn.textContent = currentAudio + '%';
@@ -210,17 +205,6 @@ export const MISC = {
     },
 
     bindEvents() {
-        this.elements.langBtn.addEventListener('click', async () => {
-            playAudio('UIGeneralFocus.mp3');
-            const current = getActiveLocale();
-            const locales = this.configs.locale;
-            let index = locales.indexOf(current);
-            if (index === -1) index = 0;
-            const nextLocale = locales[(index + 1) % locales.length];
-            await setLocale(nextLocale);
-            this.updateUI();
-        });
-
         this.elements.globalAudioBtn.addEventListener('click', () => {
             playAudio('UISelectOn.mp3');
             const current = String(Settings.getGlobal('globalAudio'));

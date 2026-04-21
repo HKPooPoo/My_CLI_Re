@@ -25,9 +25,9 @@ export async function initI18n() {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         _strings = await res.json();
     } catch {
-        if (locale !== 'en') {
+        if (locale !== 'default') {
             try {
-                const res = await fetch('/locales/en.json');
+                const res = await fetch('/locales/default.json');
                 _strings = await res.json();
             } catch {
                 _strings = {};
