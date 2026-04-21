@@ -46,7 +46,7 @@
     overflow-y: auto;
     overflow-x: hidden;
     scrollbar-width: thin;
-    scrollbar-color: var(--text-green) var(--bg-primary);
+    scrollbar-color: var(--text-muted) var(--bg-card);
 }
 
 .vcs-list-container::-webkit-scrollbar {
@@ -54,11 +54,11 @@
 }
 
 .vcs-list-container::-webkit-scrollbar-track {
-    background: var(--bg-primary);
+    background: var(--bg-card);
 }
 
 .vcs-list-container::-webkit-scrollbar-thumb {
-    background-color: var(--text-green);
+    background-color: var(--text-muted);
     border-radius: 2px;
 }
 
@@ -67,14 +67,14 @@
 }
 
 .vcs-list-item.active {
-    background: var(--text-green);
-    color: var(--bg-primary);
-    box-shadow: 0 0 10px var(--text-green);
+    background: var(--brand);
+    color: #ffffff;
+    box-shadow: 0 2px 8px rgba(197, 111, 213, 0.28);
 }
 
 
 .vcs-list-item.active .vcs-list-branch {
-    color: var(--bg-primary);
+    color: #ffffff;
 }
 
 /* Remote-only branches disabled (no caret on click) + dim for contrast.

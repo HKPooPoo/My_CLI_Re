@@ -36,7 +36,7 @@
     overflow-y: auto;
     overflow-x: hidden;
     /* scrollbar-width: thin; */
-    scrollbar-color: var(--text-green) var(--bg-primary);
+    scrollbar-color: var(--text-muted) var(--bg-card);
 }
 
 /* Action-button stack mirrors the sizing/overflow/scrollbar behavior of
@@ -50,7 +50,7 @@
     overflow-y: auto;
     overflow-x: hidden;
     /* scrollbar-width: thin; */
-    scrollbar-color: var(--text-green) var(--bg-primary);
+    scrollbar-color: var(--text-muted) var(--bg-card);
     gap: 8px;
 }
 
@@ -61,12 +61,12 @@
 
 .misc-list-container::-webkit-scrollbar-track,
 .misc-action-container::-webkit-scrollbar-track {
-    background: var(--bg-primary);
+    background: var(--bg-card);
 }
 
 .misc-list-container::-webkit-scrollbar-thumb,
 .misc-action-container::-webkit-scrollbar-thumb {
-    background-color: var(--text-green);
+    background-color: var(--text-muted);
     border-radius: 2px;
 }
 
@@ -76,7 +76,7 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    border-bottom: 1px solid var(--text-green);
+    border-bottom: 1px solid var(--border-subtle);
 }
 
 .misc-list-item:last-child {
@@ -119,13 +119,14 @@
     font-variant-numeric: tabular-nums;
 }
 
-/* Range slider — CRT-themed track + thumb */
+/* Range slider — light theme */
 .misc-range-input {
     -webkit-appearance: none;
     appearance: none;
     width: 100%;
-    height: 2px;
-    background: var(--text-green);
+    height: 3px;
+    background: var(--border-subtle);
+    border-radius: 2px;
     outline: none;
     cursor: pointer;
 }
@@ -133,33 +134,34 @@
 .misc-range-input::-webkit-slider-thumb {
     -webkit-appearance: none;
     appearance: none;
-    width: 14px;
-    height: 14px;
-    border-radius: 0;
-    background: var(--text-green);
-    border: 1px solid var(--bg-primary);
-    box-shadow: 0 0 6px var(--text-green);
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--brand);
+    border: 2px solid var(--bg-page);
+    box-shadow: 0 1px 4px rgba(197, 111, 213, 0.3);
     cursor: pointer;
     transition: box-shadow var(--transition-normal);
 }
 
 .misc-range-input::-moz-range-thumb {
-    width: 14px;
-    height: 14px;
-    border-radius: 0;
-    background: var(--text-green);
-    border: 1px solid var(--bg-primary);
-    box-shadow: 0 0 6px var(--text-green);
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--brand);
+    border: 2px solid var(--bg-page);
+    box-shadow: 0 1px 4px rgba(197, 111, 213, 0.3);
     cursor: pointer;
 }
 
 .misc-range-input::-moz-range-track {
-    background: var(--text-green);
-    height: 2px;
+    background: var(--border-subtle);
+    height: 3px;
+    border-radius: 2px;
 }
 
 @media (hover: hover) {
     .misc-range-input:hover::-webkit-slider-thumb {
-        box-shadow: 0 0 12px var(--text-green);
+        box-shadow: 0 2px 8px rgba(197, 111, 213, 0.45);
     }
 }

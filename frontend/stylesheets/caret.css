@@ -1,24 +1,16 @@
-/* style.css — ::selection */
-
-::selection {
-    background: var(--caret-color);
-    color: var(--bg-primary);
-}
-
-/* style.css — block cursor (dark: white, light: black) */
+/* Block cursor (academic light theme) */
 
 textarea,
 input[type="text"],
 input[type="password"] {
-    caret-color: white;
+    caret-color: var(--brand);
     caret-shape: block;
     tab-size: 4;
     user-select: text; /* override * { user-select: none } so Firefox shows caret */
 }
 
-/* Active list items — must scope to specific list-item classes,
-   NOT bare `.active` (which also matches `.page.active` and breaks main textareas) */
-
+/* Active list items get a tinted background from their page CSS; keep the
+   caret visible by forcing it to the high-contrast body colour. */
 .vcs-list-item.active input[type="text"],
 .vcs-list-item.active input[type="password"],
 .vcs-list-item.active textarea,
@@ -28,12 +20,5 @@ input[type="password"] {
 .broadcast-list-list-item.active textarea,
 .mods-list-item.active input[type="text"],
 .mods-list-item.active textarea {
-    caret-color: black;
-}
-
-.vcs-list-item.active ::selection,
-.walkie-typie-list-list-item.active ::selection,
-.broadcast-list-list-item.active ::selection {
-    background: black;
-    color: white;
+    caret-color: var(--text-body);
 }

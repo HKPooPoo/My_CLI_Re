@@ -9,32 +9,31 @@
     gap: 0.5rem;
     pointer-events: none;
     /* Let clicks pass through empty areas */
-    max-width: 300px;
+    max-width: 320px;
     width: 100%;
 }
 
-/* Individual Toast Style */
+/* Individual Toast — light theme with left-border accent */
 .toast {
     background-color: var(--toast-bg);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
-    border: 1px solid var(--text-green);
+    border: 1px solid var(--border-subtle);
+    border-left: 4px solid var(--brand);
     border-radius: var(--border-radius);
-    color: var(--text-green);
-    font-weight: bold;
+    color: var(--text-body);
+    font-weight: 500;
     right: calc(var(--sub-navi-height) / 2);
     bottom: calc(var(--sub-navi-height) / 2);
     padding: 0.75rem 1rem;
     font-family: inherit;
-    /* Use global retro font */
     font-size: 0.9rem;
-    box-shadow: 0 0 0 2px var(--text-green);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
     opacity: 0;
     transform: translateY(10px);
     transition: opacity var(--transition-normal) ease, transform var(--transition-normal) ease;
     pointer-events: none;
     user-select: none;
-    text-shadow: var(--text-shadow-green);
 }
 
 /* Animation Stages */
@@ -48,26 +47,20 @@
     transform: translateY(-10px);
 }
 
-/* Toast Type: Error — red border & text shadow */
+/* Error — red left-border */
 .toast.toast-error {
-    border-color: var(--text-red);
-    color: var(--text-red);
-    box-shadow: 0 0 0 2px var(--text-red);
-    text-shadow: var(--text-shadow-red);
+    border-left-color: var(--accent);
+    color: var(--accent);
 }
 
-/* Toast Type: Info — cyan (system messages) */
+/* Info — muted gray left-border */
 .toast.toast-info {
-    border-color: var(--text-cyan);
-    color: var(--text-cyan);
-    box-shadow: 0 0 0 2px var(--text-cyan);
-    text-shadow: var(--text-shadow-cyan);
+    border-left-color: var(--text-muted);
+    color: var(--text-body);
 }
 
-/* Toast Type: Success — green (default, explicit) */
+/* Success — brand purple (default) */
 .toast.toast-success {
-    border-color: var(--text-green);
-    color: var(--text-green);
-    box-shadow: 0 0 0 2px var(--text-green);
-    text-shadow: var(--text-shadow-green);
+    border-left-color: var(--brand);
+    color: var(--text-body);
 }

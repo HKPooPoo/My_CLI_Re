@@ -17,18 +17,17 @@ const SW_CSS = `
 }
 
 .sw-display {
-    font-family: 'Courier New', monospace;
+    font-family: ui-monospace, 'SF Mono', Consolas, 'Liberation Mono', monospace;
     font-size: 2.2em;
-    color: var(--text-green);
-    text-shadow: 0 0 10px var(--text-green);
+    color: var(--text-body);
     text-align: center;
     padding: 10px 0 4px;
     letter-spacing: 2px;
+    font-variant-numeric: tabular-nums;
 }
 
 .sw-display.running {
-    color: var(--text-cyan);
-    text-shadow: 0 0 10px var(--text-cyan);
+    color: var(--brand);
 }
 
 .sw-controls {
@@ -42,7 +41,7 @@ const SW_CSS = `
     border-radius: var(--border-radius);
     background: var(--bg-secondary);
     color: var(--text-green);
-    font-family: 'Courier New', monospace;
+    font-family: ui-monospace, 'SF Mono', Consolas, 'Liberation Mono', monospace;
     font-size: 0.9em;
     cursor: pointer;
     user-select: none;
@@ -96,7 +95,7 @@ const SW_CSS = `
     flex-direction: row;
     justify-content: space-between;
     padding: 3px 8px;
-    font-family: 'Courier New', monospace;
+    font-family: ui-monospace, 'SF Mono', Consolas, 'Liberation Mono', monospace;
     font-size: 0.8em;
     color: var(--text-green);
     opacity: 0.8;
@@ -108,10 +107,10 @@ const SW_CSS = `
 }
 
 @media (hover: hover) {
-    .sw-btn:hover { box-shadow: 0 0 6px var(--text-green); }
-    .sw-btn-stop:hover { box-shadow: 0 0 6px var(--text-red); }
-    .sw-btn-lap:hover { box-shadow: 0 0 6px var(--text-orange); }
-    .sw-btn-reset:hover { box-shadow: 0 0 6px var(--text-red); }
+    .sw-btn:hover { box-shadow: 0 1px 4px rgba(38, 38, 38, 0.1); }
+    .sw-btn-stop:hover { box-shadow: 0 1px 4px rgba(166, 46, 66, 0.25); }
+    .sw-btn-lap:hover { box-shadow: 0 1px 4px rgba(197, 111, 213, 0.25); }
+    .sw-btn-reset:hover { box-shadow: 0 1px 4px rgba(166, 46, 66, 0.25); }
 }
 `;
 

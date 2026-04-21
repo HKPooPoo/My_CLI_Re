@@ -29,7 +29,7 @@ const CALC_CSS = `
     border-radius: var(--border-radius);
     padding: 6px 10px;
     color: var(--text-green);
-    font-family: 'Courier New', monospace;
+    font-family: ui-monospace, 'SF Mono', Consolas, 'Liberation Mono', monospace;
     font-size: 1.6em;
     text-align: right;
     white-space: nowrap;
@@ -37,7 +37,7 @@ const CALC_CSS = `
     text-overflow: ellipsis;
     min-height: 1.8em;
     line-height: 1.8em;
-    text-shadow: 0 0 8px var(--text-green);
+    text-shadow: none;
 }
 
 .calc-grid {
@@ -58,7 +58,7 @@ const CALC_CSS = `
     background: var(--bg-secondary);
     color: var(--text-green);
     font-size: 1.2em;
-    font-family: 'Courier New', monospace;
+    font-family: ui-monospace, 'SF Mono', Consolas, 'Liberation Mono', monospace;
     line-height: 1;
     cursor: pointer;
     user-select: none;
@@ -102,16 +102,16 @@ const CALC_CSS = `
 
 @media (hover: hover) {
     .calc-btn:hover {
-        box-shadow: 0 0 6px var(--text-green);
+        box-shadow: 0 1px 4px rgba(38, 38, 38, 0.1);
     }
     .calc-btn-op:hover {
-        box-shadow: 0 0 6px var(--text-orange);
+        box-shadow: 0 1px 4px rgba(197, 111, 213, 0.25);
     }
     .calc-btn-eq:hover {
-        box-shadow: 0 0 6px var(--text-cyan);
+        box-shadow: 0 1px 4px rgba(125, 125, 125, 0.2);
     }
     .calc-btn-clr:hover {
-        box-shadow: 0 0 6px var(--text-red);
+        box-shadow: 0 1px 4px rgba(166, 46, 66, 0.25);
     }
 }
 `;

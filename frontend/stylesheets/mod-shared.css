@@ -18,7 +18,7 @@
 /* Vertical CRT scrollbar — apply to any overflow-y container */
 .mod-scrollbar {
     scrollbar-width: thin;
-    scrollbar-color: var(--text-green) var(--bg-primary);
+    scrollbar-color: var(--text-muted) var(--bg-card);
 }
 
 .mod-scrollbar::-webkit-scrollbar {
@@ -37,7 +37,7 @@
 /* Horizontal CRT scrollbar — apply to any overflow-x container */
 .mod-scrollbar-x {
     scrollbar-width: thin;
-    scrollbar-color: var(--text-green) var(--bg-primary);
+    scrollbar-color: var(--text-muted) var(--bg-card);
 }
 
 .mod-scrollbar-x::-webkit-scrollbar {
@@ -65,7 +65,7 @@
     overflow-y: auto;
     overflow-x: hidden;
     scrollbar-width: thin;
-    scrollbar-color: var(--text-green) var(--bg-primary);
+    scrollbar-color: var(--text-muted) var(--bg-card);
 }
 
 .mod-shelf-output::-webkit-scrollbar {
@@ -90,7 +90,7 @@
     resize: none;
     overflow-y: auto;
     scrollbar-width: thin;
-    scrollbar-color: var(--text-green) var(--bg-primary);
+    scrollbar-color: var(--text-muted) var(--bg-card);
 }
 
 .mod-shelf-prompt::-webkit-scrollbar {
@@ -123,7 +123,7 @@
     font-size: var(--font-size);
     line-height: 1.6;
     scrollbar-width: thin;
-    scrollbar-color: var(--text-green) var(--bg-primary);
+    scrollbar-color: var(--text-muted) var(--bg-card);
 }
 
 .mod-shelf-content::-webkit-scrollbar {
@@ -156,7 +156,7 @@
     .mod-btn:hover {
         background: var(--text-green);
         color: var(--bg-primary);
-        box-shadow: 0 0 10px var(--text-green);
+        box-shadow: 0 2px 8px rgba(38, 38, 38, 0.08);
     }
 }
 
@@ -183,7 +183,7 @@
     .mod-btn-danger:hover {
         background: var(--text-red);
         color: var(--bg-primary);
-        box-shadow: 0 0 10px var(--text-red);
+        box-shadow: 0 2px 8px rgba(166, 46, 66, 0.22);
     }
 }
 
@@ -222,7 +222,7 @@
     overflow-y: auto;
     padding: calc(var(--panel-gap) / 4);
     scrollbar-width: thin;
-    scrollbar-color: var(--text-green) var(--bg-primary);
+    scrollbar-color: var(--text-muted) var(--bg-card);
 }
 
 .mod-btn-list::-webkit-scrollbar {
@@ -247,7 +247,7 @@
     width: 100%;
     overflow-x: auto;
     scrollbar-width: thin;
-    scrollbar-color: var(--text-green) var(--bg-primary);
+    scrollbar-color: var(--text-muted) var(--bg-card);
 }
 
 .mod-btn-grid::-webkit-scrollbar {
@@ -300,13 +300,13 @@
 
 @media (hover: hover) {
     .mod-btn-square:hover {
-        box-shadow: 0 0 6px var(--text-green);
+        box-shadow: 0 1px 4px rgba(38, 38, 38, 0.08);
     }
 }
 
 .mod-btn-square.selected {
     border-color: var(--text-orange);
-    box-shadow: 0 0 6px var(--text-orange);
+    box-shadow: 0 1px 4px rgba(197, 111, 213, 0.3);
 }
 
 
@@ -329,7 +329,7 @@
     .mod-chip:hover {
         background: var(--text-green);
         color: var(--bg-primary);
-        box-shadow: 0 0 6px var(--text-green);
+        box-shadow: 0 1px 4px rgba(38, 38, 38, 0.08);
     }
 }
 
@@ -346,7 +346,7 @@
     gap: 4px;
     overflow-x: auto;
     scrollbar-width: thin;
-    scrollbar-color: var(--text-green) var(--bg-primary);
+    scrollbar-color: var(--text-muted) var(--bg-card);
 }
 
 .mod-chip-row::-webkit-scrollbar {

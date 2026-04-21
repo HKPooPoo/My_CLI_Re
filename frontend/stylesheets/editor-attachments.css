@@ -92,7 +92,7 @@
 @media (hover: hover) {
     .attachment-chip:hover {
         background: var(--text-green-10);
-        box-shadow: 0 0 4px var(--text-green);
+        box-shadow: 0 1px 3px rgba(38, 38, 38, 0.08);
     }
 }
 
@@ -228,7 +228,7 @@ input.attachment-chip-name[readonly] {
 @media (hover: hover) {
     .attachment-chip.is-local:hover {
         background: var(--text-orange-10);
-        box-shadow: 0 0 4px var(--text-orange);
+        box-shadow: 0 1px 3px rgba(197, 111, 213, 0.25);
     }
 }
 
@@ -250,7 +250,7 @@ input.attachment-chip-name[readonly] {
 @media (hover: hover) {
     .attachment-chip.is-cloud:hover {
         background: var(--text-cyan-10);
-        box-shadow: 0 0 4px var(--text-cyan);
+        box-shadow: 0 1px 3px rgba(125, 125, 125, 0.2);
     }
 }
 

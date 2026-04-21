@@ -9,9 +9,10 @@
 .markdown-rendered h4,
 .markdown-rendered h5,
 .markdown-rendered h6 {
-    color: var(--text-orange);
-    text-shadow: 0 0 6px var(--text-orange);
+    color: var(--brand);
+    text-shadow: none;
     margin: 0.8em 0 0.4em;
+    font-weight: 600;
     line-height: 1.3;
 }
 
@@ -25,8 +26,9 @@
 }
 
 .markdown-rendered strong {
-    color: var(--text-cyan);
-    text-shadow: 0 0 4px var(--text-cyan);
+    color: var(--text-body);
+    font-weight: 700;
+    text-shadow: none;
 }
 
 .markdown-rendered em {

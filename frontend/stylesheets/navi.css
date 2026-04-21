@@ -7,7 +7,12 @@
 }
 
 .navi-bar * {
-    font-weight: bold;
+    font-weight: 600;
+}
+
+/* Active main-nav label: brand purple */
+.navi-item.active .navi-item-text {
+    color: var(--brand);
 }
 
 .navi-mask {

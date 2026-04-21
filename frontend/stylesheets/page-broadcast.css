@@ -62,7 +62,7 @@
     overflow-y: auto;
     overflow-x: hidden;
     scrollbar-width: thin;
-    scrollbar-color: var(--text-green) var(--bg-primary);
+    scrollbar-color: var(--text-muted) var(--bg-card);
 }
 
 .broadcast-list-list-container::-webkit-scrollbar {
@@ -70,11 +70,11 @@
 }
 
 .broadcast-list-list-container::-webkit-scrollbar-track {
-    background: var(--bg-primary);
+    background: var(--bg-card);
 }
 
 .broadcast-list-list-container::-webkit-scrollbar-thumb {
-    background-color: var(--text-green);
+    background-color: var(--text-muted);
     border-radius: 2px;
 }
 
@@ -83,18 +83,18 @@
 }
 
 .broadcast-list-list-item.active {
-    background: var(--text-green);
-    color: var(--bg-primary);
-    box-shadow: 0 0 10px var(--text-green);
+    background: var(--brand);
+    color: #ffffff;
+    box-shadow: 0 2px 8px rgba(197, 111, 213, 0.28);
 }
 
 .broadcast-list-list-item.active .broadcast-list-tag {
-    color: var(--bg-primary);
+    color: #ffffff;
 }
 
 
 .broadcast-list-list-item.active .broadcast-list-last-signal {
-    color: var(--bg-primary);
+    color: #ffffff;
 }
 
 /* Non-owner channel rows: same dim / default-cursor treatment as
@@ -108,11 +108,11 @@
 }
 
 .broadcast-list-list-item.active .broadcast-list-title {
-    color: var(--bg-primary);
+    color: #ffffff;
 }
 
 .broadcast-list-list-item.active .crt-text-yellow {
-    color: var(--bg-primary);
+    color: #ffffff;
     text-shadow: none;
 }
 

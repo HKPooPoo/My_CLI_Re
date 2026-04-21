@@ -8,65 +8,82 @@
 :root {
     font-size: clamp(0.875rem, min(4vh, 2vw), 1rem);
     --font-size: clamp(0.875rem, min(4vh, 2vw), 1rem);
-    /* font-weight: bold; */
-    font-family: 'Courier New';
-    --text-green: #32FF32;
-    --text-orange: #FFB000;
-    --text-red: #FF3232;
-    --text-cyan: #00FFCC;
-    --text-yellow: #FFFF66;
-    --bg-primary: #000000;
-    --bg-secondary: #001100;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+
+    /* Brand palette — HKPolyU Blackboard Learn inspired */
+    --brand: #c56fd5;
+    --brand-dark: #9f4ab0;
+    --accent: #a62e42;
+    --bg-page: #fefefe;
+    --bg-card: #f5f5f5;
+    --text-muted: #7d7d7d;
+    --text-body: #262626;
+    --border-subtle: #e5e5e5;
+
+    /* Legacy semantic aliases so existing var(--text-green) / etc. adapt
+       without touching every page-*.css. Remapping table:
+         green  → body text       (primary content)
+         orange → brand purple    (titles, active, primary CTA)
+         red    → accent red      (destructive, armed confirm, error)
+         cyan   → muted gray      (info, secondary status)
+         yellow → brand purple    (needs sync / attention)                */
+    --text-green: var(--text-body);
+    --text-orange: var(--brand);
+    --text-red: var(--accent);
+    --text-cyan: var(--text-muted);
+    --text-yellow: var(--brand);
+
+    --bg-primary: var(--bg-page);
+    --bg-secondary: var(--bg-card);
+
     --header-height: clamp(96px, min(10vw, 20vh), 128px);
     --footer-height: clamp(48px, min(10vw, 20vh), 64px);
     --header-footer-font-size: clamp(0.75rem, min(8vh, 4vw), 0.875rem);
-    --border-line: 2px solid var(--text-green);
-    /*alternative of border-line*/
-    --box-shadow: 0 0 0 2px var(--text-green);
-    --box-shadow-up: 0 -2px 0 0 var(--text-green);
-    --box-shadow-down: 0 2px 0 0 var(--text-green);
-    --crt-line-width: 8px;
-    --text-shadow-green: 0 0 4px var(--text-green), 0 0 8px var(--text-green);
-    --text-shadow-orange: 0 0 4px var(--text-orange), 0 0 8px var(--text-orange);
-    --text-shadow-red: 0 0 4px var(--text-red), 0 0 8px var(--text-red);
-    --text-shadow-cyan: 0 0 4px var(--text-cyan), 0 0 8px var(--text-cyan);
-    --text-shadow-yellow: 0 0 4px var(--text-yellow), 0 0 8px var(--text-yellow);
+
+    --border-line: 1px solid var(--border-subtle);
+    --border-brand: 1px solid var(--brand);
+    --box-shadow: 0 0 0 1px var(--border-subtle);
+    --box-shadow-up: 0 -1px 0 0 var(--border-subtle);
+    --box-shadow-down: 0 1px 0 0 var(--border-subtle);
+
+    /* Glow removed (CRT relic). Kept as no-op aliases so any leftover
+       var(--text-shadow-*) references do nothing instead of failing. */
+    --text-shadow-green: none;
+    --text-shadow-orange: none;
+    --text-shadow-red: none;
+    --text-shadow-cyan: none;
+    --text-shadow-yellow: none;
+
     --navi-height: 64px;
     --sub-navi-height: 48px;
     --border-radius: 8px;
-    /*Textbox*/
+
     --single-textbox-margin: calc(4vh + 0.4rem) 8vw;
     --double-textbox-margin: calc(4vh + 0.4rem) 2vw;
-    --textbox-font-size: calc(var(--font-size) + 0.4rem);
-    /*scaffold*/
+    --textbox-font-size: calc(var(--font-size) + 0.2rem);
+
     --scaffold-left-gap: 16vw;
-    /* Toast */
-    --toast-bg: rgba(0, 17, 0, 0.69);
 
-    /* Transparency variants */
-    --text-green-10: rgba(50, 255, 50, 0.1);
-    --text-orange-10: rgba(255, 176, 0, 0.1);
-    --text-cyan-10: rgba(0, 255, 204, 0.1);
-    --overlay-bg: rgba(0, 17, 0, 0.85);
-    --text-orange-accent: #B87300;
-    --caret-color: white;
+    /* Toast — light theme */
+    --toast-bg: rgba(255, 255, 255, 0.96);
 
-    /* Feature Shelf */
-    --frosted-glass-bg: rgba(255, 255, 255, 0.2);
-    --frosted-glass-border: 1px solid rgba(255, 255, 255, 0.3);
-    --frosted-glass-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+    /* Transparency / tint variants */
+    --text-green-10: rgba(38, 38, 38, 0.06);
+    --text-orange-10: rgba(197, 111, 213, 0.10);
+    --text-cyan-10: rgba(125, 125, 125, 0.08);
+    --overlay-bg: rgba(254, 254, 254, 0.92);
+    --text-orange-accent: var(--brand-dark);
+    --caret-color: var(--brand);
+
+    /* Feature Shelf — light frosted */
+    --frosted-glass-bg: rgba(245, 245, 245, 0.85);
+    --frosted-glass-border: 1px solid rgba(197, 111, 213, 0.25);
+    --frosted-glass-shadow: 0 4px 30px rgba(0, 0, 0, 0.06);
     --feature-shelf-btn-bg: var(--frosted-glass-bg);
-    --feature-shelf-btn-color: white;
+    --feature-shelf-btn-color: var(--brand);
 
-    /* Refactored Variables */
-    /* --container-width: 48vw; */
     --container-width: clamp(300px, 86vw, 512px);
     --container-max-width: 512px;
-    /* Fits inside .page-container on any viewport: deducts the global
-       header/footer plus the in-body navi + sub-navi rows, then removes
-       the container's own symmetric top/bottom margin. Uses the clamp
-       ceilings (--navi-height / --sub-navi-height) so we slightly over-
-       estimate nav overhead on small viewports — err on no-overflow. */
     --container-height: calc(100vh
         - var(--header-height)
         - var(--footer-height)
@@ -88,7 +105,7 @@
 }
 
 .footer {
-    font-weight: bold;
+    font-weight: 500;
 }
 
 button,
@@ -97,26 +114,35 @@ input {
     border: none;
     resize: none;
     outline: none;
-    color: var(--text-green);
+    color: var(--text-body);
     font-family: inherit;
-    font-weight: bold;
+    font-weight: 500;
     font-size: var(--font-size);
     background: transparent;
     -webkit-tap-highlight-color: transparent;
 }
 
+button {
+    cursor: pointer;
+    border-radius: var(--border-radius);
+    transition: background-color var(--transition-normal) ease,
+                color var(--transition-normal) ease,
+                box-shadow var(--transition-normal) ease;
+}
+
 @media (hover: hover) {
     button:hover {
-        background: var(--text-green);
-        color: var(--bg-primary);
-        box-shadow: 0 0 10px var(--text-green);
+        background: var(--brand);
+        color: #ffffff;
+        box-shadow: 0 2px 8px rgba(197, 111, 213, 0.28);
     }
 }
 
 button.error {
-    color: var(--text-red) !important;
-    border-color: var(--text-red) !important;
-    box-shadow: 0 0 10px var(--text-red) !important;
+    color: #ffffff !important;
+    background: var(--accent) !important;
+    border-color: var(--accent) !important;
+    box-shadow: 0 2px 8px rgba(166, 46, 66, 0.32) !important;
     transition: all 0.2s;
 }
 
@@ -124,12 +150,12 @@ html,
 body {
     width: 100vw;
     height: 100%;
-    background-color: var(--bg-secondary);
-    color: var(--text-green);
+    background-color: var(--bg-page);
+    color: var(--text-body);
     overflow-x: hidden;
 }
 
-/*Unify flex column*/
+/* Unify flex column */
 body,
 nav,
 div,
@@ -144,6 +170,11 @@ span,
 
 a {
     text-decoration: none;
+    color: var(--brand);
+}
+
+a:hover {
+    color: var(--brand-dark);
 }
 
 .header,
@@ -151,19 +182,21 @@ a {
     width: 100%;
     justify-content: center;
     align-items: center;
-    background-color: var(--bg-primary);
+    background-color: var(--bg-page);
     overflow: hidden;
-    font-weight: bold;
+    font-weight: 600;
+    color: var(--text-body);
 }
 
 .header {
     height: var(--header-height);
+    border-bottom: 1px solid var(--border-subtle);
 }
 
 .footer {
     height: var(--footer-height);
-    border-top: var(--border-line);
-    /* box-shadow: var(--box-shadow-up); */
+    border-top: 1px solid var(--border-subtle);
+    color: var(--text-muted);
 }
 
 .footer-text {
@@ -174,19 +207,50 @@ a {
     position: absolute;
     margin: auto;
     height: var(--header-height);
-    /*No stretch*/
     object-fit: contain;
-    filter: saturate(1.6);
+    filter: none;
+    opacity: 0.85;
     transition: transform 0.16s ease-out;
-    transform: scale(1.28);
+    transform: scale(1.18);
 }
 
 .body {
     position: relative;
     width: 100%;
     height: calc(100% - var(--header-height) - var(--footer-height));
-    border-top: var(--border-line);
-    /*moved to footer*/
-    /* border-bottom: var(--border-line); */
     overflow: hidden;
+    background-color: var(--bg-page);
+}
+
+/* Utility colour classes (formerly defined in crt-vfx.css) */
+.crt-text-green { color: var(--text-body); }
+.crt-text-orange { color: var(--brand); }
+.crt-text-red { color: var(--accent); }
+.crt-text-cyan { color: var(--text-muted); }
+.crt-text-yellow { color: var(--brand); }
+
+/* Subtle selection highlight to match brand */
+::selection {
+    background: rgba(197, 111, 213, 0.25);
+    color: var(--text-body);
+}
+
+/* Scrollbars — minimal light-theme */
+* {
+    scrollbar-width: thin;
+    scrollbar-color: var(--text-muted) var(--bg-card);
+}
+
+*::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+*::-webkit-scrollbar-track {
+    background: var(--bg-card);
+}
+
+*::-webkit-scrollbar-thumb {
+    background: var(--text-muted);
+    border-radius: 4px;
 }
