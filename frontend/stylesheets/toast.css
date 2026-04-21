@@ -18,7 +18,7 @@
     background-color: var(--toast-bg);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
-    border: 1px solid var(--border-subtle);
+    border: 2px solid var(--border-subtle);
     border-left: 4px solid var(--brand);
     border-radius: var(--border-radius);
     color: var(--text-body);

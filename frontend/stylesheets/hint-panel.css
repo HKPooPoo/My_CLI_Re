@@ -14,7 +14,7 @@
     padding: 0 12px;
     color: var(--text-body);
     background: var(--bg-card);
-    border: 1px solid var(--border-subtle);
+    border: 2px solid var(--border-subtle);
     border-radius: var(--border-radius);
     font-size: var(--font-size);
     font-weight: 500;

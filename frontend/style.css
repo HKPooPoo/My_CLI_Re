@@ -45,11 +45,11 @@
     --footer-height: clamp(48px, min(10vw, 20vh), 64px);
     --header-footer-font-size: clamp(0.75rem, min(8vh, 4vw), 0.875rem);
 
-    --border-line: 1px solid var(--border-subtle);
-    --border-brand: 1px solid var(--brand);
-    --box-shadow: 0 0 0 1px var(--border-subtle);
-    --box-shadow-up: 0 -1px 0 0 var(--border-subtle);
-    --box-shadow-down: 0 1px 0 0 var(--border-subtle);
+    --border-line: 2px solid var(--border-subtle);
+    --border-brand: 2px solid var(--brand);
+    --box-shadow: 0 0 0 2px var(--border-subtle);
+    --box-shadow-up: 0 -2px 0 0 var(--border-subtle);
+    --box-shadow-down: 0 2px 0 0 var(--border-subtle);
 
     /* Glow removed (CRT relic). Kept as no-op aliases so any leftover
        var(--text-shadow-*) references do nothing instead of failing. */
@@ -209,7 +209,7 @@ a:hover {
 .footer {
     height: var(--footer-height);
     background-color: var(--bg-page);
-    border-top: 1px solid var(--border-subtle);
+    border-top: 2px solid var(--border-subtle);
     color: var(--text-muted);
 }
 

@@ -78,7 +78,7 @@
     align-items: stretch;
     gap: 2px;
     padding: 4px 8px;
-    border: 1px solid var(--text-green);
+    border: 2px solid var(--text-green);
     border-radius: calc(var(--border-radius) / 2);
     font-size: calc(var(--font-size) * 0.85);
     max-width: 16rem;

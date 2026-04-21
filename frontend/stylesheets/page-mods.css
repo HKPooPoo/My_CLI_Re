@@ -587,7 +587,7 @@
 .mods-textarea-preset {
     font-size: 0.75em;
     padding: 2px 8px;
-    border: 1px solid var(--text-green);
+    border: 2px solid var(--text-green);
     border-radius: 12px;
     color: var(--text-green);
     background: transparent;
