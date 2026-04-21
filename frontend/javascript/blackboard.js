@@ -105,23 +105,40 @@ const bbAttach = EditorAttachments.create({
                 } else {
                     fileHashes = [binData];
                 }
-                const newOwner = markAsynced(entry.owner);
-                if (newOwner !== entry.owner) {
-                    // Primary key includes owner → modify() handles the
-                    // delete+put required to change it. Record tag stays
-                    // load-bearing for hasAsyncedRecord dirty detection
-                    // (file-only mutations don't bump timestamp).
-                    await db.blackboard.where('[owner+branch_id+timestamp]')
-                        .equals([entry.owner, entry.branch_id, entry.timestamp])
-                        .modify({ file_hash: fileHashes, owner: newOwner });
+
+                // File mutation is a content change just like a text edit —
+                // the hash encodes content + name, so swapping file_hash is
+                // swapping content. Follow the `updateTimestamp` setting
+                // symmetrically with save():
+                //   ON  → bump timestamp (delete+add), record moves to head 0,
+                //         MAX(timestamp) bumps on server after commit → other
+                //         devices detect [asynced] via the same path that
+                //         text edits use.
+                //   OFF → in-place modify (parallels updateTextInPlace). Same
+                //         cross-device limitation as text-in-place: other
+                //         devices can't detect the mutation.
+                let mutatedTs = entry.timestamp;
+                if (Settings.get('bb', 'updateTimestamp')) {
+                    mutatedTs = await BBCore.updateFileHash(entry.owner, entry.branch_id, entry.timestamp, fileHashes);
+                    state.currentHead = 0;
                 } else {
-                    await db.blackboard.update([entry.owner, entry.branch_id, entry.timestamp], { file_hash: fileHashes });
+                    const newOwner = markAsynced(entry.owner);
+                    if (newOwner !== entry.owner) {
+                        // Primary key includes owner → modify() handles the
+                        // delete+put required to change it.
+                        await db.blackboard.where('[owner+branch_id+timestamp]')
+                            .equals([entry.owner, entry.branch_id, entry.timestamp])
+                            .modify({ file_hash: fileHashes, owner: newOwner });
+                    } else {
+                        await db.blackboard.update([entry.owner, entry.branch_id, entry.timestamp], { file_hash: fileHashes });
+                    }
                 }
+
                 // Defensive: keep state.owner at 'local' regardless of what
                 // the record just became. Self-heals if another path drifted
                 // state.owner to a specific tag.
                 state.owner = "local";
-                CrossTabSync.broadcast('bb:record:mutated', { branchId: entry.branch_id, timestamp: entry.timestamp });
+                CrossTabSync.broadcast('bb:record:mutated', { branchId: entry.branch_id, timestamp: mutatedTs });
             } else if (state.currentHead === 0) {
                 await BBCore.addRecord("local", state.branchId, state.branch, BBUI.getTextareaValue() || "", [binData]);
                 state.owner = "local";
@@ -152,20 +169,27 @@ const bbAttach = EditorAttachments.create({
             updated = null;
         }
 
-        const newOwner = markAsynced(entry.owner);
-        if (newOwner !== entry.owner) {
-            await db.blackboard.where('[owner+branch_id+timestamp]')
-                .equals([entry.owner, entry.branch_id, entry.timestamp])
-                .modify({ file_hash: updated, owner: newOwner });
+        // Same rule as onAttach: file mutation is a content change, follow
+        // the updateTimestamp setting. ON → bump via updateFileHash; OFF →
+        // in-place modify.
+        let mutatedTs = entry.timestamp;
+        if (Settings.get('bb', 'updateTimestamp')) {
+            mutatedTs = await BBCore.updateFileHash(entry.owner, entry.branch_id, entry.timestamp, updated);
+            state.currentHead = 0;
         } else {
-            await db.blackboard.update([entry.owner, entry.branch_id, entry.timestamp], { file_hash: updated });
+            const newOwner = markAsynced(entry.owner);
+            if (newOwner !== entry.owner) {
+                await db.blackboard.where('[owner+branch_id+timestamp]')
+                    .equals([entry.owner, entry.branch_id, entry.timestamp])
+                    .modify({ file_hash: updated, owner: newOwner });
+            } else {
+                await db.blackboard.update([entry.owner, entry.branch_id, entry.timestamp], { file_hash: updated });
+            }
         }
-        // See onAttach: state.owner stays 'local' literal regardless of the
-        // record's new tag. Mixed-ownership branches break exact-index
-        // navigation otherwise.
+        // See onAttach: state.owner stays 'local' literal.
         state.owner = "local";
         BBSync.scheduleAutoCommit();
-        CrossTabSync.broadcast('bb:record:mutated', { branchId: entry.branch_id, timestamp: entry.timestamp });
+        CrossTabSync.broadcast('bb:record:mutated', { branchId: entry.branch_id, timestamp: mutatedTs });
     },
     onRename: async (oldHash, newHash, meta) => {
         const entry = await BBCore.getRecord(state.owner, state.branchId, state.currentHead);
@@ -184,14 +208,22 @@ const bbAttach = EditorAttachments.create({
         // points the record at a hash the server doesn't have yet.
         const newOwner = markAsynced(entry.owner);
 
-        if (newOwner !== entry.owner) {
-            // Primary key includes owner → use modify() so Dexie handles the
-            // delete+put required to change it.
-            await db.blackboard.where('[owner+branch_id+timestamp]')
-                .equals([entry.owner, entry.branch_id, entry.timestamp])
-                .modify({ file_hash: updated, owner: newOwner });
+        // Same rule as onAttach / onDetach: file rename is a content change
+        // (hash embeds new name), follow updateTimestamp setting.
+        let mutatedTs = entry.timestamp;
+        if (Settings.get('bb', 'updateTimestamp')) {
+            mutatedTs = await BBCore.updateFileHash(entry.owner, entry.branch_id, entry.timestamp, updated);
+            state.currentHead = 0;
         } else {
-            await db.blackboard.update([entry.owner, entry.branch_id, entry.timestamp], { file_hash: updated });
+            if (newOwner !== entry.owner) {
+                // Primary key includes owner → use modify() so Dexie handles the
+                // delete+put required to change it.
+                await db.blackboard.where('[owner+branch_id+timestamp]')
+                    .equals([entry.owner, entry.branch_id, entry.timestamp])
+                    .modify({ file_hash: updated, owner: newOwner });
+            } else {
+                await db.blackboard.update([entry.owner, entry.branch_id, entry.timestamp], { file_hash: updated });
+            }
         }
 
         // See onAttach: state.owner stays 'local' literal (query catch-all).
@@ -200,7 +232,7 @@ const bbAttach = EditorAttachments.create({
         BBSync.scheduleAutoCommit();
         CrossTabSync.broadcast('bb:record:mutated', {
             branchId: entry.branch_id,
-            timestamp: entry.timestamp
+            timestamp: mutatedTs
         });
     },
 });

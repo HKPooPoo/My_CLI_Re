@@ -95,6 +95,45 @@ export const BBCore = {
     },
 
     /**
+     * 更新紀錄的檔案參照 (會同時更新 timestamp 以觸發同步偵測,跟 updateText 對稱)
+     *
+     * File mutations (attach / detach / rename) are content changes in the
+     * same sense as text edits — the file hash already encodes content + name,
+     * so swapping file_hash IS swapping content. Without a timestamp bump,
+     * server's MAX(blackboards.timestamp) stays identical and other devices'
+     * branch-list dirty detection (which compares MAX timestamp) misses the
+     * divergence. Mirror updateText's delete+add pattern so cross-device
+     * [synced]/[asynced] detection works uniformly for text and file edits.
+     */
+    async updateFileHash(owner, branchId, oldTimestamp, fileHash) {
+        let oldRecord;
+        if (owner === "local") {
+            oldRecord = await db.blackboard.where('[branch_id+timestamp]')
+                .equals([branchId, oldTimestamp])
+                .and(item => item.owner.startsWith('local'))
+                .first();
+        } else {
+            oldRecord = await db.blackboard.get({ owner, branch_id: branchId, timestamp: oldTimestamp });
+        }
+
+        if (!oldRecord) return oldTimestamp;
+
+        await db.blackboard.delete([oldRecord.owner, branchId, oldTimestamp]);
+
+        const newTimestamp = Math.max(Date.now(), oldTimestamp + 1);
+        const finalOwner = markAsynced(oldRecord.owner);
+
+        await db.blackboard.add({
+            ...oldRecord,
+            owner: finalOwner,
+            file_hash: fileHash,
+            timestamp: newTimestamp
+        });
+
+        return newTimestamp;
+    },
+
+    /**
      * 更新紀錄的文字內容 (會同時更新 timestamp 以觸發同步偵測)
      */
     async updateText(owner, branchId, oldTimestamp, text) {
