@@ -243,26 +243,55 @@
     /* box-shadow: var(--frosted-glass-shadow); */
 }
 
+/* Drag handle for the feature shelf.
+   Visual: two short vertical bars (classic grip-handle pattern).
+   Interaction: drag to resize, double-click to close. No text content —
+   the aria-label carries the accessible description. */
 .feature-shelf-back-btn {
     position: absolute;
     height: 100%;
     width: calc(var(--scaffold-left-gap) / 2);
     right: 100%;
     background-color: var(--feature-shelf-btn-bg);
-    color: var(--feature-shelf-btn-color);
-    /* Temporary logic, maybe override with CSS var */
-    /* background-color: var(--bg-primary); */
+    border: none;
     border-radius: var(--border-radius) 0 0 var(--border-radius);
-    /* border: var(--border-line); */
-    border-right: none;
     cursor: col-resize;
-    /* Indicate dragging */
     z-index: 10;
     display: flex;
+    flex-direction: row;
     align-items: center;
     justify-content: center;
-    writing-mode: vertical-rl;
-    text-orientation: upright;
+    gap: 5px;
+    padding: 0;
+    transition: background-color var(--transition-normal);
+}
+
+.feature-shelf-back-btn::before,
+.feature-shelf-back-btn::after {
+    content: '';
+    width: 3px;
+    height: 36px;
+    background: var(--text-muted);
+    border-radius: 2px;
+    transition: background var(--transition-normal), height var(--transition-normal);
+}
+
+@media (hover: hover) {
+    .feature-shelf-back-btn:hover {
+        background-color: var(--text-orange-10);
+    }
+    .feature-shelf-back-btn:hover::before,
+    .feature-shelf-back-btn:hover::after {
+        background: var(--brand);
+        height: 44px;
+    }
+}
+
+/* Active state while dragging — bars thicken + turn brand colour */
+.feature-shelf-container.no-transition .feature-shelf-back-btn::before,
+.feature-shelf-container.no-transition .feature-shelf-back-btn::after {
+    background: var(--brand);
+    width: 4px;
 }
 
 .feature-shelf {

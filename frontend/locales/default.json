@@ -269,7 +269,7 @@
     "dropClean": "Wipe every note in this notebook. An empty placeholder remains — the notebook itself survives.",
     "dropDrop": "Delete the cloud copy of this notebook. Your local copy stays.",
     "dropDelete": "Permanently remove this empty notebook from your device. Cannot be undone.",
-    "shelfHandle": "Extension panel grip. Drag left to open wider, right to shrink. Double-click to close.",
+    "shelfHandle": "Shelf grip. Drag LEFT to open wider, RIGHT to shrink. Double-click to close.",
     "wipeLocal": "Clear all locally stored notebooks, messages, channels and cached files. Settings and sign-in survive. Server data untouched. Page reloads. Three-step confirm.",
     "dropAllBranches": "Delete ALL your notebooks from the cloud. Sign-in required. Local data untouched. Three-step confirm.",
     "installApp": "Install the app to your device for offline access. On iOS use Safari's Share → Add to Home Screen.",
