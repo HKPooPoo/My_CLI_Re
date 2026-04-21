@@ -235,6 +235,51 @@ a:hover {
     color: var(--text-body);
 }
 
+/* Press Start overlay — the tap-to-enter splash before first interaction */
+#press-start-overlay {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background-color: var(--bg-page);
+    justify-content: center;
+    align-items: center;
+    font-size: 2rem;
+    font-weight: 600;
+    color: var(--brand);
+    letter-spacing: 0.1em;
+    cursor: pointer;
+    opacity: 1;
+    transition: opacity 0.32s ease;
+}
+
+#press-start-label {
+    padding: 16px 32px;
+    border: 2px solid var(--brand);
+    border-radius: var(--border-radius);
+    background: var(--bg-card);
+}
+
+/* Overlay fade animations fire `animationend` which pressStart.js uses
+   to remove the class + hide the element. A simple fade keeps the
+   lifecycle intact without the original CRT switch-off effect. */
+@keyframes overlay-fade-out {
+    from { opacity: 1; }
+    to   { opacity: 0; }
+}
+
+@keyframes overlay-fade-in {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+
+.crt-switch-off {
+    animation: overlay-fade-out 0.32s ease forwards;
+}
+
+.crt-switch-on {
+    animation: overlay-fade-in 0.16s ease forwards;
+}
+
 /* Scrollbars — minimal light-theme */
 * {
     scrollbar-width: thin;
