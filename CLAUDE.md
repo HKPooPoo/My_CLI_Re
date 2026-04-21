@@ -15,6 +15,165 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **This file must stay in sync with the codebase.** When an implementation changes documented behavior — new settings, new events, new layers, changed defaults, new templates, altered APIs — update the relevant sections of CLAUDE.md in the same commit. If you added it, document it. If you changed it, update the docs. Stale documentation is worse than no documentation.
 
+## Handover Notes — 2026-04-21 Session (for the next LLM taking over)
+
+This project is being handed to a new conversation. The previous
+session was long and covered many topics. Summary for context only —
+do NOT re-do this work; it is already in the codebase. Read the full
+code + this file top to bottom before touching anything.
+
+### What this session actually shipped
+
+Items below are all committed and working. Documented in the
+respective sections of this file — go there for the contract, don't
+re-derive from guesses.
+
+1. **MultiStepButton standardisation** (earlier session): all
+   destructive buttons are now `steps: 3` with optional `dynamicLabel`.
+   See the MultiStepButton and Dynamic State Buttons sections.
+2. **WT single-slot notification stack + per-partner `[NEW]` indicator**
+   — see the dedicated section. Uses `visibilitychange` as the single
+   reset trigger; one call-tone per away session.
+3. **BB/BC head-index inline reorder** — type a target in `.branch-head`,
+   Enter swaps via timestamp exchange. See Head Indicator Interactions.
+4. **File extension whitelist** replacing blacklist; 33 allowed
+   extensions in `FileService.isAllowedExtension`. Three enforcement
+   points + backend. See the file-hash section.
+5. **state.owner universal "local" invariant** — state.owner is
+   ALWAYS the literal `"local"` in local mode; never a specific tag.
+   Self-healing across 9+ call sites. See the Branch-tag section.
+6. **File mutation timestamp bump** (attach / detach / file rename) —
+   now mirrors text-edit `updateText` path under the same
+   `updateTimestamp` setting. Cross-device dirty detection works
+   identically for text and files. See the file-hash section.
+7. **Toast close-race fix** — `removeMessage` handles the
+   pre-`.showing` state. See Toast & Messages lifecycle.
+8. **Cross-tab `bb:record:mutated` handler always refreshes list**;
+   manual COMMIT + auto-commit broadcast after success. See Cross-Tab
+   Sync.
+9. **Push/pull defense ladder ported to WT + BC owner mode** — the
+   five-step revalidation from BB, now aligned across all three.
+   See Save & Navigation Contracts.
+10. **MISC page buttons**: renamed UPDATE APP → INITIALIZE WEBSITE
+    DATA; hint copy updated. See MISC Page Action Buttons.
+11. **Navi resize handler skips `updatePage`** (`skipPageUpdate`
+    parameter). Prevents mobile keyboard pop from destroying the
+    focused textarea DOM. See Navigation System.
+12. **File chip `[CLOUD]` single-click preview restored** (two-click
+    drift fixed). See File chip icon vs download button.
+13. **Attach path get-then-put guard + BB commit exists-skip status
+    promotion** — chip status no longer stuck at `[LOCAL]`. See the
+    file-hash section.
+14. **Hints audit** — `hints.branchName`, `hints.config.loopList`
+    expanded with concrete examples, `hints.wt.theyBoard` timing
+    corrected (50ms → 20ms).
+
+### Known unresolved — shelf textarea horizontal offset
+
+**The one issue I could not fix.** Reproducible on mobile:
+
+1. Add an LLM MOD instance.
+2. Open its shelf (not fully dragged open — stays at the default
+   60vw position or any partial position).
+3. Tap the `.mod-shelf-prompt` textarea.
+4. Type until a line's width reaches the visible edge of the shelf.
+5. The textarea's visible text shifts LEFT to keep the caret in
+   view — content drifts out of the left side. User sees their text
+   "pull" sideways rather than wrapping to the next line.
+
+The shelf's CSS contract:
+
+- `.feature-shelf-container` is `position: absolute; left: 100%;
+  width: 100vw;` and slides in via `transform: translate3d(Xpx, 0, 0)`
+  (X = negative, = how far the shelf is opened).
+- When shelf is opened 60vw, the shelf container is still 100vw —
+  40vw is off-screen to the right of the visible edge.
+- Textareas inside (`.mod-shelf-prompt`, `.mod-shelf-output`) take
+  their width from the container.
+
+Attempted fixes (all reverted):
+- `overflow-wrap: anywhere` + `word-break: break-word` on textarea —
+  didn't help alone, the content still shifted.
+- `width: 100%` + `max-width: 100%` + `min-width: 0` +
+  `box-sizing: border-box` + `overflow-x: hidden` — also didn't help.
+- Reducing `.feature-shelf-container` width from 100vw → 60vw — DID
+  fix the drift, but broke drag-beyond-default (user wants the drag
+  semantics preserved).
+- JS publishing `--shelf-visible-width` CSS var from
+  `updateShelfTransform` so the textarea width matches the visible
+  region dynamically — user reported it "completely broke the UI"
+  (exact failure mode not captured).
+
+**What the next LLM should investigate:**
+- Is the drift caused by the textarea's own `scrollLeft`, or by a
+  browser "scroll caret into view" behaviour that nudges an
+  ancestor? Instrumenting with `scrollLeft` / `getBoundingClientRect`
+  on the touch event would reveal the answer.
+- Mobile-specific: iOS Safari and Android Chrome each have their own
+  quirks around focus + keyboard + viewport. `visualViewport.offsetLeft`
+  on input might be involved.
+- A reliable repro needs the real mobile device (same-domain desktop
+  DevTools mobile emulation does NOT reliably reproduce this —
+  confirmed during this session).
+- User wants to preserve: draggable shelf (any width), no fixed shelf
+  width, and no "magical" caret behaviour. Whatever fix ships must
+  keep the drag-to-any-position feature intact.
+
+### This project's biggest architectural tensions (for next LLM's awareness)
+
+These aren't unresolved bugs, but they're where complexity keeps
+biting. Read the relevant sections before proposing structural
+changes:
+
+1. **`state.owner` vs record.owner split.** CLAUDE.md's Branch-tag
+   section now says state.owner must always be `"local"` literal.
+   The record-level owner tag still carries sync-state info. Nine
+   call sites had this wrong historically; the invariant is
+   self-healing. If you see any code that reads `state.owner` and
+   branches on its tag, that's a bug.
+2. **Local-first sync with no server-side dirty signal.** The
+   `[asynced]` tag is local-only; other devices can't see it. Cross-
+   device dirty detection relies on timestamp mismatch via
+   `MAX(blackboards.timestamp)`. Any new mutation that changes content
+   without bumping timestamp would silently break this — hence
+   `updateText` / `updateFileHash` / rename etc. all bump timestamp
+   under `updateTimestamp: true` (default).
+3. **Shelf width vs content width.** See the unresolved bug above.
+4. **MOD `data-loading` convention.** Consumers (ASCII Animator) can
+   observe but producers never import consumers. This is good — don't
+   refactor to direct imports.
+5. **Toast lifecycle has a rAF-delayed `.showing` class.** Any
+   fast-fail path (catch running before rAF) must go through
+   `removeMessage`, which now handles both pre-shown and post-shown
+   cases. Don't add bespoke toast cleanup at call sites.
+6. **Extensive use of `position: absolute` with `right: 0`.** If the
+   page-container's scroll width ever exceeds viewport width (e.g.
+   from a wide child somewhere), the entire right-anchored scaffold
+   drifts. `.page-container` has `overflow-x: hidden` to prevent this.
+   If someone removes that rule, scaffold drift will return.
+
+### Process notes for the next LLM
+
+- **CLAUDE.md is MANDATORY to keep current.** The previous session
+  repeatedly violated this rule — fixes were made without doc
+  updates, which made every subsequent similar bug harder to
+  diagnose. The `dac9397` consolidated catch-up commit was a
+  back-payment for those violations.
+- **Git workflow**: every non-trivial task should have a WIP commit
+  before and a descriptive commit after. This was also violated
+  repeatedly — not worth reverting historically but enforce going
+  forward.
+- **User prefers 繁體中文** in conversation (explicit instruction;
+  memory file at `~/.claude/projects/-home-yu/memory/feedback_language.md`).
+  Code, commit messages, and comments stay English.
+- **User tests manually on mobile.** Don't assume desktop DevTools
+  mobile emulation reveals all bugs — several in this session
+  couldn't be repro'd on desktop.
+- **When stuck on a bug, ask — don't keep iterating.** This session
+  had multiple cases of 2-3 failed attempts in a row on the same
+  visible symptom. Better to ask the user a clarifying question
+  after the first miss.
+
 ## Project Overview
 
 **My CLI Re** (My Clean Logging Interface) is a versioned communication platform with a unified Board model across three visibility scopes — personal (Blackboard), paired (Walkie-Typie), and public (Broadcast). Docker-based full-stack: Laravel 12 (PHP-FPM) backend + vanilla JS frontend served by Nginx, retro CRT terminal aesthetic.
