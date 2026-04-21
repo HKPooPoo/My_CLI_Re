@@ -174,6 +174,119 @@ changes:
   visible symptom. Better to ask the user a clarifying question
   after the first miss.
 
+## Handover Notes — Classroom Overhaul (same 2026-04-21 session, continuation)
+
+Following the notes above, the SAME date brought a structural overhaul
+per stakeholder feedback that rejected the CRT sandbox identity. This
+fork at `/home/yu/Projects/!My_CLI_Re` is now **demo-only**; user keeps
+the original MyCLI in a backup folder for personal use. **Cut
+ruthlessly here — no backwards-compat obligations.**
+
+Master plan lives at `documents/OVERHAUL_PLAN.md` (not git-tracked —
+the `documents/` folder is in `.gitignore`). That doc has a Decision
+Log section; every new user decision gets appended with a date.
+
+### What the overhaul has shipped
+
+(Tier numbers reference OVERHAUL_PLAN.md §7.)
+
+1. **Tier 0–3** — Retirement of CRT visual identity:
+   - Deleted `en.json` / `zh-TW.json`; single-locale (`default.json`).
+   - Deleted 6 MOD folders (light-theme, ascii-animator, info-screensaver,
+     speech-to-text, translate, stopwatch folders pre-Tier-8).
+   - Deleted `crt-vfx.css`, `theme-engine.js`, `.theme-light` branches.
+   - New palette (`#a62e42` wine / `#fefefe` / `#c56fd5` / `#f5f5f5` /
+     `#7d7d7d` / derived `#262626`). Inter font. New banner SVG.
+
+2. **Tier 7** — Auth landing:
+   - Auth sub-page becomes the default landing for logged-out users.
+   - Login success auto-navigates to broadcast-list (Announce).
+   - `setSubNaviHead(naviItem, subName)` new `navi.js` export.
+
+3. **Tier 8+10** — MOD system removed; Feature Shelf introduced:
+   - Deleted `frontend/mods/` folder entirely, plus `mod-state.js`,
+     `mod-context.js`, `mod-hooks.js`, `mod-tools.js`,
+     `mod-board-provider.js`, `mod-field-registry.js`,
+     `mods-manager.js`, `mods-misc.js`, `feature-markdown.js`.
+   - New: `javascript/feature-registry.js` + `javascript/features/*.js`
+     modules (llm, calendar, flashcard, file-attach).
+   - `feature-shelf.js` rewritten: reads FEATURES array, creates
+     buttons + shelves from plain JS, no manifest / lifecycle / ctx.
+   - MODS main-nav section + all mods-list / mods-config / mods-misc
+     pages removed from `index.html`.
+   - Old metadata-provider hooks in blackboard.js / broadcast-channel.js
+     / walkie-typie-text.js removed (were imported from deleted
+     `mod-board-provider.js`).
+
+4. **Auth overlay** — single global `#auth-locked-overlay` inside
+   `.page-container`, Press Start visual style, `inert` on siblings
+   for F12-bypass defence. LOCKED_PAGES whitelist:
+   `blackboard-log`, `blackboard-branch`, `walkie-typie-list`,
+   `walkie-typie-text`, `broadcast-channel`, `broadcast-list`.
+   Old per-page overlays (walkie-typie-auth-overlay, etc.) retired.
+
+5. **Tier 9a** — AI Tutor shelf (`features/llm.js`):
+   - 4 hardcoded prompts: Summarize page / Summarize notebook /
+     Translate to 繁中 / Suggest a schedule.
+   - SEND left + dropdown right on same row (shelf drags right-to-left).
+   - Markdown render via marked.js + sanitiser; user-select enabled.
+   - "Suggest a schedule" uses dynamic prompt composition (empty /
+     all-past / has-upcoming branches) with strict three-part output
+     (MISSION / COGNITION / SCHEDULE) + few-shot example + banned-
+     activity list. qwen3.5:4b via Ollama, temperature 0.3.
+
+6. **Tier 9b + Tier 14 part 1** — User settings sync infrastructure
+   + BB Calendar:
+   - New backend endpoints: `GET /api/user/settings` and
+     `PUT /api/user/settings` (UserSettingsController). Stored in
+     existing `users.settings` JSONB column; no migration.
+   - New frontend `sync-service.js`: in-memory mirror of
+     `users.settings`; debounced 2s PUT on setSetting; fetches on
+     `auth:updated`; events `settings:synced` + `settings:changed`.
+   - `features/calendar.js` renders a month grid with per-day
+     editor; data via `sync-service.getSetting('calendar')`; title
+     is `{uid} CALENDAR`. BB calendar is PERSONAL — does NOT merge
+     with BC channel calendars.
+   - AI Tutor's "Suggest a schedule" reads calendar via same
+     `sync-service` — single source of truth.
+
+7. **Tier 9f** — Shelf drag handle: two vertical grip bars via
+   `::before`/`::after`, brand-coloured hover, bars thicken on drag.
+   No more `>>` text; `aria-label` carries the affordance.
+
+8. **ASCII option A** — `javascript/ascii/{shelf-spinner,toast-spinner}.js`
+   ported verbatim from the pre-Tier-8 ascii-animator backup.
+   Attach via MutationObserver on the existing `data-loading="true"`
+   convention — zero call-site changes elsewhere. WebGL layers
+   (matrix-rain, perlin-bg, mouse-light) intentionally skipped.
+
+### Still pending (post-demo backlog)
+
+- **Tier 9c** — BC Calendar server-side (new table or
+  `broadcast_channels.calendar` JSONB), owner-writes / subscribers-
+  read. Title: `{channel name} CALENDAR`.
+- **Tier 9d** — BB Flashcard maker + player (per-branch, sync-backed).
+- **Tier 9e** — BC Flashcard (per-channel server-side, same
+  ownership semantics as BC Calendar).
+- **Tier 14 part 2** — Server sync for Flashcard data.
+- **Tier 12** — Dashboard + HUD right-side summary.
+- **Tier 11** — BB Topic input + Page Previewer rail.
+- **Tier 13** — List status icons + 4 px left border sweep.
+- **Tier 15** — Read/PIN ratio on announcements + Ctrl-K search.
+- **Tier 16** — Restaurant backend purge.
+- **Tier 17** — README + SW precache rebuild.
+- **Pending mission**: LLM multi-branch aggregation (memory:
+  `project_pending_llm_multipage.md`).
+
+### Doc-discipline rule for this session
+
+**Every Tier commit must update both** `CLAUDE.md` (for structural
+truth) **and** `documents/OVERHAUL_PLAN.md` (for Status + Decision
+Log). I violated this between Tier 7 and Tier 14 part 1 and
+back-paid with a single catch-up commit; do not repeat.
+
+---
+
 ## Project Overview
 
 **My CLI Re** (My Clean Logging Interface) is a versioned communication platform with a unified Board model across three visibility scopes — personal (Blackboard), paired (Walkie-Typie), and public (Broadcast). Docker-based full-stack: Laravel 12 (PHP-FPM) backend + vanilla JS frontend served by Nginx, retro CRT terminal aesthetic.
@@ -456,42 +569,26 @@ Two-level hierarchy: main navi (`data-navi-item`: blackboard, walkie-typie, broa
 | `walkie-typie:content-update` | walkie-typie-core.js | `content_data` | WS content event received |
 | `walkie-typie:disconnected` | walkie-typie-list.js | `{ partner_id }` | Partner disconnected |
 | `walkie-typie:selected` | walkie-typie-list.js | `{ connection }` | Connection selected in list |
-| `mods:loaded` | mod-loader.js | — | All templates loaded and init() called |
-| `mods:instanceAdded` | mod-state.js | `{ instance }` | New instance created |
-| `mods:instanceRemoved` | mod-state.js | `{ instanceId, templateId, instance }` | Instance deleted |
-| `mods:configChanged` | mod-state.js | `{ instanceId, templateId, key, value }` | Instance config changed |
-| `mods:sharedConfigChanged` | mod-state.js | `{ group, key, value }` | Group shared config changed |
-| `mods:reordered` | mod-state.js | `{ instanceId, direction }` | Instance order changed |
-| `mods:selected` | mods-manager.js | `{ instanceId }` | Instance selected in list (500ms debounce) |
-| `mods:buttonsRebuilt` | mod-loader.js | — | Instance buttons DOM rebuilt |
+| `settings:synced` | sync-service.js | `{ settings }` | Server settings loaded into mirror after login or successful PUT |
 | `screensaver:activated` | pressStart.js | `{ initial }` | Overlay shown (idle timeout or page load) |
 | `screensaver:deactivated` | pressStart.js | — | Overlay dismissed by click |
-| `llm:progress` | llm/_shared.js | `{ status, text?, model? }` | WebLLM model loading/ready/error |
-| `theme:changed` | theme-engine.js | `{ themeId }` | Active theme MOD changed |
 | `api:rateLimited` | api.js | — | 429 response received (5s debounce) |
 
 **Gotcha:** `list:selectionChanged` fires from ALL InfiniteList instances — listeners MUST check `container.contains(detail.item)` to filter.
 
-### i18n System (`i18n.js`) — MANDATORY
+### i18n System (`i18n.js`) — single-locale after Tier 2
 
 **All user-facing strings MUST use the i18n system.** Never hardcode display text.
 
 - **JS:** `t('section.key')` or `t('section.key', { var })` for interpolation
 - **HTML:** `data-i18n="key"` for textContent, `data-i18n-placeholder="key"` for placeholder
-- **New strings:** Add to ALL THREE locale files: `en.json`, `default.json`, AND `zh-TW.json`
-- Locale stored in `localStorage['locale']`, defaults to `'default'` (which falls back to en.json on fetch failure)
+- **New strings:** Add to `frontend/locales/default.json` only
+- The `en.json` and `zh-TW.json` files were removed in Tier 2 (single-locale policy per user mandate). `initI18n()` fetches `default.json` directly; fallback still retries `default.json` on failure.
 
-**Three locales, three voices:**
+Vocabulary is the academic classroom voice (NOTEBOOK / CHAT / ANNOUNCE / NEWER / OLDER / UPLOAD / DOWNLOAD / OPEN / COPY / REMOVE / WIPE / CLEAR). Code-level identifiers (`commit`, `checkout`, `push`, `pull`, `branch`) stay unchanged — the rename is display-layer only.
 
-| File | Purpose | Terminology style |
-|------|---------|-------------------|
-| `default.json` | "GIT MODE" — VCS-inspired power user English (default locale) | PUSH/PULL/COMMIT/BRANCH |
-| `en.json` | Friendly English — zero jargon, guides the user | Newer/Older/Upload/Topic |
-| `zh-TW.json` | Natural Traditional Chinese — no translated manuals | 較新/較舊/上傳/主題 |
-
-Code-level identifiers (`commit`, `checkout`, `push`, `pull`, `branch`) remain unchanged. Only **UI display text** varies per locale. When adding strings to `en.json` and `zh-TW.json`, never leak VCS terms — use the vocabulary mapping in the table above.
-- `mergeStrings(partial)` deep-merges into global strings (used by mod-loader for MOD-local i18n)
-- `renderDOM()` re-scans all `data-i18n*` elements — MultiStepButton is now i18n-aware: if an element has `data-i18n`, the button reads the translated label via `t()` and re-captures on `i18n:ready`. Static `data-i18n` on MultiStepButton elements is safe.
+- `mergeStrings(partial)` deep-merges into global strings.
+- `renderDOM()` re-scans all `data-i18n*` elements — MultiStepButton is i18n-aware: elements with `data-i18n` re-read via `t()` and re-capture on `i18n:ready`.
 
 ### MultiStepButton (`multiStepButton.js`)
 
@@ -596,9 +693,24 @@ Any new caller relying on `BBMessage.loading(...)` + `msg.close()` in a catch bl
 
 ### CSS Architecture (`stylesheets/`)
 
-**Theme:** CSS custom properties on `:root`. Dark (CRT) is default; `.theme-light` class on `<html>` switches to light. Key vars: `--text-green`, `--text-orange`, `--text-red`, `--text-cyan`, `--text-yellow`, `--bg-primary`, `--bg-secondary`. Light mode disables all glow/shadow/scanlines. Theme switching is handled by `theme-engine.js` + Light Theme MOD.
+**Theme (post-Tier-3 classroom palette):** CSS custom properties on `:root`. **Single light theme only** — the dark CRT theme, `.theme-light` class, `theme-engine.js`, and the Light Theme MOD were removed in the overhaul.
 
-**CRT effects** (`crt-vfx.css`): `.crt-scanner` scanlines, `.crt-noise-layer` + `.glitchEffect` animation on sub-navi change. Atomic color classes: `.crt-text-orange`, `.crt-text-green`, etc.
+Brand palette (HKPolyU Blackboard Learn inspired, set by user):
+- `--brand: #a62e42` (wine red — active, title, primary CTA)
+- `--brand-dark: #7a1f30` (hover / armed)
+- `--accent: #c56fd5` (purple — minor decorative only)
+- `--bg-page: #fefefe`
+- `--bg-card: #f5f5f5`
+- `--text-muted: #7d7d7d`
+- `--text-body: #262626`
+
+Legacy semantic aliases remain as pass-throughs so unupdated page CSS continues to work:
+- `--text-green → var(--text-body)` · `--text-orange → var(--brand)` · `--text-red → var(--brand)` · `--text-cyan → var(--text-muted)` · `--text-yellow → var(--brand)`
+- `--bg-primary → var(--bg-page)` · `--bg-secondary → var(--bg-card)`
+
+All `--text-shadow-*` variables are `none` (glow effects removed). Global border line is `2px solid var(--border-subtle)` (`--border-subtle: #e5e5e5`). Font: `Inter, -apple-system, "Segoe UI", Roboto, sans-serif` (Courier New gone).
+
+**CRT VFX removed:** `crt-vfx.css`, `.crt-scanner`, `.crt-noise-layer`, `.glitchEffect` are all deleted. Atomic colour classes (`.crt-text-orange`, `.crt-text-green`, etc.) are redefined in `style.css` to map to the current palette, so existing HTML references still render in-theme.
 
 **Layout:** `--container-width: clamp(300px, 86vw, 512px)`, `--font-size: clamp(0.875rem, ...)`, fixed `--navi-height: 64px`, `--sub-navi-height: 48px`
 
@@ -697,185 +809,98 @@ Called from two sites in `walkie-typie-text.js`: committed-content path (line ~3
 
 Semantic spread: action 4's clear is a subset of action 6's erase. 4 preserves settings / language / theme / navi state / MOD instances; 6 returns the device to a first-visit baseline. Do NOT collapse them.
 
-## MOD System v2.1 (Instance-Based, ADD/DELETE Model)
+## Feature Shelf (post-MOD architecture, since Tier 8+10)
 
-Self-contained plug-and-play features. **1 Instance = 1 Feature Button.** Templates are blueprints instantiated multiple times with independent config and order. 4th main nav section (`mods`) has list + config pages.
+**The MOD plugin subsystem was removed in the Classroom overhaul.** What remains is the same right-side drawer mechanism, now driven by a hardcoded feature registry instead of autoindex discovery + manifests + shared config + context sandbox. Much simpler.
 
-### CRITICAL: ADD/DELETE Model (NOT Toggle)
+### Feature registry
 
-**Instance existence = enabled.** There is no ON/OFF toggle. To "disable" a MOD, delete the instance. To "enable", add a new one. The `enabled` field does NOT exist on instances.
+`frontend/javascript/feature-registry.js` is the single source of truth. It imports each feature module from `frontend/javascript/features/` and appends them in top-to-bottom visual order:
 
-Instance data model (persisted in `localStorage['mod-instances']`):
+| id | pages | has shelf | Purpose |
+|---|---|---|---|
+| `file-attach` | blackboard-log, walkie-typie-text, broadcast-channel | — | Native file picker; on mobile shows Take Photo + Choose File |
+| `calendar` | blackboard-log, broadcast-channel | ✓ | Personal (BB) or channel (BC) calendar |
+| `flashcard` | blackboard-log, broadcast-channel | ✓ | Maker + Player; per-branch (BB) or per-channel (BC) |
+| `llm` | blackboard-log, broadcast-channel | ✓ | AI Tutor: dropdown prompts → Ollama streaming |
+
+Each feature module exports:
 ```js
-{ instanceId: 'i_translate_1', templateId: 'translate', order: 0, config: { targetLang: 'zh-TW', provider: 'google' } }
+export const feature = {
+    id: 'calendar',
+    iconUrl: '/images/calendar.svg',
+    pages: ['blackboard-log', 'broadcast-channel'],  // where button shows
+    hasShelf: true,               // false = onClick action-only (file-attach)
+    initShelf($shelf) { ... },    // called ONCE per boot to populate shelf
+    onOpen($shelf) { ... },       // called each time shelf opens
+    onClick() { ... },            // for hasShelf: false buttons
+    shouldShow(page) { ... },     // OPTIONAL runtime gate — used by file-attach
+                                  // to hide on BC when not channel owner
+};
 ```
 
-### Boot Sequence
+No ctx, no manifest, no config schema, no lifecycle hooks. Features import board state / settings / toasts directly.
 
-`i18n:ready` → `loadAllMods()` → discover folders via Nginx autoindex →
-Phase 1: fetch manifest.json per folder → validate manifest → register in ModState →
-wire context factory → run migration (v1→v2→v3, legacy data only) → init shared config → fetch MOD-local locales →
-Phase 2: identify templates with instances → `import()` mod.js for those only →
-merge data+code → validate full template → register hooks + tools →
-create DOM (buttons + shelves) → call `template.init(ctx)` → dispatch `mods:loaded`
+### feature-shelf.js lifecycle
 
-On-demand: when user ADDs first instance of an unused template → `ensureCodeLoaded(templateId)` lazily imports mod.js, validates, registers hooks/tools, calls init(). Idempotent — cached after first call.
+1. DOMContentLoaded → `bootstrap()`:
+   - For each feature: create `<button.feature-btn data-feature-btn="{id}">`
+   - For each feature with `hasShelf !== false`: create `<div.feature-shelf data-feature-shelf="{id}">` and call `feature.initShelf($shelf)` once
+2. `navi:pageChanged` → `updateFeatureButtons(page)` — show/hide buttons via `feature.pages` + optional `feature.shouldShow(page)`
+3. `broadcast:selected` / `broadcast:cleared` → also re-evaluate (owner-mode gate for BC features)
+4. Button click: if `hasShelf` → open + `feature.onOpen($shelf)`; else `feature.onClick()`
+5. Shelf drag + double-click close: unchanged mechanics from pre-overhaul scaffold
 
-**No auto-instantiation:** First boot starts with zero instances. Users add instances manually from the template catalog. `defaultInstances` in templates are used only by v2→v3 migration for legacy data.
+### Shelf drag handle
 
-### Architecture
+`.feature-shelf-back-btn` renders **two vertical grip bars** via `::before` + `::after` pseudo-elements. No textContent; aria-label carries the affordance ("Drag to resize · double-click to close"). Hover: bars turn brand-colour + grow height. Drag (`.no-transition` class on container): bars thicken to 4px.
 
-- **`mod-loader.js`** — discovers MOD folders via Nginx autoindex. Two-phase loading: Phase 1 fetches `manifest.json` (data) for ALL folders; Phase 2 `import()` `mod.js` (code) only for templates with active instances. `ensureCodeLoaded(templateId)` provides on-demand lazy loading for first-time ADD. Exports: `getTemplate()`, `getAllTemplates()`, `getInstances()`, `getInstancesByTemplate()`, `ensureCodeLoaded()`, `rebuildInstanceButtons()`, `updateInstanceButton()`, `removeInstanceButton()`
-- **`mod-state.js`** — instance CRUD + template registry + shared config storage. `addInstance()` respects `maxInstances` cap. `removeInstance()` always allowed (no guard on maxInstances). Shared config API: `getSharedConfig/setSharedConfig/getSharedConfigAll/getSharedConfigSchema/initSharedDefaults`. Dispatches `mods:instanceAdded/Removed`, `mods:configChanged`, `mods:reordered`, `mods:sharedConfigChanged`
-- **`mod-context.js`** — `createModContext()` builds sandboxed API: `ctx.instance.*`, `ctx.board.*`, `ctx.ui.*`, `ctx.i18n.*`, `ctx.storage.*`, `ctx.net.*`, `ctx.file.*`, `ctx.events.*`, `ctx.hooks.*`, `ctx.query.*`. Read the file for full API reference.
-- **`mod-board-provider.js`** — board data access (metadata providers, history, file cache)
-- **`mod-field-registry.js`** — config field type registry. Built-in: `select`, `text`, `range`, `toggle`, `info`, `action`. Custom via `ctx.ui.registerFieldType()`
-- **`mod-hooks.js`** — priority-ordered pipeline. API: `register/unregister/unregisterAll/run/has`. Hook points not yet instrumented (Phase C deferred).
-- **`mod-tools.js`** — cross-MOD tool registry (OpenAI function-calling compatible). API: `register/unregisterAll/executeTool/getToolDefinitions/hasTool/getToolNames`
-- **`mods-manager.js`** — list page (template catalog + active instances, unified InfiniteList via `.mods-navigable` class) + config page (shared config ENGINE section + per-instance INSTANCE section, instance management: UP/DOWN/DELETE). Field creators use an accessor pattern `{ get(key), set(key, val) }` so the same renderer works for both shared and instance fields.
-- **`feature-shelf.js`** — feature button visibility per page (driven by `template.pages` keys), click → deactivate previous → build ModContext → `template.activate(ctx)`. Exports: `openShelf()`, `closeShelf()`
+### User settings sync (per-user cross-device)
 
-### Instance UI Positions (4)
+`sync-service.js` mirrors the authenticated user's `users.settings` JSONB column in memory. Features read/write via dotted paths:
 
-| Position | What | Built by |
-|----------|------|----------|
-| List page | Item in active instances list | Framework |
-| Config page | Config fields + UP/DOWN/DELETE | Framework |
-| Feature button | Icon button in HUD bar | Framework (data-instance-id, CSS ::after icon) |
-| Shelf panel | Content when button clicked | **Template** fills in `init()` (shared per template) |
+- `getSetting(path, defaultValue)` — synchronous read from the mirror
+- `setSetting(path, value)` — update mirror + schedule 2 s debounced PUT
+- `settings:synced` event — fires after successful GET on login or after PUT
+- `settings:changed` event — fires after each setSetting call
 
-### Shared Config (Group-Level Settings)
+**Backend:** `GET /api/user/settings` and `PUT /api/user/settings` (UserSettingsController). Session-auth; LWW on write. Schema is client-opinionated, server validates only that the body is a JSON object:
 
-When multiple templates in the same `group` need identical settings (e.g. LLM provider, API key, model), use **shared config** instead of duplicating fields on every instance.
-
-**How it works:**
-1. ONE template in the group declares `sharedConfigSchema` in its `manifest.json` (same field format as `configSchema`)
-2. Framework stores shared values in `localStorage['mod-shared-config']` under the group name
-3. When rendering config for ANY instance in the group, framework shows shared fields in an "ENGINE" section above per-instance fields
-4. `mod-context.js` merges shared values into `ctx.config` before freezing — MOD code reads `config.provider` without knowing it's shared
-5. Changing a shared field fires `mods:sharedConfigChanged` event and calls `template.onSharedConfigChange(key, value)` on all templates in the group
-
-**Config page layout (for any instance in a group with shared config):**
-```
-── ENGINE ──                    ← shared config section
-  Provider:     [client ▼]
-  Temperature:  [===●===] 0.3
-
-── INSTANCE ──                  ← per-instance config section
-  Prompt:       [____________]
-  Icon:         [● ○ ○ ○ ○ ○]
+```json
+{
+    "app":      { "autoSync": true, "loopList": false, ... },
+    "calendar": { "YYYY-MM-DD": "note text", ... }
+}
 ```
 
-**Framework APIs:**
-- `ctx.instance.getSharedConfig(key)` / `ctx.instance.setSharedConfig(key, val)` — explicit access from MOD code
-- `ModState.getSharedConfig(group, key)` / `ModState.setSharedConfig(group, key, val)` — direct API (use in shared helpers like `_shared.js`)
+On `auth:updated` (login/logout), sync-service flushes pending pushes from the outgoing identity, then fetches the incoming user's settings.
 
-**Example:** The `llm` group (llm, llm-bb, llm-bc) shares provider, clientModel, apiKey, temperature. Only `llm/manifest.json` declares `sharedConfigSchema`; `llm-bb` and `llm-bc` inherit from the group automatically.
+### Authenticated page overlay
 
-**Lifecycle method:** Implement `onSharedConfigChange(key, value)` on the template object to react to shared config changes (e.g. re-trigger model prewarming when provider changes).
+Pages listed in `LOCKED_PAGES` (`auth-landing.js`) show a full-screen `#auth-locked-overlay` (single element inside `.page-container`) when the user is signed out. Same Press Start visual style — solid `bg-page` background, brand-bordered card with "SIGN IN TO CONTINUE".
 
-### Adding a New Template
+**Defense in depth:** siblings of the overlay inside `.page-container` receive the native `inert` HTML attribute, which disables pointer / keyboard / focus on the whole subtree. F12-deleting the overlay still leaves underlying content non-interactive until `inert` itself is cleared.
 
-1. Copy `mods/_template/` → `mods/{your-id}/` (full skeleton with docs)
-2. Edit `manifest.json`: set `id` (MUST match folder name), `group`, `nameKey`, `descriptionKey`, `configSchema`, `defaultInstances`, `providers`, `pages`
-3. Edit `mod.js`: implement `getButtonDataId()`, `getInstanceName()`, `init(ctx)`, `activate(ctx)`, and any other lifecycle methods
-4. Create `mods/{your-id}/locales/{en,zh-TW,default}.json`
-5. Add icon: CSS `.feature-btn[data-feature-btn="{btn-id}"]::after { mask-image: url(...) }` OR implement `getIconUrl(config)` in mod.js
-6. Optionally add `tools[]` and `hooks[]` in mod.js
-7. Refresh browser — MOD appears automatically in catalog (no manifest file to edit!)
-8. MOD files are cached automatically by SW's runtime SWR — **do NOT add MOD files to the precache glob in `scripts/build-sw.js`**
+**Locked pages**: `blackboard-log`, `blackboard-branch`, `walkie-typie-list`, `walkie-typie-text`, `broadcast-channel`, `broadcast-list`. Other sub-pages (auth, misc, config) stay accessible to guests.
 
-**Data/Code separation:** Each MOD folder contains `manifest.json` (pure data: id, configSchema, pages, etc.) and `mod.js` (pure code: functions, lifecycle methods). At boot, mod-loader merges `{ ...manifestData, ...modCode }` into a single template object. The `manifest.json.id` MUST match the folder name.
+### ASCII bootstrap
 
-### MOD Development Principles
+`frontend/javascript/ascii/index.js` boots two DOM-only animation layers (ported verbatim from the pre-overhaul ascii-animator MOD):
 
-**1. Use framework APIs — never bypass them.**
-- Text access: `ctx.board.getText()`, `ctx.board.getTextarea()`, `ctx.board.insertAtCursor()`
-- Config: `ctx.instance.getConfig(key)` / `ctx.instance.setConfig(key, val)` (per-instance)
-- Shared config: `ctx.instance.getSharedConfig(key)` / `ctx.instance.setSharedConfig(key, val)` (group-level)
-- Events: `ctx.events.on()` / `ctx.events.off()` (auto-cleanup on deactivate)
-- UI: `ctx.ui.toast()`, `ctx.ui.getShelfElement()`, `ctx.ui.registerFieldType()`
-- Storage: `ctx.storage.get(key)` / `ctx.storage.set(key, val)` (per-instance sandboxed)
-- If an API is missing, add it to the framework (mod-context.js, mod-board-provider.js, etc.)
-  — do NOT hardcode DOM selectors for framework elements (.feature-container, .feature-btn, etc.)
+- `shelf-spinner.js` — watches for textareas with `data-loading="true"` and appends rotating `/ - \ |` frames.
+- `toast-spinner.js` — watches `#toast-container` for toasts with `data-loading="true"` and prefixes animated braille frames.
 
-**2. No module-level mutable state.** Templates are singletons shared across instances.
-- Store per-instance state in `ctx.storage` or instance config
-- Store per-template state on `this` (the template object)
-- Never use module-level `let` for state that varies per activation
-- Never pollute `window.*`
+Both rely on the project-wide `data-loading` convention. No WebGL layers ported (matrix-rain / perlin-bg / mouse-light skipped as decorative-only).
 
-**3. Expose capabilities via tools and hooks.**
-- If your MOD does something another MOD could use, register it in `tools[]`
-- Tools use OpenAI function-calling schema for future LLM agent compatibility
-- Use `ctx.hooks.register()` for pipeline-based interception (when instrumented)
+### Adding a new feature
 
-**4. Per-instance page visibility.** If a template needs different instances on different pages,
-implement `getDeployPages(config)` returning an array of page IDs. The framework calls this
-per-instance to determine button visibility (falls back to `template.pages` keys if absent).
+1. Create `frontend/javascript/features/{your-id}.js` exporting a `feature` object per the shape above.
+2. Append the import to `frontend/javascript/feature-registry.js`.
+3. Add an icon SVG to `frontend/images/` (or set `iconUrl` to an existing one).
+4. If the feature needs persisted state, use `sync-service.js` with a dotted path under `settings.*`.
+5. If the feature gates on context (e.g. owner mode on BC), implement `shouldShow(page)`.
 
-**5. Field types.** Use built-in types: `select`, `text`, `textarea`, `range`, `toggle`,
-`icon-picker`, `info`, `action`. Register custom types via `ctx.ui.registerFieldType()` only
-when built-in types genuinely don't cover the use case.
-
-**6. Design for composition.** MODs should be small, focused, and composable:
-- 1 instance = 1 feature button = 1 specific behavior
-- Prefer multiple simple instances over one complex config
-- The `configSchema` should be scannable in under 5 seconds
-
-**7. Cross-MOD loading convention (`data-loading`).** When a MOD performs async operations:
-- Set `element.dataset.loading = 'true'` on the affected element (textarea, button, etc.)
-- Remove in `finally` block: `delete element.dataset.loading`
-- For toasts: use `ctx.ui.toastLoading()` or `BBMessage.loading()` (auto-sets attribute)
-- ASCII Animator MOD responds with visual animations (gated behind `.aa-active` class on `<html>`)
-- Without ASCII Animator installed, `data-loading` is inert — zero visual effect
-- This is a convention-based protocol: producers never import the consumer
-
-**8. Yellow-zone bypasses.** When no framework API exists for what you need:
-- Direct DOM access is acceptable WITH a comment: `// BYPASS: reason, migrate when API X exists`
-- Examples: textarea event listeners (no `record:textChanged` hook yet), secondary textarea reads
-- When the framework API is added, migrate all yellow-zone code to use it
-
-### Versioning
-
-**Platform version** — `PLATFORM_VERSION` in `frontend/javascript/version.js`, displayed in blackboard-misc page.
-
-**MOD API version** — `MOD_API_VERSION` in the same file. Templates can declare `minApiVersion: N`; the framework warns at boot if `MOD_API_VERSION < N`.
-
-**Template version** — `template.version` (SemVer string). Displayed in mods-manager list and config pages.
-
-### Current Templates (12)
-
-| ID | Group | maxInstances | Providers | Tools |
-|----|-------|-------------|-----------|-------|
-| `translate` | linguistics | unlimited | google | `translate_text` |
-| `speech-to-text` | linguistics | 1 | google-speech | — |
-| `markdown-preview` | utilities | 1 | marked (client) | — |
-| `file-attach` | utilities | 2 | — | — |
-| `calculator` | utilities | 1 | — | — |
-| `llm` | llm | unlimited | client (WebLLM), server (Ollama), apikey (cloud) | — |
-| `llm-bb` | llm | unlimited | (shared with llm) | — |
-| `llm-bc` | llm | unlimited | (shared with llm) | — |
-| `llm-file` | llm | unlimited | server (Ollama) | — |
-| `light-theme` | theme | 1 | — | — |
-| `info-screensaver` | screensaver | 1 | — | — |
-| `ascii-animator` | decoration | 1 | textmode.js (WebGL2) | — |
-
-### Future Framework Roadmap
-
-**C1. Hook instrumentation** — Instrument `ModHooks.run()` in core modules:
-`board:beforeCommit`, `board:afterFetch`, `record:textChanged`, `branch:switched`.
-Enables: auto-translate on typing, AI reactions to new content.
-
-**C2. Agent loop** — LLM MOD multi-turn tool calling:
-`ModTools.getToolDefinitions()` → send to LLM → parse tool_use → `ModTools.executeTool()` → feed result back → loop.
-Enables: autonomous AI that can translate, search, summarize in sequence.
-
-**C3. Board write API** — `ctx.board.createRecord(text)`, `ctx.board.commit()`.
-Enables: AI agent writes findings to new records, not just shelf output.
-
-**C4. Service registry** — `ctx.services.register(name, impl)` / `ctx.services.get(templateId, name)`.
-Enables: MOD-to-MOD service calls without brittle tool-name coupling.
+No discovery step, no manifest, no cache. Refresh the browser.
 
 ## Platform Workarounds
 
@@ -898,11 +923,12 @@ const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
 `audio.js` skips playback on mobile (autoplay restrictions).
 
 ## Nginx Routing
-- `/mods/` (exact) — autoindex JSON for MOD folder discovery (`autoindex_format json`)
 - `/api/files` — upload streaming, request buffering disabled, 3600s timeout
 - `/app` — proxied to Reverb WebSocket
 - `/api/*` — PHP-FPM FastCGI
 - All else — `index.html` (SPA fallback)
+
+(The `/mods/` autoindex route was retired with the MOD subsystem. Feature modules are regular ES module imports; no runtime folder discovery.)
 
 ## Environment Variables
 
