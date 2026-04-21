@@ -81,18 +81,8 @@
     border-radius: 2px;
 }
 
-/* Editable prompt input above output (LLM shelf)
- *
- * overflow-wrap: anywhere breaks unbroken long strings (URLs, CJK
- * without spaces) at any character so the textarea wraps inside the
- * shelf's visible width instead of horizontally scrolling. Without
- * this, when a line's content hits the right edge of the textarea's
- * visible box, the browser shifts the visible text leftward to reveal
- * the overflowed tail — the user sees their text "drift left" as they
- * type.
- */
+/* Editable prompt input above output (LLM shelf) */
 .mod-shelf-prompt {
-    overflow-wrap: anywhere;
     font-size: var(--textbox-font-size);
     border: var(--border-line);
     border-bottom: none;
