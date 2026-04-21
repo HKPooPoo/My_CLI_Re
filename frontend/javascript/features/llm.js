@@ -119,27 +119,40 @@ function composeSchedulePrompt() {
                   past.slice(-5).map(([d, t]) => `- ${d}: ${t}`).join('\n')
                 : '');
         taskSection =
-            'TASK:\n' +
-            'Plan 7 days starting from the current date above. Every day needs a date and weekday.\n' +
+            'OUTPUT STRUCTURE (three parts, in this order):\n' +
             '\n' +
-            'BLOCK TYPES (the ONLY allowed line formats):\n' +
+            'PART 1 — MISSION  (one short paragraph, 1–2 sentences):\n' +
+            'Introduce yourself as the AI study assistant and state that you are about to plan the next 7 days around the user\'s calendar. Be brief — no fluff, no motivational talk.\n' +
+            '\n' +
+            'PART 2 — COGNITION  (one short paragraph):\n' +
+            'Start with: "From your calendar, I can see you have:" then list each upcoming event from the calendar on its own bullet line, naming the event and its date only. Example bullet: "- Logic Test on 2026-04-23". DO NOT add commentary, importance ratings, difficulty guesses, or emotional support lines. Only the factual list.\n' +
+            '\n' +
+            'PART 3 — SCHEDULE  (the 7 dated sections):\n' +
+            'Plan 7 days starting from the current date above. Every day needs a date and weekday. Follow BLOCK TYPES and RULES below, exactly.\n' +
+            '\n' +
+            'BLOCK TYPES (the ONLY allowed line formats for PART 3):\n' +
             '• "- <EXACT event title>"           ← use ON THE DATE of that event\n' +
             '• "- Review for <EXACT event>"      ← use 2 days BEFORE the event\n' +
             '• "- Prepare for <EXACT event>"     ← use 1 day BEFORE the event\n' +
             '• "- Free study time"               ← filler for other days\n' +
             '• "- Rest day"                      ← filler for other days\n' +
             '\n' +
-            'RULES:\n' +
-            '1. On a day with an event from the calendar: ONE bullet, showing the event title verbatim. Nothing else that day.\n' +
-            '2. 1–2 days before an event: one Review/Prepare bullet (optional — skip if the exam is tomorrow and today is busy).\n' +
-            '3. Days with no relationship to any event: exactly ONE bullet, either "Free study time" or "Rest day". Alternate between the two across days — do not repeat the same filler three days in a row.\n' +
-            '4. NEVER repeat the same bullet on the same day. 1–2 bullets per day is NORMAL; 3 is the absolute max and rarely needed.\n' +
-            '5. Do NOT invent activities, courses, essay titles, mock exams, past papers, or any word not in the calendar. Forbidden: "mock exam", "sample essay", "peer review", "practice questions", "concept mapping", "draft essay", "textbook", teacher names, course materials.\n' +
-            '6. Do NOT write commentary, rationale, or sub-bullets.\n' +
+            'RULES for PART 3:\n' +
+            '1. On a day with an event from the calendar: ONE bullet = the event title verbatim. Nothing else that day.\n' +
+            '2. 1–2 days before an event: one Review/Prepare bullet (optional if the day already has another event).\n' +
+            '3. Days with no event relationship: exactly ONE bullet, either "Free study time" or "Rest day". Alternate to avoid three identical fillers in a row.\n' +
+            '4. 1–2 bullets per day is normal; 3 is the hard max and rarely needed. Never repeat the same bullet on the same day.\n' +
+            '5. Do NOT invent activities, courses, essay titles, mock exams, past papers, peer reviews, practice questions, concept maps, textbook chapters, teacher names, or anything not in the calendar.\n' +
+            '6. Do NOT write commentary, rationale, or sub-bullets in PART 3.\n' +
             '\n' +
-            'EXAMPLE (this is what correct output looks like):\n' +
+            'EXAMPLE (what correct output looks like end-to-end):\n' +
             'Input events:  { "2026-04-23": "Logic Test" }\n' +
             'Today:         2026-04-21\n' +
+            '\n' +
+            'I\'m your AI study assistant. Let me plan the next 7 days around what\'s on your calendar.\n' +
+            '\n' +
+            'From your calendar, I can see you have:\n' +
+            '- Logic Test on 2026-04-23\n' +
             '\n' +
             '### 2026-04-21 (Tuesday)\n' +
             '- Review for Logic Test\n' +
@@ -162,9 +175,7 @@ function composeSchedulePrompt() {
             '### 2026-04-27 (Monday)\n' +
             '- Free study time\n' +
             '\n' +
-            'Notice how the example has 1 bullet per day, not 3. Follow this density.\n' +
-            '\n' +
-            'Output ONLY the 7 dated sections. No preamble, no closing.';
+            'Notice: PART 1 is one line, PART 2 is a small factual list, PART 3 has ONE bullet per day. Follow this density. No closing remark after PART 3.';
     }
 
     return [
