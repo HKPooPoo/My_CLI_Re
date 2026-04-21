@@ -68,6 +68,15 @@
     z-index: 996;
 }
 
+/* When the auth overlay is active on a page, elevate the ENTIRE .page
+   so its overlay clears siblings inside page-container:
+     .feature-container (998), .push-btn / .pull-btn (997), .head-indicator.
+   The overlay's own 998 is local to the .page stacking context — it
+   only wins sibling comparisons if the .page itself is elevated. */
+.page.auth-locked {
+    z-index: 999;
+}
+
 .page-auth-overlay {
     z-index: 998;
 }
