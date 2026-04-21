@@ -238,11 +238,23 @@ function handleFeatureBtnClick($clickedBtn) {
 
 /**
  * Update shelf transform position.
+ *
+ * Also publishes the current visible width as a CSS variable on the
+ * shelf container so inner content (textareas, etc.) can size
+ * themselves to fit the visible region. Without this, a textarea at
+ * width:100% sizes to the shelf's intrinsic width (100vw) which
+ * extends past the visible edge; typing past that edge causes
+ * browser caret-follow to shift content leftward.
+ *
+ * Visible width == how far the shelf has been translated left. At
+ * translateX=0 the shelf is offscreen, visible=0. At -60vw (default
+ * open), visible=60vw.
  */
 function updateShelfTransform(translateX) {
     if (translateX === currentTranslateX) return;
     currentTranslateX = translateX;
     $featureShelfContainer.style.transform = `translate3d(${translateX}px, 0, 0)`;
+    $featureShelfContainer.style.setProperty('--shelf-visible-width', `${-translateX}px`);
 }
 
 // --- Helpers ---

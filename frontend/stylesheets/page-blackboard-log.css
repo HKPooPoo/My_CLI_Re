@@ -219,19 +219,10 @@
 .feature-shelf-container {
     position: absolute;
     left: 100%;
-    /*left shelf scroll -60vw (matches DEFAULT_OPEN_WIDTH_VW in feature-shelf.js)*/
+    /*left shelf scroll -100vw*/
     transform: translate3d(0vw, 0, 0);
     height: 100%;
-    /*
-     * Width matches the default open distance. Was 100vw, which made
-     * textareas inside the shelf (width:100%) physically 100vw wide
-     * even when only 60vw was visible — user typing past the visible
-     * edge saw the textarea's content get pushed left to reveal the
-     * tail. Pinning the container to 60vw means textareas occupy
-     * exactly the visible region; no horizontal overflow possible,
-     * so caret-follow can't shift content.
-     */
-    width: 60vw;
+    width: 100vw;
     margin-left: var(--scaffold-left-gap);
     padding-right: var(--scaffold-left-gap);
     transition: transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
