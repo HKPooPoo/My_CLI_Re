@@ -77,11 +77,27 @@ const bbAttach = EditorAttachments.create({
         // literally; any specific tag takes the exact-index path and misses
         // records with other tags in mixed-ownership branches.
         if (state.isVirtual) {
-            // Brand-new record — inherently local. Branch-dirty detection
-            // catches the addition via timestamp mismatch; no need to
-            // stamp [asynced] on a record the server has never seen.
+            // Redundant-signal approach: stamp the new record with
+            // markAsynced(existing branch's owner tag) so dirty detection
+            // has two independent signals — the bumped timestamp (via new
+            // record's Date.now()) AND the [asynced] suffix that
+            // hasAsyncedRecord picks up. If the branch has no existing
+            // record (brand-new empty branch), fall back to the plain
+            // "local" literal — there's no prior sync context to inherit.
+            //
+            // state.owner still drops to the "local" literal per the
+            // Branch-tag invariant. This is the one deliberate case
+            // where record.owner ≠ state.owner — the record carries
+            // tag-level provenance for dirty detection, while state.owner
+            // stays at the catch-all so navigation works across mixed-
+            // ownership branches.
+            let newOwner = "local";
+            const anyRecord = await BBCore.getRecord("local", state.branchId, 0);
+            if (anyRecord && anyRecord.owner) {
+                newOwner = markAsynced(anyRecord.owner);
+            }
             await BBCore.addRecord(
-                "local",
+                newOwner,
                 state.branchId,
                 state.branch,
                 BBUI.getTextareaValue() || "",
