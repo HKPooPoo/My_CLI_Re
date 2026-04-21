@@ -1,149 +1,76 @@
 /**
- * Feature Shelf - Lateral Dashboard Controller (Instance-Aware)
+ * Feature Shelf — Scaffold & Drawer Controller
  * =================================================================
- * Manages the feature shelf panel (sliding drawer) interactions.
- * Now instance-aware: buttons carry data-instance-id, and page
- * visibility is driven by data-feature-mods (template IDs).
+ * Owns the right-side sliding drawer. Reads features from
+ * feature-registry.js, creates buttons + shelf panels on boot,
+ * shows/hides buttons per active page, handles clicks + drag.
+ *
+ * This module is deliberately dumb: no instance model, no config,
+ * no lifecycle. Each feature lives as a plain object in
+ * features/<id>.js.
  * =================================================================
  */
 
-import { playAudio } from "./audio.js";
-import { ModState } from "./mod-state.js";
-import { getAllTemplates, getInstances } from "../mods/mod-loader.js";
-import { createModContext } from "./mod-context.js";
+import { playAudio } from './audio.js';
+import { FEATURES, getFeature } from './feature-registry.js';
 
-// --- DOM refs (static containers) ---
 const $featureShelfContainer = document.querySelector('.feature-shelf-container');
-const $featureShelfBackBtn = document.querySelector('.feature-shelf-back-btn');
-const $featureContainer = document.querySelector('.feature-container');
-
-// --- Last-activated context for deactivate lifecycle ---
-let _lastActivatedCtx = null;
-
-function _deactivatePrevious() {
-    if (!_lastActivatedCtx) return;
-    const templates = getAllTemplates();
-    const tpl = templates.find(t => t.id === _lastActivatedCtx.templateId);
-    if (tpl && typeof tpl.deactivate === 'function') {
-        try { tpl.deactivate(_lastActivatedCtx); } catch (e) {
-            console.error('[feature-shelf] deactivate error:', e);
-        }
-    }
-    if (typeof _lastActivatedCtx._cleanup === 'function') {
-        _lastActivatedCtx._cleanup();
-    }
-    _lastActivatedCtx = null;
-}
-
-// --- Drag state ---
-let isDragging = false;
-let dragStartX = 0;
-let initialTranslateX = 0;
-let currentTranslateX = 0;
+const $featureShelfBackBtn   = document.querySelector('.feature-shelf-back-btn');
+const $featureContainer      = document.querySelector('.feature-container');
 
 const DEFAULT_OPEN_WIDTH_VW = 60;
 
-// --- Dynamic DOM queries ---
-function getFeatureBtns() {
-    return $featureContainer ? $featureContainer.querySelectorAll('.feature-btn') : [];
+let isDragging        = false;
+let dragStartX        = 0;
+let initialTranslateX = 0;
+let currentTranslateX = 0;
+
+// ── Boot: create buttons + shelf panels from registry ──
+
+function bootstrap() {
+    if (!$featureContainer || !$featureShelfContainer) return;
+
+    for (const f of FEATURES) {
+        if (!$featureContainer.querySelector(`.feature-btn[data-feature-btn="${f.id}"]`)) {
+            const btn = document.createElement('button');
+            btn.className = 'feature-btn';
+            btn.dataset.featureBtn = f.id;
+            if (f.iconUrl) btn.style.setProperty('--mod-icon-url', `url('${f.iconUrl}')`);
+            if (f.hintKey) btn.dataset.hint = f.hintKey;
+            $featureContainer.insertBefore(btn, $featureShelfContainer);
+        }
+
+        if (f.hasShelf !== false && !$featureShelfContainer.querySelector(`[data-feature-shelf="${f.id}"]`)) {
+            const shelf = document.createElement('div');
+            shelf.className = 'feature-shelf';
+            shelf.dataset.featureShelf = f.id;
+            $featureShelfContainer.appendChild(shelf);
+            if (typeof f.initShelf === 'function') {
+                try { f.initShelf(shelf); }
+                catch (e) { console.error(`[feature-shelf] initShelf failed for ${f.id}:`, e); }
+            }
+        }
+    }
+
+    const activePage = document.querySelector('.page.active');
+    if (activePage) updateFeatureButtons(activePage.dataset.page);
 }
 
-function getFeatureShelves() {
-    return $featureShelfContainer ? $featureShelfContainer.querySelectorAll('.feature-shelf') : [];
+// Run bootstrap when DOM ready (scripts are modules → deferred)
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', bootstrap, { once: true });
+} else {
+    bootstrap();
 }
 
-// --- Init listeners (delegated on container for dynamic buttons) ---
-$featureContainer?.addEventListener('click', (e) => {
-    const btn = e.target.closest('.feature-btn');
-    if (!btn) return;
-    playAudio("Click.mp3");
-    handleFeatureBtnClick(btn);
-});
+// ── Button visibility per page ──
 
-// Handle drag (PC mouse)
-$featureShelfBackBtn?.addEventListener('mousedown', (e) => {
-    e.preventDefault();
-    startDrag(e.clientX);
-});
-
-// Handle drag (mobile touch)
-$featureShelfBackBtn?.addEventListener('touchstart', (e) => {
-    startDrag(e.touches[0].clientX);
-}, { passive: false });
-
-// Double-click to close
-$featureShelfBackBtn?.addEventListener('dblclick', () => {
-    playAudio("UISelectOff.mp3");
-    closeShelf();
-});
-
-// Resize compensation — width-only guard prevents mobile keyboard
-// open/close (height change) from re-snapping the shelf and stealing focus
-let _lastScreenWidth = getScreenWidth();
-window.addEventListener('resize', () => {
-    const w = getScreenWidth();
-    if (w === _lastScreenWidth) return;
-    _lastScreenWidth = w;
-    if (currentTranslateX === 0) return;
-    snapToNearestPosition();
-});
-
-/**
- * Resolve the shelf panel ID for a given feature button element.
- * Reads the instance ID, looks up template's shelfPanelId.
- */
-function resolveShelfId($btn) {
-    const instanceId = $btn.dataset.instanceId;
-    if (!instanceId) return $btn.dataset.featureBtn;
-
-    const instance = ModState.getInstance(instanceId);
-    if (!instance) return $btn.dataset.featureBtn;
-
-    const templates = getAllTemplates();
-    const template = templates.find(t => t.id === instance.templateId);
-    return template?.shelfPanelId || $btn.dataset.featureBtn;
-}
-
-/**
- * Update feature button visibility per page (instance-aware).
- * Visibility is derived from each template's `pages` declaration —
- * a button is shown on a page if that page key exists in the template's
- * `pages` object. No HTML data-feature-mods attribute needed.
- */
 function updateFeatureButtons(page) {
-    const $btns = getFeatureBtns();
-
+    const $btns = $featureContainer?.querySelectorAll('.feature-btn') || [];
     $btns.forEach($btn => {
-        const instanceId = $btn.dataset.instanceId;
-        if (!instanceId) {
-            $btn.style.display = 'none';
-            return;
-        }
-
-        const instance = ModState.getInstance(instanceId);
-        if (!instance) {
-            $btn.style.display = 'none';
-            return;
-        }
-
-        const template = getAllTemplates().find(t => t.id === instance.templateId);
-
-        // Per-instance page visibility: getDeployPages(config) takes precedence
-        let templateAllowed;
-        if (typeof template?.getDeployPages === 'function') {
-            const deployPages = template.getDeployPages(instance.config);
-            templateAllowed = Array.isArray(deployPages)
-                ? deployPages.includes(page)
-                : false;
-        } else {
-            // Derive allowed pages from template.pages keys
-            const templatePages = template?.pages;
-            templateAllowed = !templatePages                  // no pages → show everywhere
-                || Object.keys(templatePages).length === 0    // empty pages → show everywhere
-                || (page && templatePages[page] !== undefined); // page listed → show
-        }
-
-        if (templateAllowed) {
+        const f = getFeature($btn.dataset.featureBtn);
+        const visible = !!f && (!Array.isArray(f.pages) || f.pages.includes(page));
+        if (visible) {
             $btn.style.opacity = '';
             $btn.style.transform = '';
             $btn.style.pointerEvents = '';
@@ -159,93 +86,49 @@ window.addEventListener('navi:pageChanged', ({ detail }) => {
     updateFeatureButtons(detail.page);
 });
 
-// Re-evaluate after MODs are loaded and DOM is populated
-window.addEventListener('mods:loaded', () => {
-    const activePage = document.querySelector('.page.active');
-    if (activePage) updateFeatureButtons(activePage.dataset.page);
-});
+// ── Click handler ──
 
-// Re-evaluate after instances are added/removed/reordered
-window.addEventListener('mods:instanceAdded', () => {
-    const activePage = document.querySelector('.page.active');
-    if (activePage) updateFeatureButtons(activePage.dataset.page);
-});
+$featureContainer?.addEventListener('click', (e) => {
+    const btn = e.target.closest('.feature-btn');
+    if (!btn) return;
+    playAudio('Click.mp3');
+    const featureId = btn.dataset.featureBtn;
+    const f = getFeature(featureId);
+    if (!f) return;
 
-window.addEventListener('mods:instanceRemoved', () => {
-    const activePage = document.querySelector('.page.active');
-    if (activePage) updateFeatureButtons(activePage.dataset.page);
-});
-
-window.addEventListener('mods:reordered', () => {
-    const activePage = document.querySelector('.page.active');
-    if (activePage) updateFeatureButtons(activePage.dataset.page);
-});
-
-// Re-evaluate after buttons are rebuilt (ADD/REORDER recreates DOM)
-window.addEventListener('mods:buttonsRebuilt', () => {
-    const activePage = document.querySelector('.page.active');
-    if (activePage) updateFeatureButtons(activePage.dataset.page);
-});
-
-// Re-evaluate when config changes (getDeployPages may depend on config)
-window.addEventListener('mods:configChanged', () => {
-    const activePage = document.querySelector('.page.active');
-    if (activePage) updateFeatureButtons(activePage.dataset.page);
-});
-
-/**
- * Feature button click dispatch (instance-aware).
- */
-function handleFeatureBtnClick($clickedBtn) {
-    const targetFeatureId = $clickedBtn.dataset.featureBtn;
-    const instanceId = $clickedBtn.dataset.instanceId;
-    if (!targetFeatureId) return;
-
-    // Find the instance and its template
-    const instance = instanceId ? ModState.getInstance(instanceId) : null;
-    const activePage = document.querySelector('.page.active');
-
-    if (instance) {
-        const templates = getAllTemplates();
-        const template = templates.find(t => t.id === instance.templateId);
-        if (template && typeof template.activate === 'function') {
-            _deactivatePrevious();
-            const ctx = createModContext({
-                instanceId: instance.instanceId,
-                templateId: instance.templateId,
-                page: activePage?.dataset?.page || null,
-                buttonId: targetFeatureId,
-                config: instance.config,
-                template,
-            });
-            template.activate(ctx);
-            _lastActivatedCtx = ctx;
+    if (f.hasShelf === false) {
+        if (typeof f.onClick === 'function') {
+            try { f.onClick(); }
+            catch (e) { console.error(`[feature-shelf] onClick failed for ${featureId}:`, e); }
         }
+        return;
     }
 
-    // Resolve shelf panel (if any) and open it
-    const resolvedId = resolveShelfId($clickedBtn);
-    const $targetShelf = document.querySelector(`.feature-shelf[data-feature-shelf="${resolvedId}"]`);
-    if (!$targetShelf) return; // No shelf — template was already activated above
+    // Open shelf and show the matching panel
+    const $targetShelf = $featureShelfContainer.querySelector(`[data-feature-shelf="${featureId}"]`);
+    if (!$targetShelf) return;
 
-    getFeatureShelves().forEach($shelf => {
-        $shelf.style.display = ($shelf === $targetShelf) ? 'flex' : 'none';
+    $featureShelfContainer.querySelectorAll('.feature-shelf').forEach($s => {
+        $s.style.display = ($s === $targetShelf) ? 'flex' : 'none';
     });
+
+    if (typeof f.onOpen === 'function') {
+        try { f.onOpen($targetShelf); }
+        catch (e) { console.error(`[feature-shelf] onOpen failed for ${featureId}:`, e); }
+    }
 
     const targetOpenPx = calculateMaxOpenPx();
     if (currentTranslateX > targetOpenPx + 1) openShelf();
-}
+});
 
-/**
- * Update shelf transform position.
- */
+// ── Shelf open / close ──
+
 function updateShelfTransform(translateX) {
     if (translateX === currentTranslateX) return;
     currentTranslateX = translateX;
     $featureShelfContainer.style.transform = `translate3d(${translateX}px, 0, 0)`;
 }
 
-// --- Helpers ---
 function getScreenWidth() {
     return Math.max(document.documentElement.clientWidth || 0, window.innerWidth || 0);
 }
@@ -258,24 +141,45 @@ function calculateMaxOpenPx() {
 }
 
 export function openShelf() {
-    playAudio("UISelectOn.mp3");
+    playAudio('UISelectOn.mp3');
     updateShelfTransform(calculateMaxOpenPx());
 }
 
 export function closeShelf() {
-    _deactivatePrevious();
     updateShelfTransform(0);
 }
 
-// --- Drag logic ---
+// ── Drag handlers ──
+
+$featureShelfBackBtn?.addEventListener('mousedown', (e) => {
+    e.preventDefault();
+    startDrag(e.clientX);
+});
+
+$featureShelfBackBtn?.addEventListener('touchstart', (e) => {
+    startDrag(e.touches[0].clientX);
+}, { passive: false });
+
+$featureShelfBackBtn?.addEventListener('dblclick', () => {
+    playAudio('UISelectOff.mp3');
+    closeShelf();
+});
+
+let _lastScreenWidth = getScreenWidth();
+window.addEventListener('resize', () => {
+    const w = getScreenWidth();
+    if (w === _lastScreenWidth) return;
+    _lastScreenWidth = w;
+    if (currentTranslateX === 0) return;
+    snapToNearestPosition();
+});
+
 function startDrag(clientX) {
-    playAudio("UIPipboyOKPress.mp3");
+    playAudio('UIPipboyOKPress.mp3');
     isDragging = true;
     dragStartX = clientX;
     initialTranslateX = currentTranslateX;
-
     $featureShelfContainer.classList.add('no-transition');
-
     window.addEventListener('mousemove', handleDragMove);
     window.addEventListener('mouseup', handleDragEnd);
     window.addEventListener('touchmove', handleDragMove, { passive: false });
@@ -285,52 +189,33 @@ function startDrag(clientX) {
 function handleDragMove(e) {
     if (!isDragging) return;
     const clientX = e.type.includes('touch') ? e.touches[0].clientX : e.clientX;
-    const deltaX = clientX - dragStartX;
-    let newTranslateX = initialTranslateX + deltaX;
-
-    const maxTranslate = 0;
-    const minTranslate = -getScreenWidth();
-
-    if (newTranslateX > maxTranslate) newTranslateX = maxTranslate;
-    if (newTranslateX < minTranslate) newTranslateX = minTranslate;
-
-    updateShelfTransform(newTranslateX);
+    const deltaX  = clientX - dragStartX;
+    let newX = initialTranslateX + deltaX;
+    if (newX > 0) newX = 0;
+    if (newX < -getScreenWidth()) newX = -getScreenWidth();
+    updateShelfTransform(newX);
 }
 
 function handleDragEnd() {
     if (!isDragging) return;
     isDragging = false;
     $featureShelfContainer.classList.remove('no-transition');
-
     window.removeEventListener('mousemove', handleDragMove);
     window.removeEventListener('mouseup', handleDragEnd);
     window.removeEventListener('touchmove', handleDragMove);
     window.removeEventListener('touchend', handleDragEnd);
-
     snapToNearestPosition();
-
-    if (currentTranslateX === 0) {
-        playAudio("UISelectOff.mp3");
-    } else {
-        playAudio("UIGeneralFocus.mp3");
-    }
+    playAudio(currentTranslateX === 0 ? 'UISelectOff.mp3' : 'UIGeneralFocus.mp3');
 }
 
 function snapToNearestPosition() {
-    const screenWidth = getScreenWidth();
-    const snapRatios = [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0];
-    const snapPositions = snapRatios.map(ratio => -1 * ratio * screenWidth);
-
-    let closestPosition = 0;
-    let minDiff = Infinity;
-
-    snapPositions.forEach(pos => {
+    const screenWidth  = getScreenWidth();
+    const snapRatios   = [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0];
+    const snapPositions = snapRatios.map(r => -1 * r * screenWidth);
+    let closest = 0, minDiff = Infinity;
+    for (const pos of snapPositions) {
         const diff = Math.abs(currentTranslateX - pos);
-        if (diff < minDiff) {
-            minDiff = diff;
-            closestPosition = pos;
-        }
-    });
-
-    updateShelfTransform(closestPosition);
+        if (diff < minDiff) { minDiff = diff; closest = pos; }
+    }
+    updateShelfTransform(closest);
 }

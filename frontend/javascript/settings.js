@@ -7,13 +7,12 @@
  * =================================================================
  */
 
-const SCOPES = ['bb', 'wt', 'bc', 'mods'];
+const SCOPES = ['bb', 'wt', 'bc'];
 
 const SCOPE_DEFAULTS = {
     bb:   { maxSlot: 10, maxFiles: 10, autoCleanBlanks: true, updateTimestamp: true, autoSync: false, loopList: false },
     wt:   { maxSlot: 10, maxFiles: 10, autoCleanBlanks: true, updateTimestamp: true, loopList: false, notifications: true },
     bc:   { maxSlot: 10, maxFiles: 10, autoCleanBlanks: false, updateTimestamp: false, loopList: false },
-    mods: { loopList: false },
 };
 
 const GLOBAL_DEFAULTS = {

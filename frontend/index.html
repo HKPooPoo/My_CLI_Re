@@ -38,9 +38,8 @@
     <link rel="stylesheet" href="stylesheets/page-broadcast.css">
     <link rel="stylesheet" href="stylesheets/page-misc.css">
     <link rel="stylesheet" href="stylesheets/editor-attachments.css">
-    <link rel="stylesheet" href="stylesheets/mod-shared.css">
-    <link rel="stylesheet" href="stylesheets/page-mods.css">
     <link rel="stylesheet" href="stylesheets/feature-markdown.css">
+    <link rel="stylesheet" href="stylesheets/features.css">
     <link rel="stylesheet" href="stylesheets/hint-panel.css">
     <!--注意@media放在尾！！！-->
     <link rel="stylesheet" href="stylesheets/@media.css">
@@ -144,24 +143,6 @@
                         </div>
                         <div class="sub-navi-item" data-sub-navi-item="broadcast-config">
                             <div class="sub-navi-item-text" data-i18n="nav.bcConfig">CONFIG</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="navi-item" data-navi-item="mods" data-sound-main="UIGeneralOK.mp3"
-                data-sound-sub="UIGeneralFocus.mp3">
-                <div class="navi-item-text" data-i18n="nav.mods">MODS</div>
-                <div class="sub-navi-indicator"></div>
-                <div class="sub-navi-container">
-                    <div class="sub-navi-track">
-                        <div class="sub-navi-item" data-sub-navi-item="mods-list">
-                            <div class="sub-navi-item-text" data-i18n="mods.listTab">LIST</div>
-                        </div>
-                        <div class="sub-navi-item" data-sub-navi-item="mods-config">
-                            <div class="sub-navi-item-text" data-i18n="mods.configTab">CONFIG</div>
-                        </div>
-                        <div class="sub-navi-item" data-sub-navi-item="mods-misc">
-                            <div class="sub-navi-item-text" data-i18n="mods.miscTab">MISC</div>
                         </div>
                     </div>
                 </div>
@@ -488,56 +469,6 @@
                     <div class="misc-action-container" id="bc-config-action"></div>
                 </div>
             </div>
-            <div class="page" data-page="mods-list">
-                <div class="mods-container">
-                    <div class="mods-title crt-text-orange" data-i18n="mods.pageTitle">MOD MANAGER</div>
-                    <input type="text" class="mods-search-input" id="mods-search"
-                        data-i18n-placeholder="mods.searchPlaceholder" placeholder="SEARCH MODS...">
-                    <div class="mods-list-container mod-scrollbar" data-sound-item="UIGeneralFocus.mp3"></div>
-                    <div class="mods-instance-actions" id="mods-instance-actions"></div>
-                    <button id="mods-refresh-btn" class="crt-text-green" data-hint="hints.mods.refresh"
-                        data-i18n="mods.refreshBtn">REFRESH</button>
-                </div>
-            </div>
-            <div class="page" data-page="mods-config">
-                <div class="mods-container">
-                    <div class="mods-title crt-text-orange" id="mods-config-title">—</div>
-                    <div class="mods-config-content mod-scrollbar">
-                        <div class="mods-config-description" id="mods-config-description"></div>
-                        <div class="mods-config-status" id="mods-config-status"></div>
-                        <div class="mods-config-fields" id="mods-config-fields"></div>
-                        <div class="mods-config-default" id="mods-config-default" data-i18n="mods.configDefault">SELECT
-                            A MOD FROM THE LIST.</div>
-                    </div>
-                    <button id="mods-config-refresh-btn" class="crt-text-green" data-i18n="mods.refreshBtn"
-                        style="display:none;">REFRESH</button>
-                </div>
-            </div>
-            <div class="page" data-page="mods-misc">
-                <div class="misc-container">
-                    <div class="misc-title crt-text-orange" data-i18n="mods.miscTab">MISC</div>
-                    <div class="misc-list-container" id="mods-misc-container"></div>
-                    <div class="misc-action-container" id="mods-misc-action"></div>
-                </div>
-            </div>
-            <!-- MOD System -->
-            <script type="module">
-                import { ModState } from './javascript/mod-state.js';
-                import { loadAllMods } from './mods/mod-loader.js';
-                ModState.init();
-
-                let _modsLoaded = false;
-                function bootMods() {
-                    if (_modsLoaded) return;
-                    _modsLoaded = true;
-                    loadAllMods();
-                }
-                window.addEventListener('i18n:ready', bootMods);
-                // Fallback: if i18n:ready already fired, boot after a tick
-                setTimeout(bootMods, 0);
-            </script>
-            <script type="module" src="./javascript/mods-manager.js"></script>
-            <script type="module" src="./javascript/mods-misc.js"></script>
             <div id="toast-container"></div>
         </div>
     </div>
