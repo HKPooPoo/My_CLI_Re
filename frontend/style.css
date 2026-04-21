@@ -277,6 +277,183 @@ a:hover {
     background: var(--bg-card);
 }
 
+/* ============ Dashboard (Press Start overlay, .dashboard-mode) ============
+   Shares #press-start-overlay DOM. When .dashboard-mode is on, hide the
+   splash label and show the grid of cards instead. */
+
+#dashboard-content {
+    display: none;
+    flex-direction: column;
+    gap: 16px;
+    width: min(920px, 92vw);
+    max-height: 80vh;
+    padding: 24px 28px;
+    background: var(--bg-card);
+    border: 2px solid var(--brand);
+    border-radius: calc(var(--border-radius) * 1.5);
+    overflow: hidden;
+}
+
+#press-start-overlay.dashboard-mode {
+    cursor: default;
+}
+
+#press-start-overlay.dashboard-mode #press-start-label {
+    display: none;
+}
+
+#press-start-overlay.dashboard-mode #dashboard-content {
+    display: flex;
+}
+
+.dashboard-header {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    flex: 0 0 auto;
+}
+
+.dashboard-title {
+    font-size: 1.3rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    color: var(--brand);
+    user-select: none;
+}
+
+.dashboard-close-btn {
+    flex: 0 0 auto;
+    width: 32px;
+    height: 32px;
+    border: 2px solid var(--border-subtle);
+    border-radius: 50%;
+    background: var(--bg-page);
+    color: var(--text-muted);
+    font-size: 1.1rem;
+    line-height: 1;
+    cursor: pointer;
+    transition: border-color var(--transition-normal), color var(--transition-normal);
+}
+
+.dashboard-close-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+.dashboard-grid {
+    flex: 1 1 0;
+    min-height: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 12px;
+    overflow-y: auto;
+}
+
+.dashboard-card {
+    background: var(--bg-page);
+    border: 2px solid var(--border-subtle);
+    border-radius: var(--border-radius);
+    padding: 12px;
+    min-height: 140px;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.dashboard-card-title {
+    font-size: 0.82rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    flex-direction: row;
+    gap: 6px;
+    align-items: center;
+    user-select: none;
+}
+
+.dashboard-card-body {
+    flex: 1 1 0;
+    min-height: 0;
+    overflow-y: auto;
+    font-size: 0.9rem;
+    color: var(--text-body);
+    flex-direction: column;
+    gap: 4px;
+    user-select: text;
+}
+
+.dashboard-item {
+    flex-direction: column;
+    gap: 2px;
+    padding: 8px 10px;
+    border: 1px solid transparent;
+    border-left: 4px solid var(--brand);
+    border-radius: 3px;
+    background: var(--bg-card);
+    cursor: pointer;
+    transition: background var(--transition-normal), border-color var(--transition-normal);
+}
+
+.dashboard-item:hover {
+    background: var(--text-orange-10);
+    border-color: var(--brand);
+}
+
+.dashboard-item-text {
+    font-weight: 500;
+    color: var(--text-body);
+    line-height: 1.35;
+}
+
+.dashboard-item-meta {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+}
+
+.dashboard-empty {
+    color: var(--text-muted);
+    font-style: italic;
+    font-size: 0.85rem;
+    padding: 8px 4px;
+    user-select: none;
+}
+
+/* ============ HUD News Badge (bottom-right of header) ============ */
+
+#hud-news-badge {
+    position: absolute;
+    bottom: 4px;
+    right: 12px;
+    z-index: 2;
+    display: none;   /* JS toggles display on auth state */
+    flex-direction: row;
+    gap: 6px;
+    align-items: center;
+    padding: 4px 10px;
+    border: 2px solid #ffffff;
+    border-radius: var(--border-radius);
+    background: transparent;
+    color: #ffffff;
+    font-size: var(--header-footer-font-size);
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    cursor: pointer;
+    transition: background var(--transition-normal), color var(--transition-normal);
+}
+
+#hud-news-badge:hover {
+    background: #ffffff;
+    color: var(--brand);
+}
+
+.hud-news-icon {
+    font-size: 1em;
+    line-height: 1;
+}
+
 /* Auth-locked overlay — Press Start clone, scoped to .page-container so
    the main + sub nav above stay visible and clickable. Driven by
    auth-landing.js; shown only on locked pages (BB log / BB branch /

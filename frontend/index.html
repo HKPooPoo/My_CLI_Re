@@ -56,13 +56,38 @@
             <div id="db-status-bar">DB: <div id="db-status-display">Connecting...</div>
             </div>
         </div>
+        <button id="hud-news-badge" type="button" aria-label="Open dashboard">
+            <span class="hud-news-icon">📢</span>
+            <span class="hud-news-label" data-i18n="dashboard.badgeLabel">DASHBOARD</span>
+        </button>
         <!--hud.js-->
         <script type="module" src="./javascript/hud.js"></script>
+        <script type="module" src="./javascript/dashboard.js"></script>
     </div>
     <div class="body">
-        <!--pressStart.js-->
+        <!--pressStart.js + dashboard.js (dashboard reuses this overlay via .dashboard-mode class)-->
         <div id="press-start-overlay">
             <div id="press-start-label" data-i18n="pressStart.label">PRESS START</div>
+            <div id="dashboard-content">
+                <div class="dashboard-header">
+                    <div class="dashboard-title" data-i18n="dashboard.title">DASHBOARD</div>
+                    <button class="dashboard-close-btn" type="button" aria-label="Close dashboard">×</button>
+                </div>
+                <div class="dashboard-grid">
+                    <section class="dashboard-card" data-section="calendar">
+                        <div class="dashboard-card-title">📅 <span data-i18n="dashboard.calendarHeading">UPCOMING</span></div>
+                        <div class="dashboard-card-body" id="dashboard-calendar-body"></div>
+                    </section>
+                    <section class="dashboard-card" data-section="announce">
+                        <div class="dashboard-card-title">📢 <span data-i18n="dashboard.announceHeading">ANNOUNCEMENTS</span></div>
+                        <div class="dashboard-card-body" id="dashboard-announce-body"></div>
+                    </section>
+                    <section class="dashboard-card" data-section="notebooks">
+                        <div class="dashboard-card-title">📝 <span data-i18n="dashboard.notebooksHeading">NOTEBOOKS</span></div>
+                        <div class="dashboard-card-body" id="dashboard-notebooks-body"></div>
+                    </section>
+                </div>
+            </div>
         </div>
         <script>
             // Inline fallback: if pressStart.js module fails to load (e.g. tunnel cold start),
@@ -73,6 +98,7 @@
                 el.addEventListener('click', function() {
                     if (el.style.display === 'none') return;
                     if (el.dataset.handled) return;
+                    if (el.classList.contains('dashboard-mode')) return;
                     el.dataset.handled = '1';
                     el.classList.add('crt-switch-off');
                     el.addEventListener('animationend', function() {

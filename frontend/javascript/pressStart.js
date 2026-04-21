@@ -67,6 +67,10 @@ window.addEventListener("focus", () => {
  */
 overlay.addEventListener("click", () => {
     if (overlay.style.display === "none" || justGainedFocus) return;
+    // Dashboard mode: overlay shares DOM with press-start, but clicks
+    // inside it must not trigger the splash-dismiss + nav-restore
+    // flow. Dashboard-internal click handling lives in dashboard.js.
+    if (overlay.classList.contains("dashboard-mode")) return;
     overlay.dataset.handled = '1';
 
     // Session changed in another tab → reload instead of the standard

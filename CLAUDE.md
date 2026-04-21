@@ -887,6 +887,31 @@ Pages listed in `LOCKED_PAGES` (`auth-landing.js`) show a full-screen `#auth-loc
 
 **Locked pages**: `blackboard-log`, `blackboard-branch`, `walkie-typie-list`, `walkie-typie-text`, `broadcast-channel`, `broadcast-list`. Other sub-pages (auth, misc, config) stay accessible to guests.
 
+### Dashboard overlay
+
+Tier-12 overlay that reuses the `#press-start-overlay` element. State is carried on the element via classes:
+
+| Class on `#press-start-overlay` | Content shown |
+|---|---|
+| (none) | "TAP TO START" label |
+| `.dashboard-mode` | `#dashboard-content` grid (hides label) |
+| `display: none` | Fully hidden |
+
+Three cards inside `#dashboard-content`:
+
+- **📅 Upcoming** — next 7 days of `users.settings.calendar` via `getSetting('calendar')`.
+- **📢 Announcements** — channels from `db.broadcast_channels` (local IndexedDB), sorted by `last_signal`.
+- **📝 Notebooks** — BB branches grouped from `db.blackboard`, sorted by latest record timestamp.
+
+Each item clickable → navigates to the relevant sub-page and closes the dashboard.
+
+**Triggers:**
+- Auto-pop on the first logged-out → logged-in transition per session (`sessionStorage['dashboard-shown']` flag).
+- Click on `#hud-news-badge` (header right-side button, visible only when logged in).
+- `×` close button inside the dashboard header.
+
+Press-start click handler guards against firing in `.dashboard-mode` so splash dismissal semantics don't collide.
+
 ### ASCII bootstrap
 
 `frontend/javascript/ascii/index.js` boots two DOM-only animation layers (ported verbatim from the pre-overhaul ascii-animator MOD):

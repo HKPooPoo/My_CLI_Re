@@ -29,6 +29,13 @@
   "pressStart": {
     "label": "TAP TO START"
   },
+  "dashboard": {
+    "title": "DASHBOARD",
+    "badgeLabel": "DASHBOARD",
+    "calendarHeading": "UPCOMING",
+    "announceHeading": "ANNOUNCEMENTS",
+    "notebooksHeading": "NOTEBOOKS"
+  },
   "auth": {
     "pageTitle": "SIGN IN",
     "uidPlaceholder": "USERNAME",
