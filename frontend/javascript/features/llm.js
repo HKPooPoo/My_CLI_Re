@@ -71,7 +71,6 @@ const PROMPTS = [
 
 // ── DOM refs, set in initShelf ──
 let $select = null;
-let $preview = null;
 let $sendBtn = null;
 let $output = null;
 let _busy = false;
@@ -192,12 +191,6 @@ async function send() {
 
 // ── Feature contract ───────────────────────────────────────────────
 
-function refreshPreview() {
-    const key = $select.value;
-    const spec = PROMPTS.find(p => p.key === key);
-    $preview.textContent = spec ? spec.prompt : '';
-}
-
 export const feature = {
     id: 'llm',
     iconUrl: ICON_URL,
@@ -211,22 +204,19 @@ export const feature = {
             <div class="feature-panel" data-feature="llm">
                 <div class="feature-title">AI TUTOR</div>
                 <label class="llm-field-label">Action</label>
-                <select class="llm-prompt-select">${options}</select>
-                <label class="llm-field-label">Prompt preview</label>
-                <div class="llm-prompt-preview"></div>
-                <button class="llm-send-btn" type="button">SEND</button>
+                <div class="llm-action-row">
+                    <select class="llm-prompt-select">${options}</select>
+                    <button class="llm-send-btn" type="button">SEND</button>
+                </div>
                 <label class="llm-field-label">Output</label>
                 <div class="llm-output"><div class="llm-empty">READY</div></div>
             </div>
         `;
         $select  = $shelf.querySelector('.llm-prompt-select');
-        $preview = $shelf.querySelector('.llm-prompt-preview');
         $sendBtn = $shelf.querySelector('.llm-send-btn');
         $output  = $shelf.querySelector('.llm-output');
 
-        $select.addEventListener('change', refreshPreview);
         $sendBtn.addEventListener('click', send);
-        refreshPreview();
     },
     onOpen() {
         // Output state persists across opens — don't reset.
