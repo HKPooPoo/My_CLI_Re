@@ -558,6 +558,9 @@
 
 .mods-config-field-textarea {
     width: 100%;
+    box-sizing: border-box;
+    overflow-wrap: anywhere;
+    word-break: break-word;
     resize: none;
     font-family: inherit;
     font-size: inherit;

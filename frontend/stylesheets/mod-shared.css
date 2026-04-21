@@ -58,6 +58,10 @@
 
 /* Textarea output panel (translate, LLM, etc.) */
 .mod-shelf-output {
+    width: 100%;
+    box-sizing: border-box;
+    overflow-wrap: anywhere;
+    word-break: break-word;
     font-size: var(--textbox-font-size);
     height: clamp(192px, calc(var(--container-width) / 1.56), 56vh);
     border: var(--border-line);
@@ -81,8 +85,23 @@
     border-radius: 2px;
 }
 
-/* Editable prompt input above output (LLM shelf) */
+/* Editable prompt input above output (LLM shelf)
+ *
+ * width: 100% + box-sizing: border-box + overflow-wrap: anywhere pin the
+ * textarea to the shelf's usable width. Without these, a long unbroken
+ * string (URLs, long CJK, etc.) lets the textarea's intrinsic width
+ * balloon, which cascades upward (shelf → feature-container → page-
+ * container) and pushes the viewport's horizontal scroll. The
+ * .feature-container's `right: 0` anchor is relative to its (now wider)
+ * containing block, so the MOD feature buttons drift left of the screen
+ * edge and look unanchored. Bound the textarea's width and the cascade
+ * stops at the source.
+ */
 .mod-shelf-prompt {
+    width: 100%;
+    box-sizing: border-box;
+    overflow-wrap: anywhere;
+    word-break: break-word;
     font-size: var(--textbox-font-size);
     border: var(--border-line);
     border-bottom: none;
