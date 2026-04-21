@@ -83,16 +83,32 @@
 
 /* Editable prompt input above output (LLM shelf)
  *
- * overflow-wrap: anywhere breaks unbroken long strings (URLs, CJK
- * without spaces) at any character so the textarea wraps inside the
- * shelf's visible width instead of horizontally scrolling. Without
- * this, when a line's content hits the right edge of the textarea's
- * visible box, the browser shifts the visible text leftward to reveal
- * the overflowed tail — the user sees their text "drift left" as they
- * type.
+ * Width pinning to stop horizontal drift as the user types:
+ *   - width / max-width / min-width: 100% + 0 — default textarea
+ *     intrinsic width comes from cols attr (20 ch). Without these,
+ *     flex layout may give the textarea a width smaller than the
+ *     shelf, and as the caret reaches the textarea's RIGHT edge, the
+ *     textarea's internal scrollLeft advances — visible text shifts
+ *     leftward to keep the caret in view. Pinning to 100% makes the
+ *     textarea always fill the shelf.
+ *   - box-sizing: border-box — include border/padding in the 100%
+ *     so we don't overshoot.
+ *   - min-width: 0 — flex items default to min-content; without this
+ *     a long unbroken word would override width: 100% and push the
+ *     textarea wider than the shelf.
+ *   - overflow-wrap: anywhere + word-break: break-word — force wrap
+ *     at any character for CJK / URLs / long English runs.
+ *   - overflow-x: hidden — belt-and-braces: even if a layout edge
+ *     case sneaks a character past the edge, no internal scroll.
  */
 .mod-shelf-prompt {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
     overflow-wrap: anywhere;
+    word-break: break-word;
+    overflow-x: hidden;
     font-size: var(--textbox-font-size);
     border: var(--border-line);
     border-bottom: none;
