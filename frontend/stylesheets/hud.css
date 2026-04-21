@@ -31,3 +31,8 @@
     white-space: nowrap;
 }
 
+#db-status-bar, 
+#db-status-display {
+    display: none;
+}
+
