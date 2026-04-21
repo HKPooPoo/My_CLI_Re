@@ -85,7 +85,7 @@
 .broadcast-list-list-item.active {
     background: var(--brand);
     color: #ffffff;
-    box-shadow: 0 2px 8px rgba(197, 111, 213, 0.28);
+    box-shadow: 0 2px 8px rgba(166, 46, 66, 0.28);
 }
 
 .broadcast-list-list-item.active .broadcast-list-tag {

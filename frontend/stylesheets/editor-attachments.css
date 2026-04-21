@@ -228,7 +228,7 @@ input.attachment-chip-name[readonly] {
 @media (hover: hover) {
     .attachment-chip.is-local:hover {
         background: var(--text-orange-10);
-        box-shadow: 0 1px 3px rgba(197, 111, 213, 0.25);
+        box-shadow: 0 1px 3px rgba(166, 46, 66, 0.25);
     }
 }
 

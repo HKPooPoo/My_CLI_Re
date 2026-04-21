@@ -10,10 +10,13 @@
     --font-size: clamp(0.875rem, min(4vh, 2vw), 1rem);
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 
-    /* Brand palette — HKPolyU Blackboard Learn inspired */
-    --brand: #c56fd5;
-    --brand-dark: #9f4ab0;
-    --accent: #a62e42;
+    /* Brand palette — HKPolyU Blackboard Learn inspired.
+       Wine red is the DOMINANT brand colour (header, active states,
+       primary CTA). Purple is a minor decorative accent only. */
+    --brand: #a62e42;
+    --brand-dark: #7a1f30;
+    --accent: #c56fd5;
+    --accent-dark: #9f4ab0;
     --bg-page: #fefefe;
     --bg-card: #f5f5f5;
     --text-muted: #7d7d7d;
@@ -22,14 +25,16 @@
 
     /* Legacy semantic aliases so existing var(--text-green) / etc. adapt
        without touching every page-*.css. Remapping table:
-         green  → body text       (primary content)
-         orange → brand purple    (titles, active, primary CTA)
-         red    → accent red      (destructive, armed confirm, error)
-         cyan   → muted gray      (info, secondary status)
-         yellow → brand purple    (needs sync / attention)                */
+         green  → body text     (primary content)
+         orange → brand wine    (titles, active, primary CTA)
+         red    → brand wine    (destructive shares the same red — intent
+                                  differentiated by context + armed animation,
+                                  not by separate hue)
+         cyan   → muted gray    (info, secondary status)
+         yellow → brand wine    (needs sync / attention)                  */
     --text-green: var(--text-body);
     --text-orange: var(--brand);
-    --text-red: var(--accent);
+    --text-red: var(--brand);
     --text-cyan: var(--text-muted);
     --text-yellow: var(--brand);
 
@@ -69,15 +74,22 @@
 
     /* Transparency / tint variants */
     --text-green-10: rgba(38, 38, 38, 0.06);
-    --text-orange-10: rgba(197, 111, 213, 0.10);
+    --text-orange-10: rgba(166, 46, 66, 0.10);
     --text-cyan-10: rgba(125, 125, 125, 0.08);
     --overlay-bg: rgba(254, 254, 254, 0.92);
     --text-orange-accent: var(--brand-dark);
     --caret-color: var(--brand);
 
+    /* Shadow tints used by interactive elements (hover/active/armed) */
+    --shadow-brand: rgba(166, 46, 66, 0.22);
+    --shadow-brand-strong: rgba(166, 46, 66, 0.32);
+    --shadow-brand-dark: rgba(122, 31, 48, 0.4);
+    --shadow-accent: rgba(197, 111, 213, 0.25);
+    --shadow-muted: rgba(38, 38, 38, 0.08);
+
     /* Feature Shelf — light frosted */
     --frosted-glass-bg: rgba(245, 245, 245, 0.85);
-    --frosted-glass-border: 1px solid rgba(197, 111, 213, 0.25);
+    --frosted-glass-border: 1px solid rgba(166, 46, 66, 0.22);
     --frosted-glass-shadow: 0 4px 30px rgba(0, 0, 0, 0.06);
     --feature-shelf-btn-bg: var(--frosted-glass-bg);
     --feature-shelf-btn-color: var(--brand);
@@ -134,15 +146,15 @@ button {
     button:hover {
         background: var(--brand);
         color: #ffffff;
-        box-shadow: 0 2px 8px rgba(197, 111, 213, 0.28);
+        box-shadow: 0 2px 8px var(--shadow-brand);
     }
 }
 
 button.error {
     color: #ffffff !important;
-    background: var(--accent) !important;
-    border-color: var(--accent) !important;
-    box-shadow: 0 2px 8px rgba(166, 46, 66, 0.32) !important;
+    background: var(--brand-dark) !important;
+    border-color: var(--brand-dark) !important;
+    box-shadow: 0 2px 8px var(--shadow-brand-dark) !important;
     transition: all 0.2s;
 }
 
@@ -182,19 +194,21 @@ a:hover {
     width: 100%;
     justify-content: center;
     align-items: center;
-    background-color: var(--bg-page);
     overflow: hidden;
     font-weight: 600;
-    color: var(--text-body);
 }
 
+/* Wine-red header strip — mirrors the LMS "2+2" banner convention */
 .header {
     height: var(--header-height);
-    border-bottom: 1px solid var(--border-subtle);
+    background: linear-gradient(135deg, #a62e42 0%, #8f2538 55%, #7a1f30 100%);
+    color: #ffffff;
+    border-bottom: none;
 }
 
 .footer {
     height: var(--footer-height);
+    background-color: var(--bg-page);
     border-top: 1px solid var(--border-subtle);
     color: var(--text-muted);
 }
@@ -205,13 +219,17 @@ a:hover {
 
 .header-img {
     position: absolute;
-    margin: auto;
-    height: var(--header-height);
-    object-fit: contain;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
     filter: none;
-    opacity: 0.85;
-    transition: transform 0.16s ease-out;
-    transform: scale(1.18);
+    opacity: 1;
+    /* SVG viewBox is 1200×128; object-fit:cover scales up to fill while
+       preserving aspect. The header's own wine-red gradient shows through
+       any seams and matches the SVG's own background so it reads as one
+       continuous banner across any viewport width. */
 }
 
 .body {
@@ -231,7 +249,7 @@ a:hover {
 
 /* Subtle selection highlight to match brand */
 ::selection {
-    background: rgba(197, 111, 213, 0.25);
+    background: rgba(166, 46, 66, 0.22);
     color: var(--text-body);
 }
 

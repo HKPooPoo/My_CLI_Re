@@ -36,7 +36,7 @@
     color: #ffffff !important;
     background: var(--brand) !important;
     border-color: var(--brand) !important;
-    box-shadow: 0 2px 8px rgba(197, 111, 213, 0.3) !important;
+    box-shadow: 0 2px 8px rgba(166, 46, 66, 0.3) !important;
 }
 
 @media (hover: hover) {

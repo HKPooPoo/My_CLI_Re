@@ -109,7 +109,7 @@ const SW_CSS = `
 @media (hover: hover) {
     .sw-btn:hover { box-shadow: 0 1px 4px rgba(38, 38, 38, 0.1); }
     .sw-btn-stop:hover { box-shadow: 0 1px 4px rgba(166, 46, 66, 0.25); }
-    .sw-btn-lap:hover { box-shadow: 0 1px 4px rgba(197, 111, 213, 0.25); }
+    .sw-btn-lap:hover { box-shadow: 0 1px 4px rgba(166, 46, 66, 0.25); }
     .sw-btn-reset:hover { box-shadow: 0 1px 4px rgba(166, 46, 66, 0.25); }
 }
 `;

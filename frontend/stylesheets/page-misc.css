@@ -139,7 +139,7 @@
     border-radius: 50%;
     background: var(--brand);
     border: 2px solid var(--bg-page);
-    box-shadow: 0 1px 4px rgba(197, 111, 213, 0.3);
+    box-shadow: 0 1px 4px rgba(166, 46, 66, 0.3);
     cursor: pointer;
     transition: box-shadow var(--transition-normal);
 }
@@ -150,7 +150,7 @@
     border-radius: 50%;
     background: var(--brand);
     border: 2px solid var(--bg-page);
-    box-shadow: 0 1px 4px rgba(197, 111, 213, 0.3);
+    box-shadow: 0 1px 4px rgba(166, 46, 66, 0.3);
     cursor: pointer;
 }
 
@@ -162,6 +162,6 @@
 
 @media (hover: hover) {
     .misc-range-input:hover::-webkit-slider-thumb {
-        box-shadow: 0 2px 8px rgba(197, 111, 213, 0.45);
+        box-shadow: 0 2px 8px rgba(166, 46, 66, 0.45);
     }
 }

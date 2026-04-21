@@ -105,7 +105,7 @@ const CALC_CSS = `
         box-shadow: 0 1px 4px rgba(38, 38, 38, 0.1);
     }
     .calc-btn-op:hover {
-        box-shadow: 0 1px 4px rgba(197, 111, 213, 0.25);
+        box-shadow: 0 1px 4px rgba(166, 46, 66, 0.25);
     }
     .calc-btn-eq:hover {
         box-shadow: 0 1px 4px rgba(125, 125, 125, 0.2);

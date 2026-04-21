@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 128" preserveAspectRatio="xMidYMid slice" role="img" aria-label="2+2 SPACEX to HKXU — Your Seamless Pathway to Degree Awarded by HKXU">
+  <defs>
+    <linearGradient id="bannerBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#a62e42"/>
+      <stop offset="55%" stop-color="#8f2538"/>
+      <stop offset="100%" stop-color="#7a1f30"/>
+    </linearGradient>
+    <radialGradient id="spotlight" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.12"/>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="1200" height="128" fill="url(#bannerBg)"/>
+
+  <!-- Soft spotlight circles (match LMS "bokeh" aesthetic) -->
+  <circle cx="300" cy="24"  r="110" fill="url(#spotlight)"/>
+  <circle cx="760" cy="108" r="140" fill="url(#spotlight)"/>
+  <circle cx="1060" cy="32" r="90"  fill="url(#spotlight)"/>
+
+  <!-- Faint decorative pills -->
+  <circle cx="260"  cy="30"  r="70"  fill="#ffffff" opacity="0.05"/>
+  <circle cx="180"  cy="110" r="50"  fill="#ffffff" opacity="0.04"/>
+  <circle cx="540"  cy="20"  r="55"  fill="#ffffff" opacity="0.045"/>
+  <circle cx="880"  cy="96"  r="100" fill="#ffffff" opacity="0.04"/>
+  <circle cx="1080" cy="40"  r="75"  fill="#ffffff" opacity="0.035"/>
+  <circle cx="420"  cy="100" r="45"  fill="#ffffff" opacity="0.03"/>
+
+  <!-- Tiny purple accent glow on the far left -->
+  <circle cx="60" cy="64" r="90" fill="#c56fd5" opacity="0.14"/>
+
+  <!-- Graduation-cap mascot (left side) -->
+  <g transform="translate(96, 64)">
+    <!-- Mortarboard -->
+    <polygon points="-26,-12 26,-12 33,-5 -33,-5" fill="#ffffff"/>
+    <!-- Cap dome -->
+    <path d="M -18,-5 L 18,-5 L 16,10 Q 0,16 -16,10 Z" fill="#ffffff"/>
+    <!-- Tassel cord -->
+    <line x1="16" y1="-11" x2="28" y2="16" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round"/>
+    <!-- Tassel ball -->
+    <circle cx="29" cy="18" r="3.5" fill="#ffffff"/>
+  </g>
+
+  <!-- Main "2+2" (huge) -->
+  <text x="168" y="72" font-family="Inter, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif"
+        font-weight="800" font-size="64" fill="#ffffff" dominant-baseline="middle" letter-spacing="-2">2+2</text>
+
+  <!-- "SPACEX to HKXU" (medium, next to 2+2) -->
+  <text x="300" y="68" font-family="Inter, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif"
+        font-weight="700" font-size="40" fill="#ffffff" dominant-baseline="middle">SPACEX to HKXU</text>
+
+  <!-- Subtitle -->
+  <text x="170" y="104" font-family="Inter, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif"
+        font-weight="400" font-size="16" fill="#ffffff" opacity="0.95">Your Seamless Pathway to Degree Awarded by HKXU</text>
+</svg>

@@ -1,13 +1,17 @@
-/*HUD Status Bar*/
+/*HUD Status Bar — sits on the wine-red header, so text is white*/
 .hud-bar {
     position: absolute;
     bottom: 4px;
     left: 8px;
     flex-direction: row;
+    z-index: 2;
+    color: #ffffff;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
 }
 
 .hud-bar * {
     font-size: var(--header-footer-font-size);
+    color: #ffffff;
 }
 
 #login-status-bar,

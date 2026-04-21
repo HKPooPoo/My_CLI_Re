@@ -98,7 +98,7 @@
 .mods-list-item.active {
     background: var(--brand);
     color: #ffffff;
-    box-shadow: 0 2px 8px rgba(197, 111, 213, 0.28);
+    box-shadow: 0 2px 8px rgba(166, 46, 66, 0.28);
 }
 
 .mods-list-item.active .mods-list-item-name {
@@ -372,7 +372,7 @@
     border-radius: 50%;
     background: var(--brand);
     border: 2px solid var(--bg-page);
-    box-shadow: 0 1px 4px rgba(197, 111, 213, 0.3);
+    box-shadow: 0 1px 4px rgba(166, 46, 66, 0.3);
     cursor: pointer;
 }
 
@@ -382,7 +382,7 @@
     border-radius: 50%;
     background: var(--brand);
     border: 2px solid var(--bg-page);
-    box-shadow: 0 1px 4px rgba(197, 111, 213, 0.3);
+    box-shadow: 0 1px 4px rgba(166, 46, 66, 0.3);
     cursor: pointer;
 }
 
@@ -433,7 +433,7 @@
 .mods-catalog-item.active {
     background: var(--brand);
     color: #ffffff;
-    box-shadow: 0 2px 8px rgba(197, 111, 213, 0.28);
+    box-shadow: 0 2px 8px rgba(166, 46, 66, 0.28);
 }
 
 .mods-catalog-item.active .mods-catalog-item-name {
@@ -649,7 +649,7 @@
 
 .mods-icon-picker-item.selected {
     border-color: var(--text-orange);
-    box-shadow: 0 1px 4px rgba(197, 111, 213, 0.3);
+    box-shadow: 0 1px 4px rgba(166, 46, 66, 0.3);
 }
 
 /* === Version badge in instance list === */
