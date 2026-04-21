@@ -36,7 +36,6 @@ import { getEcho } from './echo-service.js';
 import { t } from './i18n.js';
 import { T } from './timing.js';
 import * as Settings from './settings.js';
-import { registerMetadataProvider } from './mod-board-provider.js';
 import { TimerGroup } from './timer-group.js';
 import * as CrossTabSync from './cross-tab-sync.js';
 
@@ -87,17 +86,6 @@ export const BCChannel = {
         this.lockTextarea();
         this.clearIndicators();
 
-        // Register metadata provider for MOD board data access
-        registerMetadataProvider('bc', () => ({
-            branchId:   this.state.localChannelId?.toString() ?? null,
-            branchName: this.currentChannel?.name ?? null,
-            timestamp:  null,
-            text:       this.elements.textarea?.value ?? '',
-            fileHash:   this.state.currentFileHash,
-            owner:      null,
-            isVirtual:  this.state.isVirtual,
-            headIndex:  this.isOwnerMode ? this.state.currentHead : this.readerHead,
-        }));
     },
 
     // =====================================================================

@@ -23,7 +23,6 @@ import { EditorAttachments } from "./editor-attachments.js";
 import { t } from './i18n.js';
 import { T } from './timing.js';
 import * as Settings from './settings.js';
-import { registerMetadataProvider } from './mod-board-provider.js';
 import { BBSync } from './blackboard-sync.js';
 import { TimerGroup } from './timer-group.js';
 import * as CrossTabSync from './cross-tab-sync.js';
@@ -41,18 +40,6 @@ const state = {
 
 const timers = new TimerGroup();
 let isInitializing = false;
-
-// Register metadata provider for MOD board data access
-registerMetadataProvider('bb', () => ({
-    branchId:   state.branchId,
-    branchName: state.branch,
-    timestamp:  null,  // current record timestamp resolved at read time
-    text:       BBUI.getTextareaValue() || '',
-    fileHash:   state.currentFileHash,
-    owner:      state.owner,
-    isVirtual:  state.isVirtual,
-    headIndex:  state.currentHead,
-}));
 
 // --- File Attachment Instance ---
 const bbAttach = EditorAttachments.create({

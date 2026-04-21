@@ -31,7 +31,6 @@ import { playAudio } from "./audio.js";
 import { t } from './i18n.js';
 import { T } from './timing.js';
 import * as Settings from './settings.js';
-import { registerMetadataProvider } from './mod-board-provider.js';
 import { TimerGroup } from './timer-group.js';
 import * as CrossTabSync from './cross-tab-sync.js';
 
@@ -84,18 +83,6 @@ export const WTText = {
         this.initAttachments();
         this.bindEvents();
         this.lockBoards();
-
-        // Register metadata provider for MOD board data access
-        registerMetadataProvider('wt', () => ({
-            branchId:   this.weState.branchId,
-            branchName: this.weState.branch,
-            timestamp:  null,
-            text:       this.elements.weTextarea?.value ?? '',
-            fileHash:   this.currentBin,
-            owner:      null,
-            isVirtual:  this.weState.isVirtual,
-            headIndex:  this.weState.currentHead,
-        }));
 
         if (Settings.get('wt', 'boardSwap')) {
             this.toggleSwap(true);
