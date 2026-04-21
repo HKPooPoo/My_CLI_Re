@@ -20,8 +20,10 @@ const ICON_URL = '/images/ai-tutor.svg';
 const MODEL = 'qwen3.5:4b';
 const TEMPERATURE = 0.3;
 const SYSTEM_PROMPT =
-    'You are a helpful study assistant for university students. ' +
-    'Answer clearly and concisely in academic English. ' +
+    'You are an AI study assistant inside My CLI, a classroom communication platform used ' +
+    'by university students and lecturers. Users write notes in a personal Notebook, chat one-to-one, ' +
+    'and read announcements posted by lecturers. You help students understand, summarise, translate, ' +
+    'and plan their work. Answer clearly and concisely in academic English. ' +
     'When asked to generate JSON, respond with ONLY valid JSON — no prose around it.';
 
 // Four hardcoded actions. Each declares its scope so context gatherer
@@ -49,10 +51,10 @@ const PROMPTS = [
         key: 'suggest_schedule',
         label: 'Suggest a schedule for me',
         scope: 'schedule',
-        prompt:
-            'Suggest a reasonable 7-day study schedule based on the current time and the ' +
-            'user\'s calendar events below. Account for existing commitments and leave room ' +
-            'for rest. Format as a day-by-day list:',
+        // Prompt built dynamically in gatherContext so edge cases (empty
+        // calendar / all-past events) can be addressed with instructions
+        // tailored to the actual data state. See composeSchedulePrompt.
+        prompt: '__DYNAMIC_SCHEDULE__',
     },
 ];
 
@@ -67,20 +69,84 @@ function getCurrentPage() {
     return document.querySelector('.page.active')?.dataset.page || null;
 }
 
+function composeSchedulePrompt() {
+    const nowDate = new Date();
+    const nowIso = nowDate.toISOString();
+    const nowHk = nowDate.toLocaleString('en-US', {
+        timeZone: 'Asia/Hong_Kong',
+        weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+        hour: '2-digit', minute: '2-digit'
+    });
+
+    let calendar = {};
+    try {
+        calendar = JSON.parse(localStorage.getItem('user-calendar') || '{}');
+    } catch { /* empty */ }
+
+    const entries = Object.entries(calendar);
+    const todayYmd = nowIso.slice(0, 10);
+    const upcoming = entries.filter(([date]) => date >= todayYmd);
+    const past     = entries.filter(([date]) => date  < todayYmd);
+
+    // Branch on calendar state — the LLM should behave differently when
+    // there's nothing to plan around vs. genuinely having events.
+    let dataSection;
+    let taskSection;
+
+    if (entries.length === 0) {
+        dataSection = '(The user has NOT added any calendar events yet. Their personal calendar is empty.)';
+        taskSection =
+            'TASK:\n' +
+            '- Because the calendar is empty, do NOT invent events or deadlines.\n' +
+            '- Politely tell the user that their calendar is empty, and that you need events ' +
+            '(e.g. lecture dates, assignment deadlines, exam dates) before you can suggest a schedule.\n' +
+            '- Suggest they open the Calendar feature (from the scaffold on the right) and add ' +
+            'a few upcoming events, then ask you again.';
+    } else if (upcoming.length === 0) {
+        dataSection = 'Past events (all of the user\'s events are in the past):\n' +
+            past.slice(-10).map(([d, t]) => `- ${d}: ${t}`).join('\n');
+        taskSection =
+            'TASK:\n' +
+            '- Acknowledge that all of the user\'s recorded events are in the past — nothing is upcoming.\n' +
+            '- Do NOT pretend any past event is still pending or upcoming.\n' +
+            '- Suggest the user add upcoming deadlines / lectures to their Calendar before asking again.';
+    } else {
+        dataSection =
+            'Upcoming events (user has added these):\n' +
+            upcoming.map(([d, t]) => `- ${d}: ${t}`).join('\n') +
+            (past.length
+                ? '\n\nPast events (already happened, do NOT schedule these):\n' +
+                  past.slice(-5).map(([d, t]) => `- ${d}: ${t}`).join('\n')
+                : '');
+        taskSection =
+            'TASK:\n' +
+            '- Propose a 7-day study plan STARTING FROM THE CURRENT DATE ABOVE.\n' +
+            '- Every day in the plan must have an explicit date (YYYY-MM-DD) and weekday label.\n' +
+            '- Respect the user\'s existing upcoming events — do not overlap them. Work around them.\n' +
+            '- Build study blocks that lead up to (not after) each upcoming deadline.\n' +
+            '- Do NOT invent new courses, topics, or deadlines that are not in the list above.\n' +
+            '- Leave reasonable rest time. Suggest 2–4 focused blocks per day, not a full timetable.\n' +
+            '- Use short scannable bullets. Markdown is fine.';
+    }
+
+    return [
+        'You are helping a university student plan their coming week using My CLI.',
+        '',
+        `Current date/time (Asia/Hong_Kong): ${nowHk}`,
+        `Machine-readable now (UTC ISO): ${nowIso}`,
+        '',
+        dataSection,
+        '',
+        taskSection,
+    ].join('\n');
+}
+
 async function gatherContext(scope) {
     const page = getCurrentPage();
 
     if (scope === 'schedule') {
-        // Special: not from page content. Inject current time + user calendar.
-        const now = new Date().toLocaleString('en-US', { timeZone: 'Asia/Hong_Kong' });
-        let calendar = {};
-        try {
-            calendar = JSON.parse(localStorage.getItem('user-calendar') || '{}');
-        } catch { /* empty stub */ }
-        const events = Object.keys(calendar).length
-            ? JSON.stringify(calendar, null, 2)
-            : '(no events yet)';
-        return `Current time (Asia/Hong_Kong): ${now}\n\nUser's calendar events:\n${events}`;
+        // Full prompt is built here — replaces the generic per-prompt template.
+        return composeSchedulePrompt();
     }
 
     if (page === 'blackboard-log') {
@@ -174,13 +240,19 @@ async function send() {
     let fullText = '';
 
     try {
+        // Schedule prompt is self-contained (context IS the full user message).
+        // Other prompts have a short template + page/branch text appended.
+        const userMessage = spec.scope === 'schedule'
+            ? context
+            : `${spec.prompt}\n\n${context}`;
+
         const body = {
             provider: 'ollama',
             model: MODEL,
             temperature: TEMPERATURE,
             messages: [
                 { role: 'system', content: SYSTEM_PROMPT },
-                { role: 'user', content: `${spec.prompt}\n\n${context}` },
+                { role: 'user', content: userMessage },
             ],
         };
         for await (const chunk of LlmService.chatStream(body)) {
