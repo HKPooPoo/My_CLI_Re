@@ -109,6 +109,20 @@ function moveSubNaviItemHead($naviItem, nextSubNaviItemIndex) {
 }
 
 /**
+ * Programmatic sub-navi selection by name. Used by auth-landing to put the
+ * user on a specific sub-page (e.g. "auth") without them clicking.
+ */
+export function setSubNaviHead(naviItem, subName) {
+    const state = stateOfEachNaviItem[naviItem];
+    if (!state) return false;
+    const items = Array.from(state.$subNaviItems);
+    const targetIndex = items.findIndex(el => el.dataset.subNaviItem === subName);
+    if (targetIndex < 0) return false;
+    state.subNaviHeadIndex = targetIndex;
+    return true;
+}
+
+/**
  * 持久化：存入 LocalStorage 供頁面刷新後恢復
  */
 function saveNaviItemPositionToLocalStorage() {

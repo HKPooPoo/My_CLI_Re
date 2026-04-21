@@ -77,7 +77,8 @@
     "deleteComplete": "ACCOUNT DELETED",
     "deleteFailed": "DELETE FAILED",
     "sessionChanged": "SESSION CHANGED — NOW {uid}",
-    "sessionEnded": "SESSION ENDED — SIGNED OUT ELSEWHERE"
+    "sessionEnded": "SESSION ENDED — SIGNED OUT ELSEWHERE",
+    "loginRequiredOverlay": "SIGN IN TO CONTINUE"
   },
   "blackboard": {
     "pageTitle": "NOTEBOOKS",

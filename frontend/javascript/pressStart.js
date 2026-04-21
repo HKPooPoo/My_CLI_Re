@@ -12,7 +12,7 @@
  * =================================================================
  */
 
-import { setActiveNaviItem, updateNaviPosition } from "./navi.js";
+import { resolveLandingNav } from "./auth-landing.js";
 import * as Settings from './settings.js';
 
 const overlay = document.getElementById("press-start-overlay");
@@ -84,19 +84,10 @@ overlay.addEventListener("click", () => {
 
     overlay.classList.add("crt-switch-off");
 
-    // 首次進入初始化：從儲存中找回上次頁面，若無則預設導航至 blackboard
+    // First-entry landing: Auth page if not logged in, else last visited.
+    // Delegated to auth-landing.js so login-state branching lives in one place.
     if (!firstTriggered) {
-        if (!localStorage.getItem("navi-item-head")) {
-            localStorage.setItem("navi-item-head", "blackboard");
-        }
-
-        const lastNaviItem = localStorage.getItem("navi-item-head");
-        const $targetItem = document.querySelector(`.navi-item[data-navi-item="${lastNaviItem}"]`);
-
-        if ($targetItem) {
-            setActiveNaviItem($targetItem);
-            updateNaviPosition(lastNaviItem);
-        }
+        resolveLandingNav();
         firstTriggered = true;
     }
 });
@@ -146,15 +137,7 @@ if (sessionStorage.getItem('skipPressStart') === '1') {
     firstTriggered = true;
 
     const restoreNav = () => {
-        if (!localStorage.getItem("navi-item-head")) {
-            localStorage.setItem("navi-item-head", "blackboard");
-        }
-        const lastNaviItem = localStorage.getItem("navi-item-head");
-        const $targetItem = document.querySelector(`.navi-item[data-navi-item="${lastNaviItem}"]`);
-        if ($targetItem) {
-            setActiveNaviItem($targetItem);
-            updateNaviPosition(lastNaviItem);
-        }
+        resolveLandingNav();
         window.dispatchEvent(new CustomEvent('screensaver:deactivated'));
     };
 
