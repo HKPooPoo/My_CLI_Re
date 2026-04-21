@@ -1,17 +1,26 @@
 /**
- * Feature: Calendar — the user's personal schedule (per-user, cross-device).
+ * Feature: Calendar — polymorphic on page.
  *
- * Data lives on the server in users.settings.calendar (JSONB column,
- * auto-synced via sync-service.js). Shape: { "YYYY-MM-DD": "note", ... }.
+ * On Notebook (BB) pages the shelf shows the user's personal calendar,
+ * stored in users.settings.calendar (synced via sync-service).
  *
- * This is the BB-side calendar. BC channels have their own separate
- * calendar keyed per-channel (broadcast-channel backend). BB and BC
- * calendars do NOT merge — the user sees two distinct views.
+ * On Announce (BC) channel pages the shelf shows the channel's
+ * calendar, stored server-side in broadcast_channels.calendar. Only
+ * visible to the title-owning user (`BCChannel.isOwnerMode === true`) —
+ * subscribers will see it later via the Dashboard rollup, not here.
  *
- * Title: "{uid} Calendar" so users always know whose calendar this is.
+ * Title format:
+ *   BB → "{uid} CALENDAR"
+ *   BC → "{channel name} CALENDAR"
+ *
+ * BB does NOT merge subscribed BC events — the two are distinct
+ * surfaces per user directive.
  */
 
 import { getSetting, setSetting } from '../sync-service.js';
+import { BroadcastCalendarService } from '../services/broadcast-calendar-service.js';
+import { BCChannel } from '../broadcast-channel.js';
+import { BBMessage } from '../blackboard-msg.js';
 
 const ICON_URL = '/images/calendar.svg';
 
@@ -21,18 +30,62 @@ const MONTH_LABELS = [
     'July', 'August', 'September', 'October', 'November', 'December',
 ];
 
-// ── Storage helpers (delegate to sync-service) ─────────────────────
+// ── Mode resolution (BB vs BC) ─────────────────────────────────────
 
-function loadEvents() {
-    return { ...(getSetting('calendar', {}) || {}) };
+function getCurrentPage() {
+    return document.querySelector('.page.active')?.dataset.page || null;
 }
 
-function saveEvents(events) {
-    setSetting('calendar', events);
-}
-
-function currentUid() {
-    return localStorage.getItem('currentUser') || '';
+/**
+ * Returns a 'mode' object describing which calendar source is active:
+ *   { kind: 'bb' | 'bc', title, load(), save(events), writable }
+ */
+function resolveMode() {
+    const page = getCurrentPage();
+    if (page === 'broadcast-channel') {
+        const channel = BCChannel?.currentChannel;
+        const channelId = channel?.serverChannelId ?? null;
+        const channelName = channel?.name || '';
+        return {
+            kind: 'bc',
+            channelId,
+            title: channelName ? `${channelName.toUpperCase()} CALENDAR` : 'CHANNEL CALENDAR',
+            writable: !!BCChannel?.isOwnerMode,
+            async load() {
+                if (!channelId) return {};
+                try {
+                    const data = await BroadcastCalendarService.fetch(channelId);
+                    return (data && typeof data.calendar === 'object' && data.calendar) || {};
+                } catch (e) {
+                    console.error('[calendar/bc] fetch failed:', e);
+                    return {};
+                }
+            },
+            async save(events) {
+                if (!channelId) return;
+                try {
+                    await BroadcastCalendarService.update(channelId, events);
+                } catch (e) {
+                    console.error('[calendar/bc] save failed:', e);
+                    BBMessage.error('CHANNEL CALENDAR SAVE FAILED');
+                }
+            },
+        };
+    }
+    // default: BB — personal calendar via sync-service
+    const uid = localStorage.getItem('currentUser') || '';
+    return {
+        kind: 'bb',
+        channelId: null,
+        title: uid ? `${uid.toUpperCase()} CALENDAR` : 'CALENDAR',
+        writable: true,
+        async load() {
+            return { ...(getSetting('calendar', {}) || {}) };
+        },
+        async save(events) {
+            setSetting('calendar', events);
+        },
+    };
 }
 
 function ymd(date) {
@@ -46,9 +99,8 @@ function todayYmd() {
     return ymd(new Date());
 }
 
-// ── Rendering state (per-shelf instance) ───────────────────────────
+// ── Shelf DOM refs + state ─────────────────────────────────────────
 
-let $panel = null;
 let $title = null;
 let $monthLabel = null;
 let $grid = null;
@@ -58,20 +110,19 @@ let $editorTextarea = null;
 let $saveBtn = null;
 let $deleteBtn = null;
 
+let mode = null;         // resolved via resolveMode() on each onOpen()
+let events = {};         // cached, loaded via mode.load()
 let viewYear = new Date().getFullYear();
 let viewMonth = new Date().getMonth();
 let selectedYmd = null;
 
 // ── Rendering ──────────────────────────────────────────────────────
 
-function updateTitle() {
-    if (!$title) return;
-    const uid = currentUid();
-    $title.textContent = uid ? `${uid} CALENDAR` : 'CALENDAR';
+function renderTitle() {
+    if ($title && mode) $title.textContent = mode.title;
 }
 
 function renderMonth() {
-    const events = loadEvents();
     const firstOfMonth = new Date(viewYear, viewMonth, 1);
     const startWeekday = firstOfMonth.getDay();
     const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
@@ -119,11 +170,13 @@ function renderMonth() {
 
 function showEditorFor(dateStr) {
     selectedYmd = dateStr;
-    const events = loadEvents();
     const [y, m, d] = dateStr.split('-');
     const niceDate = `${MONTH_LABELS[parseInt(m) - 1]} ${parseInt(d)}, ${y}`;
     $editorLabel.textContent = niceDate;
     $editorTextarea.value = events[dateStr] || '';
+    $editorTextarea.readOnly = !mode.writable;
+    $saveBtn.style.display = mode.writable ? '' : 'none';
+    $deleteBtn.style.display = mode.writable ? '' : 'none';
     $editor.classList.add('active');
     renderMonth();
 }
@@ -148,24 +201,19 @@ function handleGridClick(e) {
     }
 }
 
-function handleSave() {
-    if (!selectedYmd) return;
+async function handleSave() {
+    if (!selectedYmd || !mode?.writable) return;
     const text = ($editorTextarea.value || '').trim();
-    const events = loadEvents();
-    if (text) {
-        events[selectedYmd] = text;
-    } else {
-        delete events[selectedYmd];
-    }
-    saveEvents(events);
+    if (text) events[selectedYmd] = text;
+    else delete events[selectedYmd];
+    await mode.save(events);
     hideEditor();
 }
 
-function handleDelete() {
-    if (!selectedYmd) return;
-    const events = loadEvents();
+async function handleDelete() {
+    if (!selectedYmd || !mode?.writable) return;
     delete events[selectedYmd];
-    saveEvents(events);
+    await mode.save(events);
     hideEditor();
 }
 
@@ -181,15 +229,16 @@ function handleNextMonth() {
     renderMonth();
 }
 
-// React to cross-device sync arrivals
+// React to cross-device sync arrivals (BB only — BC uses per-open fetch)
 window.addEventListener('settings:synced', () => {
-    if ($grid) renderMonth();
-    if ($title) updateTitle();
+    if (!$grid || !mode || mode.kind !== 'bb') return;
+    mode.load().then(loaded => {
+        events = loaded;
+        renderMonth();
+    });
 });
 
 window.addEventListener('auth:updated', () => {
-    if ($title) updateTitle();
-    if ($grid) renderMonth();
     if ($editor) hideEditor();
 });
 
@@ -200,6 +249,18 @@ export const feature = {
     iconUrl: ICON_URL,
     pages: ['blackboard-log', 'broadcast-channel'],
     hasShelf: true,
+    shouldShow(page) {
+        // On BC pages, calendar is an owner-only surface. Subscribers
+        // see BC calendars via the Dashboard rollup (future tier),
+        // never on the channel page itself. Also hidden for un-cast
+        // channels (serverChannelId null) — calendar needs a real
+        // backend row to persist to.
+        if (page === 'broadcast-channel') {
+            return !!BCChannel?.isOwnerMode
+                && !!BCChannel?.currentChannel?.serverChannelId;
+        }
+        return true;
+    },
     initShelf($shelf) {
         $shelf.innerHTML = `
             <div class="feature-panel" data-feature="calendar">
@@ -221,7 +282,6 @@ export const feature = {
             </div>
         `;
 
-        $panel          = $shelf.querySelector('[data-feature="calendar"]');
         $title          = $shelf.querySelector('.feature-title');
         $monthLabel     = $shelf.querySelector('.cal-month-label');
         $grid           = $shelf.querySelector('.cal-grid');
@@ -236,17 +296,19 @@ export const feature = {
         $deleteBtn.addEventListener('click', handleDelete);
         $shelf.querySelector('.cal-prev').addEventListener('click', handlePrevMonth);
         $shelf.querySelector('.cal-next').addEventListener('click', handleNextMonth);
-
-        updateTitle();
-        renderMonth();
     },
-    onOpen() {
+    async onOpen() {
+        mode = resolveMode();
         const now = new Date();
         viewYear = now.getFullYear();
         viewMonth = now.getMonth();
         selectedYmd = null;
         $editor?.classList.remove('active');
-        updateTitle();
+        renderTitle();
+        // Pre-render with empty set for instant feedback, then fill.
+        events = {};
+        renderMonth();
+        events = await mode.load();
         renderMonth();
     },
 };

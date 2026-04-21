@@ -124,4 +124,41 @@ class BroadcastChannelController extends Controller
 
         return response()->json(['message' => 'UNPINNED']);
     }
+
+    /**
+     * GET /api/broadcast/channels/{channelId}/calendar
+     *
+     * Public read: any user (including guests) can fetch a channel's
+     * calendar dict. Matches the project-wide "guests browse announcements"
+     * rule — calendar is part of the channel's public face.
+     */
+    public function showCalendar($channelId)
+    {
+        $calendar = $this->service->getCalendar((int) $channelId);
+        return response()->json(['calendar' => $calendar]);
+    }
+
+    /**
+     * PUT /api/broadcast/channels/{channelId}/calendar
+     *
+     * Auth required; only the channel's creator UID may write
+     * (consistent with cast/rename patterns in this project — the
+     * title-sharing refinement from the overhaul spec is not yet
+     * applied across write operations, see CLAUDE.md handover).
+     */
+    public function updateCalendar(Request $request, $channelId)
+    {
+        $user = Auth::user();
+        if (!$user) {
+            return response()->json(['message' => 'Unauthorized'], 401);
+        }
+
+        $validated = $request->validate([
+            'calendar' => 'required|array',
+        ]);
+
+        $this->service->updateCalendar($user, (int) $channelId, $validated['calendar']);
+
+        return response()->json(['calendar' => $validated['calendar']]);
+    }
 }

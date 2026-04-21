@@ -29,6 +29,7 @@ Route::middleware([/*'auth:sanctum',*/ 'throttle:10,1'])->group(function () {
 Route::get('/status', [StatusController::class, 'check']);
 Route::get('/broadcast/channels', [BroadcastChannelController::class, 'index']);
 Route::get('/broadcast/channels/{channelId}/boards', [BroadcastChannelController::class, 'fetchBoards']);
+Route::get('/broadcast/channels/{channelId}/calendar', [BroadcastChannelController::class, 'showCalendar']);
 
 // Timing config — read once at app boot (frontend caches in memory)
 Route::get('/config/timing', fn() => response()->json(config('timing')));
@@ -92,10 +93,11 @@ Route::middleware([/*'auth:sanctum'*/])->prefix('walkie-typie')->group(function 
     Route::get('/boards/{branchId}', [WalkieTypieController::class, 'fetchBoardRecords']);
 });
 
-// Broadcast Channels (pin/unpin — auth required)
+// Broadcast Channels (pin/unpin + calendar write — auth required)
 Route::middleware([/*'auth:sanctum'*/])->prefix('broadcast')->group(function () {
     Route::post('/channels/{channelId}/pin', [BroadcastChannelController::class, 'pin']);
     Route::delete('/channels/{channelId}/pin', [BroadcastChannelController::class, 'unpin']);
+    Route::put('/channels/{channelId}/calendar', [BroadcastChannelController::class, 'updateCalendar']);
 });
 
 // MOD endpoints — public

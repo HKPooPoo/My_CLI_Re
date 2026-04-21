@@ -820,7 +820,7 @@ Semantic spread: action 4's clear is a subset of action 6's erase. 4 preserves s
 | id | pages | has shelf | Purpose |
 |---|---|---|---|
 | `file-attach` | blackboard-log, walkie-typie-text, broadcast-channel | — | Native file picker; on mobile shows Take Photo + Choose File |
-| `calendar` | blackboard-log, broadcast-channel | ✓ | Personal (BB) or channel (BC) calendar |
+| `calendar` | blackboard-log, broadcast-channel | ✓ | Polymorphic: BB = personal `users.settings.calendar` (synced); BC = channel `broadcast_channels.calendar` (owner CRUD, guest/subscriber read) |
 | `flashcard` | blackboard-log, broadcast-channel | ✓ | Maker + Player; per-branch (BB) or per-channel (BC) |
 | `llm` | blackboard-log, broadcast-channel | ✓ | AI Tutor: dropdown prompts → Ollama streaming |
 
@@ -864,7 +864,7 @@ No ctx, no manifest, no config schema, no lifecycle hooks. Features import board
 - `settings:synced` event — fires after successful GET on login or after PUT
 - `settings:changed` event — fires after each setSetting call
 
-**Backend:** `GET /api/user/settings` and `PUT /api/user/settings` (UserSettingsController). Session-auth; LWW on write. Schema is client-opinionated, server validates only that the body is a JSON object:
+**Backend (user-scoped):** `GET /api/user/settings` and `PUT /api/user/settings` (UserSettingsController). Session-auth; LWW on write. Schema is client-opinionated, server validates only that the body is a JSON object:
 
 ```json
 {
@@ -874,6 +874,10 @@ No ctx, no manifest, no config schema, no lifecycle hooks. Features import board
 ```
 
 On `auth:updated` (login/logout), sync-service flushes pending pushes from the outgoing identity, then fetches the incoming user's settings.
+
+**Backend (channel-scoped):** `GET /api/broadcast/channels/{channelId}/calendar` (public read — guests + subscribers) and `PUT /api/broadcast/channels/{channelId}/calendar` (auth required; UID must match channel creator, same rule as cast/rename). Stored in `broadcast_channels.calendar` JSONB column (migration `2026_04_21_000001_add_calendar_to_broadcast_channels.php`). `BroadcastCalendarService` in the frontend wraps the two endpoints. Calendar feature resolves its mode (BB vs BC) at each `onOpen()` based on active page and `BCChannel.isOwnerMode` / `BCChannel.currentChannel`.
+
+**Known spec drift:** the overhaul spec says "multiple users with matching title can modify a channel", but all BC write operations — cast, rename, destroy, and now calendar — currently check strict UID match against `channel.user_id`. This is a known deviation inherited from pre-overhaul code; fixing it requires a coordinated sweep across all four write paths + backend test updates. Not addressed in Tier 9c.
 
 ### Authenticated page overlay
 

@@ -276,4 +276,45 @@ class BroadcastChannelService
             ->delete();
         Cache::forget("bc:pins:{$user->id}");
     }
+
+    /**
+     * Fetch a channel's calendar dict. Public read; returns an empty
+     * object when the channel has no calendar or does not exist.
+     */
+    public function getCalendar(int $channelId): array
+    {
+        $raw = DB::table('broadcast_channels')
+            ->where('id', $channelId)
+            ->value('calendar');
+        if (!$raw) return [];
+        $decoded = is_array($raw) ? $raw : json_decode($raw, true);
+        return is_array($decoded) ? $decoded : [];
+    }
+
+    /**
+     * Update a channel's calendar dict. Write requires the user to
+     * hold a title and to be the channel's creator (UID match — same
+     * ownership rule as cast/rename).
+     */
+    public function updateCalendar(User $user, int $channelId, array $calendar): void
+    {
+        if (!$user->title) {
+            abort(403, 'TITLE REQUIRED');
+        }
+
+        $channel = DB::table('broadcast_channels')->where('id', $channelId)->first();
+        if (!$channel) {
+            abort(404, 'CHANNEL NOT FOUND');
+        }
+        if ($channel->user_id !== $user->id) {
+            abort(403, 'NOT CHANNEL OWNER');
+        }
+
+        DB::table('broadcast_channels')
+            ->where('id', $channelId)
+            ->update([
+                'calendar' => json_encode($calendar),
+                'updated_at' => now(),
+            ]);
+    }
 }
