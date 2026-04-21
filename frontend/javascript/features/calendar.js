@@ -18,8 +18,8 @@
  */
 
 import { getSetting, setSetting } from '../sync-service.js';
-import { BroadcastCalendarService } from '../services/broadcast-calendar-service.js';
 import { BCChannel } from '../broadcast-channel.js';
+import { BCMeta } from '../broadcast-db.js';
 import { BBMessage } from '../blackboard-msg.js';
 
 const ICON_URL = '/images/calendar.svg';
@@ -44,29 +44,31 @@ function resolveMode() {
     const page = getCurrentPage();
     if (page === 'broadcast-channel') {
         const channel = BCChannel?.currentChannel;
-        const channelId = channel?.serverChannelId ?? null;
+        const localId = channel?.localId ?? null;
         const channelName = channel?.name || '';
         return {
             kind: 'bc',
-            channelId,
+            localId,
             title: channelName ? `${channelName.toUpperCase()} CALENDAR` : 'CHANNEL CALENDAR',
             writable: !!BCChannel?.isOwnerMode,
             async load() {
-                if (!channelId) return {};
+                if (!localId) return {};
                 try {
-                    const data = await BroadcastCalendarService.fetch(channelId);
-                    return (data && typeof data.calendar === 'object' && data.calendar) || {};
+                    return await BCMeta.getCalendar(localId);
                 } catch (e) {
-                    console.error('[calendar/bc] fetch failed:', e);
+                    console.error('[calendar/bc] local read failed:', e);
                     return {};
                 }
             },
             async save(events) {
-                if (!channelId) return;
+                if (!localId) return;
                 try {
-                    await BroadcastCalendarService.update(channelId, events);
+                    // Local-first: write to IndexedDB. Server sync happens
+                    // when the owner casts the channel (bundled with
+                    // records, same transaction).
+                    await BCMeta.setCalendar(localId, events);
                 } catch (e) {
-                    console.error('[calendar/bc] save failed:', e);
+                    console.error('[calendar/bc] local save failed:', e);
                     BBMessage.error('CHANNEL CALENDAR SAVE FAILED');
                 }
             },
@@ -252,12 +254,11 @@ export const feature = {
     shouldShow(page) {
         // On BC pages, calendar is an owner-only surface. Subscribers
         // see BC calendars via the Dashboard rollup (future tier),
-        // never on the channel page itself. Also hidden for un-cast
-        // channels (serverChannelId null) — calendar needs a real
-        // backend row to persist to.
+        // never on the channel page itself. The button works for both
+        // uncast drafts (local only) and cast channels (local + next
+        // cast includes calendar in the payload).
         if (page === 'broadcast-channel') {
-            return !!BCChannel?.isOwnerMode
-                && !!BCChannel?.currentChannel?.serverChannelId;
+            return !!BCChannel?.isOwnerMode && !!BCChannel?.currentChannel?.localId;
         }
         return true;
     },

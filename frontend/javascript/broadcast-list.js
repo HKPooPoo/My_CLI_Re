@@ -282,9 +282,14 @@ export const BCList = {
                             });
                         }
 
+                        // Include local calendar in cast payload — bundled
+                        // with records, same manual-sync cadence as text + files.
+                        const localCalendar = await BCMeta.getCalendar(ch.localId);
+
                         const result = await BroadcastService.cast({
                             channel_name: ch.name,
-                            records: apiRecords
+                            records: apiRecords,
+                            calendar: localCalendar,
                         });
 
                         const serverCh = result.channel;

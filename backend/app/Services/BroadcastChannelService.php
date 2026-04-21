@@ -60,25 +60,36 @@ class BroadcastChannelService
 
     /**
      * Cast (publish) a channel to the server.
+     *
+     * `calendar` is optional; when provided it is persisted to
+     * broadcast_channels.calendar in the same transaction as records.
+     * This keeps the calendar on the same manual-sync cadence as
+     * text + files — no live per-edit writes.
      */
-    public function cast(User $user, string $channelName, array $records): object
+    public function cast(User $user, string $channelName, array $records, ?array $calendar = null): object
     {
         if (!$user->title) {
             abort(403, 'TITLE REQUIRED');
         }
 
-        $channel = DB::transaction(function () use ($user, $channelName, $records) {
+        $channel = DB::transaction(function () use ($user, $channelName, $records, $calendar) {
             $nowMs = (int) (microtime(true) * 1000);
 
             $channel = DB::table('broadcast_channels')
                 ->where('name', $channelName)
                 ->first();
 
+            $channelUpdateFields = ['last_signal' => $nowMs, 'updated_at' => now()];
+            if ($calendar !== null) {
+                $channelUpdateFields['calendar'] = json_encode($calendar);
+            }
+
             if (!$channel) {
                 $channelId = DB::table('broadcast_channels')->insertGetId([
                     'name'        => $channelName,
                     'user_id'     => $user->id,
                     'last_signal' => $nowMs,
+                    'calendar'    => $calendar !== null ? json_encode($calendar) : null,
                     'created_at'  => now(),
                     'updated_at'  => now(),
                 ]);
@@ -89,7 +100,7 @@ class BroadcastChannelService
                 $channelId = $channel->id;
                 DB::table('broadcast_channels')
                     ->where('id', $channelId)
-                    ->update(['last_signal' => $nowMs, 'updated_at' => now()]);
+                    ->update($channelUpdateFields);
             }
 
             DB::table('broadcast_boards')
@@ -280,6 +291,10 @@ class BroadcastChannelService
     /**
      * Fetch a channel's calendar dict. Public read; returns an empty
      * object when the channel has no calendar or does not exist.
+     *
+     * Used by subscribers who want a fresh calendar after receiving a
+     * broadcast.channel.updated event, without refetching the full
+     * channel list. Writes go through cast() — never direct.
      */
     public function getCalendar(int $channelId): array
     {
@@ -289,32 +304,5 @@ class BroadcastChannelService
         if (!$raw) return [];
         $decoded = is_array($raw) ? $raw : json_decode($raw, true);
         return is_array($decoded) ? $decoded : [];
-    }
-
-    /**
-     * Update a channel's calendar dict. Write requires the user to
-     * hold a title and to be the channel's creator (UID match — same
-     * ownership rule as cast/rename).
-     */
-    public function updateCalendar(User $user, int $channelId, array $calendar): void
-    {
-        if (!$user->title) {
-            abort(403, 'TITLE REQUIRED');
-        }
-
-        $channel = DB::table('broadcast_channels')->where('id', $channelId)->first();
-        if (!$channel) {
-            abort(404, 'CHANNEL NOT FOUND');
-        }
-        if ($channel->user_id !== $user->id) {
-            abort(403, 'NOT CHANNEL OWNER');
-        }
-
-        DB::table('broadcast_channels')
-            ->where('id', $channelId)
-            ->update([
-                'calendar' => json_encode($calendar),
-                'updated_at' => now(),
-            ]);
     }
 }

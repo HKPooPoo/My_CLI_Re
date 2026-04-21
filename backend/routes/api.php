@@ -93,11 +93,11 @@ Route::middleware([/*'auth:sanctum'*/])->prefix('walkie-typie')->group(function 
     Route::get('/boards/{branchId}', [WalkieTypieController::class, 'fetchBoardRecords']);
 });
 
-// Broadcast Channels (pin/unpin + calendar write — auth required)
+// Broadcast Channels (pin/unpin — auth required)
+// Calendar writes happen via cast (bundled with records); no direct PUT.
 Route::middleware([/*'auth:sanctum'*/])->prefix('broadcast')->group(function () {
     Route::post('/channels/{channelId}/pin', [BroadcastChannelController::class, 'pin']);
     Route::delete('/channels/{channelId}/pin', [BroadcastChannelController::class, 'unpin']);
-    Route::put('/channels/{channelId}/calendar', [BroadcastChannelController::class, 'updateCalendar']);
 });
 
 // MOD endpoints — public

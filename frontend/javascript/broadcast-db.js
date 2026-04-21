@@ -189,7 +189,13 @@ export const BCMeta = {
                 server_channel_id: serverSide.id,
                 owner_uid: serverSide.owner_uid,
                 owner_title: serverSide.owner_title || '',
-                last_signal: serverSide.last_signal || Date.now()
+                last_signal: serverSide.last_signal || Date.now(),
+                // Carry the server's current calendar into the local row so
+                // the owner's next open shows their last cast. Null / non-
+                // object values fall back to an empty dict.
+                calendar: (serverSide.calendar && typeof serverSide.calendar === 'object')
+                    ? serverSide.calendar
+                    : {},
             });
 
             if (records && records.length > 0) {
@@ -239,5 +245,23 @@ export const BCMeta = {
     async deleteChannel(localId) {
         await BCDb.deleteAllRecords(localId);
         await db.broadcast_channels.delete(localId);
+    },
+
+    /**
+     * Local per-channel calendar dict — { "YYYY-MM-DD": "note" }.
+     * Stored on the broadcast_channels IndexedDB row as a
+     * `calendar` field (dexie is schemaless on non-indexed columns).
+     * Written here locally; pushed to server only via cast(), in the
+     * same transaction as records. Mirrors the text/file sync cadence.
+     */
+    async getCalendar(localId) {
+        const row = await db.broadcast_channels.get(localId);
+        return (row && row.calendar && typeof row.calendar === 'object')
+            ? row.calendar
+            : {};
+    },
+
+    async setCalendar(localId, calendar) {
+        await db.broadcast_channels.update(localId, { calendar });
     }
 };
