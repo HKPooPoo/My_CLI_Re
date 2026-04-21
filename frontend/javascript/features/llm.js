@@ -121,12 +121,28 @@ function composeSchedulePrompt() {
         taskSection =
             'TASK:\n' +
             '- Propose a 7-day study plan STARTING FROM THE CURRENT DATE ABOVE.\n' +
-            '- Every day in the plan must have an explicit date (YYYY-MM-DD) and weekday label.\n' +
-            '- Respect the user\'s existing upcoming events — do not overlap them. Work around them.\n' +
-            '- Build study blocks that lead up to (not after) each upcoming deadline.\n' +
-            '- Do NOT invent new courses, topics, or deadlines that are not in the list above.\n' +
-            '- Leave reasonable rest time. Suggest 2–4 focused blocks per day, not a full timetable.\n' +
-            '- Use short scannable bullets. Markdown is fine.';
+            '- Every day needs an explicit date (YYYY-MM-DD) and weekday label.\n' +
+            '- Respect the user\'s upcoming events — show them on their actual dates, do not overlap them.\n' +
+            '\n' +
+            'HARD CONSTRAINTS (violating any of these is a failure):\n' +
+            '1. Every suggested study block MUST reference a literal event from the calendar above by its EXACT title. If an event title is "Logic Test", the block must say "Study for Logic Test" or "Review for Logic Test" — NOT "Review Logic Fundamentals" or any paraphrase.\n' +
+            '2. Do NOT invent specific activities. Forbidden: "mock exam", "sample essay", "past papers", "peer review", "practice questions", "concept mapping", "full-length mock", "draft essay", textbook chapters, teacher names, course materials, or any concrete artefact the user didn\'t write in the calendar.\n' +
+            '3. Allowed block types ONLY:\n' +
+            '   • Study for <exact event title>\n' +
+            '   • Review for <exact event title>\n' +
+            '   • Prepare for <exact event title>\n' +
+            '   • Free study time\n' +
+            '   • Rest day\n' +
+            '4. Max 3 blocks per day. One line each. No commentary or explanation paragraphs.\n' +
+            '5. If the user has only ONE upcoming event, most days should contain just "Free study time" or "Rest day" plus at most one study block referencing that event. Do NOT fill every day with study activity — the user gave you ONE data point, not a curriculum.\n' +
+            '6. Never add sub-bullets, action descriptions, or rationale text under a block. The bullet itself is the entire entry.\n' +
+            '\n' +
+            'OUTPUT FORMAT (strict):\n' +
+            '### YYYY-MM-DD (Weekday)\n' +
+            '- <allowed block>\n' +
+            '- <allowed block>\n' +
+            '\n' +
+            'No introduction, no closing remark. Only the 7 dated blocks.';
     }
 
     return [
