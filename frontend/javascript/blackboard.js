@@ -41,6 +41,10 @@ const state = {
 const timers = new TimerGroup();
 let isInitializing = false;
 
+// Exported for feature modules (e.g. features/llm.js) that need to read
+// the current branch/page context without a MOD-style API layer.
+export { state as BBState };
+
 // --- File Attachment Instance ---
 const bbAttach = EditorAttachments.create({
     dropZoneSelector: '#bb-drop-zone',
