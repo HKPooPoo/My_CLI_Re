@@ -23,8 +23,23 @@ function updateAuthOverlays() {
     const isLoggedIn = checkLoggedIn();
     document
         .querySelectorAll('.blackboard-auth-overlay, .broadcast-auth-overlay')
-        .forEach(el => {
-            el.style.display = isLoggedIn ? 'none' : 'flex';
+        .forEach(overlay => {
+            overlay.style.display = isLoggedIn ? 'none' : 'flex';
+            // Defense-in-depth: apply `inert` to sibling content of the overlay.
+            // `inert` is a browser-level attribute that disables ALL pointer
+            // and keyboard interaction on the subtree. Even if the overlay is
+            // removed via DevTools, the underlying content stays non-interactive
+            // until `inert` itself is removed.
+            const page = overlay.closest('.page');
+            if (!page) return;
+            Array.from(page.children).forEach(child => {
+                if (child === overlay) return;
+                if (isLoggedIn) {
+                    child.removeAttribute('inert');
+                } else {
+                    child.setAttribute('inert', '');
+                }
+            });
         });
 }
 

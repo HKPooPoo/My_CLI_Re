@@ -246,20 +246,29 @@
     flex-direction: column-reverse;
 }
 
+/* Page auth overlay — reuses the Press Start visual style.
+   Solid background, full coverage. Siblings get `inert` attribute
+   via auth-landing.js so F12-deleting this element still leaves the
+   underlying content non-interactive. Defense in depth. */
 .page-auth-overlay {
     position: absolute;
-    top: 0;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    background-color: rgba(254, 254, 254, 0.9);
-    -webkit-backdrop-filter: blur(6px);
-    backdrop-filter: blur(6px);
-    display: flex;
+    inset: 0;
+    background-color: var(--bg-page);
+    display: none;
+    flex-direction: column;
     justify-content: center;
     align-items: center;
-    font-size: calc(var(--textbox-font-size) * 2);
+    font-size: calc(var(--textbox-font-size) * 1.4);
     font-weight: 600;
-    color: var(--text-muted);
+    color: var(--brand);
+    letter-spacing: 0.08em;
+    user-select: none;
     /* Z-index is handled in layer.css */
+}
+
+.page-auth-overlay > div {
+    padding: 24px 48px;
+    border: 2px solid var(--brand);
+    border-radius: var(--border-radius);
+    background: var(--bg-card);
 }

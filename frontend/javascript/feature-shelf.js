@@ -69,7 +69,13 @@ function updateFeatureButtons(page) {
     const $btns = $featureContainer?.querySelectorAll('.feature-btn') || [];
     $btns.forEach($btn => {
         const f = getFeature($btn.dataset.featureBtn);
-        const visible = !!f && (!Array.isArray(f.pages) || f.pages.includes(page));
+        let visible = !!f && (!Array.isArray(f.pages) || f.pages.includes(page));
+        // Optional per-feature runtime gate — lets features hide themselves
+        // based on page-specific context (e.g. BC owner mode).
+        if (visible && typeof f.shouldShow === 'function') {
+            try { visible = !!f.shouldShow(page); }
+            catch (e) { console.error(`[feature-shelf] shouldShow failed for ${f.id}:`, e); }
+        }
         if (visible) {
             $btn.style.opacity = '';
             $btn.style.transform = '';
@@ -84,6 +90,17 @@ function updateFeatureButtons(page) {
 
 window.addEventListener('navi:pageChanged', ({ detail }) => {
     updateFeatureButtons(detail.page);
+});
+
+// Re-evaluate when BC owner mode flips (e.g. user selects a channel they own
+// vs one they don't). broadcast-channel.js emits this on selection change.
+window.addEventListener('broadcast:selected', () => {
+    const activePage = document.querySelector('.page.active');
+    if (activePage) updateFeatureButtons(activePage.dataset.page);
+});
+window.addEventListener('broadcast:cleared', () => {
+    const activePage = document.querySelector('.page.active');
+    if (activePage) updateFeatureButtons(activePage.dataset.page);
 });
 
 // ── Click handler ──

@@ -3,7 +3,7 @@
  * Stub — Tier 9 populates dropdown, prompt preview, send button, output stream.
  */
 
-const ICON_URL = '/images/llm-summarize.svg';
+const ICON_URL = '/images/ai-tutor.svg';
 
 export const feature = {
     id: 'llm',

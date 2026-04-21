@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+  <!-- 4-point sparkle (standard AI iconography) -->
+  <path d="M12 2 L13.2 9.2 L20 11 L13.2 12.8 L12 20 L10.8 12.8 L4 11 L10.8 9.2 Z"/>
+  <!-- Small secondary sparkle top-right -->
+  <path d="M18.5 3 L19 5.2 L21 6 L19 6.8 L18.5 9 L18 6.8 L16 6 L18 5.2 Z" opacity="0.55"/>
+  <!-- Small tertiary sparkle bottom-left -->
+  <path d="M5 16 L5.4 17.6 L7 18 L5.4 18.4 L5 20 L4.6 18.4 L3 18 L4.6 17.6 Z" opacity="0.45"/>
+</svg>

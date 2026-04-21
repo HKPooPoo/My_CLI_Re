@@ -38,7 +38,6 @@
     <link rel="stylesheet" href="stylesheets/page-broadcast.css">
     <link rel="stylesheet" href="stylesheets/page-misc.css">
     <link rel="stylesheet" href="stylesheets/editor-attachments.css">
-    <link rel="stylesheet" href="stylesheets/feature-markdown.css">
     <link rel="stylesheet" href="stylesheets/features.css">
     <link rel="stylesheet" href="stylesheets/hint-panel.css">
     <!--注意@media放在尾！！！-->
@@ -178,6 +177,9 @@
                 </div>
             </div>
             <div class="page show-branch have-feature" data-page="blackboard-branch">
+                <div class="page-auth-overlay blackboard-auth-overlay">
+                    <div data-i18n="auth.loginRequiredOverlay">SIGN IN TO CONTINUE</div>
+                </div>
                 <div class="vcs-container">
                     <div class="vcs-title crt-text-orange" data-i18n="blackboard.pageTitle">BRANCH CONTROLLER</div>
                     <input type="text" class="vcs-search-input" id="vcs-search"
