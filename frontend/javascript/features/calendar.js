@@ -1,22 +1,19 @@
 /**
- * Feature: Calendar — the user's personal schedule.
+ * Feature: Calendar — the user's personal schedule (per-user, cross-device).
  *
- * One calendar per user (not per-branch). Stored as JSON dict in
- * localStorage['user-calendar']: { "YYYY-MM-DD": "note text", ... }.
+ * Data lives on the server in users.settings.calendar (JSONB column,
+ * auto-synced via sync-service.js). Shape: { "YYYY-MM-DD": "note", ... }.
  *
- * Shelf UI: month grid with navigation; clicking a day reveals an
- * editor for that day's note. Save / Delete act on localStorage and
- * refresh the month view.
+ * This is the BB-side calendar. BC channels have their own separate
+ * calendar keyed per-channel (broadcast-channel backend). BB and BC
+ * calendars do NOT merge — the user sees two distinct views.
  *
- * This feature also powers the AI Tutor's "Suggest a schedule" action,
- * which reads the same key.
- *
- * Pending (Tier 14): server sync via users.settings, merge subscribed
- * BC channel calendars as read-only overlays.
+ * Title: "{uid} Calendar" so users always know whose calendar this is.
  */
 
+import { getSetting, setSetting } from '../sync-service.js';
+
 const ICON_URL = '/images/calendar.svg';
-const STORAGE_KEY = 'user-calendar';
 
 const WEEKDAY_LABELS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 const MONTH_LABELS = [
@@ -24,18 +21,18 @@ const MONTH_LABELS = [
     'July', 'August', 'September', 'October', 'November', 'December',
 ];
 
-// ── Storage helpers ────────────────────────────────────────────────
+// ── Storage helpers (delegate to sync-service) ─────────────────────
 
 function loadEvents() {
-    try {
-        return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
-    } catch {
-        return {};
-    }
+    return { ...(getSetting('calendar', {}) || {}) };
 }
 
 function saveEvents(events) {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(events));
+    setSetting('calendar', events);
+}
+
+function currentUid() {
+    return localStorage.getItem('currentUser') || '';
 }
 
 function ymd(date) {
@@ -52,6 +49,7 @@ function todayYmd() {
 // ── Rendering state (per-shelf instance) ───────────────────────────
 
 let $panel = null;
+let $title = null;
 let $monthLabel = null;
 let $grid = null;
 let $editor = null;
@@ -61,10 +59,16 @@ let $saveBtn = null;
 let $deleteBtn = null;
 
 let viewYear = new Date().getFullYear();
-let viewMonth = new Date().getMonth(); // 0-indexed
+let viewMonth = new Date().getMonth();
 let selectedYmd = null;
 
 // ── Rendering ──────────────────────────────────────────────────────
+
+function updateTitle() {
+    if (!$title) return;
+    const uid = currentUid();
+    $title.textContent = uid ? `${uid} CALENDAR` : 'CALENDAR';
+}
 
 function renderMonth() {
     const events = loadEvents();
@@ -75,14 +79,12 @@ function renderMonth() {
 
     $monthLabel.textContent = `${MONTH_LABELS[viewMonth]} ${viewYear}`;
 
-    // Header row (weekday labels)
     let html = '<div class="cal-row cal-row-head">';
     for (const w of WEEKDAY_LABELS) {
         html += `<div class="cal-cell cal-head">${w}</div>`;
     }
     html += '</div>';
 
-    // Day cells — start with leading blanks for alignment
     let dayNum = 1;
     const totalCells = Math.ceil((startWeekday + daysInMonth) / 7) * 7;
     for (let cellIdx = 0; cellIdx < totalCells; cellIdx += 7) {
@@ -123,7 +125,7 @@ function showEditorFor(dateStr) {
     $editorLabel.textContent = niceDate;
     $editorTextarea.value = events[dateStr] || '';
     $editor.classList.add('active');
-    renderMonth(); // refresh .is-selected class
+    renderMonth();
 }
 
 function hideEditor() {
@@ -179,6 +181,18 @@ function handleNextMonth() {
     renderMonth();
 }
 
+// React to cross-device sync arrivals
+window.addEventListener('settings:synced', () => {
+    if ($grid) renderMonth();
+    if ($title) updateTitle();
+});
+
+window.addEventListener('auth:updated', () => {
+    if ($title) updateTitle();
+    if ($grid) renderMonth();
+    if ($editor) hideEditor();
+});
+
 // ── Feature contract ───────────────────────────────────────────────
 
 export const feature = {
@@ -189,7 +203,7 @@ export const feature = {
     initShelf($shelf) {
         $shelf.innerHTML = `
             <div class="feature-panel" data-feature="calendar">
-                <div class="feature-title">CALENDAR</div>
+                <div class="feature-title"></div>
                 <div class="cal-nav-row">
                     <button class="cal-nav-btn cal-prev" type="button" aria-label="Previous month">‹</button>
                     <div class="cal-month-label"></div>
@@ -208,6 +222,7 @@ export const feature = {
         `;
 
         $panel          = $shelf.querySelector('[data-feature="calendar"]');
+        $title          = $shelf.querySelector('.feature-title');
         $monthLabel     = $shelf.querySelector('.cal-month-label');
         $grid           = $shelf.querySelector('.cal-grid');
         $editor         = $shelf.querySelector('.cal-editor');
@@ -222,15 +237,16 @@ export const feature = {
         $shelf.querySelector('.cal-prev').addEventListener('click', handlePrevMonth);
         $shelf.querySelector('.cal-next').addEventListener('click', handleNextMonth);
 
+        updateTitle();
         renderMonth();
     },
     onOpen() {
-        // Reset to current month on each open for consistency
         const now = new Date();
         viewYear = now.getFullYear();
         viewMonth = now.getMonth();
         selectedYmd = null;
         $editor?.classList.remove('active');
+        updateTitle();
         renderMonth();
     },
 };

@@ -15,6 +15,7 @@ import { BBState } from '../blackboard.js';
 import { BCChannel } from '../broadcast-channel.js';
 import { BBCore } from '../blackboard-core.js';
 import { BBMessage } from '../blackboard-msg.js';
+import { getSetting } from '../sync-service.js';
 
 const ICON_URL = '/images/ai-tutor.svg';
 const MODEL = 'qwen3.5:4b';
@@ -78,10 +79,8 @@ function composeSchedulePrompt() {
         hour: '2-digit', minute: '2-digit'
     });
 
-    let calendar = {};
-    try {
-        calendar = JSON.parse(localStorage.getItem('user-calendar') || '{}');
-    } catch { /* empty */ }
+    // Read from the synced user settings (same surface as Calendar feature).
+    const calendar = getSetting('calendar', {}) || {};
 
     const entries = Object.entries(calendar);
     const todayYmd = nowIso.slice(0, 10);

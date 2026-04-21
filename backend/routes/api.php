@@ -9,6 +9,7 @@ use App\Http\Controllers\WalkieTypieController;
 use App\Http\Controllers\FileController;
 use App\Http\Controllers\BroadcastChannelController;
 use App\Http\Controllers\LlmController;
+use App\Http\Controllers\UserSettingsController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Broadcast;
 
@@ -52,6 +53,11 @@ Route::post('/files', [FileController::class, 'upload']);
 // Authentication — stateless helpers (low risk, no throttle needed)
 Route::post('/logout', [AuthController::class, 'logout']);
 Route::get('/auth-status', [AuthController::class, 'status']);
+
+// User settings — cross-device sync for app config + user calendar
+// (users.settings JSONB column). Auth required via session.
+Route::get('/user/settings', [UserSettingsController::class, 'show']);
+Route::put('/user/settings', [UserSettingsController::class, 'update']);
 
 // Auth commands — brute-force risk, throttle strictly
 Route::middleware('throttle:10,1')->group(function () {
