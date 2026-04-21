@@ -119,7 +119,7 @@ function saveNaviItemPositionToLocalStorage() {
  * 更新導航位置 (物理渲染)
  * 步驟：1. 計算 OffsetLeft 和位移量 2. 應用 CSS Transform 3. 高亮選中項 4. 切換 Page 5. 觸發震動效果
  */
-export function updateNaviPosition($naviItem, silent = false, instant = false) {
+export function updateNaviPosition($naviItem, silent = false, instant = false, skipPageUpdate = false) {
     const stateOfNaviItem = stateOfEachNaviItem[$naviItem];
     if (!stateOfNaviItem) return;
 
@@ -166,8 +166,17 @@ export function updateNaviPosition($naviItem, silent = false, instant = false) {
         }
     });
 
-    // 同步更新視圖頁面
-    updatePage($subNaviItems[subNaviHeadIndex].dataset.subNaviItem);
+    // 同步更新視圖頁面 — skippable via `skipPageUpdate` so the resize
+    // handler doesn't dispatch a spurious `navi:pageChanged`. On mobile,
+    // tapping a textarea pops the software keyboard which shrinks the
+    // viewport and fires `window.resize`; if we re-enter updatePage +
+    // dispatch, downstream consumers (e.g. mods-manager's re-render of
+    // the active config page) destroy the focused textarea DOM and the
+    // keyboard dismisses instantly. Resize only needs to re-center the
+    // navi track, not re-activate the page.
+    if (!skipPageUpdate) {
+        updatePage($subNaviItems[subNaviHeadIndex].dataset.subNaviItem);
+    }
 
     // 觸發 CRT 抖動特效 (Glitch Effect)
     const $noiseLayer = document.getElementsByClassName("crt-noise-layer")[0];
@@ -269,7 +278,11 @@ function updatePage(subNaviItem) {
 // --- 全域事件應選 ---
 window.addEventListener("resize", () => {
     if (activeNaviItem && stateOfEachNaviItem[activeNaviItem]) {
-        updateNaviPosition(activeNaviItem, true, true); // 窗口縮放後修正位置但不播音 (Instant)
+        // silent=true, instant=true, skipPageUpdate=true — resize only
+        // needs to re-center the track; re-running updatePage on every
+        // keyboard pop (which fires resize on mobile) was destroying
+        // active textarea DOM via mods-manager's pageChanged listener.
+        updateNaviPosition(activeNaviItem, true, true, true);
     }
 });
 

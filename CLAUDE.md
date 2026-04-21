@@ -269,10 +269,11 @@ Multi-section SPA — pure HTML, CSS, ES modules. No framework.
 
 Two-level hierarchy: main navi (`data-navi-item`: blackboard, walkie-typie, broadcast, mods) → sub-navi (`data-sub-navi-item`). State in `stateOfEachNaviItem[name]`.
 
-- `updateNaviPosition()` — repositions sub-navi track via `translateX()`, highlights active, calls `updatePage()`, triggers CRT glitch, saves to localStorage
+- `updateNaviPosition($naviItem, silent, instant, skipPageUpdate)` — repositions sub-navi track via `translateX()`, highlights active, calls `updatePage()` (unless `skipPageUpdate`), triggers CRT glitch, saves to localStorage
 - `updatePage(subNaviItem)` — toggles `.active` on `.page` elements, controls push/pull buttons, head-indicator, feature scaffold based on CSS classes: `.can-push-pull`, `.show-branch`, `.have-feature`
-- **Gotcha:** `updateNaviPosition()` always calls `updatePage()` which changes the visible page. Never call it from background data fetches unless the relevant section is active.
-- Dispatches `navi:pageChanged` with `{ page }` on sub-navi change
+- **Gotcha:** `updateNaviPosition()` by default calls `updatePage()` which changes the visible page. Never call from background data fetches unless the relevant section is active.
+- **Resize path** (window resize, e.g. mobile keyboard show/hide) passes `skipPageUpdate = true` — repositions the track only, does not re-fire `updatePage` / `navi:pageChanged`. Without this, tapping a textarea on mobile dismisses the keyboard instantly because downstream listeners (e.g. `mods-manager.js` listening for `navi:pageChanged === 'mods-config'`) rebuild the config field DOM, destroying the focused textarea.
+- Dispatches `navi:pageChanged` with `{ page }` on sub-navi change (suppressed when `skipPageUpdate`)
 
 ### Custom Events
 
