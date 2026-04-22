@@ -901,20 +901,31 @@ Tier-12 overlay that reuses the `#press-start-overlay` element. State is carried
 | `.dashboard-mode` | `#dashboard-content` grid (hides label) |
 | `display: none` | Fully hidden |
 
-Three cards inside `#dashboard-content`:
+**Visual shell: same as Press Start** — solid page-bg backdrop + single centred `.dashboard-label` card (brand border, bg-card). No multi-column grid, no per-card headers, no close button. The three content sections stack vertically inside one card.
 
-- **📅 Upcoming** — next 7 days of `users.settings.calendar` via `getSetting('calendar')`.
-- **📢 Announcements** — channels from `db.broadcast_channels` (local IndexedDB), sorted by `last_signal`.
-- **📝 Notebooks** — BB branches grouped from `db.blackboard`, sorted by latest record timestamp.
+Sections (each = `.dashboard-section` with title + list):
 
-Each item clickable → navigates to the relevant sub-page and closes the dashboard.
+- **UPCOMING** — next 7 days of `users.settings.calendar` via `getSetting('calendar')`.
+- **ANNOUNCEMENTS** — channels from `db.broadcast_channels` (local IndexedDB), sorted by `last_signal`.
+- **NOTEBOOKS** — BB branches grouped from `db.blackboard`, sorted by latest record timestamp.
+
+Each `.dashboard-item` click → navigate to the relevant sub-page + `closeDashboard()`. Click on backdrop (anything in the overlay outside `.dashboard-label`) also dismisses — same semantics as the original Press Start splash.
 
 **Triggers:**
 - Auto-pop on the first logged-out → logged-in transition per session (`sessionStorage['dashboard-shown']` flag).
 - Click on `#hud-news-badge` (header right-side button, visible only when logged in).
-- `×` close button inside the dashboard header.
 
-Press-start click handler guards against firing in `.dashboard-mode` so splash dismissal semantics don't collide.
+Press-start's own click handler guards against firing in `.dashboard-mode` so splash dismissal semantics don't collide.
+
+### Post-login automated flow
+
+On the logged-out → logged-in transition, three actions fire in order:
+
+1. `auth-landing.js` calls `setSubNaviHead('blackboard', 'blackboard-log')` so BB's remembered sub-navi moves OFF Auth — a later click on the NOTEBOOK main-nav lands on NOTE, not the login page.
+2. `auth-landing.js` calls `navigateTo('broadcast', 'broadcast-channel')` — user lands on the Announce channel sub-page.
+3. `dashboard.js` (same event) fires `setTimeout(openDashboard, 50)` so the dashboard overlays on top of the broadcast-channel view one tick later.
+
+All three are guaranteed by the `_previouslyLoggedIn` edge-detection in each module and `sessionStorage['dashboard-shown']` dedupe for step 3.
 
 ### ASCII bootstrap
 

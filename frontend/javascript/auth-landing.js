@@ -80,12 +80,20 @@ export function resolveLandingNav() {
     navigateTo(last);
 }
 
-// Login transitions: logged-out → logged-in auto-lands on Announce list.
+// Login transitions: on logged-out → logged-in, three automated actions:
+//   1. BB sub-navi moves off AUTH so the user isn't stuck there when they
+//      click NOTEBOOK later — it remembers NOTE (blackboard-log).
+//   2. Main nav jumps to broadcast → broadcast-channel sub-page.
+//   3. Dashboard auto-pop is handled in dashboard.js (sessionStorage
+//      dedupes so it only runs once per session).
 let _previouslyLoggedIn = checkLoggedIn();
 window.addEventListener('auth:updated', () => {
     const isLoggedIn = checkLoggedIn();
     if (!_previouslyLoggedIn && isLoggedIn) {
-        navigateTo('broadcast', 'broadcast-list');
+        // Shift BB's remembered sub-navi away from AUTH before navigating
+        // so a later BB main-nav click lands on NOTE, not the login page.
+        setSubNaviHead('blackboard', 'blackboard-log');
+        navigateTo('broadcast', 'broadcast-channel');
     }
     _previouslyLoggedIn = isLoggedIn;
     updateLockState();

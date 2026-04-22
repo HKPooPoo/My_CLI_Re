@@ -27,7 +27,6 @@ const $badge   = document.getElementById('hud-news-badge');
 const $calBody = document.getElementById('dashboard-calendar-body');
 const $annBody = document.getElementById('dashboard-announce-body');
 const $nbBody  = document.getElementById('dashboard-notebooks-body');
-const $closeBtn = $overlay?.querySelector('.dashboard-close-btn');
 
 const MONTH_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const WEEKDAY_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -173,26 +172,31 @@ $badge?.addEventListener('click', () => {
     openDashboard();
 });
 
-$closeBtn?.addEventListener('click', (e) => {
-    e.stopPropagation();
-    closeDashboard();
-});
-
-// Dashboard-mode clicks on items jump to the relevant nav + close overlay.
+// Dashboard click handling:
+//   - item click → navigate + close
+//   - backdrop click (outside the card) → close (Press Start semantics)
+//   - click inside the card but not an item → no-op
 $overlay?.addEventListener('click', (e) => {
     if (!$overlay.classList.contains('dashboard-mode')) return;
+
     const item = e.target.closest('.dashboard-item');
-    if (!item) return;
-    e.stopPropagation();
-    const action = item.dataset.action;
-    if (action === 'calendar') {
-        navigateTo('blackboard', 'blackboard-log');
-    } else if (action === 'announce') {
-        navigateTo('broadcast', 'broadcast-list');
-    } else if (action === 'notebook') {
-        navigateTo('blackboard', 'blackboard-branch');
+    if (item) {
+        const action = item.dataset.action;
+        if (action === 'calendar') {
+            navigateTo('blackboard', 'blackboard-log');
+        } else if (action === 'announce') {
+            navigateTo('broadcast', 'broadcast-channel');
+        } else if (action === 'notebook') {
+            navigateTo('blackboard', 'blackboard-branch');
+        }
+        closeDashboard();
+        return;
     }
-    closeDashboard();
+
+    // Anywhere outside the content card = backdrop, dismiss.
+    if (!e.target.closest('.dashboard-label')) {
+        closeDashboard();
+    }
 });
 
 // Auto-pop on logged-out → logged-in transition, once per session.

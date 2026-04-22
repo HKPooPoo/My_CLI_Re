@@ -55,9 +55,18 @@ function normalizeDay(raw) {
     return [];
 }
 
-/** Normalise an entire dict → { date: [string, ...] } */
+/**
+ * Normalise an entire dict → { date: [string, ...] }
+ *
+ * Accepts objects OR JSON strings (the channel list endpoint uses
+ * DB::table query builder, which does NOT auto-decode JSONB columns;
+ * the raw `calendar` value arrives as a string on the wire).
+ */
 function normalizeDict(raw) {
     const out = {};
+    if (typeof raw === 'string') {
+        try { raw = JSON.parse(raw); } catch { return out; }
+    }
     if (!raw || typeof raw !== 'object') return out;
     for (const [date, val] of Object.entries(raw)) {
         const items = normalizeDay(val);
