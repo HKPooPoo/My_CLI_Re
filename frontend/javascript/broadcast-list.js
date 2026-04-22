@@ -586,9 +586,31 @@ export const BCList = {
                 titleEl.textContent += t('broadcast.pinLabel');
             }
 
+            // Tier 13: status icons — top-right vertical stack. Two
+            // axes: ownership (owner megaphone / subscribed bookmark)
+            // and storage (local / synced / cloud). Different SVG per
+            // state, not a colour variant.
+            const iconsWrap = document.createElement('div');
+            iconsWrap.className = 'list-status-icons';
+
+            const addIcon = (name, tone) => {
+                const span = document.createElement('span');
+                span.className = `list-status-icon ${tone || ''}`;
+                span.style.setProperty('--icon-url', `url('./images/status-${name}.svg')`);
+                iconsWrap.appendChild(span);
+            };
+
+            if (this.isOwnerOf(ch))      addIcon('owner', 'brand');
+            else if (ch.isPinned)        addIcon('subscribed', 'accent');
+
+            // Storage — only meaningful when user has a local copy.
+            if (ch.isLocalOnly) addIcon('local', 'muted');
+            else if (ch.serverChannelId) addIcon('synced', 'brand');
+
             item.appendChild(nameInput);
             item.appendChild(lastSignalEl);
             item.appendChild(titleEl);
+            item.appendChild(iconsWrap);
             this.elements.container.appendChild(item);
         });
 

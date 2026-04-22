@@ -438,6 +438,50 @@ a:hover {
     display: flex;
 }
 
+/* --- Tier 13: List status icons ---------------------------------------
+   Each list item (BB branch row, WT connection row, BC channel row) carries
+   a `.list-status-icons` container pinned to its top-right corner. Icons
+   stack TOP→BOTTOM so the first icon is closest to the row's upper edge.
+   Each `.list-status-icon` renders an SVG via `<img src>`, sized 16 px and
+   tinted via `filter: opacity()` when muted. The icons themselves are
+   distinct shapes (no colour-variant overloading) — see status-*.svg. */
+.list-status-icons {
+    position: absolute;
+    top: 4px;
+    right: 6px;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    pointer-events: none;
+    z-index: 1;
+}
+
+/* Icons use CSS mask so SVG caches normally via HTTP while the tint
+   follows the current `color` cascade. `--icon-url` is set inline by
+   the list renderer per icon. Different SVG shapes per state — no
+   colour-variant overloading. */
+.list-status-icon {
+    width: 16px;
+    height: 16px;
+    background-color: currentColor;
+    -webkit-mask: var(--icon-url) center/contain no-repeat;
+    mask: var(--icon-url) center/contain no-repeat;
+    color: var(--text-muted);
+    flex-shrink: 0;
+}
+
+.list-status-icon.brand {
+    color: var(--brand);
+}
+
+.list-status-icon.accent {
+    color: var(--accent);
+}
+
+.list-status-icon.muted {
+    opacity: 0.55;
+}
+
 #auth-locked-label {
     padding: 24px 48px;
     border: 2px solid var(--brand);

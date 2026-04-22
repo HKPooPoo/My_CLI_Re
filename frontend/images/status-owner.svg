@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" aria-hidden="true">
+    <!-- Megaphone = broadcast owner -->
+    <path d="M2.5 6 V10 H5 L11 13 V3 L5 6 Z"/>
+    <line x1="13" y1="6" x2="13" y2="10" stroke-linecap="round"/>
+</svg>

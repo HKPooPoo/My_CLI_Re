@@ -281,6 +281,24 @@ Log section; every new user decision gets appended with a date.
     `[SUBSCRIBED]` leak). `BBCore.swapRecordsByHead` / `BCDb.swapRecordsByHead`
     kept in-place but unreferenced, awaiting Tier 21 drag-and-drop.
 
+13. **Tier 13 — List status icons (vertical stack)**. Each list row
+    (BB `.vcs-list-item`, WT `.walkie-typie-list-list-item`, BC
+    `.broadcast-list-list-item`) now carries a `.list-status-icons`
+    container in the top-right corner: `position: absolute; top: 4px;
+    right: 6px; flex-direction: column; gap: 4px; pointer-events: none`.
+    Inside, one or more `.list-status-icon` spans — each 16×16 with
+    `background-color: currentColor` + `-webkit-mask / mask: var(--icon-url)`
+    so theming follows CSS `color`. Icons use **distinct SVG shapes
+    per state**, not colour variants of the same glyph. Eight icons
+    in `frontend/images/status-*.svg`:
+    - `online.svg` (filled dot + ring) / `offline.svg` (slashed circle) — WT connection freshness (`last_signal < 60s`)
+    - `local.svg` (floppy-disk silhouette) / `cloud.svg` (cloud outline) / `synced.svg` (check-in-circle) / `asynced.svg` (warning triangle) — BB + BC storage state
+    - `owner.svg` (megaphone) / `subscribed.svg` (bookmark) — BC ownership axis
+    Tones: `.brand` (wine), `.accent` (purple), `.muted` (55% opacity).
+    BB row shows one storage icon; WT row shows one online/offline
+    icon; BC row shows up to two (ownership + storage). `pointer-events:
+    none` on the container keeps `InfiniteList` selection working.
+
 12. **Tier 20 — DELETE PAGE button**. Adds `#bb-delete-page-btn`,
     `#wt-delete-page-btn`, `#bc-delete-page-btn` inside each editor-
     wrapper. All three use `MultiStepButton { steps: 3 }` (destructive

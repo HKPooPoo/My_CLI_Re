@@ -112,10 +112,35 @@ export const BBUI = {
             // field doesn't produce a blinking caret for a dead-end edit.
             // Same pattern as BC non-owner rename + WT THEY textarea.
             const isReadonly = !branch.isLocal;
+
+            // Tier 13: status icons — top-right stack. One icon per branch
+            // describing its storage state relative to the server.
+            //   isLocal & isServer & !isDirty → synced (brand)
+            //   isLocal & isServer &  isDirty → asynced (brand)
+            //   isLocal & !isServer           → local (muted)
+            //   !isLocal & isServer           → cloud (muted)
+            let storageIcon = 'local';
+            let storageTone = 'muted';
+            if (branch.isLocal && branch.isServer && !branch.isDirty) {
+                storageIcon = 'synced'; storageTone = 'brand';
+            } else if (branch.isLocal && branch.isServer && branch.isDirty) {
+                storageIcon = 'asynced'; storageTone = 'brand';
+            } else if (branch.isLocal && !branch.isServer) {
+                storageIcon = 'local'; storageTone = 'muted';
+            } else if (!branch.isLocal && branch.isServer) {
+                storageIcon = 'cloud'; storageTone = 'muted';
+            }
+            const iconsHtml = `
+                <div class="list-status-icons">
+                    <span class="list-status-icon ${storageTone}" style="--icon-url: url('./images/status-${storageIcon}.svg')"></span>
+                </div>
+            `;
+
             item.innerHTML = `
                 <input type="text" class="vcs-list-branch" value="${safeName}" placeholder="${t('blackboard.namePlaceholder')}" name="vcs-list-branch" maxlength="64" ${isReadonly ? 'disabled' : ''}>
                 <div class="vcs-list-timestamp">${this.escapeHTML(String(branch.displayTime ?? ''))}</div>
                 <div class="vcs-list-owner">${ownerDisplay}</div>
+                ${iconsHtml}
             `;
 
             // 改名監聽：由 UI 對象直接捕捉並向上廣播自定義事件，不處理具體資料邏輯。

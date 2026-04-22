@@ -363,9 +363,24 @@ export const WTList = {
                 ? `${conn.partner_uid} ${t('walkieTypie.statusNew')}`
                 : conn.partner_uid;
 
+            // Tier 13: status icons — online (last_signal within 60s) or
+            // offline. Different SVG per state, not a colour variant.
+            const ONLINE_WINDOW_MS = 60_000;
+            const isOnline = conn.last_signal &&
+                (Date.now() - Number(conn.last_signal) < ONLINE_WINDOW_MS);
+            const iconsWrap = document.createElement('div');
+            iconsWrap.className = 'list-status-icons';
+            const statusIcon = document.createElement('span');
+            const icon = isOnline ? 'online' : 'offline';
+            const tone = isOnline ? 'brand' : 'muted';
+            statusIcon.className = `list-status-icon ${tone}`;
+            statusIcon.style.setProperty('--icon-url', `url('./images/status-${icon}.svg')`);
+            iconsWrap.appendChild(statusIcon);
+
             item.appendChild(tagInput);
             item.appendChild(lastSignal);
             item.appendChild(uid);
+            item.appendChild(iconsWrap);
             this.elements.container.appendChild(item);
         });
 
