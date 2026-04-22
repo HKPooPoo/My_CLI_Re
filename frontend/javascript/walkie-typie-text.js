@@ -33,6 +33,7 @@ import { T } from './timing.js';
 import * as Settings from './settings.js';
 import { TimerGroup } from './timer-group.js';
 import * as CrossTabSync from './cross-tab-sync.js';
+import { MultiStepButton } from './multiStepButton.js';
 
 // Single-slot "beep" state. First signal while the tab is backgrounded
 // pushes a notification and locks the slot; further signals are
@@ -58,6 +59,7 @@ export const WTText = {
         wePullBtn: document.querySelector(".we-pull-btn"),
         theyPushBtn: document.querySelector(".they-push-btn"),
         theyPullBtn: document.querySelector(".they-pull-btn"),
+        weDeleteBtn: document.getElementById("wt-delete-page-btn"),
     },
 
     currentConnection: null,
@@ -324,6 +326,38 @@ export const WTText = {
             await WTVCS.pull(this.weState, this.elements.weTextarea.value, false);
             this.refreshWE();
         });
+
+        // --- WE DELETE PAGE (destructive 3-step) ---
+        if (this.elements.weDeleteBtn) {
+            new MultiStepButton(this.elements.weDeleteBtn, {
+                sound: "Click.mp3",
+                steps: 3,
+                action: async () => {
+                    if (!this.currentConnection) return;
+                    if (this.weState.isVirtual) {
+                        BBMessage.info(t('common.deletePageFailed'));
+                        return;
+                    }
+                    try {
+                        const entry = await WTDb.getRecord(this.weState.branchId, this.weState.currentHead);
+                        if (!entry) return;
+                        await db.walkie_typie.delete([entry.branch_id, entry.timestamp]);
+                        const count = await WTDb.countRecords(this.weState.branchId);
+                        if (count === 0) {
+                            this.weState.isVirtual = true;
+                            this.weState.currentHead = 0;
+                        } else if (this.weState.currentHead >= count) {
+                            this.weState.currentHead = count - 1;
+                        }
+                        await this.refreshWE();
+                        BBMessage.info(t('common.pageDeleted'));
+                    } catch (err) {
+                        console.error('WT delete page failed:', err);
+                        BBMessage.error(t('common.deletePageFailed'));
+                    }
+                }
+            });
+        }
 
         // --- THEY Push/Pull (Memory array, read-only) ---
 

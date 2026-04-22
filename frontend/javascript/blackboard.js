@@ -493,6 +493,45 @@ if (BBUI.elements.pushBtn) {
     });
 }
 
+// DELETE PAGE — destructive 3-step. Removes the record at currentHead.
+// Virtual state (new blank page) has no backing record → no-op. Empty
+// branch after delete → virtual state restored.
+const $bbDeleteBtn = document.getElementById('bb-delete-page-btn');
+if ($bbDeleteBtn) {
+    new MultiStepButton($bbDeleteBtn, {
+        sound: "Click.mp3",
+        steps: 3,
+        action: async () => {
+            if (!isBlackboardPageActive()) return;
+            if (state.isVirtual) {
+                BBMessage.info(t('blackboard.deletePageFailed'));
+                return;
+            }
+            try {
+                const entry = await BBCore.getRecord(state.owner, state.branchId, state.currentHead);
+                if (!entry) return;
+                await db.blackboard.delete([entry.owner, entry.branch_id, entry.timestamp]);
+                const count = await BBCore.countRecords(state.owner, state.branchId);
+                if (count === 0) {
+                    state.isVirtual = true;
+                    state.currentHead = 0;
+                } else if (state.currentHead >= count) {
+                    state.currentHead = count - 1;
+                }
+                state.owner = "local";
+                await syncView();
+                await updateBranchList();
+                BBSync.scheduleAutoCommit();
+                CrossTabSync.broadcast('bb:record:mutated', { branchId: state.branchId, timestamp: null });
+                BBMessage.info(t('common.pageDeleted'));
+            } catch (err) {
+                console.error('BB delete page failed:', err);
+                BBMessage.error(t('common.deletePageFailed'));
+            }
+        }
+    });
+}
+
 if (BBUI.elements.pullBtn) {
     new MultiStepButton(BBUI.elements.pullBtn, {
         sound: "Click.mp3",

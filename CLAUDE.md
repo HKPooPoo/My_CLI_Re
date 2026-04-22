@@ -281,6 +281,22 @@ Log section; every new user decision gets appended with a date.
     `[SUBSCRIBED]` leak). `BBCore.swapRecordsByHead` / `BCDb.swapRecordsByHead`
     kept in-place but unreferenced, awaiting Tier 21 drag-and-drop.
 
+12. **Tier 20 — DELETE PAGE button**. Adds `#bb-delete-page-btn`,
+    `#wt-delete-page-btn`, `#bc-delete-page-btn` inside each editor-
+    wrapper. All three use `MultiStepButton { steps: 3 }` (destructive
+    confirm). Handler deletes the record at `state.currentHead` from
+    the respective IDB table (`blackboard` / `walkie_typie` /
+    `broadcast_boards`). If the branch / channel becomes empty,
+    `state.isVirtual = true; state.currentHead = 0`. If currentHead
+    was past the new max, clamps to `count - 1`. BB + BC broadcast
+    `bb:record:mutated` / `bc:record:mutated` cross-tab events; BB
+    also schedules auto-commit. Virtual state (NEW blank page) rejects
+    delete with `common.deletePageFailed`. BC delete button is hidden
+    in subscriber mode and when no channel is loaded — `loadChannel()`
+    sets `display: ''` when `isOwnerMode`, `auth:updated` and
+    `broadcast:cleared` set `display: 'none'`. Shared CSS lives in
+    `editor-attachments.css` (`.delete-page-btn` + `.btn-armed`).
+
 11. **Tier 18 — settings purge + hardcoded defaults**. The
     `maxSlot / maxFiles / autoCleanBlanks / updateTimestamp / loopList`
     per-scope toggles are all retired. Behaviour is now hardcoded

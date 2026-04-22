@@ -37,6 +37,8 @@ import { t } from './i18n.js';
 import { T } from './timing.js';
 import { BOARD_MAX_SLOT } from './settings.js';
 import { TimerGroup } from './timer-group.js';
+import { MultiStepButton } from './multiStepButton.js';
+import db from './indexedDB.js';
 import * as CrossTabSync from './cross-tab-sync.js';
 
 const _readerCache = new Map();  // serverChannelId → { records, fetchedAt }
@@ -85,7 +87,9 @@ export const BCChannel = {
         this.bindEvents();
         this.lockTextarea();
         this.clearIndicators();
-
+        // DELETE PAGE defaults hidden until a channel is opened in owner mode.
+        const $del = document.getElementById('bc-delete-page-btn');
+        if ($del) $del.style.display = 'none';
     },
 
     // =====================================================================
@@ -244,6 +248,8 @@ export const BCChannel = {
             this._previewRailCache = [];
             const rail = document.getElementById('bc-preview-rail');
             if (rail) rail.replaceChildren();
+            const $bcDel = document.getElementById('bc-delete-page-btn');
+            if ($bcDel) $bcDel.style.display = 'none';
         });
 
         // Channel deleted → clear display
@@ -259,6 +265,8 @@ export const BCChannel = {
             this._previewRailCache = [];
             const rail = document.getElementById('bc-preview-rail');
             if (rail) rail.replaceChildren();
+            const $bcDel = document.getElementById('bc-delete-page-btn');
+            if ($bcDel) $bcDel.style.display = 'none';
         });
 
         // Channel renamed → update indicator
@@ -511,6 +519,11 @@ export const BCChannel = {
         // would remove chips from the DOM while the onDetach/onRename guards
         // silently skip the DB write, causing UI/record desync until re-render.
         this.bcAttach?.setReadOnly(!this.isOwnerMode);
+
+        // DELETE PAGE is owner-only; hide for readers so the button itself
+        // isn't a confusing no-op target.
+        const $bcDel = document.getElementById('bc-delete-page-btn');
+        if ($bcDel) $bcDel.style.display = this.isOwnerMode ? '' : 'none';
 
         if (this.isOwnerMode) {
             await this.loadOwnerMode(channel);
@@ -902,3 +915,47 @@ export const BCChannel = {
 
 // Init
 BCChannel.init();
+
+// DELETE PAGE — destructive 3-step. Owner mode only; reader can't
+// mutate server records. Button is always wired but guards no-op in
+// reader mode + virtual state.
+const $bcDeleteBtn = document.getElementById('bc-delete-page-btn');
+if ($bcDeleteBtn) {
+    new MultiStepButton($bcDeleteBtn, {
+        sound: "Click.mp3",
+        steps: 3,
+        action: async () => {
+            const activePage = document.querySelector('.page.active');
+            if (activePage?.dataset?.page !== 'broadcast-channel') return;
+            if (!BCChannel.isOwnerMode) {
+                BBMessage.error(t('broadcast.notOwner'));
+                return;
+            }
+            if (BCChannel.state.isVirtual) {
+                BBMessage.info(t('common.deletePageFailed'));
+                return;
+            }
+            try {
+                const entry = await BCDb.getRecord(BCChannel.state.localChannelId, BCChannel.state.currentHead);
+                if (!entry) return;
+                await db.broadcast_boards.delete([entry.local_channel_id, entry.timestamp]);
+                const count = await BCDb.countRecords(BCChannel.state.localChannelId);
+                if (count === 0) {
+                    BCChannel.state.isVirtual = true;
+                    BCChannel.state.currentHead = 0;
+                } else if (BCChannel.state.currentHead >= count) {
+                    BCChannel.state.currentHead = count - 1;
+                }
+                await BCChannel.syncOwnerView();
+                CrossTabSync.broadcast('bc:record:mutated', {
+                    localChannelId: BCChannel.state.localChannelId,
+                    timestamp: null
+                });
+                BBMessage.info(t('common.pageDeleted'));
+            } catch (err) {
+                console.error('BC delete page failed:', err);
+                BBMessage.error(t('common.deletePageFailed'));
+            }
+        }
+    });
+}
