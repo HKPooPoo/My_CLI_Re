@@ -12,7 +12,7 @@ import db from './indexedDB.js';
 import { BBMessage } from './blackboard-msg.js';
 import { t } from './i18n.js';
 import { T } from './timing.js';
-import * as Settings from './settings.js';
+import { RECORD_MAX_FILES } from './settings.js';
 
 /**
  * Format file size in human-readable format.
@@ -240,9 +240,9 @@ export const EditorAttachments = {
              * @param {File} file
              */
             async handleFile(file) {
-                const scope = Settings.detectScope();
-                const maxFiles = Settings.get(scope, 'maxFiles');
-                if (this.currentHashes.length >= maxFiles) {
+                // Tier 18: configurable maxFiles retired — hardcoded 10 per
+                // record across BB / WT / BC.
+                if (this.currentHashes.length >= RECORD_MAX_FILES) {
                     BBMessage.error(t('files.limitReached'));
                     return;
                 }

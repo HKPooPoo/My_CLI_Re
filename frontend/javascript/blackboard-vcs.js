@@ -4,7 +4,7 @@ import db, { Dexie } from "./indexedDB.js";
 import { BlackboardService } from "./services/blackboard-service.js";
 import { FileService } from "./services/file-service.js";
 import { t } from './i18n.js';
-import * as Settings from './settings.js';
+import { BOARD_MAX_SLOT } from './settings.js';
 
 /**
  * Blackboard 版本控制邏輯層 (大腦)
@@ -21,11 +21,9 @@ export const BBVCS = {
         await this.save(state, currentText);
 
         const entryBefore = await BBCore.getRecord(state.owner, state.branchId, state.currentHead);
-        if (Settings.get('bb', 'autoCleanBlanks')) {
-            await BBCore.scrubBranch(state.owner, state.branchId, state.maxSlot);
-        } else {
-            await BBCore.cleanupOldRecords(state.owner, state.branchId, state.maxSlot);
-        }
+        // Tier 18: autoCleanBlanks / maxSlot toggles removed. Always cap
+        // at BOARD_MAX_SLOT (100); blank pages are preserved (no scrub).
+        await BBCore.cleanupOldRecords(state.owner, state.branchId, BOARD_MAX_SLOT);
 
         // [Fix]: Revalidate head after cleanup — scrub may have removed the current record,
         // shifting a different record into this position. Detect and force UI refresh.
@@ -69,11 +67,7 @@ export const BBVCS = {
         await this.save(state, currentText);
 
         const entryBefore = await BBCore.getRecord(state.owner, state.branchId, state.currentHead);
-        if (Settings.get('bb', 'autoCleanBlanks')) {
-            await BBCore.scrubBranch(state.owner, state.branchId, state.maxSlot);
-        } else {
-            await BBCore.cleanupOldRecords(state.owner, state.branchId, state.maxSlot);
-        }
+        await BBCore.cleanupOldRecords(state.owner, state.branchId, BOARD_MAX_SLOT);
 
         const count = await BBCore.countRecords(state.owner, state.branchId);
 
@@ -103,7 +97,7 @@ export const BBVCS = {
                 await BBCore.addRecord(state.owner, state.branchId, state.branch, text);
                 state.isVirtual = false;
                 state.currentHead = 0;
-                await BBCore.cleanupOldRecords(state.owner, state.branchId, state.maxSlot);
+                await BBCore.cleanupOldRecords(state.owner, state.branchId, BOARD_MAX_SLOT);
             }
             return;
         }
@@ -111,27 +105,13 @@ export const BBVCS = {
         const entry = await BBCore.getRecord(state.owner, state.branchId, state.currentHead);
 
         if (entry) {
+            // Tier 18: updateTimestamp toggle removed. Always in-place edit
+            // — record keeps its original timestamp, stays at its head
+            // position. Cross-device dirty detection relies solely on the
+            // [asynced] owner tag now; `MAX(blackboards.timestamp)` no
+            // longer changes on text edit.
             if (entry.text !== text) {
-                if (Settings.get('bb', 'updateTimestamp')) {
-                    // Only purge the blank at head 0 when autoCleanBlanks is
-                    // ON. If it's OFF, leave it alone — updateText's
-                    // timestamp bump on the edited record pushes the edit
-                    // to head 0 naturally, and the blank falls to head 1
-                    // (the user-visible "swap" the setting promises).
-                    // Unconditional deletion here was the bug behind the
-                    // "my blank page vanished after editing a later one"
-                    // report.
-                    if (state.currentHead > 0 && Settings.get('bb', 'autoCleanBlanks')) {
-                        const head0 = await BBCore.getRecord(state.owner, state.branchId, 0);
-                        if (head0 && (!head0.text || head0.text.trim() === "") && !head0.file_hash) {
-                            await db.blackboard.delete([head0.owner, head0.branch_id, head0.timestamp]);
-                        }
-                    }
-                    await BBCore.updateText(state.owner, state.branchId, entry.timestamp, text);
-                    state.currentHead = 0;
-                } else {
-                    await BBCore.updateTextInPlace(state.owner, state.branchId, entry.timestamp, text);
-                }
+                await BBCore.updateTextInPlace(state.owner, state.branchId, entry.timestamp, text);
             }
         } else if (state.currentHead === 0) {
             if (text && text.trim()) {
@@ -149,12 +129,7 @@ export const BBVCS = {
         const loggedInUser = localStorage.getItem("currentUser");
         if (!loggedInUser) throw new Error(t('blackboard.loginRequired'));
 
-        const maxSlot = Settings.get('bb', 'maxSlot');
-        if (Settings.get('bb', 'autoCleanBlanks')) {
-            await BBCore.scrubBranch("local", branchId, maxSlot);
-        } else {
-            await BBCore.cleanupOldRecords("local", branchId, maxSlot);
-        }
+        await BBCore.cleanupOldRecords("local", branchId, BOARD_MAX_SLOT);
 
         let records = await BBCore.getAllRecordsForBranch("local", branchId);
         records = records.filter(r => (r.text && r.text.trim() !== "") || r.file_hash);
@@ -365,11 +340,7 @@ export const BBVCS = {
                             .modify(item => { item.file_hash = localFileMap.get(item.timestamp); });
                     }
                 }
-                if (Settings.get('bb', 'autoCleanBlanks')) {
-                    await BBCore.scrubBranch("local", targetBranchId, state.maxSlot || 10);
-                } else {
-                    await BBCore.cleanupOldRecords("local", targetBranchId, state.maxSlot || 10);
-                }
+                await BBCore.cleanupOldRecords("local", targetBranchId, BOARD_MAX_SLOT);
                 serverFetched = true;
             } catch (e) {
                 console.warn("CLOUD SYNC FAILED. USING LOCAL CACHE.", e);

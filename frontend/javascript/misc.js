@@ -162,13 +162,11 @@ export const MISC = {
         if (!container) return;
         container.innerHTML = '';
 
+        // Tier 18: maxSlot / maxFiles / autoCleanBlanks / updateTimestamp /
+        // loopList toggles retired — hardcoded project-wide. Only autoSync,
+        // showHints, and screensaverTimeout remain as user preferences.
         this.bbControls = {
-            maxSlot: createRangeControl(container, 'bb', 'maxSlot', 'config.maxSlotLabel', 10, 100, 10, 'hints.config.maxSlot'),
-            maxFiles: createRangeControl(container, 'bb', 'maxFiles', 'config.maxFilesLabel', 1, 20, 1, 'hints.config.maxFiles'),
-            autoClean: createToggleControl(container, 'bb', 'autoCleanBlanks', 'config.autoCleanBlanks', 'hints.config.autoCleanBlanks'),
-            updateTs: createToggleControl(container, 'bb', 'updateTimestamp', 'config.updateTimestamp', 'hints.config.updateTimestamp'),
             autoSync: createToggleControl(container, 'bb', 'autoSync', 'config.autoSync', 'hints.config.autoSync'),
-            loopList: createToggleControl(container, 'bb', 'loopList', 'config.loopList', 'hints.config.loopList'),
             showHints: createToggleControl(container, 'global', 'showHints', 'config.showHints', 'hints.config.showHints'),
             screensaverTimeout: createRangeControl(container, 'global', 'screensaverTimeout', 'config.screensaverTimeout', 10, 310, 10, 'hints.config.screensaverTimeout',
                 (v) => v >= 310 ? t('mods.disabled') : v),
@@ -184,16 +182,9 @@ export const MISC = {
         const currentSfx = String(Settings.getGlobal('sfx'));
         this.elements.sfxBtn.textContent = currentSfx + '%';
 
-        // BB config controls
+        // BB config controls (Tier 18 shape: autoSync + showHints + screensaverTimeout)
         if (this.bbControls) {
-            this.bbControls.maxSlot.range.value = Settings.get('bb', 'maxSlot');
-            this.bbControls.maxSlot.valueSpan.textContent = Settings.get('bb', 'maxSlot');
-            this.bbControls.maxFiles.range.value = Settings.get('bb', 'maxFiles');
-            this.bbControls.maxFiles.valueSpan.textContent = Settings.get('bb', 'maxFiles');
-            this.bbControls.autoClean.updateLabel();
-            this.bbControls.updateTs.updateLabel();
             this.bbControls.autoSync?.updateLabel();
-            this.bbControls.loopList?.updateLabel();
             this.bbControls.showHints?.updateLabel();
             if (this.bbControls.screensaverTimeout) {
                 const v = Settings.getGlobal('screensaverTimeout');

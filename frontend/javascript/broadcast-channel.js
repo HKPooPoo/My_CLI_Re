@@ -35,7 +35,7 @@ import { BBMessage } from './blackboard-msg.js';
 import { getEcho } from './echo-service.js';
 import { t } from './i18n.js';
 import { T } from './timing.js';
-import * as Settings from './settings.js';
+import { BOARD_MAX_SLOT } from './settings.js';
 import { TimerGroup } from './timer-group.js';
 import * as CrossTabSync from './cross-tab-sync.js';
 
@@ -58,12 +58,12 @@ export const BCChannel = {
     // Current channel metadata
     currentChannel: null,   // { localId, serverChannelId, name, ownerUid, isPinned, ... }
 
-    // VCS state (owner mode — IndexedDB backed)
+    // VCS state (owner mode — IndexedDB backed). Tier 18 removed the
+    // per-scope maxSlot setting — BC uses the hardcoded BOARD_MAX_SLOT.
     state: {
         localChannelId: null,
         currentHead: 0,
         isVirtual: false,
-        maxSlot: Settings.get('bc', 'maxSlot'),
         currentFileHash: null,
     },
 
@@ -294,13 +294,7 @@ export const BCChannel = {
             }
         });
 
-        // Settings change
-        window.addEventListener('settings:changed', (e) => {
-            const d = e.detail;
-            if (d.scope === 'bc' && d.key === 'maxSlot' || d.scope === 'all') {
-                this.state.maxSlot = Settings.get('bc', 'maxSlot');
-            }
-        });
+        // Tier 18: maxSlot setting removed — BOARD_MAX_SLOT is hardcoded.
 
         // Textarea input — auto-save (owner mode only)
         this.elements.textarea?.addEventListener('input', () => {
@@ -523,18 +517,9 @@ export const BCChannel = {
     async ownerPush() {
         if (this.state.isVirtual) return;
 
-        // Pre-scrub snapshot — matches BB push defenses. Lets us tell
-        // whether the record at currentHead survived scrubbing.
         const entryBefore = await BCDb.getRecord(this.state.localChannelId, this.state.currentHead);
+        await BCDb.cleanupOldRecords(this.state.localChannelId, BOARD_MAX_SLOT);
 
-        // Scrub + cleanup on push (conditional)
-        if (Settings.get('bc', 'autoCleanBlanks')) {
-            await BCDb.scrubBranch(this.state.localChannelId, this.state.maxSlot);
-        } else {
-            await BCDb.cleanupOldRecords(this.state.localChannelId, this.state.maxSlot);
-        }
-
-        // Post-scrub revalidation (three defenses from BB).
         const count = await BCDb.countRecords(this.state.localChannelId);
         if (count === 0) {
             this.state.currentHead = 0;
@@ -549,7 +534,6 @@ export const BCChannel = {
         }
         const entryAfter = await BCDb.getRecord(this.state.localChannelId, this.state.currentHead);
         if (!entryBefore || !entryAfter || entryBefore.timestamp !== entryAfter.timestamp) {
-            // Scrub shifted contents into this slot — refresh, don't navigate further.
             await this.syncOwnerView();
             return;
         }
@@ -576,15 +560,8 @@ export const BCChannel = {
             return;
         }
 
-        // Pre-scrub snapshot — matches BB pull defenses.
         const entryBefore = await BCDb.getRecord(this.state.localChannelId, this.state.currentHead);
-
-        // Scrub + cleanup on pull (conditional)
-        if (Settings.get('bc', 'autoCleanBlanks')) {
-            await BCDb.scrubBranch(this.state.localChannelId, this.state.maxSlot);
-        } else {
-            await BCDb.cleanupOldRecords(this.state.localChannelId, this.state.maxSlot);
-        }
+        await BCDb.cleanupOldRecords(this.state.localChannelId, BOARD_MAX_SLOT);
 
         const count = await BCDb.countRecords(this.state.localChannelId);
 
@@ -648,13 +625,9 @@ export const BCChannel = {
             const entry = await BCDb.getRecord(this.state.localChannelId, this.state.currentHead);
 
             if (entry) {
+                // Tier 18: always in-place edit (no rebase).
                 if (entry.text !== text) {
-                    if (Settings.get('bc', 'updateTimestamp')) {
-                        await BCDb.updateText(this.state.localChannelId, entry.timestamp, text);
-                        this.state.currentHead = 0;
-                    } else {
-                        await BCDb.updateTextInPlace(this.state.localChannelId, entry.timestamp, text);
-                    }
+                    await BCDb.updateTextInPlace(this.state.localChannelId, entry.timestamp, text);
                 }
             } else if (this.state.currentHead === 0) {
                 // Initial state (no records yet)

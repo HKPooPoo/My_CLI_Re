@@ -13,7 +13,6 @@
 
 import { playAudio } from "./audio.js";
 import { T } from "./timing.js";
-import * as Settings from "./settings.js";
 
 export class InfiniteList {
     /**
@@ -158,17 +157,16 @@ export const listInstances = new WeakMap(); // 使用 WeakMap 避免內存洩漏
  * 用於頁面渲染完成後，自動掃描並賦予列表無限滾動能力。
  */
 export function initAllInfiniteLists() {
-    const loop = Settings.get('bb', 'loopList');
+    // Tier 18: loopList setting removed — InfiniteList.loop defaults to
+    // false and is never flipped.
     const containers = document.querySelectorAll(".vcs-list-container");
     containers.forEach(container => {
         let instance = listInstances.get(container);
         if (!instance) {
             instance = new InfiniteList(container);
-            instance.loop = loop;
             listInstances.set(container, instance);
         } else {
-            instance.loop = loop;
-            instance.refresh(); // 若已存在，則執行同步
+            instance.refresh();
         }
     });
 }

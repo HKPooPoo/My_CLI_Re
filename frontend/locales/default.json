@@ -302,13 +302,8 @@
       "refresh": "Re-scan available extensions and check if they're online."
     },
     "config": {
-      "maxSlot": "Max notes per notebook. Oldest are auto-removed when full.",
-      "maxFiles": "Max file attachments per note. Beyond this is rejected.",
       "showHints": "Show hover hints like this one on buttons. Turn off for a cleaner view once familiar.",
-      "autoCleanBlanks": "Auto-remove blank notes when navigating. Keeps history tidy.",
-      "updateTimestamp": "Move an edited note to the top. OFF = stays in place.",
       "autoSync": "Two-way cloud sync for the current notebook: uploads 2s after idle, downloads remote changes in ~4s. Other notebooks sync when you open them. Requires sign-in.",
-      "loopList": "Wheel-scroll past the list end wraps to the top (and vice versa). OFF = stops at both ends.",
       "boardSwap": "My side on top, contact below. OFF = contact on top (default).",
       "notifications": "Desktop notifications when a new message arrives and the tab is in the background. Requires browser permission.",
       "screensaverTimeout": "Seconds of inactivity before screensaver activates. Max = disabled."
@@ -322,12 +317,7 @@
     }
   },
   "config": {
-    "maxSlotLabel": "NOTES PER NOTEBOOK",
-    "maxFilesLabel": "FILES PER NOTE",
-    "autoCleanBlanks": "AUTO-CLEAN BLANKS",
-    "updateTimestamp": "TOP-ON-EDIT",
     "autoSync": "AUTO SYNC",
-    "loopList": "LOOP SCROLL",
     "boardSwap": "MY SIDE FIRST",
     "notifications": "NOTIFICATIONS",
     "showHints": "SHOW HINTS",

@@ -5,7 +5,7 @@
  * =================================================================
  */
 
-import { createRangeControl, createToggleControl, createResetButton } from './misc.js';
+import { createToggleControl, createResetButton } from './misc.js';
 import { t } from './i18n.js';
 import * as Settings from './settings.js';
 
@@ -29,13 +29,11 @@ const WTConfig = {
         if (!this.container) return;
         this.container.innerHTML = '';
 
+        // Tier 18: retired maxSlot / maxFiles / autoCleanBlanks /
+        // updateTimestamp / loopList. WT keeps boardSwap (layout
+        // preference) and notifications (system notification gate).
         this.controls = {
-            maxSlot: createRangeControl(this.container, 'wt', 'maxSlot', 'config.maxSlotLabel', 10, 100, 10, 'hints.config.maxSlot'),
-            maxFiles: createRangeControl(this.container, 'wt', 'maxFiles', 'config.maxFilesLabel', 1, 20, 1, 'hints.config.maxFiles'),
-            autoClean: createToggleControl(this.container, 'wt', 'autoCleanBlanks', 'config.autoCleanBlanks', 'hints.config.autoCleanBlanks'),
-            updateTs: createToggleControl(this.container, 'wt', 'updateTimestamp', 'config.updateTimestamp', 'hints.config.updateTimestamp'),
             boardSwap: createToggleControl(this.container, 'wt', 'boardSwap', 'config.boardSwap', 'hints.config.boardSwap'),
-            loopList: createToggleControl(this.container, 'wt', 'loopList', 'config.loopList', 'hints.config.loopList'),
             notifications: createToggleControl(this.container, 'wt', 'notifications', 'config.notifications', 'hints.config.notifications'),
         };
     }

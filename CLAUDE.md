@@ -281,6 +281,26 @@ Log section; every new user decision gets appended with a date.
     `[SUBSCRIBED]` leak). `BBCore.swapRecordsByHead` / `BCDb.swapRecordsByHead`
     kept in-place but unreferenced, awaiting Tier 21 drag-and-drop.
 
+11. **Tier 18 — settings purge + hardcoded defaults**. The
+    `maxSlot / maxFiles / autoCleanBlanks / updateTimestamp / loopList`
+    per-scope toggles are all retired. Behaviour is now hardcoded
+    project-wide:
+    - `BOARD_MAX_SLOT = 100` (all boards: BB + WT + BC)
+    - `RECORD_MAX_FILES = 10` (all attach paths)
+    - Auto-clean-blanks OFF (blank pages preserved — no scrub)
+    - Update-timestamp OFF (all edits in-place, position stable)
+    - Loop-list OFF (InfiniteList stops at top/bottom)
+    Exposed via `settings.js` exports `BOARD_MAX_SLOT` and
+    `RECORD_MAX_FILES`. Config pages trimmed: BB keeps `autoSync` +
+    global `showHints / screensaverTimeout`; WT keeps `boardSwap /
+    notifications`; BC config page is empty (reset button only).
+    `BBCore.updateText / updateFileHash / scrubBranch` survive but
+    are no longer called by any save/push/pull path; retained for
+    future drag-and-drop (Tier 21). i18n keys pruned:
+    `config.maxSlotLabel / maxFilesLabel / autoCleanBlanks /
+    updateTimestamp / loopList` and their `hints.config.*` variants
+    all removed from `default.json`.
+
 ### Still pending (post-demo backlog)
 
 - **Tier 9c** — BC Calendar server-side (new table or
@@ -354,13 +374,11 @@ Known risk on shared devices: Bob logging in after Alice will see Alice's locall
 
 **File hash is name-sensitive: `SHA-256(content || 0x00 || original_name)`.** Two uploads with identical content but different filenames produce different hashes (no dedupe). Same content + same name → same hash → dedupe. This enables per-record file rename without a server rename endpoint: the chip name input is editable (Enter/blur commits), `editor-attachments._renameFile()` recomputes the hash under the new name, puts the blob under the new hash in `file_blobs` (status='local'), and fires `onRename(oldHash, newHash, meta)` so the host (BB/WT/BC) swaps the hash in the record's `file_hash` field. Next auto-commit uploads the new blob; the old server hash becomes orphan-eligible via the 24h cleanup. **Per-record uniqueness:** the same hash cannot appear twice in one record — attach/rename that would collide shows `files.duplicateInRecord` / `files.renameDuplicate` toast and is rejected. **Client and server must compute the same hash** — `FileService.upload(blob, filename)` sends the explicit filename so Blob uploads don't degrade to `"blob"` on the server. **BB attach / detach / file-rename / branch-rename all downgrade owner tag from `[synced]` to `[asynced]`** — each of these mutations makes the record (or every record in the branch, for branch-rename) reference content that diverges from what the server has: a new file attached, an existing file removed, a chip renamed to a new hash, or the branch itself re-labelled (commit sends `branch_name` per record, so a local label change is a real divergence). Leaving the tag as `[synced]` would mislead observers (including other tabs) into seeing a branch that looks server-consistent. All four paths use the shared `markAsynced` helper in `blackboard-core.js`. Commit re-promotes back to `[synced]` once upload succeeds.
 
-**File mutations follow the same timestamp-bump rule as text edits** — file hash already encodes content + name, so swapping `file_hash` is swapping content by definition. The `onAttach` / `onDetach` / `onRename` callbacks on `blackboard.js` now follow `Settings.get('bb', 'updateTimestamp')` symmetrically with `save()`:
-- ON → `BBCore.updateFileHash()` (mirror of `updateText`): delete the old record, re-add with `timestamp = max(Date.now(), oldTs + 1)` + `markAsynced(owner)`. Record moves to head 0; `state.currentHead = 0`.
-- OFF → in-place `modify()` on the record (mirror of `updateTextInPlace`). No timestamp bump.
+**File mutations are always in-place (Tier 18).** The `updateTimestamp` setting was retired — `onAttach` / `onDetach` / `onRename` on `blackboard.js` do a `modify()` on the record (parallels `updateTextInPlace`) and call `markAsynced(owner)` on the record's owner tag. The record stays at its existing timestamp, so head position is stable across file mutations.
 
-Cross-device `isDirty` detection reads `MAX(blackboards.timestamp)` from the server (`BlackboardService::fetchBranches`). Without the timestamp bump, file mutations committed from Tab1 leave `MAX(timestamp)` unchanged, and Tab2's branch-list row stays on `[synced]` because both conditions in the isDirty computation — timestamp mismatch AND `hasAsyncedRecord` — miss the change (`hasAsyncedRecord` is a local-only marker that does NOT travel to other devices). Bumping the timestamp re-uses the existing text-edit propagation path, so Tab2 sees `[asynced]` after Tab1 commits and refreshes (or receives the `bb:record:mutated` cross-tab broadcast / `BlackboardUpdated` WebSocket event).
+Cross-device `isDirty` detection now relies solely on the `[asynced]` owner tag. `MAX(blackboards.timestamp)` is no longer bumped by local edits (file or text), so other devices can't see the divergence until the next commit. This is an explicit trade-off for position stability — Tier 18 priorities stable head indices over cross-device live-dirtying.
 
-`blackboard-ui.js` renders the visible `[synced]`/`[asynced]` tag from `branch.isDirty`, which is true when either (a) local max record timestamp disagrees with the server's, or (b) `getAllBranches()` flagged any record in this branch with an `[asynced]` owner. Condition (b) covers the `updateTimestamp = OFF` case for file mutations (same known limitation as text-in-place edits — other devices can't detect the divergence because `[asynced]` is local-only). Condition (a) covers the default `updateTimestamp = ON` case, which is the cross-device path.
+`blackboard-ui.js` renders the visible `[synced]`/`[asynced]` tag from `branch.isDirty`, which is true when `getAllBranches()` flagged any record in this branch with an `[asynced]` owner (condition (b) from earlier designs). Condition (a) — timestamp mismatch — is effectively dead now that edits don't bump timestamps; the tag transition happens via `markAsynced()` alone.
 
 **File chip status guards — must stay in sync with the attach / commit / rename paths:**
 - **Attach path (`editor-attachments.js:280`)** checks `db.file_blobs.get(hash)` BEFORE `put`. If the row already exists (possibly `status: 'synced'`) only `last_accessed` is updated; status is preserved. Without this guard, re-attaching the same `(content + name)` pair anywhere on the device regressed the chip to `[LOCAL]` because `put` overwrote status. Mirrors the same guard long held by `_renameFile` (line 733-746).
@@ -755,18 +773,16 @@ The three boards share the same save and push/pull patterns. Divergences are bug
 **Save (textarea → IndexedDB)** — `BBVCS.save` / `WTVCS.save` / `BCChannel.save`:
 - `state.isVirtual`: create a new record only when textarea is non-empty.
 - Otherwise fetch record at `state.currentHead`; no-op if identical text.
-- `updateTimestamp` ON → `updateText` (delete + re-insert with bumped timestamp) moves the edited record to head 0.
-  - **`autoCleanBlanks` gate**: only delete a pre-existing blank at head 0 when `autoCleanBlanks` is ON. When OFF, the blank is preserved — the edit's bumped timestamp pushes it to head 0 naturally, and the blank falls to head 1 (the "swap" users expect with the setting off). Applies to BB + WT; BC save has no such delete to begin with.
-- `updateTimestamp` OFF → `updateTextInPlace`, no position change.
+- **Tier 18: always `updateTextInPlace`** — edited record keeps its original timestamp, stays at its head position. No rebase. `updateText` (delete + re-insert) is no longer called by save / push / pull paths.
 
 **Push / Pull (navigation)** — `BBVCS.push/pull` / `WTVCS.push/pull` / `BCChannel.ownerPush/ownerPull`:
 1. Save first (unless read-only).
 2. Pre-scrub snapshot: `entryBefore = getRecord(currentHead)`.
-3. `autoCleanBlanks` ON → `scrubBranch`; OFF → `cleanupOldRecords` (oldest-by-maxSlot only).
+3. `cleanupOldRecords(owner, branchId, BOARD_MAX_SLOT)` — hardcoded 100-page cap; blanks are preserved (no `scrubBranch` call).
 4. Five-step revalidation ladder:
    - `count === 0` → `state.currentHead = 0; state.isVirtual = true; return true`.
    - `currentHead >= count` → clamp to `count - 1; return true` (don't navigate further).
-   - `entryAfter = getRecord(currentHead)`; if `entryBefore.timestamp !== entryAfter.timestamp` → scrub shifted contents into this slot → `return true` without moving cursor (caller refreshes).
+   - `entryAfter = getRecord(currentHead)`; if `entryBefore.timestamp !== entryAfter.timestamp` → cleanup shifted contents into this slot → `return true` without moving cursor (caller refreshes).
    - Otherwise advance cursor (`currentHead--` for push, `currentHead++` for pull).
    - Push at head 0 → `state.isVirtual = true`; pull at `count - 1` → stay.
 
@@ -900,8 +916,8 @@ No ctx, no manifest, no config schema, no lifecycle hooks. Features import board
 
 ```json
 {
-    "app":      { "autoSync": true, "loopList": false, ... },
-    "calendar": { "YYYY-MM-DD": "note text", ... }
+    "app":      { "autoSync": true, ... },
+    "calendar": { "YYYY-MM-DD": ["event", "event", ...], ... }
 }
 ```
 

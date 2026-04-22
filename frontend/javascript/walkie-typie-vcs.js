@@ -12,7 +12,7 @@ import { FileService } from "./services/file-service.js";
 import { BBMessage } from "./blackboard-msg.js";
 import db from "./indexedDB.js";
 import { t } from './i18n.js';
-import * as Settings from './settings.js';
+import { BOARD_MAX_SLOT } from './settings.js';
 
 export const WTVCS = {
     async push(state, currentText, readOnly = false) {
@@ -22,17 +22,9 @@ export const WTVCS = {
             await this.save(state, currentText);
         }
 
-        // Pre-scrub snapshot so we can tell whether the record at
-        // currentHead survived scrubbing. Mirrors BB push defenses.
         const entryBefore = await WTDb.getRecord(state.branchId, state.currentHead);
+        await WTDb.cleanupOldRecords(state.branchId, BOARD_MAX_SLOT);
 
-        if (Settings.get('wt', 'autoCleanBlanks')) {
-            await WTDb.scrubBranch(state.branchId, state.maxSlot);
-        } else {
-            await WTDb.cleanupOldRecords(state.branchId, state.maxSlot);
-        }
-
-        // Post-scrub revalidation (three defenses from BB).
         const count = await WTDb.countRecords(state.branchId);
         if (count === 0) {
             state.currentHead = 0;
@@ -45,7 +37,6 @@ export const WTVCS = {
         }
         const entryAfter = await WTDb.getRecord(state.branchId, state.currentHead);
         if (!entryBefore || !entryAfter || entryBefore.timestamp !== entryAfter.timestamp) {
-            // Scrub shifted contents into this slot — caller just refreshes view.
             return true;
         }
 
@@ -76,14 +67,8 @@ export const WTVCS = {
             await this.save(state, currentText);
         }
 
-        // Pre-scrub snapshot — matches BB pull defenses.
         const entryBefore = await WTDb.getRecord(state.branchId, state.currentHead);
-
-        if (Settings.get('wt', 'autoCleanBlanks')) {
-            await WTDb.scrubBranch(state.branchId, state.maxSlot);
-        } else {
-            await WTDb.cleanupOldRecords(state.branchId, state.maxSlot);
-        }
+        await WTDb.cleanupOldRecords(state.branchId, BOARD_MAX_SLOT);
 
         const count = await WTDb.countRecords(state.branchId);
 
@@ -116,7 +101,7 @@ export const WTVCS = {
                 await WTDb.addRecord(state.branchId, state.branch, text);
                 state.isVirtual = false;
                 state.currentHead = 0;
-                await WTDb.cleanupOldRecords(state.branchId, state.maxSlot);
+                await WTDb.cleanupOldRecords(state.branchId, BOARD_MAX_SLOT);
             }
             return;
         }
@@ -124,26 +109,9 @@ export const WTVCS = {
         const entry = await WTDb.getRecord(state.branchId, state.currentHead);
 
         if (entry) {
+            // Tier 18: always in-place edit (no rebase).
             if (entry.text !== text) {
-                if (Settings.get('wt', 'updateTimestamp')) {
-                    // autoCleanBlanks OFF → preserve the blank at head 0.
-                    // updateText's timestamp bump naturally pushes the
-                    // edited record to head 0 and the blank falls to
-                    // head 1 (the "swap" behaviour the user expects).
-                    // Same fix as blackboard-vcs.js:save() — unconditional
-                    // delete was wiping blanks even when the setting was
-                    // off.
-                    if (state.currentHead > 0 && Settings.get('wt', 'autoCleanBlanks')) {
-                        const head0 = await WTDb.getRecord(state.branchId, 0);
-                        if (head0 && (!head0.text || head0.text.trim() === "") && !head0.file_hash) {
-                            await db.walkie_typie.delete([head0.branch_id, head0.timestamp]);
-                        }
-                    }
-                    await WTDb.updateText(state.branchId, entry.timestamp, text);
-                    state.currentHead = 0;
-                } else {
-                    await WTDb.updateTextInPlace(state.branchId, entry.timestamp, text);
-                }
+                await WTDb.updateTextInPlace(state.branchId, entry.timestamp, text);
             }
         } else if (state.currentHead === 0) {
             if (text && text.trim()) {
@@ -158,12 +126,7 @@ export const WTVCS = {
         const loggedInUser = localStorage.getItem("currentUser");
         if (!loggedInUser) throw new Error(t('walkieTypie.loginRequired'));
 
-        const wtMaxSlot = Settings.get('wt', 'maxSlot');
-        if (Settings.get('wt', 'autoCleanBlanks')) {
-            await WTDb.scrubBranch(branchId, wtMaxSlot);
-        } else {
-            await WTDb.cleanupOldRecords(branchId, wtMaxSlot);
-        }
+        await WTDb.cleanupOldRecords(branchId, BOARD_MAX_SLOT);
 
         let records = await WTDb.getAllRecordsForBranch(branchId);
         records = records.filter(r => (r.text && r.text.trim() !== "") || r.file_hash);

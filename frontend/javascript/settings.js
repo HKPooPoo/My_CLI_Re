@@ -9,11 +9,24 @@
 
 const SCOPES = ['bb', 'wt', 'bc'];
 
+// Tier 18: configurable maxSlot / maxFiles / autoCleanBlanks / updateTimestamp
+// / loopList were all retired. Behaviour is now hardcoded project-wide:
+//   · maxSlot           → 100 per branch/channel (see BOARD_MAX_SLOT below)
+//   · maxFiles          → 10 per record         (see RECORD_MAX_FILES below)
+//   · autoCleanBlanks   → false (blank pages preserved)
+//   · updateTimestamp   → false (in-place edit, no rebase — position stable)
+//   · loopList          → false (no wrap-around when scrolling lists)
+// Only true user preferences remain here.
 const SCOPE_DEFAULTS = {
-    bb:   { maxSlot: 10, maxFiles: 10, autoCleanBlanks: true, updateTimestamp: true, autoSync: false, loopList: false },
-    wt:   { maxSlot: 10, maxFiles: 10, autoCleanBlanks: true, updateTimestamp: true, loopList: false, notifications: true },
-    bc:   { maxSlot: 10, maxFiles: 10, autoCleanBlanks: false, updateTimestamp: false, loopList: false },
+    bb:   { autoSync: false },
+    wt:   { notifications: true, boardSwap: false },
+    bc:   {},
 };
+
+// Hardcoded project-wide constants — single source of truth, not
+// settings-backed. Import these instead of reading from Settings.
+export const BOARD_MAX_SLOT = 100;
+export const RECORD_MAX_FILES = 10;
 
 const GLOBAL_DEFAULTS = {
     locale: 'default',
@@ -140,13 +153,6 @@ export function resetScope(scope) {
             detail: { scope, key, value }
         }));
     }
-    // WT boardSwap is not in SCOPE_DEFAULTS — handle explicitly
-    if (scope === 'wt') {
-        localStorage.setItem(_scopeKey('wt', 'boardSwap'), 'false');
-        window.dispatchEvent(new CustomEvent('settings:changed', {
-            detail: { scope: 'wt', key: 'boardSwap', value: false }
-        }));
-    }
 }
 
 /**
@@ -171,9 +177,6 @@ export function resetAll() {
     for (const [key, value] of Object.entries(GLOBAL_DEFAULTS)) {
         localStorage.setItem(_globalKey(key), _serialize(value));
     }
-
-    // Reset WT boardSwap
-    localStorage.setItem(_scopeKey('wt', 'boardSwap'), 'false');
 
     window.dispatchEvent(new CustomEvent('settings:changed', { detail: { scope: 'all' } }));
 }

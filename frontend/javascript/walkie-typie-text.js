@@ -70,8 +70,9 @@ export const WTText = {
 
     currentBin: null,
 
-    // WE: IndexedDB-backed VCS state (same as Blackboard)
-    weState: { branchId: 0, branch: "WE", currentHead: 0, maxSlot: Settings.get('wt', 'maxSlot'), isVirtual: false },
+    // WE: IndexedDB-backed VCS state (same as Blackboard). Tier 18 removed
+    // maxSlot from state; WTVCS imports BOARD_MAX_SLOT directly.
+    weState: { branchId: 0, branch: "WE", currentHead: 0, isVirtual: false },
 
     // THEY: Memory-based, server-authoritative
     theyState: { currentHead: 0 },
@@ -265,14 +266,6 @@ export const WTText = {
 
             this.lockBoards();
             this.clearBoards();
-        });
-
-        // Settings change
-        window.addEventListener('settings:changed', (e) => {
-            const d = e.detail;
-            if (d.scope === 'wt' && d.key === 'maxSlot' || d.scope === 'all') {
-                this.weState.maxSlot = Settings.get('wt', 'maxSlot');
-            }
         });
 
         // --- Connection Lifecycle ---

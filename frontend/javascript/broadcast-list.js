@@ -30,7 +30,6 @@ import { playAudio } from './audio.js';
 import { t } from './i18n.js';
 import { T } from './timing.js';
 import { updateNaviPosition } from './navi.js';
-import * as Settings from './settings.js';
 import db from './indexedDB.js';
 
 // Sub-navi <---> text element — updated when channel is selected or renamed
@@ -166,12 +165,7 @@ export const BCList = {
             this.render();
         });
 
-        // Settings: loopList toggle
-        window.addEventListener('settings:changed', ({ detail }) => {
-            if ((detail.key === 'loopList' && detail.scope === 'bc') || detail.scope === 'all') {
-                if (this.infiniteList) this.infiniteList.loop = Settings.get('bc', 'loopList');
-            }
-        });
+        // Tier 18: loopList setting removed — InfiniteList.loop always false.
 
         // --- PIN ---
         if (this.elements.pinBtn) {
@@ -598,16 +592,15 @@ export const BCList = {
             this.elements.container.appendChild(item);
         });
 
-        // Initialize or refresh InfiniteList — always position cursor at index 0
+        // Initialize or refresh InfiniteList — always position cursor at index 0.
+        // Tier 18: no loop.
         if (this.infiniteList) {
-            this.infiniteList.loop = Settings.get('bc', 'loopList');
             this.infiniteList.refresh();
         } else if (this.channels.length > 0) {
             this.infiniteList = new InfiniteList(
                 this.elements.container,
                 '.broadcast-list-list-item'
             );
-            this.infiniteList.loop = Settings.get('bc', 'loopList');
         }
     },
 

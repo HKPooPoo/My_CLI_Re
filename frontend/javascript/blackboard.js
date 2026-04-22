@@ -33,7 +33,6 @@ const state = {
     branch: "",         // 當前分支名稱 (用於 UI 顯示)
     branchId: 0,        // 當前分支物理 ID
     currentHead: 0,     // 歷史深度指標 (0 表示最新)
-    maxSlot: Settings.get('bb', 'maxSlot'),
     isVirtual: false,   // 是否處於「新頁面」的虛擬狀態 (尚未存入 DB)
     currentFileHash: null,
 };
@@ -113,39 +112,25 @@ const bbAttach = EditorAttachments.create({
                     fileHashes = [binData];
                 }
 
-                // File mutation is a content change just like a text edit —
-                // the hash encodes content + name, so swapping file_hash is
-                // swapping content. Follow the `updateTimestamp` setting
-                // symmetrically with save():
-                //   ON  → bump timestamp (delete+add), record moves to head 0,
-                //         MAX(timestamp) bumps on server after commit → other
-                //         devices detect [asynced] via the same path that
-                //         text edits use.
-                //   OFF → in-place modify (parallels updateTextInPlace). Same
-                //         cross-device limitation as text-in-place: other
-                //         devices can't detect the mutation.
-                let mutatedTs = entry.timestamp;
-                if (Settings.get('bb', 'updateTimestamp')) {
-                    mutatedTs = await BBCore.updateFileHash(entry.owner, entry.branch_id, entry.timestamp, fileHashes);
-                    state.currentHead = 0;
+                // Tier 18: updateTimestamp toggle removed — always
+                // in-place. File mutation stamps the record [asynced]
+                // (local-only divergence signal; other devices can't
+                // detect the change without commit) but keeps the
+                // timestamp, so head position is stable.
+                const newOwner = markAsynced(entry.owner);
+                if (newOwner !== entry.owner) {
+                    await db.blackboard.where('[owner+branch_id+timestamp]')
+                        .equals([entry.owner, entry.branch_id, entry.timestamp])
+                        .modify({ file_hash: fileHashes, owner: newOwner });
                 } else {
-                    const newOwner = markAsynced(entry.owner);
-                    if (newOwner !== entry.owner) {
-                        // Primary key includes owner → modify() handles the
-                        // delete+put required to change it.
-                        await db.blackboard.where('[owner+branch_id+timestamp]')
-                            .equals([entry.owner, entry.branch_id, entry.timestamp])
-                            .modify({ file_hash: fileHashes, owner: newOwner });
-                    } else {
-                        await db.blackboard.update([entry.owner, entry.branch_id, entry.timestamp], { file_hash: fileHashes });
-                    }
+                    await db.blackboard.update([entry.owner, entry.branch_id, entry.timestamp], { file_hash: fileHashes });
                 }
 
                 // Defensive: keep state.owner at 'local' regardless of what
                 // the record just became. Self-heals if another path drifted
                 // state.owner to a specific tag.
                 state.owner = "local";
-                CrossTabSync.broadcast('bb:record:mutated', { branchId: entry.branch_id, timestamp: mutatedTs });
+                CrossTabSync.broadcast('bb:record:mutated', { branchId: entry.branch_id, timestamp: entry.timestamp });
             } else if (state.currentHead === 0) {
                 await BBCore.addRecord("local", state.branchId, state.branch, BBUI.getTextareaValue() || "", [binData]);
                 state.owner = "local";
@@ -176,27 +161,18 @@ const bbAttach = EditorAttachments.create({
             updated = null;
         }
 
-        // Same rule as onAttach: file mutation is a content change, follow
-        // the updateTimestamp setting. ON → bump via updateFileHash; OFF →
-        // in-place modify.
-        let mutatedTs = entry.timestamp;
-        if (Settings.get('bb', 'updateTimestamp')) {
-            mutatedTs = await BBCore.updateFileHash(entry.owner, entry.branch_id, entry.timestamp, updated);
-            state.currentHead = 0;
+        // Tier 18: always in-place detach.
+        const newOwner = markAsynced(entry.owner);
+        if (newOwner !== entry.owner) {
+            await db.blackboard.where('[owner+branch_id+timestamp]')
+                .equals([entry.owner, entry.branch_id, entry.timestamp])
+                .modify({ file_hash: updated, owner: newOwner });
         } else {
-            const newOwner = markAsynced(entry.owner);
-            if (newOwner !== entry.owner) {
-                await db.blackboard.where('[owner+branch_id+timestamp]')
-                    .equals([entry.owner, entry.branch_id, entry.timestamp])
-                    .modify({ file_hash: updated, owner: newOwner });
-            } else {
-                await db.blackboard.update([entry.owner, entry.branch_id, entry.timestamp], { file_hash: updated });
-            }
+            await db.blackboard.update([entry.owner, entry.branch_id, entry.timestamp], { file_hash: updated });
         }
-        // See onAttach: state.owner stays 'local' literal.
         state.owner = "local";
         BBSync.scheduleAutoCommit();
-        CrossTabSync.broadcast('bb:record:mutated', { branchId: entry.branch_id, timestamp: mutatedTs });
+        CrossTabSync.broadcast('bb:record:mutated', { branchId: entry.branch_id, timestamp: entry.timestamp });
     },
     onRename: async (oldHash, newHash, meta) => {
         const entry = await BBCore.getRecord(state.owner, state.branchId, state.currentHead);
@@ -211,35 +187,22 @@ const bbAttach = EditorAttachments.create({
         const existing = entry.file_hash;
         const updated = Array.isArray(existing) ? existing.map(swap) : swap(existing);
 
-        // Same asynced-on-divergence rule as onAttach/onDetach: renaming
-        // points the record at a hash the server doesn't have yet.
+        // Tier 18: always in-place rename. `markAsynced` flags the record
+        // so `hasAsyncedRecord` dirty detection still picks it up.
         const newOwner = markAsynced(entry.owner);
-
-        // Same rule as onAttach / onDetach: file rename is a content change
-        // (hash embeds new name), follow updateTimestamp setting.
-        let mutatedTs = entry.timestamp;
-        if (Settings.get('bb', 'updateTimestamp')) {
-            mutatedTs = await BBCore.updateFileHash(entry.owner, entry.branch_id, entry.timestamp, updated);
-            state.currentHead = 0;
+        if (newOwner !== entry.owner) {
+            await db.blackboard.where('[owner+branch_id+timestamp]')
+                .equals([entry.owner, entry.branch_id, entry.timestamp])
+                .modify({ file_hash: updated, owner: newOwner });
         } else {
-            if (newOwner !== entry.owner) {
-                // Primary key includes owner → use modify() so Dexie handles the
-                // delete+put required to change it.
-                await db.blackboard.where('[owner+branch_id+timestamp]')
-                    .equals([entry.owner, entry.branch_id, entry.timestamp])
-                    .modify({ file_hash: updated, owner: newOwner });
-            } else {
-                await db.blackboard.update([entry.owner, entry.branch_id, entry.timestamp], { file_hash: updated });
-            }
+            await db.blackboard.update([entry.owner, entry.branch_id, entry.timestamp], { file_hash: updated });
         }
-
-        // See onAttach: state.owner stays 'local' literal (query catch-all).
         state.owner = "local";
 
         BBSync.scheduleAutoCommit();
         CrossTabSync.broadcast('bb:record:mutated', {
             branchId: entry.branch_id,
-            timestamp: mutatedTs
+            timestamp: entry.timestamp
         });
     },
 });
@@ -977,23 +940,8 @@ window.addEventListener("list:updated", () => {
 // 監聽設定變更
 window.addEventListener('settings:changed', (e) => {
     const d = e.detail;
-    if (d.scope === 'bb' && d.key === 'maxSlot' || d.scope === 'all') {
-        state.maxSlot = Settings.get('bb', 'maxSlot');
-        // Trigger cleanup + UI refresh so stale records beyond new limit are removed
-        if (state.branchId) {
-            BBCore.cleanupOldRecords(state.owner, state.branchId, state.maxSlot)
-                .then(() => syncView())
-                .catch(() => {});
-        }
-    }
-    // React to loopList toggle — update all BB InfiniteList instances
-    if ((d.scope === 'bb' && d.key === 'loopList') || d.scope === 'all') {
-        const loop = Settings.get('bb', 'loopList');
-        document.querySelectorAll('.vcs-list-container').forEach(c => {
-            const inst = listInstances.get(c);
-            if (inst) inst.loop = loop;
-        });
-    }
+    // Tier 18: maxSlot / loopList settings removed — hardcoded behaviour
+    // (100-page cap; no list loop). Only autoSync remains observable here.
     // React to autoSync toggle
     if ((d.scope === 'bb' && d.key === 'autoSync') || d.scope === 'all') {
         if (Settings.get('bb', 'autoSync') && localStorage.getItem('currentUser')) {

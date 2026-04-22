@@ -21,7 +21,6 @@ import { MultiStepButton } from "./multiStepButton.js";
 import { BBMessage } from "./blackboard-msg.js";
 import { t } from './i18n.js';
 import { T } from './timing.js';
-import * as Settings from './settings.js';
 
 // Per-partner "has new signal" flags, in-memory only. Reload clears
 // all marks — simple by design (no localStorage round-trip).
@@ -209,12 +208,7 @@ export const WTList = {
             }
         });
 
-        // Settings: loopList toggle
-        window.addEventListener('settings:changed', ({ detail }) => {
-            if ((detail.key === 'loopList' && detail.scope === 'wt') || detail.scope === 'all') {
-                if (this.infiniteList) this.infiniteList.loop = Settings.get('wt', 'loopList');
-            }
-        });
+        // Tier 18: loopList setting removed — InfiniteList.loop always false.
 
         // Window Focus → re-fetch connections (partner may have added us)
         window.addEventListener("focus", () => {
@@ -375,16 +369,15 @@ export const WTList = {
             this.elements.container.appendChild(item);
         });
 
-        // Initialize / Refresh InfiniteList — cursor at top (index 0)
+        // Initialize / Refresh InfiniteList — cursor at top (index 0).
+        // Tier 18: no loop (scroll stops at top/bottom).
         if (this.infiniteList) {
-            this.infiniteList.loop = Settings.get('wt', 'loopList');
             this.infiniteList.refresh();
         } else if (this.connections.length > 0) {
             this.infiniteList = new InfiniteList(
                 this.elements.container,
                 ".walkie-typie-list-list-item"
             );
-            this.infiniteList.loop = Settings.get('wt', 'loopList');
         }
     }
 };
