@@ -114,22 +114,16 @@ export const BBUI = {
             // Same pattern as BC non-owner rename + WT THEY textarea.
             const isReadonly = !branch.isLocal;
 
-            // Tier 22: unified 4-icon legend (HEAD / LOCAL / SYNCED /
-            // NOT-SYNCED). All 4 icons always rendered; active ones
-            // brighten, inactive stay dim. Same schema across BB/WT/BC.
-            //   HEAD        → this is the currently-viewed branch
-            //   LOCAL       → has local records
-            //   SYNCED      → server copy matches local
-            //   NOT-SYNCED  → local diverges OR cloud-only
-            const isHeadActive = isActive;
-            const isLocalActive = !!branch.isLocal;
-            const isSyncedActive = !!(branch.isLocal && branch.isServer && !branch.isDirty);
-            const isAsyncedActive = !!(branch.isDirty || (!branch.isLocal && branch.isServer));
+            // Tier 22.5: only render icons for states that APPLY.
+            //   HEAD   (eye)        → this row is the active branch
+            //   LOCAL  (save)       → local-only, no server copy yet
+            //   SYNCED (cloud)      → server copy matches local
+            //   ASYNCED(cloud+cross)→ local diverges OR cloud-only
             const iconsHtml = buildStatusLegend({
-                head: isHeadActive,
-                local: isLocalActive,
-                synced: isSyncedActive,
-                asynced: isAsyncedActive,
+                head:    isActive,
+                local:   !!(branch.isLocal && !branch.isServer),
+                synced:  !!(branch.isLocal && branch.isServer && !branch.isDirty),
+                asynced: !!(branch.isDirty || (!branch.isLocal && branch.isServer)),
             });
 
             item.innerHTML = `

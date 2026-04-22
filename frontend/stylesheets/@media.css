@@ -35,9 +35,14 @@
 
     /* BB editor: narrower horizontal gutter on small screens.
        After Tier 11 the margin lives on .log-editor-row (textarea itself
-       is flush inside the row). */
+       is flush inside the row). Tier 22.5 ties the drop-overlay's inset
+       to the same gutter so its dashed frame keeps hugging the textarea. */
     .log-editor-row {
         margin: calc(4vh + 0.4rem) 4vw;
+    }
+    .drop-overlay {
+        left: 4vw;
+        right: 4vw;
     }
 }
 

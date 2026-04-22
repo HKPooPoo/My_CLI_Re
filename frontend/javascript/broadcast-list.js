@@ -587,22 +587,17 @@ export const BCList = {
                 titleEl.textContent += t('broadcast.pinLabel');
             }
 
-            // Tier 22: unified 4-icon legend (HEAD / LOCAL / SYNCED /
-            // NOT-SYNCED). For BC channels:
-            //   HEAD       → this channel is currently open in BC-CHANNEL
-            //   LOCAL      → draft exists locally OR user owns with local data
-            //   SYNCED     → cast to server (serverChannelId present, no pending)
-            //   NOT-SYNCED → local-only draft (not cast) OR owner has divergent
-            //                 local state waiting to be cast
+            // Tier 22.5: only render icons for states that apply.
+            //   HEAD    → this channel is currently open
+            //   LOCAL   → owner draft, not yet cast (isLocalOnly)
+            //   SYNCED  → cast to server, no pending owner changes
+            //   ASYNCED → owner with local changes that diverge from server
             const isSelected = selectedLocalId !== null && ch.localId === selectedLocalId;
-            const hasLocal = !!ch.localId;
-            const isSynced = !!(ch.serverChannelId && !ch.isLocalOnly);
-            const isAsynced = !!(ch.isLocalOnly || (ch.serverChannelId && this.isOwnerOf(ch) && ch.isDirty));
             const iconsWrap = makeStatusLegend({
                 head:    isSelected,
-                local:   hasLocal,
-                synced:  isSynced,
-                asynced: isAsynced,
+                local:   !!ch.isLocalOnly,
+                synced:  !!(ch.serverChannelId && !ch.isLocalOnly),
+                asynced: !!(ch.serverChannelId && this.isOwnerOf(ch) && ch.isDirty),
             });
 
             item.appendChild(nameInput);

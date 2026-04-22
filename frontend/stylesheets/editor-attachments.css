@@ -257,13 +257,16 @@ input.attachment-chip-name[readonly] {
 /* --- Drop Overlay --- */
 
 .drop-overlay {
-    /* position: absolute is NOT set here because style.css div 
-       already sets position:relative on all divs. We override to absolute. */
+    /* Tier 22.5 — shrink the drop-visual to the textarea area only
+       (roughly — matches `.log-editor-row` margin). The drop EVENT
+       listener still lives on `.editor-wrapper` so the whole drop-
+       zone accepts files; only the visual frame is smaller so the
+       hint sits where the user expects content to land. */
     position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
+    top: calc(4vh + 0.4rem);
+    left: 8vw;
+    right: 8vw;
+    bottom: calc(4vh + 0.4rem);
     align-items: center;
     justify-content: center;
     border: 2px dashed var(--text-green);
@@ -312,16 +315,23 @@ input.attachment-chip-name[readonly] {
     transition: color var(--transition-normal), border-color var(--transition-normal), background var(--transition-normal);
 }
 
+/* Override the global `button:hover` (which paints wine bg + white text).
+   Without these !important declarations, the global rule's brand
+   background collides with the :hover `color: var(--brand)` we want
+   here, producing wine-on-wine — unreadable. Armed state (.btn-armed)
+   is where the wine-on-white inversion is intentional. */
 @media (hover: hover) {
     .delete-page-btn:hover {
-        color: var(--brand);
-        border-color: var(--brand);
+        color: #ffffff !important;
+        background: var(--brand) !important;
+        border-color: var(--brand-dark) !important;
+        box-shadow: 0 2px 8px var(--shadow-brand);
     }
 }
 
 .delete-page-btn.btn-armed {
-    color: #fff;
-    background: var(--brand);
+    color: #ffffff;
+    background: var(--brand-dark);
     border-color: var(--brand-dark);
 }
 

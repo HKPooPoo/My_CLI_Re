@@ -281,24 +281,30 @@ Log section; every new user decision gets appended with a date.
     `[SUBSCRIBED]` leak). `BBCore.swapRecordsByHead` / `BCDb.swapRecordsByHead`
     kept in-place but unreferenced, awaiting Tier 21 drag-and-drop.
 
-13. **Tier 22 — unified 4-icon legend + preview drag-and-drop + cleanups**.
-    Supersedes Tier 13's per-list icon schema with a **single 4-icon
-    legend applied uniformly across BB / WT / BC** list rows. Every
-    row renders all four slots (HEAD / LOCAL / SYNCED / NOT-SYNCED)
-    in a vertical white-backed panel at `top: 4px; right: 4px`. Active
-    icons brighten to `--brand`; inactive icons dim to 20 % opacity —
-    the stack is a legend, not a state variable. Icon SVGs doubled to
-    32 × 32. Helper `frontend/javascript/list-status.js` exports
-    `buildStatusLegend(state)` (HTML string) and `makeStatusLegend(state)`
-    (DOM node) consumed by all three renderers.
+13. **Tier 22 / 22.5 — unified status icons + preview drag-and-drop + cleanups**.
+    One icon vocabulary shared by BB / WT / BC list rows. **Only active
+    states render** — inactive slots are absent from the DOM entirely,
+    mirroring the text-based `[SAVED]:name:head` convention where a row
+    shows one or two tokens at a time, not a four-slot legend. Icons are
+    16 × 16, laid out **horizontally** in the top-right corner, painted
+    in `--brand` wine. Helper `frontend/javascript/list-status.js`
+    exports `buildStatusLegend(state)` (HTML string) and
+    `makeStatusLegend(state)` (DOM node); both skip slots where the
+    state key is falsy.
 
-    **Per-list meaning of the 4 slots** (same SVGs, different triggers):
+    **Icon vocabulary**:
+    - **HEAD** (eye, `status-head.svg`) — currently viewed / selected
+    - **LOCAL** (floppy save, `status-local.svg`) — on this device only, not on server
+    - **SYNCED** (cloud, `status-synced.svg`) — on server, in sync with local
+    - **NOT-SYNCED** (cloud with cross, `status-asynced.svg`) — on server but local diverges
+
+    **Per-list trigger conditions** (same SVGs, different inputs):
     | Slot | BB branch row | WT connection row | BC channel row |
     |---|---|---|---|
-    | **HEAD** (eye) | branch matches `activeBranchId` | connection matches `selectedConnection.partner_uid` | channel matches `selectedChannel.localId` |
-    | **LOCAL** (file) | `branch.isLocal` — has local records | `conn.my_branch_id \|\| conn.partner_branch_id` — exchanged msgs exist | `ch.localId` — local IDB row exists |
-    | **SYNCED** (check) | `isLocal && isServer && !isDirty` | `last_signal < 60 s` — partner online | `serverChannelId && !isLocalOnly` — cast to server |
-    | **NOT-SYNCED** (warning) | `isDirty \|\| (!isLocal && isServer)` | `[NEW]` unread marker for this partner | `isLocalOnly \|\| (owner && isDirty)` — draft or divergent |
+    | HEAD | branch matches `activeBranchId` | connection matches `selectedConnection.partner_uid` | channel matches `selectedChannel.localId` |
+    | LOCAL | `branch.isLocal && !branch.isServer` | `conn.my_branch_id \|\| conn.partner_branch_id` — exchanged msgs | `ch.isLocalOnly` — draft not yet cast |
+    | SYNCED | `isLocal && isServer && !isDirty` | `last_signal < 60 s` — partner online | `serverChannelId && !isLocalOnly` |
+    | NOT-SYNCED | `isDirty \|\| (!isLocal && isServer)` | `[NEW]` unread marker | owner with `isDirty` local changes |
 
     Also in this tier:
     - `[SUBSCRIBED]` span removed from `.branch-name` inside the head

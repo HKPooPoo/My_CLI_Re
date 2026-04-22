@@ -1,23 +1,21 @@
 /**
- * List Status Legend (Tier 22)
+ * List Status Icons (Tier 22.5)
  * =================================================================
- * Shared 4-icon stack rendered on every BB branch, WT connection,
- * and BC channel row. The same SVG schema means one glance at any
- * list tells the user the same four things:
+ * Shared icon vocabulary across BB branch / WT connection / BC
+ * channel list rows. Only states that APPLY are rendered — an
+ * inactive state simply isn't in the DOM. That mirrors the text-based
+ * indicator convention where a row reads `[SAVED]` or `[LOCAL]` but
+ * never both at once.
  *
- *   HEAD       (eye)     — currently viewed / selected
- *   LOCAL      (file)    — has local data
- *   SYNCED     (check)   — server copy matches local
- *   NOT-SYNCED (warning) — local diverges OR item is cloud-only
+ *   HEAD       → eye            (currently viewed / selected)
+ *   LOCAL      → floppy save    (on this device only, not on server)
+ *   SYNCED     → cloud          (on server, in sync)
+ *   NOT-SYNCED → cloud w/ cross (on server but local diverges)
  *
- * Every row emits ALL 4 icons; active ones brighten to brand colour,
- * inactive ones dim to 20 % opacity. That way the stack is a visual
- * legend, not a state variable — users can learn the meaning once
- * instead of decoding a different arrangement per list.
- *
- * Icons use CSS mask + `background-color: currentColor` so they
- * theme via the `color` cascade; see `.list-status-icon` rules in
- * `style.css`.
+ * Each list renderer composes a `state` object; truthy keys render
+ * their icon, falsy keys render nothing. Consumers are free to light
+ * multiple icons (e.g. HEAD + SYNCED) — the icons draw left-to-right
+ * in the order defined below.
  * =================================================================
  */
 
@@ -28,34 +26,30 @@ const SLOTS = [
     { key: 'asynced', svg: 'asynced' },
 ];
 
-/**
- * Return an HTML string for the 4-icon legend. `state` is an object
- * with boolean keys `head / local / synced / asynced`; each sets the
- * `.active` class on the matching slot.
- *
- * Usage:
- *   item.innerHTML = `... ${buildStatusLegend({ head: true, local: true })} ...`;
- */
+/** HTML-string form for `innerHTML` renderers (BB). */
 export function buildStatusLegend(state = {}) {
-    const items = SLOTS.map(({ key, svg }) => {
-        const activeCls = state[key] ? ' active' : '';
-        return `<span class="list-status-icon${activeCls}" style="--icon-url: url('./images/status-${svg}.svg')"></span>`;
-    }).join('');
+    const items = SLOTS
+        .filter(({ key }) => !!state[key])
+        .map(({ svg }) => `<span class="list-status-icon" style="--icon-url: url('./images/status-${svg}.svg')"></span>`)
+        .join('');
+    if (!items) return '';
     return `<div class="list-status-icons">${items}</div>`;
 }
 
-/**
- * Imperative variant for renderers that build DOM via `createElement`
- * rather than innerHTML. Returns a detached container ready to append.
- */
+/** DOM-node form for `appendChild` renderers (WT, BC). */
 export function makeStatusLegend(state = {}) {
     const wrap = document.createElement('div');
     wrap.className = 'list-status-icons';
+    let any = false;
     for (const { key, svg } of SLOTS) {
+        if (!state[key]) continue;
+        any = true;
         const span = document.createElement('span');
-        span.className = 'list-status-icon' + (state[key] ? ' active' : '');
+        span.className = 'list-status-icon';
         span.style.setProperty('--icon-url', `url('./images/status-${svg}.svg')`);
         wrap.appendChild(span);
     }
-    return wrap;
+    // An empty container is harmless (no icons, no padding) but returning
+    // it anyway keeps consumer code uniform.
+    return any ? wrap : document.createDocumentFragment();
 }

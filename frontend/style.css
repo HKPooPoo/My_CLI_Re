@@ -438,57 +438,41 @@ a:hover {
     display: flex;
 }
 
-/* --- Tier 22: List status icons (4-icon unified legend) ---------------
-   Every list row (BB branch, WT connection, BC channel) carries the
-   SAME 4 status icons in a vertical stack at the top-right:
-       1. HEAD       (eye)     — currently viewed / selected
-       2. LOCAL      (file)    — has local data
-       3. SYNCED     (check)   — server copy matches local
-       4. NOT-SYNCED (warning) — local diverges from server
+/* --- Tier 22.5: List status icons (horizontal, active-only) -----------
+   Every list row (BB branch, WT connection, BC channel) shows a
+   horizontal stack of icons at the top-right — ONLY the states that
+   apply to this row, nothing else. Icon-shape vocabulary mirrors the
+   text-based indicator users already know:
+       HEAD       → eye            (currently viewed / selected)
+       LOCAL      → floppy save    (on this device only, not on server)
+       SYNCED     → cloud          (on server, in sync with local)
+       NOT-SYNCED → cloud w/ cross (on server but local diverges)
 
-   All 4 slots are ALWAYS rendered. Active icons brighten to brand
-   colour; inactive ones dim to 20 % opacity so the shape remains a
-   visual legend even when dark. Container has a white background
-   so the icon stack is legible over any list-item bg (including
-   .active state's brand-tinted row). */
+   Inactive icons are NOT rendered (renderer skips the slot). This
+   keeps the corner visually quiet — the absence of an icon is itself
+   information. Icons are 16 px and laid out left-to-right. */
 .list-status-icons {
     position: absolute;
     top: 4px;
-    right: 4px;
-    flex-direction: column;
+    right: 6px;
+    flex-direction: row;
     align-items: center;
     gap: 4px;
-    padding: 6px 4px;
-    background: #ffffff;
-    border: 1px solid var(--border-subtle);
-    border-radius: var(--border-radius);
     pointer-events: none;
     z-index: 1;
 }
 
-/* Icons use CSS mask so SVG caches normally via HTTP while the tint
-   follows the current `color` cascade. `--icon-url` is set inline by
-   the list renderer per icon. Different SVG shapes per state — no
-   colour-variant overloading. Size 32 × 32 (Tier 22, doubled from 16). */
+/* Icons use CSS mask so SVG caches via HTTP while the tint follows
+   the `color` cascade. `--icon-url` is set inline by the list
+   renderer. */
 .list-status-icon {
-    width: 32px;
-    height: 32px;
+    width: 16px;
+    height: 16px;
     background-color: currentColor;
     -webkit-mask: var(--icon-url) center/contain no-repeat;
     mask: var(--icon-url) center/contain no-repeat;
-    color: var(--text-muted);
-    opacity: 0.2;
-    flex-shrink: 0;
-    transition: opacity var(--transition-normal), color var(--transition-normal);
-}
-
-.list-status-icon.active {
-    opacity: 1;
     color: var(--brand);
-}
-
-.list-status-icon.active.accent {
-    color: var(--accent);
+    flex-shrink: 0;
 }
 
 #auth-locked-label {
