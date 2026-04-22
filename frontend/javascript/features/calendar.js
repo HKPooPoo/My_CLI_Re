@@ -20,6 +20,7 @@
 import { getSetting, setSetting } from '../sync-service.js';
 import { BCChannel } from '../broadcast-channel.js';
 import { BCMeta } from '../broadcast-db.js';
+import { BroadcastCalendarService } from '../services/broadcast-calendar-service.js';
 import { BBMessage } from '../blackboard-msg.js';
 
 const ICON_URL = '/images/calendar.svg';
@@ -45,23 +46,40 @@ function resolveMode() {
     if (page === 'broadcast-channel') {
         const channel = BCChannel?.currentChannel;
         const localId = channel?.localId ?? null;
+        const serverChannelId = channel?.serverChannelId ?? null;
         const channelName = channel?.name || '';
+        const isOwner = !!BCChannel?.isOwnerMode;
         return {
             kind: 'bc',
             localId,
+            serverChannelId,
             title: channelName ? `${channelName.toUpperCase()} CALENDAR` : 'CHANNEL CALENDAR',
-            writable: !!BCChannel?.isOwnerMode,
+            writable: isOwner,
             async load() {
-                if (!localId) return {};
+                // Owner reads their own draft from local IDB (what they
+                // will cast next time). Non-owner subscriber reads the
+                // server's currently-cast copy — the actual published
+                // calendar, separate from any local draft.
+                if (isOwner) {
+                    if (!localId) return {};
+                    try {
+                        return await BCMeta.getCalendar(localId);
+                    } catch (e) {
+                        console.error('[calendar/bc] local read failed:', e);
+                        return {};
+                    }
+                }
+                if (!serverChannelId) return {};
                 try {
-                    return await BCMeta.getCalendar(localId);
+                    const data = await BroadcastCalendarService.fetch(serverChannelId);
+                    return (data && typeof data.calendar === 'object' && data.calendar) || {};
                 } catch (e) {
-                    console.error('[calendar/bc] local read failed:', e);
+                    console.error('[calendar/bc] server fetch failed:', e);
                     return {};
                 }
             },
             async save(events) {
-                if (!localId) return;
+                if (!isOwner || !localId) return;
                 try {
                     // Local-first: write to IndexedDB. Server sync happens
                     // when the owner casts the channel (bundled with
@@ -252,13 +270,17 @@ export const feature = {
     pages: ['blackboard-log', 'broadcast-channel'],
     hasShelf: true,
     shouldShow(page) {
-        // On BC pages, calendar is an owner-only surface. Subscribers
-        // see BC calendars via the Dashboard rollup (future tier),
-        // never on the channel page itself. The button works for both
-        // uncast drafts (local only) and cast channels (local + next
-        // cast includes calendar in the payload).
+        // On BC pages, Calendar is part of the channel's broadcast —
+        // subscribers need to see it (read-only) just like they see
+        // the channel's posts. Owner sees editable; subscriber sees
+        // server-cast version. Button shows whenever there's a channel
+        // selected (owner needs localId to draft; subscriber needs
+        // serverChannelId to fetch).
         if (page === 'broadcast-channel') {
-            return !!BCChannel?.isOwnerMode && !!BCChannel?.currentChannel?.localId;
+            const ch = BCChannel?.currentChannel;
+            if (!ch) return false;
+            if (BCChannel?.isOwnerMode) return !!ch.localId;
+            return !!ch.serverChannelId;
         }
         return true;
     },

@@ -820,7 +820,7 @@ Semantic spread: action 4's clear is a subset of action 6's erase. 4 preserves s
 | id | pages | has shelf | Purpose |
 |---|---|---|---|
 | `file-attach` | blackboard-log, walkie-typie-text, broadcast-channel | — | Native file picker; on mobile shows Take Photo + Choose File |
-| `calendar` | blackboard-log, broadcast-channel | ✓ | Polymorphic: BB = personal `users.settings.calendar` (live-synced on setSetting); BC = local IDB `broadcast_channels[localId].calendar`, pushed to server via CAST payload (same cadence as text+files), subscribers read back via channel index or GET endpoint |
+| `calendar` | blackboard-log, broadcast-channel | ✓ | Polymorphic: BB = personal `users.settings.calendar` (live-synced on setSetting). BC = part of the channel's broadcast content; owner drafts in local IDB `broadcast_channels[localId].calendar` → pushed to server via the CAST payload (same cadence as text+files); **subscribers see the calendar too** (read-only) by fetching the server copy through `BroadcastCalendarService`. BC is 1-to-many, and calendar is part of what's broadcast. |
 | `flashcard` | blackboard-log, broadcast-channel | ✓ | Maker + Player; per-branch (BB) or per-channel (BC) |
 | `llm` | blackboard-log, broadcast-channel | ✓ | AI Tutor: dropdown prompts → Ollama streaming |
 
