@@ -329,23 +329,56 @@ input.attachment-chip-name[readonly] {
     right: auto;
 }
 
+/* Tier 22.12 — circular icon buttons. Text label was cluttering the
+   editor corner; SVG icons communicate intent faster and match
+   standard UI vocabulary (trash for delete, circular arrow for
+   refresh/reset). Icon tint follows `color` so hover / armed state
+   inverts both bg AND foreground together. `font-size: 0` hides any
+   stray text content (i18n data-i18n still writes textContent on
+   boot; this suppresses it without mutating the DOM). */
 .delete-page-btn,
 .reset-page-btn {
     position: absolute;
     top: 8px;
     right: calc(var(--sub-navi-height) + 8px);
     z-index: 2;
-    padding: 4px 12px;
-    font-family: inherit;
-    font-size: calc(var(--font-size) * 0.75);
-    font-weight: 600;
-    letter-spacing: 0.05em;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    font-size: 0;                         /* hide i18n text content */
     color: var(--text-muted);
     background: var(--bg-page);
     border: 1px solid var(--border-subtle);
-    border-radius: var(--border-radius);
+    border-radius: 50%;                   /* circle */
     cursor: pointer;
-    transition: color var(--transition-normal), border-color var(--transition-normal), background var(--transition-normal);
+    transition: color var(--transition-normal),
+                border-color var(--transition-normal),
+                background var(--transition-normal),
+                transform var(--transition-normal),
+                box-shadow var(--transition-normal);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Icon rendered via ::after mask so it tints with `color`. Each btn
+   points `--icon-url` at its SVG. */
+.delete-page-btn::after,
+.reset-page-btn::after {
+    content: "";
+    width: 20px;
+    height: 20px;
+    background-color: currentColor;
+    -webkit-mask: var(--icon-url) center/contain no-repeat;
+    mask: var(--icon-url) center/contain no-repeat;
+}
+
+.delete-page-btn {
+    --icon-url: url('../images/btn-delete.svg');
+}
+
+.reset-page-btn {
+    --icon-url: url('../images/btn-reset.svg');
 }
 
 /* Override the global `button:hover` (which paints wine bg + white text).
@@ -354,36 +387,23 @@ input.attachment-chip-name[readonly] {
    here, producing wine-on-wine — unreadable. Armed state (.btn-armed)
    is where the wine-on-white inversion is intentional. */
 @media (hover: hover) {
-    .delete-page-btn:hover {
-        color: #ffffff !important;
-        background: var(--brand) !important;
-        border-color: var(--brand-dark) !important;
-        box-shadow: 0 2px 8px var(--shadow-brand);
-    }
-}
-
-.delete-page-btn.btn-armed {
-    color: #ffffff;
-    background: var(--brand-dark);
-    border-color: var(--brand-dark);
-}
-
-/* RESET button — same 3-step destructive shape as DELETE PAGE (it
-   throws away unpushed local changes). Hover + armed states match so
-   both buttons feel like one "destructive gesture" surface. */
-@media (hover: hover) {
+    .delete-page-btn:hover,
     .reset-page-btn:hover {
         color: #ffffff !important;
         background: var(--brand) !important;
         border-color: var(--brand-dark) !important;
         box-shadow: 0 2px 8px var(--shadow-brand);
+        transform: scale(1.08);
     }
 }
 
+.delete-page-btn.btn-armed,
 .reset-page-btn.btn-armed {
     color: #ffffff;
     background: var(--brand-dark);
     border-color: var(--brand-dark);
+    transform: scale(1.1);
+    box-shadow: 0 0 0 4px var(--shadow-brand);
 }
 
 /* --- BB Context Specifics --- */

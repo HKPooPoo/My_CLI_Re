@@ -343,6 +343,24 @@ Log section; every new user decision gets appended with a date.
       disk pending a future cleanup pass). Active set: `head / local /
       synced / asynced` (4 files).
 
+16. **Tier 22.12 — icon buttons + width-hover + grip visibility**.
+    - **DELETE PAGE + RESET** became **circular icon buttons** (36 px
+      round). SVG icons via mask: `btn-delete.svg` (trash can) and
+      `btn-reset.svg` (circular refresh arrow). Text label suppressed
+      with `font-size: 0` so MultiStepButton's text mutations stay
+      silent. Armed state = scale-up + glow-ring (4 px box-shadow)
+      since there's no "DELETE x2" text to rely on.
+    - **Feature-btn hover no longer uses `translateX`**. The container
+      now aligns children `flex-end`; button default `width =
+      var(--sub-navi-height)`; on hover / `.active`, `width` grows to
+      `calc(var(--sub-navi-height) + 16px)`, extruding LEFT while the
+      right edge stays pinned. Feels like a drawer handle physically
+      pulling itself out of the scaffold.
+    - **Preview block grip** became an SVG (6-dot 2×3 grid, new
+      `grip-handle.svg`), 12 × 24 px, always visible. 3-pulse intro
+      animation on first render hints interactivity. Hover/active
+      flips grip colour to white + stops the animation.
+
 15. **Tier 22.11 — UX polish pass (stakeholder-visible quality)**.
     - **Preview blocks** now have grip-dot affordance (`::after`
       radial-gradient on the right edge), `cursor: grab` / `grabbing`,
