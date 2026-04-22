@@ -820,7 +820,7 @@ Semantic spread: action 4's clear is a subset of action 6's erase. 4 preserves s
 | id | pages | has shelf | Purpose |
 |---|---|---|---|
 | `file-attach` | blackboard-log, walkie-typie-text, broadcast-channel | — | Native file picker; on mobile shows Take Photo + Choose File |
-| `calendar` | blackboard-log, broadcast-channel | ✓ | Polymorphic: BB = personal `users.settings.calendar` (live-synced on setSetting). BC = part of the channel's broadcast content; owner drafts in local IDB `broadcast_channels[localId].calendar` → pushed to server via the CAST payload (same cadence as text+files); **subscribers see the calendar too** (read-only) by fetching the server copy through `BroadcastCalendarService`. BC is 1-to-many, and calendar is part of what's broadcast. |
+| `calendar` | blackboard-log, broadcast-channel | ✓ | **Data model: `{ "YYYY-MM-DD": ["event", "event", ...] }` — arrays, not single strings**, so merging is concatenation. Editor is an incremental list (one-line entries, no line breaks; add via input+Add button, remove per row with ×). Day cell shows numeric count + one colour dot per source type present (brand=self, accent=channel). Polymorphic on page: **BB merges** self (`users.settings.calendar`, editable) with ALL subscribed channel calendars (read-only, labelled by channel name). BC = the channel's own calendar only; owner drafts in local IDB, cast bundles to server; subscribers see the cast copy read-only. |
 | `flashcard` | blackboard-log, broadcast-channel | ✓ | Maker + Player; per-branch (BB) or per-channel (BC) |
 | `llm` | blackboard-log, broadcast-channel | ✓ | AI Tutor: dropdown prompts → Ollama streaming |
 

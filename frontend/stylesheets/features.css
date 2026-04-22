@@ -335,20 +335,50 @@
     line-height: 1;
 }
 
-[data-feature="calendar"] .cal-day-dot {
+/* Day cell density: count + colour dots (one per source type present) */
+[data-feature="calendar"] .cal-day-count {
     position: absolute;
-    bottom: 4px;
-    width: 5px;
-    height: 5px;
-    border-radius: 50%;
-    background: var(--brand);
+    top: 2px;
+    right: 4px;
+    font-size: 0.62em;
+    font-weight: 700;
+    color: var(--brand);
+    line-height: 1;
 }
 
-/* Editor panel — hidden by default, slides open when a day is picked */
+[data-feature="calendar"] .cal-day.is-selected .cal-day-count {
+    color: #ffffff;
+}
+
+[data-feature="calendar"] .cal-day-dots {
+    position: absolute;
+    bottom: 3px;
+    left: 0;
+    right: 0;
+    flex-direction: row;
+    justify-content: center;
+    gap: 3px;
+    pointer-events: none;
+}
+
+[data-feature="calendar"] .cal-dot {
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+}
+
+[data-feature="calendar"] .cal-dot-self    { background: var(--brand); }
+[data-feature="calendar"] .cal-dot-channel { background: var(--accent); }
+
+[data-feature="calendar"] .cal-day.is-selected .cal-dot-self    { background: #ffffff; }
+[data-feature="calendar"] .cal-day.is-selected .cal-dot-channel { background: #ffe8ff; }
+
+/* Editor panel — hidden by default, slides open when a day is picked.
+   Now a LIST of single-line entries instead of a free-form textarea. */
 [data-feature="calendar"] .cal-editor {
     display: none;
     flex-direction: column;
-    gap: 6px;
+    gap: 8px;
     padding: 10px;
     border: 2px solid var(--brand);
     border-radius: var(--border-radius);
@@ -365,65 +395,117 @@
     color: var(--brand);
 }
 
-[data-feature="calendar"] .cal-editor-textarea {
-    width: 100%;
-    min-height: 64px;
-    padding: 8px;
+[data-feature="calendar"] .cal-editor-list {
+    flex-direction: column;
+    gap: 4px;
+    max-height: 140px;
+    overflow-y: auto;
+    user-select: text;
+}
+
+[data-feature="calendar"] .cal-editor-empty {
+    color: var(--text-muted);
+    font-style: italic;
+    font-size: 0.85em;
+    padding: 6px 4px;
+}
+
+[data-feature="calendar"] .cal-editor-item {
+    flex-direction: row;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 8px;
+    border: 1px solid var(--border-subtle);
+    border-left: 4px solid var(--brand);
+    border-radius: 3px;
+    background: var(--bg-page);
+    font-size: 0.88em;
+    line-height: 1.25;
+}
+
+[data-feature="calendar"] .cal-editor-item.is-channel {
+    border-left-color: var(--accent);
+    background: var(--bg-card);
+}
+
+[data-feature="calendar"] .cal-item-text {
+    flex: 1 1 0;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: var(--text-body);
+    user-select: text;
+}
+
+[data-feature="calendar"] .cal-item-source {
+    flex: 0 0 auto;
+    font-size: 0.72em;
+    letter-spacing: 0.05em;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    font-weight: 600;
+}
+
+[data-feature="calendar"] .cal-item-remove {
+    flex: 0 0 auto;
+    width: 22px;
+    height: 22px;
+    border: 1px solid var(--border-subtle);
+    border-radius: 50%;
+    background: transparent;
+    color: var(--text-muted);
+    font-size: 0.85em;
+    line-height: 1;
+    cursor: pointer;
+    transition: border-color var(--transition-normal), color var(--transition-normal);
+}
+
+[data-feature="calendar"] .cal-item-remove:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+[data-feature="calendar"] .cal-editor-add-row {
+    flex-direction: row;
+    gap: 6px;
+    align-items: stretch;
+}
+
+[data-feature="calendar"] .cal-editor-input {
+    flex: 1 1 0;
+    min-width: 0;
+    padding: 6px 10px;
     border: 1px solid var(--border-subtle);
     border-radius: 4px;
     background: var(--bg-page);
     color: var(--text-body);
+    font-size: 0.9em;
     font-family: inherit;
-    font-size: 0.95em;
-    line-height: 1.4;
-    resize: vertical;
     user-select: text;
-    -webkit-user-select: text;
 }
 
-[data-feature="calendar"] .cal-editor-textarea:focus {
+[data-feature="calendar"] .cal-editor-input:focus {
     outline: none;
     border-color: var(--brand);
 }
 
-[data-feature="calendar"] .cal-editor-actions {
-    flex-direction: row;
-    gap: 8px;
-    justify-content: flex-end;
-}
-
-[data-feature="calendar"] .cal-save-btn,
-[data-feature="calendar"] .cal-delete-btn {
+[data-feature="calendar"] .cal-editor-add-btn {
+    flex: 0 0 auto;
     padding: 6px 14px;
-    border-radius: var(--border-radius);
-    font-weight: 700;
-    font-size: 0.85em;
-    letter-spacing: 0.05em;
-    cursor: pointer;
-    border: 2px solid transparent;
-    transition: background var(--transition-normal), box-shadow var(--transition-normal);
-}
-
-[data-feature="calendar"] .cal-save-btn {
-    border-color: var(--brand);
+    border: 2px solid var(--brand);
+    border-radius: 4px;
     background: var(--brand);
     color: #ffffff;
+    font-weight: 700;
+    font-size: 0.78em;
+    letter-spacing: 0.08em;
+    cursor: pointer;
+    transition: background var(--transition-normal);
 }
 
-[data-feature="calendar"] .cal-save-btn:hover {
+[data-feature="calendar"] .cal-editor-add-btn:hover {
     background: var(--brand-dark);
-    box-shadow: 0 2px 8px var(--shadow-brand);
-}
-
-[data-feature="calendar"] .cal-delete-btn {
-    border-color: var(--accent);
-    background: transparent;
-    color: var(--accent);
-}
-
-[data-feature="calendar"] .cal-delete-btn:hover {
-    background: var(--accent);
-    color: #ffffff;
 }
 
 /* Markdown output inside the Markdown Preview feature panel */

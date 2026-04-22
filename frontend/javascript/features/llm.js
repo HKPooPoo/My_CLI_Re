@@ -80,7 +80,15 @@ function composeSchedulePrompt() {
     });
 
     // Read from the synced user settings (same surface as Calendar feature).
-    const calendar = getSetting('calendar', {}) || {};
+    // Each date's value may be a string (legacy) or array (current). Normalise to array.
+    const rawCal = getSetting('calendar', {}) || {};
+    const calendar = {};
+    for (const [date, val] of Object.entries(rawCal)) {
+        const items = Array.isArray(val)
+            ? val.filter(s => typeof s === 'string' && s.trim())
+            : (typeof val === 'string' && val.trim() ? [val.trim()] : []);
+        if (items.length) calendar[date] = items;
+    }
 
     const entries = Object.entries(calendar);
     const todayYmd = nowIso.slice(0, 10);
@@ -103,7 +111,9 @@ function composeSchedulePrompt() {
             'a few upcoming events, then ask you again.';
     } else if (upcoming.length === 0) {
         dataSection = 'Past events (all of the user\'s events are in the past):\n' +
-            past.slice(-10).map(([d, t]) => `- ${d}: ${t}`).join('\n');
+            past.slice(-10)
+                .flatMap(([d, items]) => items.map(t => `- ${d}: ${t}`))
+                .join('\n');
         taskSection =
             'TASK:\n' +
             '- Acknowledge that all of the user\'s recorded events are in the past — nothing is upcoming.\n' +
@@ -112,10 +122,10 @@ function composeSchedulePrompt() {
     } else {
         dataSection =
             'Upcoming events (user has added these):\n' +
-            upcoming.map(([d, t]) => `- ${d}: ${t}`).join('\n') +
+            upcoming.flatMap(([d, items]) => items.map(t => `- ${d}: ${t}`)).join('\n') +
             (past.length
                 ? '\n\nPast events (already happened, do NOT schedule these):\n' +
-                  past.slice(-5).map(([d, t]) => `- ${d}: ${t}`).join('\n')
+                  past.slice(-5).flatMap(([d, items]) => items.map(t => `- ${d}: ${t}`)).join('\n')
                 : '');
         taskSection =
             'OUTPUT STRUCTURE (three parts, in this order):\n' +
