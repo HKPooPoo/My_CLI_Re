@@ -299,15 +299,37 @@ Log section; every new user decision gets appended with a date.
     - **NOT-SYNCED** (cloud with cross, `status-asynced.svg`) — on server but local diverges
 
     **Per-list trigger conditions** (same SVGs, board-native mechanism —
-    WT only fires the icons that map to real WT state; its `synced` /
-    `asynced` slots are deliberately empty because P2P live messaging
-    doesn't carry a per-connection sync tag):
+    each board fires icons from its OWN data model, NOT a unified
+    schema copied across three boards):
+
+    **HEAD mechanism is deliberately different per board:**
+    - **BB**: HEAD = the branch **currently open in the log editor**
+      (`branch.id === state.branchId`, passed as `currentHeadId`). BB is
+      the only board where list-cursor selection (`activeBranchId`) and
+      editing-head (`currentHeadId`) diverge — you can browse the branch
+      list without having switched to that branch. The eye follows the
+      editing head, which is BB's native "currently open" concept.
+    - **WT**: HEAD = selected connection
+      (`conn.partner_uid === this.selectedConnection?.partner_uid`). WT
+      collapses list-selection and opening into one action (click a row
+      → loads the text page for that partner), so selected ≡ open.
+    - **BC**: HEAD = selected channel
+      (`ch.localId === this.selectedChannel?.localId`). BC collapses
+      selection and opening the same way — clicking a channel switches
+      to it, so `selectedChannel` IS the currently-open one.
+
+    **Sync slots also differ:**
     | Slot | BB branch row | WT connection row | BC channel row |
     |---|---|---|---|
-    | HEAD | branch matches `activeBranchId` | connection matches `selectedConnection.partner_uid` | channel matches `selectedChannel.localId` |
     | LOCAL | `branch.isLocal && !branch.isServer` | `conn.my_branch_id \|\| conn.partner_branch_id` — conversation exists | `ch.isLocalOnly` — draft not yet cast |
     | SYNCED | `isLocal && isServer && !isDirty` | *(N/A — no per-connection sync tag in WT)* | `serverChannelId && !isLocalOnly` |
     | NOT-SYNCED | `isDirty \|\| (!isLocal && isServer)` | *(N/A)* | owner with `isDirty` local changes |
+
+    The project's native VCS `HEAD` (per-record cursor within a branch,
+    shown in the `.head-indicator` strip on the log page) is a SEPARATE
+    concept from the eye icon on list items. List-item HEAD = "which
+    container is currently open"; VCS HEAD = "which record inside the
+    open container is being viewed." Don't conflate them.
 
     Container styling: white-backed rounded panel (`background: #fff`,
     1 px border, 3 px × 6 px padding) so the icon stack is legible over

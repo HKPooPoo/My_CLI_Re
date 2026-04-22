@@ -114,13 +114,15 @@ export const BBUI = {
             // Same pattern as BC non-owner rename + WT THEY textarea.
             const isReadonly = !branch.isLocal;
 
-            // Tier 22.5: only render icons for states that APPLY.
-            //   HEAD   (eye)        → this row is the active branch
-            //   LOCAL  (save)       → local-only, no server copy yet
-            //   SYNCED (cloud)      → server copy matches local
-            //   ASYNCED(cloud+cross)→ local diverges OR cloud-only
+            // Tier 22.7: HEAD eye fires for the branch CURRENTLY OPEN in
+            // the log editor (`branch.id === state.branchId`, already
+            // passed in as `currentHeadId`) — NOT the list cursor
+            // selection. BB is the only board where list-cursor and
+            // currently-open diverge; we respect the project's native
+            // distinction between `activeBranchId` (cursor) and
+            // `currentHeadId` (editing head).
             const iconsHtml = buildStatusLegend({
-                head:    isActive,
+                head:    isHead,
                 local:   !!(branch.isLocal && !branch.isServer),
                 synced:  !!(branch.isLocal && branch.isServer && !branch.isDirty),
                 asynced: !!(branch.isDirty || (!branch.isLocal && branch.isServer)),
