@@ -364,19 +364,13 @@ export const WTList = {
                 ? `${conn.partner_uid} ${t('walkieTypie.statusNew')}`
                 : conn.partner_uid;
 
-            // Tier 22.6: WT does NOT have per-connection sync tags in its
-            // data model (P2P live, no commit-status per connection), so
-            // it only fires the icons that map to real WT state:
-            //   HEAD  → this connection is currently open in WT-TEXT
-            //   LOCAL → conversation exists (my_branch_id or partner_branch_id)
-            // `synced / asynced` are deliberately skipped. Earlier versions
-            // forced `online ↦ synced` and `[NEW] ↦ asynced`; those were
-            // invented mappings that conflated unrelated concepts.
-            const isHead = !!activeUid && conn.partner_uid === activeUid;
-            const hasLocal = !!(conn.my_branch_id || conn.partner_branch_id);
+            // Tier 22.8: WT has exactly ONE icon slot — NEW (envelope).
+            // Fires when the partner has sent content since the user last
+            // opened WT-TEXT with them. Same signal that already renders
+            // the inline `[NEW]` suffix beside partner_uid; the icon is
+            // the visual companion, not a replacement.
             const iconsWrap = makeStatusLegend({
-                head:  isHead,
-                local: hasLocal,
+                new: _newMessagePartners.has(conn.partner_uid),
             });
 
             item.appendChild(tagInput);

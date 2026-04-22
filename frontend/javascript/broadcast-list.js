@@ -587,17 +587,18 @@ export const BCList = {
                 titleEl.textContent += t('broadcast.pinLabel');
             }
 
-            // Tier 22.5: only render icons for states that apply.
-            //   HEAD    → this channel is currently open
-            //   LOCAL   → owner draft, not yet cast (isLocalOnly)
-            //   SYNCED  → cast to server, no pending owner changes
-            //   ASYNCED → owner with local changes that diverge from server
-            const isSelected = selectedLocalId !== null && ch.localId === selectedLocalId;
+            // Tier 22.8: BC has exactly TWO icon slots — cloud (synced)
+            // and cloud-with-cross (asynced). No HEAD eye, no LOCAL
+            // floppy. `isLocalOnly` drafts show no icon (panel disappears).
+            //   SYNCED  → channel is cast AND in sync with server
+            //   ASYNCED → channel is cast but owner has unpushed local
+            //             changes (subscribers never see cross — they
+            //             can't mutate server content so "divergence"
+            //             would be meaningless for them)
+            const isCast = !!(ch.serverChannelId && !ch.isLocalOnly);
             const iconsWrap = makeStatusLegend({
-                head:    isSelected,
-                local:   !!ch.isLocalOnly,
-                synced:  !!(ch.serverChannelId && !ch.isLocalOnly),
-                asynced: !!(ch.serverChannelId && this.isOwnerOf(ch) && ch.isDirty),
+                synced:  isCast && !(this.isOwnerOf(ch) && ch.isDirty),
+                asynced: isCast &&  (this.isOwnerOf(ch) && ch.isDirty),
             });
 
             item.appendChild(nameInput);

@@ -19,11 +19,16 @@
  * =================================================================
  */
 
+// Each board opts into the subset of slots its data model supports.
+// BB uses head/local/synced/asynced; BC uses synced/asynced only;
+// WT uses `new` only. Slot order here is also the left-to-right
+// render order when multiple fire on the same row.
 const SLOTS = [
     { key: 'head',    svg: 'head'    },
     { key: 'local',   svg: 'local'   },
     { key: 'synced',  svg: 'synced'  },
     { key: 'asynced', svg: 'asynced' },
+    { key: 'new',     svg: 'new'     },
 ];
 
 /** HTML-string form for `innerHTML` renderers (BB). */

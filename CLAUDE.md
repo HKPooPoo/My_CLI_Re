@@ -292,44 +292,27 @@ Log section; every new user decision gets appended with a date.
     `makeStatusLegend(state)` (DOM node); both skip slots where the
     state key is falsy.
 
-    **Icon vocabulary**:
-    - **HEAD** (eye, `status-head.svg`) — currently viewed / selected
+    **Icon vocabulary** (5 SVGs in `frontend/images/status-*.svg`):
+    - **HEAD** (eye, `status-head.svg`) — currently open in editor
     - **LOCAL** (floppy save, `status-local.svg`) — on this device only, not on server
     - **SYNCED** (cloud, `status-synced.svg`) — on server, in sync with local
     - **NOT-SYNCED** (cloud with cross, `status-asynced.svg`) — on server but local diverges
+    - **NEW** (envelope with dot, `status-new.svg`) — unread signal from partner (WT only)
 
-    **Per-list trigger conditions** (same SVGs, board-native mechanism —
-    each board fires icons from its OWN data model, NOT a unified
-    schema copied across three boards):
+    **Per-board icon subsets — each board opts into ONLY the slots its
+    data model natively expresses. Boards DO NOT share a uniform schema:**
 
-    **HEAD mechanism is deliberately different per board:**
-    - **BB**: HEAD = the branch **currently open in the log editor**
-      (`branch.id === state.branchId`, passed as `currentHeadId`). BB is
-      the only board where list-cursor selection (`activeBranchId`) and
-      editing-head (`currentHeadId`) diverge — you can browse the branch
-      list without having switched to that branch. The eye follows the
-      editing head, which is BB's native "currently open" concept.
-    - **WT**: HEAD = selected connection
-      (`conn.partner_uid === this.selectedConnection?.partner_uid`). WT
-      collapses list-selection and opening into one action (click a row
-      → loads the text page for that partner), so selected ≡ open.
-    - **BC**: HEAD = selected channel
-      (`ch.localId === this.selectedChannel?.localId`). BC collapses
-      selection and opening the same way — clicking a channel switches
-      to it, so `selectedChannel` IS the currently-open one.
-
-    **Sync slots also differ:**
-    | Slot | BB branch row | WT connection row | BC channel row |
-    |---|---|---|---|
-    | LOCAL | `branch.isLocal && !branch.isServer` | `conn.my_branch_id \|\| conn.partner_branch_id` — conversation exists | `ch.isLocalOnly` — draft not yet cast |
-    | SYNCED | `isLocal && isServer && !isDirty` | *(N/A — no per-connection sync tag in WT)* | `serverChannelId && !isLocalOnly` |
-    | NOT-SYNCED | `isDirty \|\| (!isLocal && isServer)` | *(N/A)* | owner with `isDirty` local changes |
+    | Board | Active slots | Why this subset |
+    |---|---|---|
+    | **BB** (branch list) | HEAD, LOCAL, SYNCED, NOT-SYNCED | BB has per-branch VCS; all four states are native. HEAD fires on `branch.id === currentHeadId` (`= state.branchId`, the branch in the log editor) — NOT the list cursor `activeBranchId`. LOCAL/SYNCED/ASYNCED derive from `branch.isLocal`, `branch.isServer`, `branch.isDirty`. |
+    | **WT** (connection list) | NEW only | WT is P2P live; no per-connection sync tag exists in the data model. The only legitimate status is **unread**, already tracked by `_newMessagePartners` Set (maintained on `walkie-typie:content-update`, cleared on `navi:pageChanged → walkie-typie-text`). Fires when `_newMessagePartners.has(conn.partner_uid)`. No eye, no floppy, no clouds. |
+    | **BC** (channel list) | SYNCED, NOT-SYNCED only | BC's only meaningful row-level status is "is this channel cast, and if so is it current?" No eye (clicking a row opens it — the feedback loop is the navigation itself). No floppy (un-cast `isLocalOnly` channels show no icon at all — panel disappears). Cloud fires when `serverChannelId && !isLocalOnly && !(isOwnerOf(ch) && ch.isDirty)`; cloud-cross fires when `serverChannelId && !isLocalOnly && isOwnerOf(ch) && ch.isDirty`. Subscribers never see the cross — they can't mutate server content, so "divergence" is meaningless for them. |
 
     The project's native VCS `HEAD` (per-record cursor within a branch,
     shown in the `.head-indicator` strip on the log page) is a SEPARATE
-    concept from the eye icon on list items. List-item HEAD = "which
-    container is currently open"; VCS HEAD = "which record inside the
-    open container is being viewed." Don't conflate them.
+    concept from the BB eye icon. List-item HEAD = "which container is
+    currently open"; VCS HEAD = "which record inside the open container
+    is being viewed." Don't conflate them.
 
     Container styling: white-backed rounded panel (`background: #fff`,
     1 px border, 3 px × 6 px padding) so the icon stack is legible over
