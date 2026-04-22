@@ -1,9 +1,9 @@
+/* After Tier 11 the BC textarea lives inside .log-editor-row, which owns
+   the vertical + horizontal margin. The textarea itself is flush inside
+   the row so the preview rail can sit next to it. */
 #channel-textarea {
-    /*follow push and pull btn height (by margin); add value -> gap -> no stick together with btn */
-    margin: var(--single-textbox-margin);
-    height: 100%;
-    /*idk why, the font-size same as navi and btn, but looks smaller; needs add value*/
-    /*note: unified in root*/
+    flex: 1;
+    margin: 0;
     font-size: var(--textbox-font-size);
 }
 

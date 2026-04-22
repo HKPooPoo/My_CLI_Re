@@ -290,8 +290,11 @@ input.attachment-chip-name[readonly] {
 /* --- BB Context Specifics --- */
 
 /* When chips are visible, they already sit below the push button,
-   so the textarea's top margin (which reserves push-button clearance) is redundant. */
-.attachment-chips.has-items ~ #log-textarea {
+   so the textarea's top margin (which reserves push-button clearance) is redundant.
+   After Tier 11 the BB textarea lives inside .log-editor-row, so match both
+   the pre- and post-wrap shape. */
+.attachment-chips.has-items ~ #log-textarea,
+.attachment-chips.has-items ~ .log-editor-row {
     margin-top: 0;
 }
 

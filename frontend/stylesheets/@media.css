@@ -33,9 +33,15 @@
         transform: translate(-50%, -50%);
     }
 
-    #log-textarea {
-        /*follow push and pull btn height (by margin)*/
-        margin: calc(4vh + 0.4rem) 4vw;
+    /* BB editor: narrower horizontal gutter on small screens.
+       After Tier 11 the margin lives on .log-editor-row / .log-topic-input
+       (textarea itself is flush inside the row). */
+    .log-editor-row {
+        margin: calc(0.4rem) 4vw calc(4vh + 0.4rem) 4vw;
+    }
+    .log-topic-input {
+        margin-left: 4vw;
+        margin-right: 4vw;
     }
 }
 

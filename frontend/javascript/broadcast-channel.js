@@ -241,6 +241,9 @@ export const BCChannel = {
             this.clearIndicators();
             this.bcAttach?.clear();
             if (this.elements.textarea) this.elements.textarea.value = '';
+            this._previewRailCache = [];
+            const rail = document.getElementById('bc-preview-rail');
+            if (rail) rail.replaceChildren();
         });
 
         // Channel deleted → clear display
@@ -253,6 +256,9 @@ export const BCChannel = {
             this.clearIndicators();
             this.bcAttach?.clear();
             if (this.elements.textarea) this.elements.textarea.value = '';
+            this._previewRailCache = [];
+            const rail = document.getElementById('bc-preview-rail');
+            if (rail) rail.replaceChildren();
         });
 
         // Channel renamed → update indicator
@@ -354,6 +360,64 @@ export const BCChannel = {
             const activePage = document.querySelector('.page.active');
             if (activePage?.dataset?.page !== 'broadcast-channel') return;
             this.updateIndicators();
+        });
+
+        // Page Previewer rail (BC) — hover peeks, click navigates. Owner
+        // mode saves current before navigating; reader mode just swaps
+        // the in-memory readerHead. BC textarea has no topic split, so
+        // peek-restore snapshots the body only.
+        const $rail = document.getElementById('bc-preview-rail');
+        const self = this;
+
+        const lockReaderSafe = (locked) => {
+            // Reader mode already has disabled textarea; skip.
+            if (!self.isOwnerMode) return;
+            if (self.elements.textarea) self.elements.textarea.readOnly = locked;
+        };
+
+        $rail?.addEventListener('mouseover', (e) => {
+            const block = e.target.closest('.page-preview-block');
+            if (!block) return;
+            if (!self._hoverSnapshot &&
+                self.isOwnerMode &&
+                document.activeElement === self.elements.textarea) return;
+            const head = parseInt(block.dataset.head, 10);
+            if (Number.isNaN(head) || head < 0) return;
+            const rec = self._previewRailCache[head];
+            if (!rec) return;
+            if (!self._hoverSnapshot) {
+                self._hoverSnapshot = { body: self.elements.textarea?.value ?? '' };
+                lockReaderSafe(true);
+            }
+            if (self.elements.textarea) self.elements.textarea.value = rec.text || '';
+        });
+
+        $rail?.addEventListener('mouseleave', () => {
+            if (!self._hoverSnapshot) return;
+            if (self.elements.textarea) self.elements.textarea.value = self._hoverSnapshot.body;
+            self._hoverSnapshot = null;
+            lockReaderSafe(false);
+        });
+
+        $rail?.addEventListener('click', async (e) => {
+            const block = e.target.closest('.page-preview-block');
+            if (!block) return;
+            const head = parseInt(block.dataset.head, 10);
+            if (Number.isNaN(head) || head < 0) return;
+            if (self._hoverSnapshot) {
+                if (self.elements.textarea) self.elements.textarea.value = self._hoverSnapshot.body;
+                self._hoverSnapshot = null;
+            }
+            lockReaderSafe(false);
+            if (self.isOwnerMode) {
+                await self.save(self.elements.textarea?.value ?? '');
+                self.state.isVirtual = false;
+                self.state.currentHead = head;
+                await self.syncOwnerView();
+            } else {
+                self.readerHead = head;
+                self.syncReaderView();
+            }
         });
     },
 
@@ -662,6 +726,7 @@ export const BCChannel = {
             this.bcAttach?.clear();
             this.state.currentFileHash = null;
             this.updateIndicators(t('broadcast.headNew'));
+            await this.renderPreviewRail();
             return;
         }
 
@@ -678,6 +743,7 @@ export const BCChannel = {
             this.bcAttach?.setFromRecord(hash || null, typeof bin === 'object' ? bin : null);
 
             this.updateIndicators();
+            await this.renderPreviewRail();
         } catch (e) {
             console.error('BCChannel: syncOwnerView failed', e);
         }
@@ -696,6 +762,56 @@ export const BCChannel = {
         this.bcAttach?.setFromRecord(hash || null, typeof bin === 'object' ? bin : null);
 
         this.updateIndicators(this.readerHead);
+        this.renderPreviewRail();
+    },
+
+    // =====================================================================
+    //  Page Previewer rail (Tier 11 part 2 — BC)
+    // =====================================================================
+
+    // Owner mode reads records from IDB; reader mode reads from the
+    // in-memory serverRecords[] array. Either way, head 0 = newest (top
+    // of rail). BC has no topic, so blocks only show the body's first
+    // line as a tooltip — not a split topic+body reveal like BB.
+    _previewRailCache: [],
+    _hoverSnapshot: null,
+
+    async renderPreviewRail() {
+        const rail = document.getElementById('bc-preview-rail');
+        if (!rail) return;
+
+        let records;
+        if (this.isOwnerMode && this.state.localChannelId) {
+            records = await BCDb.getAllRecords(this.state.localChannelId);
+        } else {
+            records = this.serverRecords || [];
+        }
+        this._previewRailCache = records;
+
+        const activeHead = this.isOwnerMode ? this.state.currentHead : this.readerHead;
+        const isVirtual = this.isOwnerMode && this.state.isVirtual;
+
+        const frag = document.createDocumentFragment();
+
+        if (isVirtual) {
+            const vBlock = document.createElement('div');
+            vBlock.className = 'page-preview-block virtual active';
+            vBlock.dataset.head = '-1';
+            frag.appendChild(vBlock);
+        }
+
+        records.forEach((rec, idx) => {
+            const block = document.createElement('div');
+            let cls = 'page-preview-block';
+            if (!isVirtual && idx === activeHead) cls += ' active';
+            block.className = cls;
+            block.dataset.head = String(idx);
+            const firstLine = (rec.text || '').split('\n', 1)[0];
+            block.title = firstLine || '';
+            frag.appendChild(block);
+        });
+
+        rail.replaceChildren(frag);
     },
 
     // =====================================================================

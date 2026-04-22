@@ -188,20 +188,25 @@
             <button class="push-btn" data-hint="hints.push" data-i18n="common.push">PUSH</button>
             <button class="pull-btn" data-hint="hints.pull" data-i18n="common.pull">PULL</button>
             <div class="head-indicator">
-                <div class="branch-is-saved">&#36;{is_saved}</div>:
-                <div class="branch-name" data-hint="hints.branchName">&#36;{branch_name}</div>:
-                <div class="branch-head" contenteditable="plaintext-only" spellcheck="false" inputmode="numeric">&#36;{branch_head}</div>
+                <div class="branch-is-saved"></div>
+                <div class="branch-name" data-hint="hints.branchName"></div>
+                <div class="branch-head" contenteditable="plaintext-only" spellcheck="false" inputmode="numeric"></div>
             </div>
             <div class="page can-push-pull have-feature show-branch" data-page="blackboard-log">
                 <div class="editor-wrapper" id="bb-drop-zone">
                     <div class="attachment-chips" id="bb-attachment-chips"></div>
-                    <textarea name="" id="log-textarea" data-i18n-placeholder="blackboard.textPlaceholder"
-                        placeholder="Enter..."></textarea>
+                    <input type="text" class="log-topic-input" id="log-topic-input"
+                        data-i18n-placeholder="blackboard.topicPlaceholder" placeholder="Topic (optional)...">
+                    <div class="log-editor-row">
+                        <div class="page-preview-rail" id="bb-preview-rail"></div>
+                        <textarea name="" id="log-textarea" data-i18n-placeholder="blackboard.textPlaceholder"
+                            placeholder="Enter..."></textarea>
+                    </div>
                     <input type="file" id="bb-file-input" multiple hidden accept="*/*">
                     <div class="drop-overlay" id="bb-drop-overlay" data-i18n="files.dropZoneHint">DROP FILES HERE</div>
                 </div>
             </div>
-            <div class="page show-branch have-feature" data-page="blackboard-branch">
+            <div class="page have-feature" data-page="blackboard-branch">
                 <div class="vcs-container">
                     <div class="vcs-title crt-text-orange" data-i18n="blackboard.pageTitle">BRANCH CONTROLLER</div>
                     <input type="text" class="vcs-search-input" id="vcs-search"
@@ -446,13 +451,16 @@
             <div class="page can-push-pull have-feature show-branch" data-page="broadcast-channel">
                 <div class="editor-wrapper" id="bc-drop-zone">
                     <div class="attachment-chips" id="bc-attachment-chips"></div>
-                    <textarea name="" id="channel-textarea" placeholder="Enter..."
-                        data-i18n-placeholder="blackboard.textPlaceholder"></textarea>
+                    <div class="log-editor-row">
+                        <div class="page-preview-rail" id="bc-preview-rail"></div>
+                        <textarea name="" id="channel-textarea" placeholder="Enter..."
+                            data-i18n-placeholder="blackboard.textPlaceholder"></textarea>
+                    </div>
                     <input type="file" id="bc-file-input" multiple hidden accept="*/*">
                     <div class="drop-overlay" id="bc-drop-overlay" data-i18n="files.dropZoneHint">DROP FILES HERE</div>
                 </div>
             </div>
-            <div class="page have-feature show-branch" data-page="broadcast-list">
+            <div class="page have-feature" data-page="broadcast-list">
                 <div class="broadcast-list-container">
                     <div class="broadcast-list-title crt-text-orange" data-i18n="broadcast.pageTitle">CHANNEL MODULATION
                     </div>

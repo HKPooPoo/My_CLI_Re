@@ -106,13 +106,15 @@ failure/pending: sub-navi-track overflow mask on edge
     cursor: pointer;
 }
 
-/*manifest*/
-/* .sub-navi-indicator, */
+/*manifest — only the active navi-item's sub-navi UI is rendered;
+  inactive ones must hide both the track AND the indicator, otherwise
+  inactive indicators drip below the navi bar into the page area.*/
+.sub-navi-indicator,
 .sub-navi-track {
     display: none;
 }
 
-/* .navi-item.active .sub-navi-indicator, */
+.navi-item.active .sub-navi-indicator,
 .navi-item.active .sub-navi-track {
     display: flex;
 }

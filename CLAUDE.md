@@ -260,6 +260,16 @@ Log section; every new user decision gets appended with a date.
    convention — zero call-site changes elsewhere. WebGL layers
    (matrix-rain, perlin-bg, mouse-light) intentionally skipped.
 
+9. **Tier 11 + head-indicator consistency sweep** — BB Topic input
+   above the textarea; Page Previewer rail beside the textarea on both
+   BB-log and BC-channel; scoped the shared `.head-indicator` to
+   editor-only pages (removed `show-branch` from `blackboard-branch`
+   and `broadcast-list`); cleared boot-time `${placeholder}` template
+   text; un-commented the `.sub-navi-indicator` display gate so only
+   the active main-nav renders a sub-indicator. See the dedicated
+   "BB Editor: Topic Input + Page Previewer Rail" section for the
+   contract.
+
 ### Still pending (post-demo backlog)
 
 - **Tier 9c** — BC Calendar server-side (new table or
@@ -269,8 +279,6 @@ Log section; every new user decision gets appended with a date.
 - **Tier 9e** — BC Flashcard (per-channel server-side, same
   ownership semantics as BC Calendar).
 - **Tier 14 part 2** — Server sync for Flashcard data.
-- **Tier 12** — Dashboard + HUD right-side summary.
-- **Tier 11** — BB Topic input + Page Previewer rail.
 - **Tier 13** — List status icons + 4 px left border sweep.
 - **Tier 15** — Read/PIN ratio on announcements + Ctrl-K search.
 - **Tier 16** — Restaurant backend purge.
@@ -651,10 +659,12 @@ Buttons whose label/behaviour change based on list selection context. Now wired 
 
 ### Head Indicator Interactions
 
-The `.head-indicator` strip (right-side vertical label on BB-log and BC-channel pages — shared DOM, page-gated behaviour) holds three divs:
-- `.branch-is-saved` — read-only `[SAVED]` / `[UNSAVED]` marker
+The `.head-indicator` strip (left-side vertical label inside `.page-container` — shared DOM, CSS-gated by the active page's `show-branch` class) holds three divs:
+- `.branch-is-saved` — read-only `[SAVED]` / `[UNSAVED]` (BB) or `[DRAFT]` / `[POSTED]` / `[SUBSCRIBED]` (BC) marker
 - `.branch-name` — current branch name (BB) or channel name (BC). **Read-only here; rename happens via the row input on the list page.**
 - `.branch-head` — current head index (0 = newest)
+
+**Visibility gating**: `show-branch` is set only on the two **editor** pages (`blackboard-log`, `broadcast-channel`); it was removed from `blackboard-branch` and `broadcast-list` in Tier 11 so the indicator no longer leaks stale branch/channel context onto list views. Empty divs in the shared DOM (no `${placeholder}` template literal) keep the pre-init state clean — each page's own JS writes the first real values when it activates.
 
 **`.branch-head` inline reorder** (`hud.js`):
 - Attribute: `contenteditable="plaintext-only" spellcheck="false" inputmode="numeric"`.
@@ -672,6 +682,36 @@ The `.head-indicator` strip (right-side vertical label on BB-log and BC-channel 
 **Swap mechanics** (`blackboard-core.js:282` / `broadcast-db.js:132`): pick `records[from]` and `records[to]` from the DESC-sorted list; delete both by PK; `put` back with timestamps exchanged. BB also `markAsynced`s both records' owner (divergence from server). Out-of-range clamp: `target > maxHead` → swap with oldest; `target < 0` → swap with newest; `from === to` → no-op return.
 
 **Mid-type guard**: `BBUI.updateIndicators` / `BCChannel.updateIndicators` skip writing `.branch-head.textContent` when `document.activeElement === .branch-head`, so a concurrent poll / WS event doesn't clobber user input.
+
+### BB Editor: Topic Input + Page Previewer Rail (Tier 11)
+
+**Layout.** Inside `.editor-wrapper` (BB-log + BC-channel):
+```
+.editor-wrapper
+  .attachment-chips
+  .log-topic-input      ← BB only (above textarea)
+  .log-editor-row       ← flex-row container
+    .page-preview-rail  ← vertical column of .page-preview-block
+    textarea
+  (hidden file input)
+  .drop-overlay
+```
+
+**Topic** (`BB only`, `.log-topic-input` / `#log-topic-input`). Zero-schema-cost split: first line of `record.text` = topic, everything after the first `\n` = body.
+- `BBUI.setTextarea(text)` splits on first newline, writes each half into its respective element.
+- `BBUI.getTextareaValue()` recombines: both empty → `""`, topic-only → `"topic\n"` (trailing newline preserves round-trip), body-only → `body` (no leading newline), both → `"topic\nbody"`.
+- Both `<input>` and `<textarea>` share one input listener (`scheduleSave`) so the 200 ms debounce, auto-commit, and cross-tab broadcast stay in one path.
+- Legacy records auto-migrate on first edit — `text = "single line"` loads as topic="", body="single line"; typing in the topic field rewrites `text = "new topic\nsingle line"` on next save.
+- `state.isVirtual` on an empty branch clears both fields via `setTextarea("")`.
+
+**Page Previewer Rail.** `#bb-preview-rail` (BB) / `#bc-preview-rail` (BC), populated on every `syncView()` / `syncOwnerView()` / `syncReaderView()` so it mirrors navigation, saves, cross-tab mutations, and WebSocket updates without a separate trigger system.
+- One `.page-preview-block` per record, newest at top. `.active` on the current head, `.virtual` for the unsaved virtual page, `.unsynced` when `record.owner === 'local'` or `.owner.includes('[asynced]')`.
+- `block.title = firstLine` — native tooltip shows the topic line of the target record on hover.
+- **Read-only peek**: hover locks `textarea.readOnly = true` + `topic.readOnly = true` and overwrites their values with the target record's text. Mouseleave restores the snapshot captured on first-enter. Without the `readOnly` lock, a user typing into a hovered record would silently edit the LIVE record (whose `state.currentHead` hasn't moved), which was the original design hazard.
+- **Click to navigate**: commits the peek (restores snapshot, unlocks), saves current value, moves `state.currentHead = head`, fires `syncView()`. BC reader mode just moves `readerHead` + `syncReaderView()`.
+- **BB snapshot** holds `{ body, topic }`; **BC snapshot** holds `{ body }` only (no topic on BC).
+- `_previewRailCache` backs the hover lookup so mouseover doesn't hit IndexedDB per enter.
+- **Active-element guard on first entry**: if the user is already typing when the mouse enters, no snapshot + no overwrite — peek is inert. The lock itself is not applied mid-type, so a just-started peek can always be aborted cleanly by leaving the rail.
 
 ### Toast & Messages
 

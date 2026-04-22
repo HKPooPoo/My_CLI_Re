@@ -26,7 +26,8 @@ export const BBUI = {
         branchBtn: document.getElementById("branch-btn"),
         commitBtn: document.getElementById("commit-btn"),
         checkoutBtn: document.getElementById("checkout-btn"),
-        textarea: document.getElementById("log-textarea")
+        textarea: document.getElementById("log-textarea"),
+        topic: document.getElementById("log-topic-input"),
     },
 
     /**
@@ -45,20 +46,36 @@ export const BBUI = {
     },
 
     /**
-     * 設定文字框內容並強制重設儲存標籤
+     * 設定文字框內容並強制重設儲存標籤。
+     * Splits `text` on the first newline: line 1 goes to the topic input,
+     * everything after goes into the textarea. Records without a newline
+     * have empty topic + full text in the body.
      */
     setTextarea(text) {
-        if (this.elements.textarea) {
-            this.elements.textarea.value = text;
-            this.updateIndicators(undefined, undefined, true);
-        }
+        const raw = text ?? '';
+        const nlIdx = raw.indexOf('\n');
+        const topic = nlIdx >= 0 ? raw.slice(0, nlIdx) : '';
+        const body  = nlIdx >= 0 ? raw.slice(nlIdx + 1) : raw;
+        if (this.elements.textarea) this.elements.textarea.value = body;
+        if (this.elements.topic)    this.elements.topic.value    = topic;
+        this.updateIndicators(undefined, undefined, true);
     },
 
     /**
-     * 讀取文字框內容
+     * 讀取文字框內容：`topic\nbody`.
+     * Both empty   → "" (no stray newline).
+     * Topic empty  → body only (legacy-shape records with no topic line).
+     * Body empty   → topic + "\n" (trailing newline preserves split on
+     *                reload so the string round-trips through setTextarea).
+     * Both present → "topic\nbody".
      */
     getTextareaValue() {
-        return this.elements.textarea ? this.elements.textarea.value : "";
+        const body = this.elements.textarea?.value ?? '';
+        const topic = this.elements.topic?.value ?? '';
+        if (!topic && !body) return '';
+        if (!topic) return body;
+        if (!body)  return topic + '\n';
+        return topic + '\n' + body;
     },
 
     /**

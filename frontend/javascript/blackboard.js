@@ -298,6 +298,7 @@ async function syncView() {
         BBUI.updateIndicators(state.branch || t('blackboard.branchNameFallback'), "NEW", false);
         bbAttach?.clear();
         state.currentFileHash = null;
+        await renderPreviewRail();
         return;
     }
 
@@ -319,6 +320,58 @@ async function syncView() {
     state.currentFileHash = binData ?? null;
     const hashes = extractHashes(binData);
     bbAttach?.setFromRecord(hashes.length > 0 ? hashes : null);
+
+    await renderPreviewRail();
+}
+
+// --- Page Previewer rail (Tier 11 part 2) -------------------------------
+//
+// Vertical column beside the textarea with one block per record in the
+// current branch, newest at the top. Populated after every syncView so it
+// tracks navigation / save / cross-tab mutations without a separate
+// trigger system.
+//
+// _previewRailCache is the records snapshot backing the hover lookup.
+// Reading from here avoids a per-hover IDB round trip (syncView already
+// paid for the fetch).
+//
+// _hoverSnapshot stores whatever the user had in the textarea + topic
+// before their cursor entered a preview block; mouseleave restores it so
+// the peek is non-destructive. A click clears the snapshot to commit.
+let _previewRailCache = [];
+let _hoverSnapshot = null;
+
+async function renderPreviewRail() {
+    const rail = document.getElementById('bb-preview-rail');
+    if (!rail) return;
+
+    const records = await BBCore.getAllRecordsForBranch(state.owner, state.branchId);
+    records.sort((a, b) => b.timestamp - a.timestamp);
+    _previewRailCache = records;
+
+    const frag = document.createDocumentFragment();
+
+    if (state.isVirtual) {
+        const vBlock = document.createElement('div');
+        vBlock.className = 'page-preview-block virtual active';
+        vBlock.dataset.head = '-1';
+        frag.appendChild(vBlock);
+    }
+
+    records.forEach((rec, idx) => {
+        const block = document.createElement('div');
+        let cls = 'page-preview-block';
+        if (!state.isVirtual && idx === state.currentHead) cls += ' active';
+        const ownerStr = rec.owner || '';
+        if (ownerStr === 'local' || ownerStr.includes('[asynced]')) cls += ' unsynced';
+        block.className = cls;
+        block.dataset.head = String(idx);
+        const firstLine = (rec.text || '').split('\n', 1)[0];
+        block.title = firstLine || t('blackboard.topicPlaceholder');
+        frag.appendChild(block);
+    });
+
+    rail.replaceChildren(frag);
 }
 
 /**
@@ -803,9 +856,12 @@ window.addEventListener("list:updated", () => {
 
 // --- 事件監聽區 ---
 
-// 自動儲存：監聽文字框輸入並防抖處理
-BBUI.elements.textarea?.addEventListener("input", () => {
-    // 立即更新為 UNSAVED，但不要觸發完整的 DOM 重繪
+// Auto-save: textarea + topic input share the same debounced save flow.
+// Both inputs concatenate via BBUI.getTextareaValue() into `topic\nbody`
+// before hitting BBCore, so the record storage format is unchanged —
+// first line = topic, rest = body. A single save path means cross-tab
+// sync, push/pull defenses, and auto-commit all stay in one place.
+const scheduleSave = () => {
     if (BBUI.elements.savedStatus) BBUI.elements.savedStatus.textContent = t('blackboard.statusUnsaved');
 
     timers.schedule('save', async () => {
@@ -813,14 +869,83 @@ BBUI.elements.textarea?.addEventListener("input", () => {
             await BBVCS.save(state, BBUI.getTextareaValue());
             const headIndicator = state.isVirtual ? "NEW" : state.currentHead;
             BBUI.updateIndicators(state.branch || t('blackboard.branchNameFallback'), headIndicator, true);
+            await renderPreviewRail();
         } catch (e) {
-            // P11: Recover indicator so UNSAVED doesn't stick forever
             BBUI.updateIndicators(undefined, undefined, false);
             console.warn('[BB] Save failed:', e.message);
         }
     }, T('frontend.input.bbSaveDebounce'));
 
     BBSync.scheduleAutoCommit();
+};
+
+BBUI.elements.textarea?.addEventListener("input", scheduleSave);
+BBUI.elements.topic?.addEventListener("input", scheduleSave);
+
+// Preview rail: hover to peek, click to navigate. Peek is READ-ONLY —
+// the textarea + topic are locked for the duration of the hover so the
+// user can't accidentally edit a past record's content while previewing.
+// If they want to edit, they click the block first (which navigates +
+// saves + unlocks) then edit normally.
+//
+// Snapshot is captured on first enter and restored on final leave; the
+// active-element guard only matters on the initial entry (can't peek
+// while mid-type).
+const $previewRail = document.getElementById('bb-preview-rail');
+
+function lockEditors(locked) {
+    if (BBUI.elements.textarea) BBUI.elements.textarea.readOnly = locked;
+    if (BBUI.elements.topic)    BBUI.elements.topic.readOnly    = locked;
+}
+
+$previewRail?.addEventListener('mouseover', (e) => {
+    const block = e.target.closest('.page-preview-block');
+    if (!block) return;
+    if (!_hoverSnapshot &&
+        (document.activeElement === BBUI.elements.textarea ||
+         document.activeElement === BBUI.elements.topic)) return;
+    const head = parseInt(block.dataset.head, 10);
+    if (Number.isNaN(head) || head < 0) return;
+    const rec = _previewRailCache[head];
+    if (!rec) return;
+    if (!_hoverSnapshot) {
+        _hoverSnapshot = {
+            body: BBUI.elements.textarea?.value ?? '',
+            topic: BBUI.elements.topic?.value ?? '',
+        };
+        lockEditors(true);
+    }
+    BBUI.setTextarea(rec.text || '');
+});
+
+$previewRail?.addEventListener('mouseleave', () => {
+    if (!_hoverSnapshot) return;
+    const { topic, body } = _hoverSnapshot;
+    const combined = topic ? (body ? `${topic}\n${body}` : topic) : body;
+    BBUI.setTextarea(combined);
+    _hoverSnapshot = null;
+    lockEditors(false);
+});
+
+$previewRail?.addEventListener('click', async (e) => {
+    const block = e.target.closest('.page-preview-block');
+    if (!block) return;
+    const head = parseInt(block.dataset.head, 10);
+    if (Number.isNaN(head) || head < 0) return;
+    // Commit the peek: restore snapshot silently, then navigate. The
+    // navigation's syncView will repaint from the clicked record, so the
+    // restored snapshot only matters for the brief pre-save window.
+    if (_hoverSnapshot) {
+        const { topic, body } = _hoverSnapshot;
+        const combined = topic ? (body ? `${topic}\n${body}` : topic) : body;
+        BBUI.setTextarea(combined);
+        _hoverSnapshot = null;
+    }
+    lockEditors(false);
+    await BBVCS.save(state, BBUI.getTextareaValue());
+    state.isVirtual = false;
+    state.currentHead = head;
+    await syncView();
 });
 
 // 監聯分支更名事件

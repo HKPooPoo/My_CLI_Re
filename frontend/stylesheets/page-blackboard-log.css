@@ -87,12 +87,78 @@
     /*navi.js logic in func updatePage*/
 }
 
+/* Topic input — Tier 11 part 1.
+   Sits above the textarea inside .editor-wrapper. First line of the record
+   text is the topic; everything after the first newline is the body.
+   BBUI splits/combines on read/write so record storage is unchanged. */
+.log-topic-input {
+    flex-shrink: 0;
+    margin: 4vh 8vw 0 8vw;
+    padding: 4px 8px;
+    border: var(--border-line);
+    border-bottom: none;
+    background: transparent;
+    color: var(--text-body);
+    font-family: inherit;
+    font-size: var(--font-size);
+    font-weight: 600;
+    outline: none;
+}
+
+.log-topic-input:focus {
+    border-color: var(--brand);
+}
+
+/* Page Previewer rail — Tier 11 part 2.
+   Vertical column of blocks beside the textarea, one block per record
+   (newest at top). Hover previews the target record's text + topic into
+   the live textarea (non-destructive — mouseleave restores). Click
+   navigates. */
+.log-editor-row {
+    flex: 1;
+    flex-direction: row;
+    min-height: 0;
+    margin: calc(0.4rem) 8vw calc(4vh + 0.4rem) 8vw;
+    gap: 8px;
+}
+
+.page-preview-rail {
+    flex-shrink: 0;
+    width: 12px;
+    flex-direction: column;
+    gap: 2px;
+    padding: 0;
+}
+
+.page-preview-block {
+    flex: 1;
+    min-height: 6px;
+    background: var(--bg-secondary);
+    border-left: 3px solid transparent;
+    cursor: pointer;
+    transition: border-color var(--transition-normal), background var(--transition-normal);
+}
+
+.page-preview-block:hover {
+    background: var(--bg-card);
+    border-left-color: var(--text-muted);
+}
+
+.page-preview-block.active {
+    border-left-color: var(--brand);
+    background: var(--bg-card);
+}
+
+.page-preview-block.virtual {
+    border-left-color: var(--accent);
+    background: transparent;
+    border-style: dashed;
+    border-width: 0 0 0 3px;
+}
+
 #log-textarea {
-    /*follow push and pull btn height (by margin); add value -> gap -> no stick together with btn */
-    margin: var(--single-textbox-margin);
-    height: 100%;
-    /*idk why, the font-size same as navi and btn, but looks smaller; needs add value*/
-    /*note: unified in root*/
+    flex: 1;
+    margin: 0;
     font-size: var(--textbox-font-size);
 }
 
