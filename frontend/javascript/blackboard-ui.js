@@ -27,7 +27,6 @@ export const BBUI = {
         commitBtn: document.getElementById("commit-btn"),
         checkoutBtn: document.getElementById("checkout-btn"),
         textarea: document.getElementById("log-textarea"),
-        topic: document.getElementById("log-topic-input"),
     },
 
     /**
@@ -35,50 +34,29 @@ export const BBUI = {
      */
     updateIndicators(branch, head, isSaved = true) {
         if (this.elements.branchName && branch !== undefined) this.elements.branchName.textContent = branch;
-        // Skip repainting head-index when user is editing it — otherwise a
-        // mid-type sync would clobber their input.
-        if (this.elements.headIndex && head !== undefined && document.activeElement !== this.elements.headIndex) {
+        if (this.elements.headIndex && head !== undefined) {
             this.elements.headIndex.textContent = head;
         }
         if (this.elements.savedStatus) {
-            // Restore the slot — BC subscriber mode hides it; coming back
-            // to BB must re-show it.
-            this.elements.savedStatus.style.display = '';
             this.elements.savedStatus.textContent = isSaved ? t('blackboard.statusSaved') : t('blackboard.statusUnsaved');
         }
     },
 
     /**
-     * 設定文字框內容並強制重設儲存標籤。
-     * Splits `text` on the first newline: line 1 goes to the topic input,
-     * everything after goes into the textarea. Records without a newline
-     * have empty topic + full text in the body.
+     * 設定文字框內容並強制重設儲存標籤
      */
     setTextarea(text) {
-        const raw = text ?? '';
-        const nlIdx = raw.indexOf('\n');
-        const topic = nlIdx >= 0 ? raw.slice(0, nlIdx) : '';
-        const body  = nlIdx >= 0 ? raw.slice(nlIdx + 1) : raw;
-        if (this.elements.textarea) this.elements.textarea.value = body;
-        if (this.elements.topic)    this.elements.topic.value    = topic;
-        this.updateIndicators(undefined, undefined, true);
+        if (this.elements.textarea) {
+            this.elements.textarea.value = text;
+            this.updateIndicators(undefined, undefined, true);
+        }
     },
 
     /**
-     * 讀取文字框內容：`topic\nbody`.
-     * Both empty   → "" (no stray newline).
-     * Topic empty  → body only (legacy-shape records with no topic line).
-     * Body empty   → topic + "\n" (trailing newline preserves split on
-     *                reload so the string round-trips through setTextarea).
-     * Both present → "topic\nbody".
+     * 讀取文字框內容
      */
     getTextareaValue() {
-        const body = this.elements.textarea?.value ?? '';
-        const topic = this.elements.topic?.value ?? '';
-        if (!topic && !body) return '';
-        if (!topic) return body;
-        if (!body)  return topic + '\n';
-        return topic + '\n' + body;
+        return this.elements.textarea ? this.elements.textarea.value : "";
     },
 
     /**

@@ -260,15 +260,26 @@ Log section; every new user decision gets appended with a date.
    convention — zero call-site changes elsewhere. WebGL layers
    (matrix-rain, perlin-bg, mouse-light) intentionally skipped.
 
-9. **Tier 11 + head-indicator consistency sweep** — BB Topic input
-   above the textarea; Page Previewer rail beside the textarea on both
-   BB-log and BC-channel; scoped the shared `.head-indicator` to
-   editor-only pages (removed `show-branch` from `blackboard-branch`
-   and `broadcast-list`); cleared boot-time `${placeholder}` template
-   text; un-commented the `.sub-navi-indicator` display gate so only
-   the active main-nav renders a sub-indicator. See the dedicated
-   "BB Editor: Topic Input + Page Previewer Rail" section for the
-   contract.
+9. **Tier 11 + head-indicator consistency sweep** — Page Previewer
+   rail beside the textarea on both BB-log and BC-channel; shared
+   `.head-indicator` scoped to editor-only pages (removed `show-branch`
+   from `blackboard-branch` / `broadcast-list`); boot-time
+   `${placeholder}` text cleared; `.sub-navi-indicator` display gate
+   un-commented. See "Page Previewer Rail" section.
+
+10. **Tier 11.5 — reverts + head-indicator corrections**. BB Topic
+    input removed (single textarea restored). Native `title` tooltip
+    on preview blocks removed (stakeholder: "not that kind of cheap
+    hover show title"). Head-indicator colons restored — format is
+    `[SAVED]:branch_name:head`. `.branch-head` inline reorder feature
+    fully removed: `contenteditable` attribute gone; `hud.js` Enter /
+    Escape / blur handlers and `.branch-name` click proxy gone;
+    `branchHead:reorderRequested` / `branchHead:syncRequested` events
+    no longer dispatched or consumed; `hints.branchName` simplified;
+    `reorderVirtual` / `reorderFailed` i18n keys removed. BC
+    subscriber mode's `.branch-is-saved` now renders empty (no more
+    `[SUBSCRIBED]` leak). `BBCore.swapRecordsByHead` / `BCDb.swapRecordsByHead`
+    kept in-place but unreferenced, awaiting Tier 21 drag-and-drop.
 
 ### Still pending (post-demo backlog)
 
@@ -568,8 +579,6 @@ Two-level hierarchy: main navi (`data-navi-item`: blackboard, walkie-typie, broa
 | `broadcast:channelRenamed` | broadcast-channel.js, broadcast-list.js | `{ channelId, newName }` | Channel renamed |
 | `broadcast:signalUpdated` | broadcast-channel.js | `{ channelId }` | Board content updated |
 | `blackboard:branchRename` | blackboard-ui.js | `{ branchId, newName }` | Branch name edited |
-| `branchHead:reorderRequested` | hud.js | `{ target }` | User typed a target head position in `.branch-head` + Enter; BB/BC listener swaps records by timestamp |
-| `branchHead:syncRequested` | hud.js | — | User blurred / Escaped / invalid input; consumer repaints the true current head value |
 | `pwa:installable` | pwa.js | — | PWA install prompt available |
 | `i18n:ready` | i18n.js | — | Locale loaded and DOM rendered |
 | `settings:changed` | settings.js | `{ scope, key, value }` | Any setting changed |
@@ -659,37 +668,23 @@ Buttons whose label/behaviour change based on list selection context. Now wired 
 
 ### Head Indicator Interactions
 
-The `.head-indicator` strip (left-side vertical label inside `.page-container` — shared DOM, CSS-gated by the active page's `show-branch` class) holds three divs:
-- `.branch-is-saved` — read-only `[SAVED]` / `[UNSAVED]` (BB) or `[DRAFT]` / `[POSTED]` / `[SUBSCRIBED]` (BC) marker
-- `.branch-name` — current branch name (BB) or channel name (BC). **Read-only here; rename happens via the row input on the list page.**
-- `.branch-head` — current head index (0 = newest)
+The `.head-indicator` strip (left-side vertical label inside `.page-container` — shared DOM, CSS-gated by the active page's `show-branch` class) renders three colon-separated divs:
+- `.branch-is-saved` — `[SAVED]` / `[UNSAVED]` (BB) or `[DRAFT]` / `[POSTED]` (BC owner). **Empty string in BC reader mode** — subscribers have no outgoing-dirty concept, so the indicator reads `:channel_name:head`.
+- `.branch-name` — current branch name (BB) or channel name (BC). **Read-only here; rename happens on the list page.**
+- `.branch-head` — current head index (0 = newest). **Read-only** — no contenteditable, no inline reorder. Tier 11.5 removed the "type a number + Enter to swap pages" feature.
 
-**Visibility gating**: `show-branch` is set only on the two **editor** pages (`blackboard-log`, `broadcast-channel`); it was removed from `blackboard-branch` and `broadcast-list` in Tier 11 so the indicator no longer leaks stale branch/channel context onto list views. Empty divs in the shared DOM (no `${placeholder}` template literal) keep the pre-init state clean — each page's own JS writes the first real values when it activates.
+**Format**: three divs separated by `:` text nodes → `[SAVED]:branch_name:0`. The colons are literal text in `index.html` between the div closing tags, not a CSS pseudo-element, so copying the indicator's text from the DOM preserves them.
 
-**`.branch-head` inline reorder** (`hud.js`):
-- Attribute: `contenteditable="plaintext-only" spellcheck="false" inputmode="numeric"`.
-- `keydown Enter` → parseInt textContent, blur, dispatch `branchHead:reorderRequested { target }`; non-numeric falls through to `branchHead:syncRequested`.
-- `keydown Escape` → blur (which fires `branchHead:syncRequested`).
-- `blur` → always fires `branchHead:syncRequested` to let the active page repaint the true current head.
-- Direct click → default caret placement (lets users micro-edit a digit rather than overwrite).
+**Visibility gating**: `show-branch` is set only on the two **editor** pages (`blackboard-log`, `broadcast-channel`); list pages no longer show the indicator. Empty divs in the shared DOM (no `${placeholder}` template literal) keep the pre-init state clean — each page's own JS writes the first real values when it activates.
 
-**`.branch-name` click proxy** (`hud.js`): clicking the name block runs `_focusAndSelectHeadIndex()` — focuses `.branch-head` and selects its text via `Range + Selection`. The whole name block becomes a large click target for the 1-2-digit head field; typing a number overwrites immediately. There is no "rename branch from the HUD" mechanism — renaming always happens on the list page. The hint (`hints.branchName`) documents this.
+**Page reorder via drag-and-drop**: deferred to Tier 21. The `BBCore.swapRecordsByHead` / `BCDb.swapRecordsByHead` functions remain in place (unused for now) so the underlying swap-by-timestamp mechanic is ready when the preview-block drag-and-drop UX arrives.
 
-**Consumer listeners** (only the active page acts; others no-op):
-- `blackboard.js:954` — gates on `blackboard-log` + non-virtual; calls `BBCore.swapRecordsByHead(state.owner, state.branchId, state.currentHead, target)`. After swap, `state.owner = 'local'` (see mixed-ownership invariant above) + `syncView` + `updateBranchList` + `scheduleAutoCommit`.
-- `broadcast-channel.js:326` — gates on `broadcast-channel` + `isOwnerMode` + non-virtual; calls `BCDb.swapRecordsByHead(localChannelId, currentHead, target)`.
-
-**Swap mechanics** (`blackboard-core.js:282` / `broadcast-db.js:132`): pick `records[from]` and `records[to]` from the DESC-sorted list; delete both by PK; `put` back with timestamps exchanged. BB also `markAsynced`s both records' owner (divergence from server). Out-of-range clamp: `target > maxHead` → swap with oldest; `target < 0` → swap with newest; `from === to` → no-op return.
-
-**Mid-type guard**: `BBUI.updateIndicators` / `BCChannel.updateIndicators` skip writing `.branch-head.textContent` when `document.activeElement === .branch-head`, so a concurrent poll / WS event doesn't clobber user input.
-
-### BB Editor: Topic Input + Page Previewer Rail (Tier 11)
+### Page Previewer Rail (Tier 11)
 
 **Layout.** Inside `.editor-wrapper` (BB-log + BC-channel):
 ```
 .editor-wrapper
   .attachment-chips
-  .log-topic-input      ← BB only (above textarea)
   .log-editor-row       ← flex-row container
     .page-preview-rail  ← vertical column of .page-preview-block
     textarea
@@ -697,29 +692,18 @@ The `.head-indicator` strip (left-side vertical label inside `.page-container` �
   .drop-overlay
 ```
 
-**Topic** (`BB only`, `.log-topic-input` / `#log-topic-input`). Zero-schema-cost split: first line of `record.text` = topic, everything after the first `\n` = body.
-- `BBUI.setTextarea(text)` splits on first newline, writes each half into its respective element.
-- `BBUI.getTextareaValue()` recombines: both empty → `""`, topic-only → `"topic\n"` (trailing newline preserves round-trip), body-only → `body` (no leading newline), both → `"topic\nbody"`.
-- Both `<input>` and `<textarea>` share one input listener (`scheduleSave`) so the 200 ms debounce, auto-commit, and cross-tab broadcast stay in one path.
-- Legacy records auto-migrate on first edit — `text = "single line"` loads as topic="", body="single line"; typing in the topic field rewrites `text = "new topic\nsingle line"` on next save.
-- `state.isVirtual` on an empty branch clears both fields via `setTextarea("")`.
+Topic input was proposed in Tier 11 part 1 and reverted in Tier 11.5 per stakeholder feedback — the single textarea is the record body; no separate topic field.
 
-**Page Previewer Rail.** `#bb-preview-rail` (BB) / `#bc-preview-rail` (BC), absolute-positioned inside `.editor-wrapper` in the textarea's left gutter. Populated on every `syncView()` / `syncOwnerView()` / `syncReaderView()` so it mirrors navigation, saves, cross-tab mutations, and WebSocket updates without a separate trigger system.
-- **Layer registration**: z-index `997` in `layer.css` (alongside `.push-btn` / `.pull-btn` / `.feature-btn`). **Do not set z-index inline** — always register in `layer.css` so the stacking stays centralized.
-- **Layout contract**: rail is absolute (not a flex sibling) — the textarea's original `--single-textbox-margin` is preserved. Mobile `@media (max-width: 768px)` adds a `padding-left: 32px` on textarea + `padding-left: 40px` on `.log-topic-input` so the rail doesn't overlap editable content when the 4vw gutter shrinks below rail width.
-- One `.page-preview-block` per record, newest at top. `.active` on the current head, `.virtual` for the unsaved virtual page, `.unsynced` when `record.owner === 'local'` or `.owner.includes('[asynced]')`. **No `title` attribute** — the hover swap IS the preview; a native tooltip would be redundant and was rejected by the user.
-- **Alternating block colour**: `:nth-child(odd)` = `var(--bg-card)`, `:nth-child(even)` = darker grey (`#dcdcdc`). Without alternation, equal-height blocks bleed into one continuous bar.
-- **Read-only peek**: hover / touch-hold locks `textarea.readOnly = true` + `topic.readOnly = true` and overwrites their values with the target record's text. Release restores the snapshot captured on first-enter. Without the `readOnly` lock, a user typing into a hovered record would silently edit the LIVE record (whose `state.currentHead` hasn't moved).
-- **Pointer Events API** drives both mouse and touch in one path:
-  - Mouse: `pointerover` (peek) + `pointerleave` (restore); guard on `e.pointerType === 'mouse'` to avoid double-firing on hybrid devices.
-  - Touch: `pointerdown` begins peek + calls `setPointerCapture(pointerId)` so subsequent moves keep firing on the rail even when the finger drifts off a block; `pointermove` uses `document.elementFromPoint(clientX, clientY)` to find the block under the current finger position (pointerover doesn't fire reliably mid-capture); `pointerup` navigates to the block under the finger, `pointercancel` restores.
-  - `touch-action: none` on the rail + `touch-action: manipulation` on each block prevents the browser's default pan/zoom from stealing the gesture.
-- **Click to navigate**: commits the peek (restores snapshot, unlocks), saves current value, moves `state.currentHead = head` (or `readerHead` in BC reader mode), fires `syncView()` / `syncReaderView()`.
-- **BB snapshot** holds `{ body, topic }`; **BC snapshot** holds `{ body }` only (no topic on BC).
-- `_previewRailCache` backs the hover lookup so the pointer loop doesn't hit IndexedDB per move.
-- **Active-element guard on first entry**: if the user is already typing when the mouse enters, no snapshot + no overwrite — peek is inert. The lock itself is not applied mid-type, so a just-started peek can always be aborted cleanly by leaving the rail.
+**Rail render.** `#bb-preview-rail` (BB) / `#bc-preview-rail` (BC), populated on every `syncView()` / `syncOwnerView()` / `syncReaderView()` so it mirrors navigation, saves, cross-tab mutations, and WebSocket updates without a separate trigger system.
 
-**BC `.branch-is-saved` in subscriber mode**: hidden via `display: none`, not labelled `[SUBSCRIBED]`. The subscribe state is a channel-list affordance (the row's `[SUBSCRIBED]` tag), not a head-indicator concept — the head-indicator only reports per-record state (`[SAVED]`/`[UNSAVED]` on BB, `[DRAFT]`/`[POSTED]` on BC owner). BB's `BBUI.updateIndicators` restores `style.display = ''` on the slot so navigating from a BC-subscriber context back to BB re-shows it.
+- One `.page-preview-block` per record, newest at top. `.active` on the current head, `.virtual` for the unsaved virtual page, `.unsynced` when `record.owner === 'local'` or `record.owner.includes('[asynced]')`.
+- **No `title` tooltip** — stakeholder rejected the native browser tooltip; hover-preview itself is the reveal mechanism.
+- **Read-only peek**: hover locks `textarea.readOnly = true` and overwrites the textarea with the target record's text. Mouseleave restores the snapshot captured on first-enter. Without the `readOnly` lock, typing during hover would clobber the LIVE record (whose `state.currentHead` hasn't moved) with the peeked record's content.
+- **Click to navigate**: commits the peek, saves current value, moves `state.currentHead = head`, fires `syncView()`. BC reader mode just moves `readerHead` + `syncReaderView()`.
+- `_previewRailCache` backs the hover lookup so mouseover doesn't hit IndexedDB per enter.
+- **Active-element guard on first entry**: if the user is already typing when the mouse enters, no snapshot + no overwrite — peek is inert.
+
+**Mobile**: deferred to Tier 19 (48 px blocks + alternating colours + `touchstart` long-press + `touchmove elementFromPoint` tracking). Tier 11.5 ships desktop hover only.
 
 ### Toast & Messages
 

@@ -33,19 +33,11 @@
         transform: translate(-50%, -50%);
     }
 
-    /* Small-screen horizontal gutter shrinks to 4vw — which is narrower
-       than the preview rail, so we also add an inner padding-left on
-       textarea + topic so rail doesn't overlap editable content.
-       #channel-textarea handled here too (BC shares the rail). */
-    #log-textarea,
-    #channel-textarea {
+    /* BB editor: narrower horizontal gutter on small screens.
+       After Tier 11 the margin lives on .log-editor-row (textarea itself
+       is flush inside the row). */
+    .log-editor-row {
         margin: calc(4vh + 0.4rem) 4vw;
-        padding-left: 32px;
-    }
-    .log-topic-input {
-        margin-left: 4vw;
-        margin-right: 4vw;
-        padding-left: 40px;
     }
 }
 

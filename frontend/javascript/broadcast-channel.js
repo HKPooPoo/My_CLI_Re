@@ -313,68 +313,25 @@ export const BCChannel = {
             }, T('frontend.input.bcSaveDebounce'));
         });
 
-        // Inline head-index reorder via .branch-head field. hud.js captures
-        // the keystroke and dispatches the events below. Owner mode only —
-        // reader mode has no authority to mutate records; virtual (NEW) has
-        // no backing record to swap.
-        window.addEventListener('branchHead:reorderRequested', async (e) => {
-            const activePage = document.querySelector('.page.active');
-            if (activePage?.dataset?.page !== 'broadcast-channel') return;
-            if (!this.currentChannel) { this.updateIndicators(); return; }
-            if (!this.isOwnerMode) {
-                BBMessage.error(t('broadcast.notOwner'));
-                this.updateIndicators();
-                return;
-            }
-            if (this.state.isVirtual) {
-                BBMessage.error(t('broadcast.reorderVirtual'));
-                this.updateIndicators();
-                return;
-            }
-            const target = e.detail?.target;
-            if (typeof target !== 'number' || isNaN(target)) {
-                this.updateIndicators();
-                return;
-            }
-            try {
-                const newHead = await BCDb.swapRecordsByHead(this.state.localChannelId, this.state.currentHead, target);
-                if (newHead < 0) {
-                    BBMessage.error(t('broadcast.reorderFailed'));
-                    this.updateIndicators();
-                    return;
-                }
-                this.state.currentHead = newHead;
-                await this.syncOwnerView();
-                CrossTabSync.broadcast('bc:record:mutated', {
-                    localChannelId: this.state.localChannelId,
-                    timestamp: null
-                });
-            } catch (err) {
-                console.error('BC reorder failed:', err);
-                BBMessage.error(t('broadcast.reorderFailed'));
-                this.updateIndicators();
-            }
-        });
-
-        window.addEventListener('branchHead:syncRequested', () => {
-            const activePage = document.querySelector('.page.active');
-            if (activePage?.dataset?.page !== 'broadcast-channel') return;
-            this.updateIndicators();
-        });
-
-        // Page Previewer rail (BC) — Pointer Events API for unified
-        // mouse+touch. Same press-and-hold-to-peek semantics as BB; see
-        // blackboard.js for the full interaction contract.
+        // Page Previewer rail (BC) — hover peeks, click navigates. Owner
+        // mode saves current before navigating; reader mode just swaps
+        // the in-memory readerHead. BC textarea has no topic split, so
+        // peek-restore snapshots the body only.
         const $rail = document.getElementById('bc-preview-rail');
         const self = this;
 
         const lockReaderSafe = (locked) => {
+            // Reader mode already has disabled textarea; skip.
             if (!self.isOwnerMode) return;
             if (self.elements.textarea) self.elements.textarea.readOnly = locked;
         };
 
-        const peekBlock = (block) => {
+        $rail?.addEventListener('mouseover', (e) => {
+            const block = e.target.closest('.page-preview-block');
             if (!block) return;
+            if (!self._hoverSnapshot &&
+                self.isOwnerMode &&
+                document.activeElement === self.elements.textarea) return;
             const head = parseInt(block.dataset.head, 10);
             if (Number.isNaN(head) || head < 0) return;
             const rec = self._previewRailCache[head];
@@ -384,20 +341,25 @@ export const BCChannel = {
                 lockReaderSafe(true);
             }
             if (self.elements.textarea) self.elements.textarea.value = rec.text || '';
-        };
+        });
 
-        const restorePeek = () => {
+        $rail?.addEventListener('mouseleave', () => {
             if (!self._hoverSnapshot) return;
             if (self.elements.textarea) self.elements.textarea.value = self._hoverSnapshot.body;
             self._hoverSnapshot = null;
             lockReaderSafe(false);
-        };
+        });
 
-        const navigateToBlock = async (block) => {
+        $rail?.addEventListener('click', async (e) => {
+            const block = e.target.closest('.page-preview-block');
             if (!block) return;
             const head = parseInt(block.dataset.head, 10);
             if (Number.isNaN(head) || head < 0) return;
-            restorePeek();
+            if (self._hoverSnapshot) {
+                if (self.elements.textarea) self.elements.textarea.value = self._hoverSnapshot.body;
+                self._hoverSnapshot = null;
+            }
+            lockReaderSafe(false);
             if (self.isOwnerMode) {
                 await self.save(self.elements.textarea?.value ?? '');
                 self.state.isVirtual = false;
@@ -407,70 +369,6 @@ export const BCChannel = {
                 self.readerHead = head;
                 self.syncReaderView();
             }
-        };
-
-        $rail?.addEventListener('pointerover', (e) => {
-            if (e.pointerType !== 'mouse') return;
-            const block = e.target.closest('.page-preview-block');
-            if (!block) return;
-            if (!self._hoverSnapshot &&
-                self.isOwnerMode &&
-                document.activeElement === self.elements.textarea) return;
-            peekBlock(block);
-        });
-
-        $rail?.addEventListener('pointerleave', (e) => {
-            if (e.pointerType !== 'mouse') return;
-            restorePeek();
-        });
-
-        // Touch: press-and-hold to peek, drag to scrub, release to
-        // navigate (or leave rail to restore without navigating).
-        let _touchPeekBlock = null;
-        $rail?.addEventListener('pointerdown', (e) => {
-            if (e.pointerType !== 'touch') return;
-            const block = e.target.closest('.page-preview-block');
-            if (!block) return;
-            _touchPeekBlock = block;
-            peekBlock(block);
-            $rail.setPointerCapture?.(e.pointerId);
-        });
-
-        $rail?.addEventListener('pointermove', (e) => {
-            if (e.pointerType !== 'touch') return;
-            if (!self._hoverSnapshot) return;
-            const target = document.elementFromPoint(e.clientX, e.clientY);
-            const block = target?.closest?.('.page-preview-block');
-            if (block && block !== _touchPeekBlock) {
-                _touchPeekBlock = block;
-                peekBlock(block);
-            }
-        });
-
-        $rail?.addEventListener('pointerup', async (e) => {
-            if (e.pointerType !== 'touch') return;
-            const target = document.elementFromPoint(e.clientX, e.clientY);
-            const block = target?.closest?.('.page-preview-block');
-            const navigateTarget = block || _touchPeekBlock;
-            _touchPeekBlock = null;
-            if (block) {
-                await navigateToBlock(navigateTarget);
-            } else {
-                restorePeek();
-            }
-        });
-
-        $rail?.addEventListener('pointercancel', (e) => {
-            if (e.pointerType !== 'touch') return;
-            _touchPeekBlock = null;
-            restorePeek();
-        });
-
-        $rail?.addEventListener('click', async (e) => {
-            if (e.pointerType && e.pointerType !== 'mouse') return;
-            const block = e.target.closest('.page-preview-block');
-            if (!block) return;
-            await navigateToBlock(block);
         });
     },
 
@@ -893,21 +791,16 @@ export const BCChannel = {
         const head = headOverride !== undefined
             ? headOverride
             : (this.isOwnerMode ? this.state.currentHead : this.readerHead);
-        // Skip repainting head-index when user is editing it — otherwise a
-        // mid-type sync would clobber their input.
-        if ($branchHead && document.activeElement !== $branchHead) $branchHead.textContent = head;
+        if ($branchHead) $branchHead.textContent = head;
 
+        // Reader/subscriber mode has no outgoing-dirty concept, so the
+        // .branch-is-saved slot stays empty — the indicator reads as
+        // ":channel_name:head". Owner mode keeps the DRAFT / POSTED label.
         if ($savedStatus) {
             if (this.isOwnerMode) {
                 $savedStatus.textContent = this.currentChannel.serverChannelId ? t('broadcast.statusCast') : t('broadcast.statusLocal');
-                $savedStatus.style.display = '';
             } else {
-                // Subscriber/reader mode has no editor-level sync status —
-                // the "SUBSCRIBED" label is a channel-list affordance, not
-                // a head-indicator concept. Hide the slot entirely so the
-                // head-indicator only shows meaningful head-level state.
                 $savedStatus.textContent = '';
-                $savedStatus.style.display = 'none';
             }
         }
     },

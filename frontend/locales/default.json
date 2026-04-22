@@ -100,7 +100,6 @@
     "switchBtn": "OPEN",
     "namePlaceholder": "Name this notebook...",
     "textPlaceholder": "Type your note here...",
-    "topicPlaceholder": "Topic (optional)...",
     "branchNameFallback": "UNTITLED_NOTEBOOK",
     "statusUnsaved": "UNSAVED",
     "statusSaved": "SAVED",
@@ -130,8 +129,6 @@
     "dropComplete": "REMOVED",
     "deleteComplete": "DELETED",
     "actionFailed": "ACTION FAILED",
-    "reorderVirtual": "CANNOT REORDER — THIS IS A NEW BLANK PAGE",
-    "reorderFailed": "REORDER FAILED",
     "syncingFiles": "UPLOADING FILES...",
     "noData": "NO DATA",
     "uploading": "UPLOADING {name}",
@@ -231,8 +228,6 @@
     "renameFailed": "RENAME FAILED",
     "syncFailed": "SYNC FAILED",
     "fetchFailed": "FETCH FAILED",
-    "reorderVirtual": "CANNOT REORDER — THIS IS A NEW BLANK POST",
-    "reorderFailed": "REORDER FAILED",
     "searchPlaceholder": "SEARCH CHANNELS..."
   },
   "files": {
@@ -287,7 +282,7 @@
     "unbindEmail": "Disconnect your email from this account. You can link it again later.",
     "deleteAccount": "Permanently erase this account and all server data. Cannot be undone. Sign-in ends.",
     "chipStatus": "File status: [LOCAL] only on this device, [SYNCED] on device and cloud, [CLOUD] cloud only (click to download). Click the icon to preview.",
-    "branchName": "Current notebook or channel name. Read-only here — rename on the list page. Clicking this block focuses the page number on the right so you can type and press Enter to jump to that page.",
+    "branchName": "Current notebook or channel name. Read-only here — rename on the list page.",
     "wt": {
       "theyPush": "View a newer message on your contact's side (read-only).",
       "theyPull": "View an older message on your contact's side (read-only).",

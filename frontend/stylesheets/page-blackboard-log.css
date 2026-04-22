@@ -87,113 +87,57 @@
     /*navi.js logic in func updatePage*/
 }
 
-/* Topic input — Tier 11 part 1.
-   Sits above the textarea inside .editor-wrapper. First line of the
-   record text is the topic; everything after the first newline is the
-   body. BBUI splits/combines on read/write so record storage is
-   unchanged. margin-top reserves push-btn clearance; when attachment
-   chips have items, that reservation is collapsed (see sibling rule
-   in editor-attachments.css). */
-.log-topic-input {
-    flex-shrink: 0;
-    margin: calc(4vh + 0.4rem) 8vw 0 8vw;
-    padding: 6px 10px;
-    border: var(--border-line);
-    border-bottom: none;
-    background: transparent;
-    color: var(--text-body);
-    font-family: inherit;
-    font-size: var(--font-size);
-    font-weight: 600;
-    outline: none;
-}
-
-.log-topic-input:focus {
-    border-color: var(--brand);
-}
-
-/* When the topic input is present above the textarea, don't double-pay
-   the push-btn clearance — textarea's top margin collapses to a small
-   gap since the topic already spans the full reserved height above. */
-.log-topic-input + #log-textarea {
-    margin-top: 0;
-}
-
-#log-textarea {
-    /* Unchanged contract: own margin, full-height textarea — the
-       preview rail lives in the left-margin gutter via absolute
-       positioning so the textarea itself is not squeezed. */
+/* Page Previewer rail — Tier 11 part 2.
+   Vertical column of blocks beside the textarea, one block per record
+   (newest at top). Hover previews the target record's text into the
+   live textarea (non-destructive — mouseleave restores). Click navigates.
+   Size + alternating-colour tuning lives in Tier 19. */
+.log-editor-row {
+    flex: 1;
+    flex-direction: row;
+    min-height: 0;
     margin: var(--single-textbox-margin);
-    height: 100%;
-    font-size: var(--textbox-font-size);
+    gap: 8px;
 }
 
-/* Page Previewer rail — absolute-positioned inside .editor-wrapper so
-   the textarea's original margin contract is preserved. Sits in the
-   left gutter (between page-container left edge and textarea).
-   z-index is registered in layer.css (997, alongside push/pull/feature
-   buttons). */
 .page-preview-rail {
-    position: absolute;
-    left: max(4px, calc(4vw - 14px));
-    /* Span from just below push-btn to just above pull-btn on both BB
-       (has topic input above textarea) and BC (no topic). The rail's
-       width sits in the textarea's left gutter, so the editable area
-       is not compressed. */
-    top: calc(4vh + 0.4rem);
-    bottom: calc(4vh + 0.4rem);
-    width: 28px;
+    flex-shrink: 0;
+    width: 12px;
     flex-direction: column;
-    gap: 3px;
-    pointer-events: auto;
-    /* Prevent the browser's default touch pan/zoom from stealing
-       pointer events while the user drags a finger across blocks. */
-    touch-action: none;
+    gap: 2px;
+    padding: 0;
 }
 
 .page-preview-block {
     flex: 1;
-    min-height: 10px;
-    cursor: pointer;
-    position: relative;
+    min-height: 6px;
+    background: var(--bg-secondary);
     border-left: 3px solid transparent;
-    transition: border-color var(--transition-normal), background var(--transition-normal), transform var(--transition-normal);
-    /* Apple HIG minimum tap target hint — shows browser we expect
-       precise finger interaction here. */
-    touch-action: manipulation;
-    -webkit-user-select: none;
-    user-select: none;
+    cursor: pointer;
+    transition: border-color var(--transition-normal), background var(--transition-normal);
 }
 
-/* Alternating block colour so adjacent records are visually distinct —
-   without this, equal-height blocks blend into one continuous bar. */
-.page-preview-block:nth-child(odd)  { background: var(--bg-card); }
-.page-preview-block:nth-child(even) { background: #dcdcdc; }
-
 .page-preview-block:hover {
+    background: var(--bg-card);
     border-left-color: var(--text-muted);
-    transform: translateX(2px);
 }
 
 .page-preview-block.active {
-    background: var(--brand);
-    border-left-color: var(--brand-dark);
+    border-left-color: var(--brand);
+    background: var(--bg-card);
 }
 
 .page-preview-block.virtual {
-    background: var(--accent);
-    border-left: 3px dashed var(--accent);
+    border-left-color: var(--accent);
+    background: transparent;
+    border-style: dashed;
+    border-width: 0 0 0 3px;
 }
 
-.page-preview-block.unsynced::after {
-    content: '';
-    position: absolute;
-    right: 3px;
-    top: 3px;
-    width: 5px;
-    height: 5px;
-    border-radius: 50%;
-    background: var(--brand);
+#log-textarea {
+    flex: 1;
+    margin: 0;
+    font-size: var(--textbox-font-size);
 }
 
 /*scaffold*/

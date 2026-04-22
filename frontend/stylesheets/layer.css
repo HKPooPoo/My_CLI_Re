@@ -46,8 +46,7 @@
 
 .push-btn,
 .pull-btn,
-.feature-btn,
-.page-preview-rail {
+.feature-btn {
     z-index: 997;
 }
 
@@ -67,6 +66,18 @@
 
 .page {
     z-index: 996;
+}
+
+/* Page Previewer rail (Tier 11) lives inside .editor-wrapper inside .page.
+   Head-indicator sits at the same level as .page but visually on the left
+   gutter. Rail sits in the content area — geometrically separate — but an
+   explicit z-index avoids surprises if someone widens the indicator later. */
+.head-indicator {
+    z-index: 996;
+}
+
+.page-preview-rail {
+    z-index: 995;
 }
 
 /* Global auth-locked overlay lives inside .page-container. Its z-index

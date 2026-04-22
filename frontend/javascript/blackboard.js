@@ -332,12 +332,8 @@ async function syncView() {
 // trigger system.
 //
 // _previewRailCache is the records snapshot backing the hover lookup.
-// Reading from here avoids a per-hover IDB round trip (syncView already
-// paid for the fetch).
-//
-// _hoverSnapshot stores whatever the user had in the textarea + topic
-// before their cursor entered a preview block; mouseleave restores it so
-// the peek is non-destructive. A click clears the snapshot to commit.
+// _hoverSnapshot stores the textarea value before the cursor entered a
+// preview block; mouseleave restores it so the peek is non-destructive.
 let _previewRailCache = [];
 let _hoverSnapshot = null;
 
@@ -854,12 +850,9 @@ window.addEventListener("list:updated", () => {
 
 // --- 事件監聽區 ---
 
-// Auto-save: textarea + topic input share the same debounced save flow.
-// Both inputs concatenate via BBUI.getTextareaValue() into `topic\nbody`
-// before hitting BBCore, so the record storage format is unchanged —
-// first line = topic, rest = body. A single save path means cross-tab
-// sync, push/pull defenses, and auto-commit all stay in one place.
-const scheduleSave = () => {
+// Auto-save: textarea input → 200 ms debounced BBVCS.save. One path covers
+// cross-tab sync, push/pull defences, and auto-commit scheduling.
+BBUI.elements.textarea?.addEventListener("input", () => {
     if (BBUI.elements.savedStatus) BBUI.elements.savedStatus.textContent = t('blackboard.statusUnsaved');
 
     timers.schedule('save', async () => {
@@ -875,131 +868,59 @@ const scheduleSave = () => {
     }, T('frontend.input.bbSaveDebounce'));
 
     BBSync.scheduleAutoCommit();
-};
+});
 
-BBUI.elements.textarea?.addEventListener("input", scheduleSave);
-BBUI.elements.topic?.addEventListener("input", scheduleSave);
-
-// Preview rail — Pointer Events API covers both mouse and touch in one
-// path. Peek is READ-ONLY: textarea + topic are locked for the duration
-// so the user can't accidentally edit a past record's content while
-// previewing. If they want to edit, they click/tap the block first,
-// which navigates + saves + unlocks.
+// Preview rail: hover to peek, click to navigate. Peek is READ-ONLY —
+// the textarea + topic are locked for the duration of the hover so the
+// user can't accidentally edit a past record's content while previewing.
+// If they want to edit, they click the block first (which navigates +
+// saves + unlocks) then edit normally.
 //
-// Touch interaction: pointerdown on a block begins peek; dragging across
-// blocks updates peek in real-time (via elementFromPoint, since
-// pointerover on touch only fires when capture is released); pointerup
-// inside a block navigates to it, pointerup outside the rail restores
-// without navigating. Holding on a block shows preview instantly — the
-// mobile-native "press and hold to peek" gesture.
+// Snapshot is captured on first enter and restored on final leave; the
+// active-element guard only matters on the initial entry (can't peek
+// while mid-type).
 const $previewRail = document.getElementById('bb-preview-rail');
 
 function lockEditors(locked) {
     if (BBUI.elements.textarea) BBUI.elements.textarea.readOnly = locked;
-    if (BBUI.elements.topic)    BBUI.elements.topic.readOnly    = locked;
 }
 
-function _peekBlock(block) {
+$previewRail?.addEventListener('mouseover', (e) => {
+    const block = e.target.closest('.page-preview-block');
     if (!block) return;
+    if (!_hoverSnapshot && document.activeElement === BBUI.elements.textarea) return;
     const head = parseInt(block.dataset.head, 10);
     if (Number.isNaN(head) || head < 0) return;
     const rec = _previewRailCache[head];
     if (!rec) return;
     if (!_hoverSnapshot) {
-        _hoverSnapshot = {
-            body: BBUI.elements.textarea?.value ?? '',
-            topic: BBUI.elements.topic?.value ?? '',
-        };
+        _hoverSnapshot = { body: BBUI.elements.textarea?.value ?? '' };
         lockEditors(true);
     }
     BBUI.setTextarea(rec.text || '');
-}
+});
 
-function _restorePeek() {
+$previewRail?.addEventListener('mouseleave', () => {
     if (!_hoverSnapshot) return;
-    const { topic, body } = _hoverSnapshot;
-    const combined = topic ? (body ? `${topic}\n${body}` : topic) : body;
-    BBUI.setTextarea(combined);
+    BBUI.setTextarea(_hoverSnapshot.body);
     _hoverSnapshot = null;
     lockEditors(false);
-}
+});
 
-async function _navigateToBlock(block) {
+$previewRail?.addEventListener('click', async (e) => {
+    const block = e.target.closest('.page-preview-block');
     if (!block) return;
     const head = parseInt(block.dataset.head, 10);
     if (Number.isNaN(head) || head < 0) return;
-    _restorePeek();
+    if (_hoverSnapshot) {
+        BBUI.setTextarea(_hoverSnapshot.body);
+        _hoverSnapshot = null;
+    }
+    lockEditors(false);
     await BBVCS.save(state, BBUI.getTextareaValue());
     state.isVirtual = false;
     state.currentHead = head;
     await syncView();
-}
-
-// Mouse path — classic hover to peek, mouseleave to restore.
-$previewRail?.addEventListener('pointerover', (e) => {
-    if (e.pointerType !== 'mouse') return;
-    const block = e.target.closest('.page-preview-block');
-    if (!block) return;
-    if (!_hoverSnapshot &&
-        (document.activeElement === BBUI.elements.textarea ||
-         document.activeElement === BBUI.elements.topic)) return;
-    _peekBlock(block);
-});
-
-$previewRail?.addEventListener('pointerleave', (e) => {
-    if (e.pointerType !== 'mouse') return;
-    _restorePeek();
-});
-
-// Touch path — press-and-hold to peek, drag across blocks to change
-// peek target, release inside the rail to navigate to the current block.
-let _touchPeekBlock = null;
-$previewRail?.addEventListener('pointerdown', (e) => {
-    if (e.pointerType !== 'touch') return;
-    const block = e.target.closest('.page-preview-block');
-    if (!block) return;
-    _touchPeekBlock = block;
-    _peekBlock(block);
-    $previewRail.setPointerCapture?.(e.pointerId);
-});
-
-$previewRail?.addEventListener('pointermove', (e) => {
-    if (e.pointerType !== 'touch') return;
-    if (!_hoverSnapshot) return;
-    const target = document.elementFromPoint(e.clientX, e.clientY);
-    const block = target?.closest?.('.page-preview-block');
-    if (block && block !== _touchPeekBlock) {
-        _touchPeekBlock = block;
-        _peekBlock(block);
-    }
-});
-
-$previewRail?.addEventListener('pointerup', async (e) => {
-    if (e.pointerType !== 'touch') return;
-    const target = document.elementFromPoint(e.clientX, e.clientY);
-    const block = target?.closest?.('.page-preview-block');
-    const navigateTarget = block || _touchPeekBlock;
-    _touchPeekBlock = null;
-    if (block) {
-        await _navigateToBlock(navigateTarget);
-    } else {
-        _restorePeek();
-    }
-});
-
-$previewRail?.addEventListener('pointercancel', (e) => {
-    if (e.pointerType !== 'touch') return;
-    _touchPeekBlock = null;
-    _restorePeek();
-});
-
-// Mouse click to navigate (touch uses pointerup above).
-$previewRail?.addEventListener('click', async (e) => {
-    // Touch click would double-fire after pointerup's navigate; skip it.
-    if (e.pointerType && e.pointerType !== 'mouse') return;
-    const block = e.target.closest('.page-preview-block');
-    if (!block) return;
-    await _navigateToBlock(block);
 });
 
 // 監聯分支更名事件
@@ -1208,61 +1129,6 @@ CrossTabSync.on('bb:record:mutated', async (detail) => {
  */
 window.addEventListener('online', () => {
     BBSync.recover();
-});
-
-/**
- * Inline head-index reorder on the HUD .branch-head field.
- * hud.js captures the keystroke and dispatches the two events below.
- * This listener only fires when BB-LOG is the active page; the BC
- * listener in broadcast-channel.js handles its own case. Virtual mode
- * (NEW) rejects the input — there's no backing record to swap.
- */
-window.addEventListener('branchHead:reorderRequested', async (e) => {
-    const activePage = document.querySelector('.page.active');
-    if (activePage?.dataset?.page !== 'blackboard-log') return;
-    if (state.isVirtual) {
-        BBMessage.error(t('blackboard.reorderVirtual'));
-        syncView();
-        return;
-    }
-    const target = e.detail?.target;
-    if (typeof target !== 'number' || isNaN(target)) {
-        syncView();
-        return;
-    }
-    try {
-        const newHead = await BBCore.swapRecordsByHead(state.owner, state.branchId, state.currentHead, target);
-        if (newHead < 0) {
-            BBMessage.error(t('blackboard.reorderFailed'));
-            syncView();
-            return;
-        }
-        state.currentHead = newHead;
-        // swapRecordsByHead promotes the two touched records
-        // [synced] → [asynced] while other records in the branch keep
-        // their existing tag. Same mixed-ownership outcome as rename, so
-        // the same fix applies: drop state.owner to the 'local' catch-all
-        // (startsWith semantics in getRecord) rather than a specific tag
-        // that would only match a subset. Keeping a specific [asynced]
-        // tag here was what made the user's "records got deleted" bug:
-        // exact-index lookup missed the pure-'local' records that
-        // swapRecordsByHead didn't touch.
-        state.owner = "local";
-        await syncView();
-        await updateBranchList();
-        BBSync.scheduleAutoCommit();
-        CrossTabSync.broadcast('bb:record:mutated', { branchId: state.branchId, timestamp: null });
-    } catch (err) {
-        console.error('BB reorder failed:', err);
-        BBMessage.error(t('blackboard.reorderFailed'));
-        syncView();
-    }
-});
-
-window.addEventListener('branchHead:syncRequested', () => {
-    const activePage = document.querySelector('.page.active');
-    if (activePage?.dataset?.page !== 'blackboard-log') return;
-    syncView();
 });
 
 /**
