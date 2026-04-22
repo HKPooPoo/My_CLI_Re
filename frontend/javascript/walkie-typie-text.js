@@ -91,7 +91,7 @@ export const WTText = {
     initAttachments() {
         // --- WE Side (Editable) ---
         this.wtWeAttach = EditorAttachments.create({
-            dropZoneSelector: '#wt-drop-zone',
+            dropZoneSelector: '#walkie-typie-we-blackboard',
             fileInputSelector: '#wt-file-input',
             chipsContainerSelector: '#wt-we-attachments',
             dropOverlaySelector: '#wt-drop-overlay',

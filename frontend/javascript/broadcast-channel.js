@@ -99,7 +99,7 @@ export const BCChannel = {
 
     initAttachments() {
         this.bcAttach = EditorAttachments.create({
-            dropZoneSelector:    '#bc-drop-zone',
+            dropZoneSelector:    '#channel-textarea',
             fileInputSelector:   '#bc-file-input',
             chipsContainerSelector: '#bc-attachment-chips',
             dropOverlaySelector: '#bc-drop-overlay',

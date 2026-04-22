@@ -46,7 +46,7 @@ export { state as BBState };
 
 // --- File Attachment Instance ---
 const bbAttach = EditorAttachments.create({
-    dropZoneSelector: '#bb-drop-zone',
+    dropZoneSelector: '#log-textarea',
     fileInputSelector: '#bb-file-input',
     chipsContainerSelector: '#bb-attachment-chips',
     dropOverlaySelector: '#bb-drop-overlay',
