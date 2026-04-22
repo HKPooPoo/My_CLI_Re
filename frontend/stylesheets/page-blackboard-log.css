@@ -115,13 +115,40 @@
 }
 
 .page-preview-block {
+    position: relative;
     flex: 1;
     min-height: 12px;
     background: var(--bg-secondary);
     border: 2px solid var(--border-subtle);
     border-left: 6px solid transparent;
-    cursor: pointer;
-    transition: border-color var(--transition-normal), background var(--transition-normal);
+    border-radius: 3px;
+    cursor: grab;
+    transition: border-color var(--transition-normal),
+                background var(--transition-normal),
+                transform var(--transition-normal),
+                box-shadow var(--transition-normal);
+}
+
+/* Tier 22.11 — affordance dots. A tiny trio of dots on the right edge
+   signals the block is draggable + interactive. Invisible on short
+   blocks (height < ~14 px) to avoid clutter. */
+.page-preview-block::after {
+    content: "";
+    position: absolute;
+    right: 4px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 2px;
+    height: 10px;
+    background:
+        radial-gradient(circle at center, var(--text-muted) 0 0.5px, transparent 1px) 0 0/2px 3px repeat-y;
+    opacity: 0.6;
+    transition: opacity var(--transition-normal);
+}
+
+.page-preview-block:hover::after,
+.page-preview-block.peeking::after {
+    opacity: 0;
 }
 
 /* Alternating colour block so neighbours are visually distinct even
@@ -134,6 +161,12 @@
 .page-preview-block.peeking {
     background: var(--brand);
     border-left-color: var(--brand-dark);
+    transform: scale(1.04);
+    box-shadow: 0 2px 8px var(--shadow-brand);
+}
+
+.page-preview-block:active {
+    cursor: grabbing;
 }
 
 .page-preview-block.active {
@@ -198,7 +231,11 @@
     cursor: pointer;
     border: var(--border-line);
     border-right: none;
-    transition: all 0.2s;
+    background: var(--bg-page);
+    transition: transform var(--transition-normal),
+                box-shadow var(--transition-normal),
+                background var(--transition-normal),
+                border-color var(--transition-normal);
     border-radius: var(--border-radius) 0 0 var(--border-radius);
     /*detect page; if exit dedicated classList, then active -> active: left: 0%; initial: left: 100%*/
     /* left: 100%; */
@@ -206,6 +243,40 @@
     justify-content: center;
     align-items: center;
     padding: 0;
+}
+
+/* Tier 22.11 — feature-btn interaction polish. Hover slides the button
+   slightly left (visually "pulls out" of the scaffold) + adds brand
+   shadow so the button feels like a drawer handle. Active state (the
+   currently-open shelf) keeps the slid-out position + glow. Press
+   gives a quick scale-down for tactile feedback. */
+@media (hover: hover) {
+    .feature-btn:hover {
+        transform: translateX(-4px);
+        box-shadow: -2px 2px 8px var(--shadow-brand);
+        background: var(--bg-card);
+        border-color: var(--brand);
+    }
+}
+
+.feature-btn:active {
+    transform: translateX(-2px) scale(0.97);
+}
+
+.feature-btn.active {
+    background: var(--bg-card);
+    border-color: var(--brand);
+    box-shadow: -2px 2px 12px var(--shadow-brand);
+}
+
+/* Invisible spacer (Tier 22.11 item 4) — takes scaffold column space
+   above the first real feature button so the visible buttons sit
+   below the DELETE PAGE / RESET editor-actions zone without
+   overlapping. No interaction, no keyboard focus. */
+.feature-btn.feature-btn-spacer {
+    visibility: hidden;
+    pointer-events: none;
+    border: none;
 }
 
 .feature-btn::after {

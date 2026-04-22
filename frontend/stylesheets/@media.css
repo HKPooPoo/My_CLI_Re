@@ -51,9 +51,15 @@
 }
 
 @media (max-width: 768px) or (max-height: 768px) {
+    /* Tier 22.11 item 5: on narrow viewports the centre-swap button
+       collides with the right-edge chrome (push/pull labels, feature
+       scaffold). Flip it to the LEFT edge so it sits over the THEY
+       board header without obscuring anything on the WE side. */
     #walkie-typie-blackboard-feature-switch {
         top: 50%;
-        right: 0px;
+        left: 0px;
+        right: auto;
+        transform: translate(-100%, -50%);
     }
 }
 

@@ -343,6 +343,40 @@ Log section; every new user decision gets appended with a date.
       disk pending a future cleanup pass). Active set: `head / local /
       synced / asynced` (4 files).
 
+15. **Tier 22.11 — UX polish pass (stakeholder-visible quality)**.
+    - **Preview blocks** now have grip-dot affordance (`::after`
+      radial-gradient on the right edge), `cursor: grab` / `grabbing`,
+      hover scale `1.04` + `shadow-brand`. Users can see at a glance
+      the blocks are interactive.
+    - **Feature buttons** slide left 4 px on hover with a brand-
+      coloured shadow (feels like drawer handles pulling out). Click
+      adds a micro scale-down for tactile feedback. The button whose
+      shelf is currently open gets `.active` class (kept slid-out +
+      glowing) — `feature-shelf.js` adds/removes the class in the
+      click handler and `closeShelf()`.
+    - **`.editor-actions` right offset** bumped from `8px` to
+      `calc(var(--sub-navi-height) + 8px)` so RESET + DELETE PAGE
+      clear the feature-container column (no z-index wrestling).
+    - **Invisible spacer button** (`.feature-btn.feature-btn-spacer`,
+      `visibility: hidden; pointer-events: none; tabindex=-1`) is
+      inserted at the top of `.feature-container` on bootstrap. It
+      claims one slot in the `justify-content: space-around` layout,
+      pushing visible feature buttons down clear of the
+      `.editor-actions` zone without manual offset math.
+    - **WT centre-swap button** flips LEFT on narrow screens
+      (`@media (max-width: 768px) or (max-height: 768px)` →
+      `left: 0; right: auto; transform: translate(-100%, -50%)`)
+      instead of remaining pinned right where it collided with the
+      WE board's push/pull labels.
+    - **Feature button hints** — `hints.feature.{file-attach / calendar
+      / flashcard / llm}` added to `default.json`. `feature-shelf.js`
+      auto-applies `data-hint = "hints.feature.{id}"` when the feature
+      doesn't override `hintKey`.
+    - **Platform version bump**: `PLATFORM_VERSION = '1.0.0'` in
+      `version.js` (was `0.9.0` — stuck since the pre-overhaul fork).
+      The version-string comment now documents the history so future
+      bumps carry milestone context.
+
 14. **Tier 22.9 — BC dirty tracking + RESET button + drop-overlay
     scope**.
     - `BCMeta.setDirty(localId, bool)` + `BCMeta.isDirty(localId)`

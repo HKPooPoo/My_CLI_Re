@@ -309,11 +309,14 @@ input.attachment-chip-name[readonly] {
    PAGE pair as a horizontal row at top-right of the editor-wrapper.
    When the wrapper is present, its children use static positioning;
    when absent (BB, WT), `.delete-page-btn` falls back to its own
-   absolute-top-right position below. */
+   absolute-top-right position below.
+   Tier 22.11 item 3: right offset clears the feature-container column
+   (width = --sub-navi-height) so the buttons sit fully inside the
+   textarea gutter instead of overlapping the feature icons. */
 .editor-actions {
     position: absolute;
     top: 8px;
-    right: 8px;
+    right: calc(var(--sub-navi-height) + 8px);
     z-index: 2;
     flex-direction: row;
     gap: 4px;
@@ -330,7 +333,7 @@ input.attachment-chip-name[readonly] {
 .reset-page-btn {
     position: absolute;
     top: 8px;
-    right: 8px;
+    right: calc(var(--sub-navi-height) + 8px);
     z-index: 2;
     padding: 4px 12px;
     font-family: inherit;

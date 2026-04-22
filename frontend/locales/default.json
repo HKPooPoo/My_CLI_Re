@@ -285,6 +285,12 @@
     "dropDrop": "Delete the cloud copy of this notebook. Your local copy stays.",
     "dropDelete": "Permanently remove this empty notebook from your device. Cannot be undone.",
     "shelfHandle": "Shelf grip. Drag LEFT to open wider, RIGHT to shrink. Double-click to close.",
+    "feature": {
+      "file-attach": "Attach a file to the current page. Drag and drop works too — drop straight onto the textarea.",
+      "calendar": "Open the calendar for this notebook or channel. Add events per date; the AI tutor reads from here.",
+      "flashcard": "Open flashcards for this notebook or channel. Maker for editing cards; Player for studying them.",
+      "llm": "AI Tutor. Pick a prompt (summarise, translate, suggest schedule) and send it against the current page."
+    },
     "wipeLocal": "Clear all locally stored notebooks, messages, channels and cached files. Settings and sign-in survive. Server data untouched. Page reloads. Three-step confirm.",
     "dropAllBranches": "Delete ALL your notebooks from the cloud. Sign-in required. Local data untouched. Three-step confirm.",
     "installApp": "Install the app to your device for offline access. On iOS use Safari's Share → Add to Home Screen.",

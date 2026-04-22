@@ -30,13 +30,29 @@ let currentTranslateX = 0;
 function bootstrap() {
     if (!$featureContainer || !$featureShelfContainer) return;
 
+    // Tier 22.11 item 4: invisible spacer button at the top of the
+    // feature column. Pushes the first real feature button down so it
+    // sits below the DELETE PAGE / RESET editor-actions zone (top-right
+    // of the editor-wrapper). Container uses justify-content: space-
+    // around, so the spacer claims one slot's worth of vertical space.
+    if (!$featureContainer.querySelector('.feature-btn-spacer')) {
+        const spacer = document.createElement('button');
+        spacer.className = 'feature-btn feature-btn-spacer';
+        spacer.setAttribute('aria-hidden', 'true');
+        spacer.setAttribute('tabindex', '-1');
+        $featureContainer.insertBefore(spacer, $featureShelfContainer);
+    }
+
     for (const f of FEATURES) {
         if (!$featureContainer.querySelector(`.feature-btn[data-feature-btn="${f.id}"]`)) {
             const btn = document.createElement('button');
             btn.className = 'feature-btn';
             btn.dataset.featureBtn = f.id;
             if (f.iconUrl) btn.style.setProperty('--mod-icon-url', `url('${f.iconUrl}')`);
-            if (f.hintKey) btn.dataset.hint = f.hintKey;
+            // Tier 22.11 item 6: every feature button gets a hint. Use
+            // the feature's explicit hintKey if provided, else derive
+            // `hints.feature.{id}` which i18n resolves in default.json.
+            btn.dataset.hint = f.hintKey || `hints.feature.${f.id}`;
             $featureContainer.insertBefore(btn, $featureShelfContainer);
         }
 
@@ -129,6 +145,11 @@ $featureContainer?.addEventListener('click', (e) => {
         $s.style.display = ($s === $targetShelf) ? 'flex' : 'none';
     });
 
+    // Tier 22.11: mark the owning button as active so its slid-out +
+    // glow state remains while its shelf is the one showing.
+    $featureContainer.querySelectorAll('.feature-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+
     if (typeof f.onOpen === 'function') {
         try { f.onOpen($targetShelf); }
         catch (e) { console.error(`[feature-shelf] onOpen failed for ${featureId}:`, e); }
@@ -164,6 +185,7 @@ export function openShelf() {
 
 export function closeShelf() {
     updateShelfTransform(0);
+    $featureContainer?.querySelectorAll('.feature-btn').forEach(b => b.classList.remove('active'));
 }
 
 // ── Drag handlers ──
