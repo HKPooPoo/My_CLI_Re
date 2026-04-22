@@ -438,7 +438,7 @@ a:hover {
     display: flex;
 }
 
-/* --- Tier 22.5: List status icons (horizontal, active-only) -----------
+/* --- Tier 22.6: List status icons (white-backed, horizontal, active-only)
    Every list row (BB branch, WT connection, BC channel) shows a
    horizontal stack of icons at the top-right — ONLY the states that
    apply to this row, nothing else. Icon-shape vocabulary mirrors the
@@ -448,9 +448,11 @@ a:hover {
        SYNCED     → cloud          (on server, in sync with local)
        NOT-SYNCED → cloud w/ cross (on server but local diverges)
 
-   Inactive icons are NOT rendered (renderer skips the slot). This
-   keeps the corner visually quiet — the absence of an icon is itself
-   information. Icons are 16 px and laid out left-to-right. */
+   Inactive icons are NOT rendered (renderer skips the slot). The
+   white container is always painted so the stack is legible over any
+   row background (including the brand-tinted `.active` row). When
+   no slot applies the renderer returns nothing — container disappears
+   too. Icons are 16 px, horizontal. */
 .list-status-icons {
     position: absolute;
     top: 4px;
@@ -458,6 +460,10 @@ a:hover {
     flex-direction: row;
     align-items: center;
     gap: 4px;
+    padding: 3px 6px;
+    background: #ffffff;
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--border-radius);
     pointer-events: none;
     z-index: 1;
 }

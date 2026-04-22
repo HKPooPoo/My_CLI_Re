@@ -298,13 +298,22 @@ Log section; every new user decision gets appended with a date.
     - **SYNCED** (cloud, `status-synced.svg`) — on server, in sync with local
     - **NOT-SYNCED** (cloud with cross, `status-asynced.svg`) — on server but local diverges
 
-    **Per-list trigger conditions** (same SVGs, different inputs):
+    **Per-list trigger conditions** (same SVGs, board-native mechanism —
+    WT only fires the icons that map to real WT state; its `synced` /
+    `asynced` slots are deliberately empty because P2P live messaging
+    doesn't carry a per-connection sync tag):
     | Slot | BB branch row | WT connection row | BC channel row |
     |---|---|---|---|
     | HEAD | branch matches `activeBranchId` | connection matches `selectedConnection.partner_uid` | channel matches `selectedChannel.localId` |
-    | LOCAL | `branch.isLocal && !branch.isServer` | `conn.my_branch_id \|\| conn.partner_branch_id` — exchanged msgs | `ch.isLocalOnly` — draft not yet cast |
-    | SYNCED | `isLocal && isServer && !isDirty` | `last_signal < 60 s` — partner online | `serverChannelId && !isLocalOnly` |
-    | NOT-SYNCED | `isDirty \|\| (!isLocal && isServer)` | `[NEW]` unread marker | owner with `isDirty` local changes |
+    | LOCAL | `branch.isLocal && !branch.isServer` | `conn.my_branch_id \|\| conn.partner_branch_id` — conversation exists | `ch.isLocalOnly` — draft not yet cast |
+    | SYNCED | `isLocal && isServer && !isDirty` | *(N/A — no per-connection sync tag in WT)* | `serverChannelId && !isLocalOnly` |
+    | NOT-SYNCED | `isDirty \|\| (!isLocal && isServer)` | *(N/A)* | owner with `isDirty` local changes |
+
+    Container styling: white-backed rounded panel (`background: #fff`,
+    1 px border, 3 px × 6 px padding) so the icon stack is legible over
+    any list-item background including the brand-tinted `.active` row.
+    The panel only renders when at least one slot applies — a row with
+    no active state gets no panel at all.
 
     Also in this tier:
     - `[SUBSCRIBED]` span removed from `.branch-name` inside the head

@@ -364,24 +364,19 @@ export const WTList = {
                 ? `${conn.partner_uid} ${t('walkieTypie.statusNew')}`
                 : conn.partner_uid;
 
-            // Tier 22: unified 4-icon legend (HEAD / LOCAL / SYNCED /
-            // NOT-SYNCED). For WT connections:
-            //   HEAD       → this connection is currently open in WT-TEXT
-            //   LOCAL      → partner has a branch_id (= we exchanged ≥ 1 message
-            //                 OR have a local WE draft)
-            //   SYNCED     → last_signal within 60 s (partner online)
-            //   NOT-SYNCED → unread indicator ([NEW] marker for this partner)
-            const ONLINE_WINDOW_MS = 60_000;
+            // Tier 22.6: WT does NOT have per-connection sync tags in its
+            // data model (P2P live, no commit-status per connection), so
+            // it only fires the icons that map to real WT state:
+            //   HEAD  → this connection is currently open in WT-TEXT
+            //   LOCAL → conversation exists (my_branch_id or partner_branch_id)
+            // `synced / asynced` are deliberately skipped. Earlier versions
+            // forced `online ↦ synced` and `[NEW] ↦ asynced`; those were
+            // invented mappings that conflated unrelated concepts.
             const isHead = !!activeUid && conn.partner_uid === activeUid;
             const hasLocal = !!(conn.my_branch_id || conn.partner_branch_id);
-            const isOnline = conn.last_signal &&
-                (Date.now() - Number(conn.last_signal) < ONLINE_WINDOW_MS);
-            const hasUnread = _newMessagePartners.has(conn.partner_uid);
             const iconsWrap = makeStatusLegend({
-                head:    isHead,
-                local:   hasLocal,
-                synced:  isOnline,
-                asynced: hasUnread,
+                head:  isHead,
+                local: hasLocal,
             });
 
             item.appendChild(tagInput);
