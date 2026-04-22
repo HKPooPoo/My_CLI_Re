@@ -86,10 +86,6 @@ export const WTText = {
         this.initAttachments();
         this.bindEvents();
         this.lockBoards();
-
-        if (Settings.get('wt', 'boardSwap')) {
-            this.toggleSwap(true);
-        }
     },
 
     initAttachments() {
@@ -468,9 +464,12 @@ export const WTText = {
         this.currentBin = null;
     },
 
-    toggleSwap(forceState = null) {
-        this.isSwapped = forceState !== null ? forceState : !this.isSwapped;
-        Settings.set('wt', 'boardSwap', this.isSwapped);
+    // Tier 22: MY SIDE FIRST setting retired. The in-session switch
+    // button still flips board layout, but the preference is not
+    // persisted — every navigation back to WT starts with the default
+    // layout (contact on top). Session-only state lives on `isSwapped`.
+    toggleSwap() {
+        this.isSwapped = !this.isSwapped;
         if (this.elements.container) {
             this.elements.container.classList.toggle("swapped", this.isSwapped);
         }

@@ -408,7 +408,8 @@ export const BCChannel = {
             const block = e.target.closest('.page-preview-block');
             if (!block) return;
             const touch = e.touches[0];
-            touchStartPos = { x: touch.clientX, y: touch.clientY };
+            const startHead = parseInt(block.dataset.head, 10);
+            touchStartPos = { x: touch.clientX, y: touch.clientY, startHead };
             touchTimer = setTimeout(() => {
                 touchTimer = null;
                 inTouchPeek = true;
@@ -452,14 +453,78 @@ export const BCChannel = {
             }
             if (inTouchPeek) {
                 inTouchPeek = false;
+                // Drag-and-drop swap (Tier 22, owner mode only).
+                const endTouch = e.changedTouches[0];
+                const endBlock = peekFromPoint(endTouch.clientX, endTouch.clientY);
+                const endHead = endBlock ? parseInt(endBlock.dataset.head, 10) : -1;
+                const startHead = touchStartPos?.startHead ?? -1;
+
                 if (self._hoverSnapshot) {
                     if (self.elements.textarea) self.elements.textarea.value = self._hoverSnapshot.body;
                     self._hoverSnapshot = null;
                 }
                 lockReaderSafe(false);
                 clearPeekMarker();
+
+                if (self.isOwnerMode && startHead >= 0 && endHead >= 0 && startHead !== endHead) {
+                    try {
+                        const newHead = await BCDb.swapRecordsByHead(self.state.localChannelId, startHead, endHead);
+                        if (newHead >= 0) self.state.currentHead = newHead;
+                        await self.syncOwnerView();
+                        CrossTabSync.broadcast('bc:record:mutated', {
+                            localChannelId: self.state.localChannelId,
+                            timestamp: null
+                        });
+                    } catch (err) {
+                        console.error('BC touch reorder failed:', err);
+                    }
+                }
             }
             touchStartPos = null;
+        });
+
+        // HTML5 drag-and-drop on the rail (desktop). Owner-only.
+        $rail?.addEventListener('dragstart', (e) => {
+            if (!self.isOwnerMode) return;
+            const block = e.target.closest?.('.page-preview-block');
+            if (!block) return;
+            const head = parseInt(block.dataset.head, 10);
+            if (Number.isNaN(head) || head < 0) return;
+            e.dataTransfer.setData('text/plain', String(head));
+            e.dataTransfer.effectAllowed = 'move';
+            block.classList.add('dragging');
+        });
+
+        $rail?.addEventListener('dragend', (e) => {
+            const block = e.target.closest?.('.page-preview-block');
+            if (block) block.classList.remove('dragging');
+        });
+
+        $rail?.addEventListener('dragover', (e) => {
+            if (!self.isOwnerMode) return;
+            if (e.target.closest?.('.page-preview-block')) e.preventDefault();
+        });
+
+        $rail?.addEventListener('drop', async (e) => {
+            e.preventDefault();
+            if (!self.isOwnerMode) return;
+            const block = e.target.closest?.('.page-preview-block');
+            if (!block) return;
+            const fromHead = parseInt(e.dataTransfer.getData('text/plain'), 10);
+            const toHead = parseInt(block.dataset.head, 10);
+            if (Number.isNaN(fromHead) || Number.isNaN(toHead)) return;
+            if (fromHead < 0 || toHead < 0 || fromHead === toHead) return;
+            try {
+                const newHead = await BCDb.swapRecordsByHead(self.state.localChannelId, fromHead, toHead);
+                if (newHead >= 0) self.state.currentHead = newHead;
+                await self.syncOwnerView();
+                CrossTabSync.broadcast('bc:record:mutated', {
+                    localChannelId: self.state.localChannelId,
+                    timestamp: null
+                });
+            } catch (err) {
+                console.error('BC drag reorder failed:', err);
+            }
         });
 
         $rail?.addEventListener('touchcancel', () => {
@@ -846,6 +911,7 @@ export const BCChannel = {
             if (!isVirtual && idx === activeHead) cls += ' active';
             block.className = cls;
             block.dataset.head = String(idx);
+            if (this.isOwnerMode) block.draggable = true;  // Tier 22 reorder; readers can't mutate
             frag.appendChild(block);
         });
 
@@ -865,16 +931,11 @@ export const BCChannel = {
 
         const name = this.currentChannel.name || t('broadcast.headFallback');
         if ($branchName) {
+            // Head-indicator: channel name only. Subscription status
+            // lives on the BC list (bookmark icon in the row's status
+            // stack, Tier 22), not inside the indicator.
             $branchName.textContent = name;
-            if (this.currentChannel.isPinned) {
-                $branchName.style.flexDirection = 'row';
-                const pinSpan = document.createElement('span');
-                pinSpan.className = 'crt-text-yellow';
-                pinSpan.textContent = t('broadcast.pinLabel');
-                $branchName.appendChild(pinSpan);
-            } else {
-                $branchName.style.flexDirection = '';
-            }
+            $branchName.style.flexDirection = '';
         }
 
         const head = headOverride !== undefined

@@ -438,20 +438,30 @@ a:hover {
     display: flex;
 }
 
-/* --- Tier 13: List status icons ---------------------------------------
-   Each list item (BB branch row, WT connection row, BC channel row) carries
-   a `.list-status-icons` container pinned to its top-right corner. Icons
-   stack TOP→BOTTOM so the first icon is closest to the row's upper edge.
-   Each `.list-status-icon` renders an SVG via `<img src>`, sized 16 px and
-   tinted via `filter: opacity()` when muted. The icons themselves are
-   distinct shapes (no colour-variant overloading) — see status-*.svg. */
+/* --- Tier 22: List status icons (4-icon unified legend) ---------------
+   Every list row (BB branch, WT connection, BC channel) carries the
+   SAME 4 status icons in a vertical stack at the top-right:
+       1. HEAD       (eye)     — currently viewed / selected
+       2. LOCAL      (file)    — has local data
+       3. SYNCED     (check)   — server copy matches local
+       4. NOT-SYNCED (warning) — local diverges from server
+
+   All 4 slots are ALWAYS rendered. Active icons brighten to brand
+   colour; inactive ones dim to 20 % opacity so the shape remains a
+   visual legend even when dark. Container has a white background
+   so the icon stack is legible over any list-item bg (including
+   .active state's brand-tinted row). */
 .list-status-icons {
     position: absolute;
     top: 4px;
-    right: 6px;
+    right: 4px;
     flex-direction: column;
     align-items: center;
     gap: 4px;
+    padding: 6px 4px;
+    background: #ffffff;
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--border-radius);
     pointer-events: none;
     z-index: 1;
 }
@@ -459,27 +469,26 @@ a:hover {
 /* Icons use CSS mask so SVG caches normally via HTTP while the tint
    follows the current `color` cascade. `--icon-url` is set inline by
    the list renderer per icon. Different SVG shapes per state — no
-   colour-variant overloading. */
+   colour-variant overloading. Size 32 × 32 (Tier 22, doubled from 16). */
 .list-status-icon {
-    width: 16px;
-    height: 16px;
+    width: 32px;
+    height: 32px;
     background-color: currentColor;
     -webkit-mask: var(--icon-url) center/contain no-repeat;
     mask: var(--icon-url) center/contain no-repeat;
     color: var(--text-muted);
+    opacity: 0.2;
     flex-shrink: 0;
+    transition: opacity var(--transition-normal), color var(--transition-normal);
 }
 
-.list-status-icon.brand {
+.list-status-icon.active {
+    opacity: 1;
     color: var(--brand);
 }
 
-.list-status-icon.accent {
+.list-status-icon.active.accent {
     color: var(--accent);
-}
-
-.list-status-icon.muted {
-    opacity: 0.55;
 }
 
 #auth-locked-label {

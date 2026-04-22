@@ -21,6 +21,7 @@ import { MultiStepButton } from "./multiStepButton.js";
 import { BBMessage } from "./blackboard-msg.js";
 import { t } from './i18n.js';
 import { T } from './timing.js';
+import { makeStatusLegend } from './list-status.js';
 
 // Per-partner "has new signal" flags, in-memory only. Reload clears
 // all marks — simple by design (no localStorage round-trip).
@@ -363,19 +364,25 @@ export const WTList = {
                 ? `${conn.partner_uid} ${t('walkieTypie.statusNew')}`
                 : conn.partner_uid;
 
-            // Tier 13: status icons — online (last_signal within 60s) or
-            // offline. Different SVG per state, not a colour variant.
+            // Tier 22: unified 4-icon legend (HEAD / LOCAL / SYNCED /
+            // NOT-SYNCED). For WT connections:
+            //   HEAD       → this connection is currently open in WT-TEXT
+            //   LOCAL      → partner has a branch_id (= we exchanged ≥ 1 message
+            //                 OR have a local WE draft)
+            //   SYNCED     → last_signal within 60 s (partner online)
+            //   NOT-SYNCED → unread indicator ([NEW] marker for this partner)
             const ONLINE_WINDOW_MS = 60_000;
+            const isHead = !!activeUid && conn.partner_uid === activeUid;
+            const hasLocal = !!(conn.my_branch_id || conn.partner_branch_id);
             const isOnline = conn.last_signal &&
                 (Date.now() - Number(conn.last_signal) < ONLINE_WINDOW_MS);
-            const iconsWrap = document.createElement('div');
-            iconsWrap.className = 'list-status-icons';
-            const statusIcon = document.createElement('span');
-            const icon = isOnline ? 'online' : 'offline';
-            const tone = isOnline ? 'brand' : 'muted';
-            statusIcon.className = `list-status-icon ${tone}`;
-            statusIcon.style.setProperty('--icon-url', `url('./images/status-${icon}.svg')`);
-            iconsWrap.appendChild(statusIcon);
+            const hasUnread = _newMessagePartners.has(conn.partner_uid);
+            const iconsWrap = makeStatusLegend({
+                head:    isHead,
+                local:   hasLocal,
+                synced:  isOnline,
+                asynced: hasUnread,
+            });
 
             item.appendChild(tagInput);
             item.appendChild(lastSignal);

@@ -14,6 +14,7 @@
 
 import { t } from './i18n.js';
 import { BBMessage } from './blackboard-msg.js';
+import { buildStatusLegend } from './list-status.js';
 
 export const BBUI = {
     // --- DOM 引用清單 ---
@@ -113,28 +114,23 @@ export const BBUI = {
             // Same pattern as BC non-owner rename + WT THEY textarea.
             const isReadonly = !branch.isLocal;
 
-            // Tier 13: status icons — top-right stack. One icon per branch
-            // describing its storage state relative to the server.
-            //   isLocal & isServer & !isDirty → synced (brand)
-            //   isLocal & isServer &  isDirty → asynced (brand)
-            //   isLocal & !isServer           → local (muted)
-            //   !isLocal & isServer           → cloud (muted)
-            let storageIcon = 'local';
-            let storageTone = 'muted';
-            if (branch.isLocal && branch.isServer && !branch.isDirty) {
-                storageIcon = 'synced'; storageTone = 'brand';
-            } else if (branch.isLocal && branch.isServer && branch.isDirty) {
-                storageIcon = 'asynced'; storageTone = 'brand';
-            } else if (branch.isLocal && !branch.isServer) {
-                storageIcon = 'local'; storageTone = 'muted';
-            } else if (!branch.isLocal && branch.isServer) {
-                storageIcon = 'cloud'; storageTone = 'muted';
-            }
-            const iconsHtml = `
-                <div class="list-status-icons">
-                    <span class="list-status-icon ${storageTone}" style="--icon-url: url('./images/status-${storageIcon}.svg')"></span>
-                </div>
-            `;
+            // Tier 22: unified 4-icon legend (HEAD / LOCAL / SYNCED /
+            // NOT-SYNCED). All 4 icons always rendered; active ones
+            // brighten, inactive stay dim. Same schema across BB/WT/BC.
+            //   HEAD        → this is the currently-viewed branch
+            //   LOCAL       → has local records
+            //   SYNCED      → server copy matches local
+            //   NOT-SYNCED  → local diverges OR cloud-only
+            const isHeadActive = isActive;
+            const isLocalActive = !!branch.isLocal;
+            const isSyncedActive = !!(branch.isLocal && branch.isServer && !branch.isDirty);
+            const isAsyncedActive = !!(branch.isDirty || (!branch.isLocal && branch.isServer));
+            const iconsHtml = buildStatusLegend({
+                head: isHeadActive,
+                local: isLocalActive,
+                synced: isSyncedActive,
+                asynced: isAsyncedActive,
+            });
 
             item.innerHTML = `
                 <input type="text" class="vcs-list-branch" value="${safeName}" placeholder="${t('blackboard.namePlaceholder')}" name="vcs-list-branch" maxlength="64" ${isReadonly ? 'disabled' : ''}>

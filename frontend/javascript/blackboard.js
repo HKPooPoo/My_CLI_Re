@@ -325,6 +325,7 @@ async function renderPreviewRail() {
         if (ownerStr === 'local' || ownerStr.includes('[asynced]')) cls += ' unsynced';
         block.className = cls;
         block.dataset.head = String(idx);
+        block.draggable = true;  // Tier 22: enable HTML5 drag-and-drop reorder
         frag.appendChild(block);
     });
 
@@ -964,7 +965,8 @@ $previewRail?.addEventListener('touchstart', (e) => {
     const block = e.target.closest('.page-preview-block');
     if (!block) return;
     const touch = e.touches[0];
-    _touchStartPos = { x: touch.clientX, y: touch.clientY };
+    const startHead = parseInt(block.dataset.head, 10);
+    _touchStartPos = { x: touch.clientX, y: touch.clientY, startHead };
     _touchTimer = setTimeout(() => {
         _touchTimer = null;
         _inTouchPeek = true;
@@ -1015,14 +1017,80 @@ $previewRail?.addEventListener('touchend', async (e) => {
     }
     if (_inTouchPeek) {
         _inTouchPeek = false;
+        // Drag-and-drop swap (Tier 22): if the finger released on a
+        // DIFFERENT block than it started on, treat the peek-drag as a
+        // record reorder. Both heads must be valid (≥ 0 — virtual block
+        // dataset.head == "-1" disqualifies).
+        const endTouch = e.changedTouches[0];
+        const endBlock = _peekBlockFromPoint(endTouch.clientX, endTouch.clientY);
+        const endHead = endBlock ? parseInt(endBlock.dataset.head, 10) : -1;
+        const startHead = _touchStartPos?.startHead ?? -1;
+
         if (_hoverSnapshot) {
             BBUI.setTextarea(_hoverSnapshot.body);
             _hoverSnapshot = null;
         }
         lockEditors(false);
         _clearPeekMarker();
+
+        if (startHead >= 0 && endHead >= 0 && startHead !== endHead) {
+            try {
+                await BBCore.swapRecordsByHead(state.owner, state.branchId, startHead, endHead);
+                state.owner = "local";
+                state.currentHead = endHead;
+                await syncView();
+                await updateBranchList();
+                BBSync.scheduleAutoCommit();
+                CrossTabSync.broadcast('bb:record:mutated', { branchId: state.branchId, timestamp: null });
+            } catch (err) {
+                console.error('BB touch reorder failed:', err);
+            }
+        }
     }
     _touchStartPos = null;
+});
+
+// HTML5 drag-and-drop for desktop. Block is draggable; dropping on
+// another block swaps via swapRecordsByHead. Mirrors the mobile
+// release-on-different-block semantic.
+$previewRail?.addEventListener('dragstart', (e) => {
+    const block = e.target.closest?.('.page-preview-block');
+    if (!block) return;
+    const head = parseInt(block.dataset.head, 10);
+    if (Number.isNaN(head) || head < 0) return;
+    e.dataTransfer.setData('text/plain', String(head));
+    e.dataTransfer.effectAllowed = 'move';
+    block.classList.add('dragging');
+});
+
+$previewRail?.addEventListener('dragend', (e) => {
+    const block = e.target.closest?.('.page-preview-block');
+    if (block) block.classList.remove('dragging');
+});
+
+$previewRail?.addEventListener('dragover', (e) => {
+    if (e.target.closest?.('.page-preview-block')) e.preventDefault();
+});
+
+$previewRail?.addEventListener('drop', async (e) => {
+    e.preventDefault();
+    const block = e.target.closest?.('.page-preview-block');
+    if (!block) return;
+    const fromHead = parseInt(e.dataTransfer.getData('text/plain'), 10);
+    const toHead = parseInt(block.dataset.head, 10);
+    if (Number.isNaN(fromHead) || Number.isNaN(toHead)) return;
+    if (fromHead < 0 || toHead < 0 || fromHead === toHead) return;
+    try {
+        await BBCore.swapRecordsByHead(state.owner, state.branchId, fromHead, toHead);
+        state.owner = "local";
+        state.currentHead = toHead;
+        await syncView();
+        await updateBranchList();
+        BBSync.scheduleAutoCommit();
+        CrossTabSync.broadcast('bb:record:mutated', { branchId: state.branchId, timestamp: null });
+    } catch (err) {
+        console.error('BB drag reorder failed:', err);
+    }
 });
 
 $previewRail?.addEventListener('touchcancel', () => {

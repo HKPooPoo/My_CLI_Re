@@ -19,7 +19,7 @@ const SCOPES = ['bb', 'wt', 'bc'];
 // Only true user preferences remain here.
 const SCOPE_DEFAULTS = {
     bb:   { autoSync: false },
-    wt:   { notifications: true, boardSwap: false },
+    wt:   { notifications: true },
     bc:   {},
 };
 

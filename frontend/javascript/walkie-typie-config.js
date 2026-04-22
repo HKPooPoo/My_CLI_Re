@@ -29,11 +29,10 @@ const WTConfig = {
         if (!this.container) return;
         this.container.innerHTML = '';
 
-        // Tier 18: retired maxSlot / maxFiles / autoCleanBlanks /
-        // updateTimestamp / loopList. WT keeps boardSwap (layout
-        // preference) and notifications (system notification gate).
+        // Tier 22: boardSwap ("MY SIDE FIRST") retired. WT config page
+        // now only carries the system-notification gate; layout swap
+        // remains as the in-session switch button but is not persisted.
         this.controls = {
-            boardSwap: createToggleControl(this.container, 'wt', 'boardSwap', 'config.boardSwap', 'hints.config.boardSwap'),
             notifications: createToggleControl(this.container, 'wt', 'notifications', 'config.notifications', 'hints.config.notifications'),
         };
     }

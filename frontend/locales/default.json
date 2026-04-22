@@ -310,7 +310,6 @@
     "config": {
       "showHints": "Show hover hints like this one on buttons. Turn off for a cleaner view once familiar.",
       "autoSync": "Two-way cloud sync for the current notebook: uploads 2s after idle, downloads remote changes in ~4s. Other notebooks sync when you open them. Requires sign-in.",
-      "boardSwap": "My side on top, contact below. OFF = contact on top (default).",
       "notifications": "Desktop notifications when a new message arrives and the tab is in the background. Requires browser permission.",
       "screensaverTimeout": "Seconds of inactivity before screensaver activates. Max = disabled."
     },
@@ -324,7 +323,6 @@
   },
   "config": {
     "autoSync": "AUTO SYNC",
-    "boardSwap": "MY SIDE FIRST",
     "notifications": "NOTIFICATIONS",
     "showHints": "SHOW HINTS",
     "screensaverTimeout": "SCREENSAVER (SEC)",

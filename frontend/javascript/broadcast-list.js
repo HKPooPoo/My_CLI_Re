@@ -30,6 +30,7 @@ import { playAudio } from './audio.js';
 import { t } from './i18n.js';
 import { T } from './timing.js';
 import { updateNaviPosition } from './navi.js';
+import { makeStatusLegend } from './list-status.js';
 import db from './indexedDB.js';
 
 // Sub-navi <---> text element — updated when channel is selected or renamed
@@ -586,26 +587,23 @@ export const BCList = {
                 titleEl.textContent += t('broadcast.pinLabel');
             }
 
-            // Tier 13: status icons — top-right vertical stack. Two
-            // axes: ownership (owner megaphone / subscribed bookmark)
-            // and storage (local / synced / cloud). Different SVG per
-            // state, not a colour variant.
-            const iconsWrap = document.createElement('div');
-            iconsWrap.className = 'list-status-icons';
-
-            const addIcon = (name, tone) => {
-                const span = document.createElement('span');
-                span.className = `list-status-icon ${tone || ''}`;
-                span.style.setProperty('--icon-url', `url('./images/status-${name}.svg')`);
-                iconsWrap.appendChild(span);
-            };
-
-            if (this.isOwnerOf(ch))      addIcon('owner', 'brand');
-            else if (ch.isPinned)        addIcon('subscribed', 'accent');
-
-            // Storage — only meaningful when user has a local copy.
-            if (ch.isLocalOnly) addIcon('local', 'muted');
-            else if (ch.serverChannelId) addIcon('synced', 'brand');
+            // Tier 22: unified 4-icon legend (HEAD / LOCAL / SYNCED /
+            // NOT-SYNCED). For BC channels:
+            //   HEAD       → this channel is currently open in BC-CHANNEL
+            //   LOCAL      → draft exists locally OR user owns with local data
+            //   SYNCED     → cast to server (serverChannelId present, no pending)
+            //   NOT-SYNCED → local-only draft (not cast) OR owner has divergent
+            //                 local state waiting to be cast
+            const isSelected = selectedLocalId !== null && ch.localId === selectedLocalId;
+            const hasLocal = !!ch.localId;
+            const isSynced = !!(ch.serverChannelId && !ch.isLocalOnly);
+            const isAsynced = !!(ch.isLocalOnly || (ch.serverChannelId && this.isOwnerOf(ch) && ch.isDirty));
+            const iconsWrap = makeStatusLegend({
+                head:    isSelected,
+                local:   hasLocal,
+                synced:  isSynced,
+                asynced: isAsynced,
+            });
 
             item.appendChild(nameInput);
             item.appendChild(lastSignalEl);

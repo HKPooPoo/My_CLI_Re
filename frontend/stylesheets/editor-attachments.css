@@ -287,24 +287,25 @@ input.attachment-chip-name[readonly] {
     visibility: visible;
 }
 
-/* --- Delete Page button (Tier 20) ------------------------------------ */
+/* --- Delete Page button (Tier 20, repositioned Tier 22) ---------------- */
 /* Shared across BB / WT-WE / BC editor-wrapper. Destructive 3-step
    confirm via MultiStepButton — deletes the record at currentHead.
-   Sits at the bottom of .editor-wrapper as a compact horizontal bar so
-   the gesture to "erase this page" is visually in the same column as
-   the editor itself. Colour intent: --brand (wine red) on hover / armed
-   to flag destructive action, matching MISC page WIPE / DROP buttons. */
+   Positioned top-right inside the editor-wrapper (absolute) so the
+   destructive action lives away from the main editing zone. Colour
+   intent: --brand (wine red) on hover / armed, matching MISC page
+   WIPE / DROP buttons. */
 .delete-page-btn {
-    flex-shrink: 0;
-    align-self: center;
-    margin: 2px auto 4px auto;
-    padding: 4px 16px;
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    z-index: 2;
+    padding: 4px 12px;
     font-family: inherit;
-    font-size: calc(var(--font-size) * 0.8);
+    font-size: calc(var(--font-size) * 0.75);
     font-weight: 600;
     letter-spacing: 0.05em;
     color: var(--text-muted);
-    background: transparent;
+    background: var(--bg-page);
     border: 1px solid var(--border-subtle);
     border-radius: var(--border-radius);
     cursor: pointer;

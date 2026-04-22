@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <!-- Open eye = currently being viewed / active head -->
+    <path d="M1.5 8 Q8 2.5 14.5 8 Q8 13.5 1.5 8 Z"/>
+    <circle cx="8" cy="8" r="2.2" fill="currentColor" stroke="none"/>
+</svg>

@@ -148,6 +148,13 @@
     border-width: 0 0 0 6px;
 }
 
+/* Tier 22 — drag state. Desktop HTML5 drag fires dragstart/end; the
+   dragged block dims so the user can see they're moving it. */
+.page-preview-block.dragging {
+    opacity: 0.4;
+    border-left-color: var(--brand-dark);
+}
+
 #log-textarea {
     flex: 1;
     margin: 0;

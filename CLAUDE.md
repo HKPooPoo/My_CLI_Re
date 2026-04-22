@@ -281,23 +281,47 @@ Log section; every new user decision gets appended with a date.
     `[SUBSCRIBED]` leak). `BBCore.swapRecordsByHead` / `BCDb.swapRecordsByHead`
     kept in-place but unreferenced, awaiting Tier 21 drag-and-drop.
 
-13. **Tier 13 — List status icons (vertical stack)**. Each list row
-    (BB `.vcs-list-item`, WT `.walkie-typie-list-list-item`, BC
-    `.broadcast-list-list-item`) now carries a `.list-status-icons`
-    container in the top-right corner: `position: absolute; top: 4px;
-    right: 6px; flex-direction: column; gap: 4px; pointer-events: none`.
-    Inside, one or more `.list-status-icon` spans — each 16×16 with
-    `background-color: currentColor` + `-webkit-mask / mask: var(--icon-url)`
-    so theming follows CSS `color`. Icons use **distinct SVG shapes
-    per state**, not colour variants of the same glyph. Eight icons
-    in `frontend/images/status-*.svg`:
-    - `online.svg` (filled dot + ring) / `offline.svg` (slashed circle) — WT connection freshness (`last_signal < 60s`)
-    - `local.svg` (floppy-disk silhouette) / `cloud.svg` (cloud outline) / `synced.svg` (check-in-circle) / `asynced.svg` (warning triangle) — BB + BC storage state
-    - `owner.svg` (megaphone) / `subscribed.svg` (bookmark) — BC ownership axis
-    Tones: `.brand` (wine), `.accent` (purple), `.muted` (55% opacity).
-    BB row shows one storage icon; WT row shows one online/offline
-    icon; BC row shows up to two (ownership + storage). `pointer-events:
-    none` on the container keeps `InfiniteList` selection working.
+13. **Tier 22 — unified 4-icon legend + preview drag-and-drop + cleanups**.
+    Supersedes Tier 13's per-list icon schema with a **single 4-icon
+    legend applied uniformly across BB / WT / BC** list rows. Every
+    row renders all four slots (HEAD / LOCAL / SYNCED / NOT-SYNCED)
+    in a vertical white-backed panel at `top: 4px; right: 4px`. Active
+    icons brighten to `--brand`; inactive icons dim to 20 % opacity —
+    the stack is a legend, not a state variable. Icon SVGs doubled to
+    32 × 32. Helper `frontend/javascript/list-status.js` exports
+    `buildStatusLegend(state)` (HTML string) and `makeStatusLegend(state)`
+    (DOM node) consumed by all three renderers.
+
+    **Per-list meaning of the 4 slots** (same SVGs, different triggers):
+    | Slot | BB branch row | WT connection row | BC channel row |
+    |---|---|---|---|
+    | **HEAD** (eye) | branch matches `activeBranchId` | connection matches `selectedConnection.partner_uid` | channel matches `selectedChannel.localId` |
+    | **LOCAL** (file) | `branch.isLocal` — has local records | `conn.my_branch_id \|\| conn.partner_branch_id` — exchanged msgs exist | `ch.localId` — local IDB row exists |
+    | **SYNCED** (check) | `isLocal && isServer && !isDirty` | `last_signal < 60 s` — partner online | `serverChannelId && !isLocalOnly` — cast to server |
+    | **NOT-SYNCED** (warning) | `isDirty \|\| (!isLocal && isServer)` | `[NEW]` unread marker for this partner | `isLocalOnly \|\| (owner && isDirty)` — draft or divergent |
+
+    Also in this tier:
+    - `[SUBSCRIBED]` span removed from `.branch-name` inside the head
+      indicator — subscription state now lives solely on the BC list
+      row's icon legend
+    - `.delete-page-btn` repositioned `position: absolute; top: 8px;
+      right: 8px` inside each editor-wrapper (was bottom-centre)
+    - `boardSwap` ("MY SIDE FIRST") setting retired — in-session
+      switch button remains but the preference is not persisted;
+      `SCOPE_DEFAULTS.wt` down to `{ notifications: true }`
+    - **Preview block drag-and-drop** shipped:
+      - Desktop: `draggable="true"` on non-virtual blocks + HTML5
+        `dragstart/over/drop` on the rail → `swapRecordsByHead(from, to)`
+      - Mobile: during existing 300 ms peek, if `touchend` lands on a
+        different block than `touchstart`, treat the peek-drag as a
+        swap. Same semantic: release-on-different-block = reorder.
+      - `.page-preview-block.dragging` CSS dims the source block
+      - BC restricts both paths to owner mode; readers never see
+        `draggable` or get the drop handler
+    - Retired `status-online / offline / cloud / owner / subscribed`
+      SVGs are no longer referenced by the renderers (files remain on
+      disk pending a future cleanup pass). Active set: `head / local /
+      synced / asynced` (4 files).
 
 12. **Tier 20 — DELETE PAGE button**. Adds `#bb-delete-page-btn`,
     `#wt-delete-page-btn`, `#bc-delete-page-btn` inside each editor-
