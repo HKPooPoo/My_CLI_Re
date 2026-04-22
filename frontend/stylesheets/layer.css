@@ -46,7 +46,8 @@
 
 .push-btn,
 .pull-btn,
-.feature-btn {
+.feature-btn,
+.page-preview-rail {
     z-index: 997;
 }
 

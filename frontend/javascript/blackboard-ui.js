@@ -41,6 +41,9 @@ export const BBUI = {
             this.elements.headIndex.textContent = head;
         }
         if (this.elements.savedStatus) {
+            // Restore the slot — BC subscriber mode hides it; coming back
+            // to BB must re-show it.
+            this.elements.savedStatus.style.display = '';
             this.elements.savedStatus.textContent = isSaved ? t('blackboard.statusSaved') : t('blackboard.statusUnsaved');
         }
     },

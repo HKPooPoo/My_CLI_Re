@@ -362,25 +362,19 @@ export const BCChannel = {
             this.updateIndicators();
         });
 
-        // Page Previewer rail (BC) — hover peeks, click navigates. Owner
-        // mode saves current before navigating; reader mode just swaps
-        // the in-memory readerHead. BC textarea has no topic split, so
-        // peek-restore snapshots the body only.
+        // Page Previewer rail (BC) — Pointer Events API for unified
+        // mouse+touch. Same press-and-hold-to-peek semantics as BB; see
+        // blackboard.js for the full interaction contract.
         const $rail = document.getElementById('bc-preview-rail');
         const self = this;
 
         const lockReaderSafe = (locked) => {
-            // Reader mode already has disabled textarea; skip.
             if (!self.isOwnerMode) return;
             if (self.elements.textarea) self.elements.textarea.readOnly = locked;
         };
 
-        $rail?.addEventListener('mouseover', (e) => {
-            const block = e.target.closest('.page-preview-block');
+        const peekBlock = (block) => {
             if (!block) return;
-            if (!self._hoverSnapshot &&
-                self.isOwnerMode &&
-                document.activeElement === self.elements.textarea) return;
             const head = parseInt(block.dataset.head, 10);
             if (Number.isNaN(head) || head < 0) return;
             const rec = self._previewRailCache[head];
@@ -390,25 +384,20 @@ export const BCChannel = {
                 lockReaderSafe(true);
             }
             if (self.elements.textarea) self.elements.textarea.value = rec.text || '';
-        });
+        };
 
-        $rail?.addEventListener('mouseleave', () => {
+        const restorePeek = () => {
             if (!self._hoverSnapshot) return;
             if (self.elements.textarea) self.elements.textarea.value = self._hoverSnapshot.body;
             self._hoverSnapshot = null;
             lockReaderSafe(false);
-        });
+        };
 
-        $rail?.addEventListener('click', async (e) => {
-            const block = e.target.closest('.page-preview-block');
+        const navigateToBlock = async (block) => {
             if (!block) return;
             const head = parseInt(block.dataset.head, 10);
             if (Number.isNaN(head) || head < 0) return;
-            if (self._hoverSnapshot) {
-                if (self.elements.textarea) self.elements.textarea.value = self._hoverSnapshot.body;
-                self._hoverSnapshot = null;
-            }
-            lockReaderSafe(false);
+            restorePeek();
             if (self.isOwnerMode) {
                 await self.save(self.elements.textarea?.value ?? '');
                 self.state.isVirtual = false;
@@ -418,6 +407,70 @@ export const BCChannel = {
                 self.readerHead = head;
                 self.syncReaderView();
             }
+        };
+
+        $rail?.addEventListener('pointerover', (e) => {
+            if (e.pointerType !== 'mouse') return;
+            const block = e.target.closest('.page-preview-block');
+            if (!block) return;
+            if (!self._hoverSnapshot &&
+                self.isOwnerMode &&
+                document.activeElement === self.elements.textarea) return;
+            peekBlock(block);
+        });
+
+        $rail?.addEventListener('pointerleave', (e) => {
+            if (e.pointerType !== 'mouse') return;
+            restorePeek();
+        });
+
+        // Touch: press-and-hold to peek, drag to scrub, release to
+        // navigate (or leave rail to restore without navigating).
+        let _touchPeekBlock = null;
+        $rail?.addEventListener('pointerdown', (e) => {
+            if (e.pointerType !== 'touch') return;
+            const block = e.target.closest('.page-preview-block');
+            if (!block) return;
+            _touchPeekBlock = block;
+            peekBlock(block);
+            $rail.setPointerCapture?.(e.pointerId);
+        });
+
+        $rail?.addEventListener('pointermove', (e) => {
+            if (e.pointerType !== 'touch') return;
+            if (!self._hoverSnapshot) return;
+            const target = document.elementFromPoint(e.clientX, e.clientY);
+            const block = target?.closest?.('.page-preview-block');
+            if (block && block !== _touchPeekBlock) {
+                _touchPeekBlock = block;
+                peekBlock(block);
+            }
+        });
+
+        $rail?.addEventListener('pointerup', async (e) => {
+            if (e.pointerType !== 'touch') return;
+            const target = document.elementFromPoint(e.clientX, e.clientY);
+            const block = target?.closest?.('.page-preview-block');
+            const navigateTarget = block || _touchPeekBlock;
+            _touchPeekBlock = null;
+            if (block) {
+                await navigateToBlock(navigateTarget);
+            } else {
+                restorePeek();
+            }
+        });
+
+        $rail?.addEventListener('pointercancel', (e) => {
+            if (e.pointerType !== 'touch') return;
+            _touchPeekBlock = null;
+            restorePeek();
+        });
+
+        $rail?.addEventListener('click', async (e) => {
+            if (e.pointerType && e.pointerType !== 'mouse') return;
+            const block = e.target.closest('.page-preview-block');
+            if (!block) return;
+            await navigateToBlock(block);
         });
     },
 
@@ -806,8 +859,6 @@ export const BCChannel = {
             if (!isVirtual && idx === activeHead) cls += ' active';
             block.className = cls;
             block.dataset.head = String(idx);
-            const firstLine = (rec.text || '').split('\n', 1)[0];
-            block.title = firstLine || '';
             frag.appendChild(block);
         });
 
@@ -849,8 +900,14 @@ export const BCChannel = {
         if ($savedStatus) {
             if (this.isOwnerMode) {
                 $savedStatus.textContent = this.currentChannel.serverChannelId ? t('broadcast.statusCast') : t('broadcast.statusLocal');
+                $savedStatus.style.display = '';
             } else {
-                $savedStatus.textContent = t('broadcast.statusRead');
+                // Subscriber/reader mode has no editor-level sync status —
+                // the "SUBSCRIBED" label is a channel-list affordance, not
+                // a head-indicator concept. Hide the slot entirely so the
+                // head-indicator only shows meaningful head-level state.
+                $savedStatus.textContent = '';
+                $savedStatus.style.display = 'none';
             }
         }
     },

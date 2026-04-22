@@ -704,14 +704,22 @@ The `.head-indicator` strip (left-side vertical label inside `.page-container` �
 - Legacy records auto-migrate on first edit — `text = "single line"` loads as topic="", body="single line"; typing in the topic field rewrites `text = "new topic\nsingle line"` on next save.
 - `state.isVirtual` on an empty branch clears both fields via `setTextarea("")`.
 
-**Page Previewer Rail.** `#bb-preview-rail` (BB) / `#bc-preview-rail` (BC), populated on every `syncView()` / `syncOwnerView()` / `syncReaderView()` so it mirrors navigation, saves, cross-tab mutations, and WebSocket updates without a separate trigger system.
-- One `.page-preview-block` per record, newest at top. `.active` on the current head, `.virtual` for the unsaved virtual page, `.unsynced` when `record.owner === 'local'` or `.owner.includes('[asynced]')`.
-- `block.title = firstLine` — native tooltip shows the topic line of the target record on hover.
-- **Read-only peek**: hover locks `textarea.readOnly = true` + `topic.readOnly = true` and overwrites their values with the target record's text. Mouseleave restores the snapshot captured on first-enter. Without the `readOnly` lock, a user typing into a hovered record would silently edit the LIVE record (whose `state.currentHead` hasn't moved), which was the original design hazard.
-- **Click to navigate**: commits the peek (restores snapshot, unlocks), saves current value, moves `state.currentHead = head`, fires `syncView()`. BC reader mode just moves `readerHead` + `syncReaderView()`.
+**Page Previewer Rail.** `#bb-preview-rail` (BB) / `#bc-preview-rail` (BC), absolute-positioned inside `.editor-wrapper` in the textarea's left gutter. Populated on every `syncView()` / `syncOwnerView()` / `syncReaderView()` so it mirrors navigation, saves, cross-tab mutations, and WebSocket updates without a separate trigger system.
+- **Layer registration**: z-index `997` in `layer.css` (alongside `.push-btn` / `.pull-btn` / `.feature-btn`). **Do not set z-index inline** — always register in `layer.css` so the stacking stays centralized.
+- **Layout contract**: rail is absolute (not a flex sibling) — the textarea's original `--single-textbox-margin` is preserved. Mobile `@media (max-width: 768px)` adds a `padding-left: 32px` on textarea + `padding-left: 40px` on `.log-topic-input` so the rail doesn't overlap editable content when the 4vw gutter shrinks below rail width.
+- One `.page-preview-block` per record, newest at top. `.active` on the current head, `.virtual` for the unsaved virtual page, `.unsynced` when `record.owner === 'local'` or `.owner.includes('[asynced]')`. **No `title` attribute** — the hover swap IS the preview; a native tooltip would be redundant and was rejected by the user.
+- **Alternating block colour**: `:nth-child(odd)` = `var(--bg-card)`, `:nth-child(even)` = darker grey (`#dcdcdc`). Without alternation, equal-height blocks bleed into one continuous bar.
+- **Read-only peek**: hover / touch-hold locks `textarea.readOnly = true` + `topic.readOnly = true` and overwrites their values with the target record's text. Release restores the snapshot captured on first-enter. Without the `readOnly` lock, a user typing into a hovered record would silently edit the LIVE record (whose `state.currentHead` hasn't moved).
+- **Pointer Events API** drives both mouse and touch in one path:
+  - Mouse: `pointerover` (peek) + `pointerleave` (restore); guard on `e.pointerType === 'mouse'` to avoid double-firing on hybrid devices.
+  - Touch: `pointerdown` begins peek + calls `setPointerCapture(pointerId)` so subsequent moves keep firing on the rail even when the finger drifts off a block; `pointermove` uses `document.elementFromPoint(clientX, clientY)` to find the block under the current finger position (pointerover doesn't fire reliably mid-capture); `pointerup` navigates to the block under the finger, `pointercancel` restores.
+  - `touch-action: none` on the rail + `touch-action: manipulation` on each block prevents the browser's default pan/zoom from stealing the gesture.
+- **Click to navigate**: commits the peek (restores snapshot, unlocks), saves current value, moves `state.currentHead = head` (or `readerHead` in BC reader mode), fires `syncView()` / `syncReaderView()`.
 - **BB snapshot** holds `{ body, topic }`; **BC snapshot** holds `{ body }` only (no topic on BC).
-- `_previewRailCache` backs the hover lookup so mouseover doesn't hit IndexedDB per enter.
+- `_previewRailCache` backs the hover lookup so the pointer loop doesn't hit IndexedDB per move.
 - **Active-element guard on first entry**: if the user is already typing when the mouse enters, no snapshot + no overwrite — peek is inert. The lock itself is not applied mid-type, so a just-started peek can always be aborted cleanly by leaving the rail.
+
+**BC `.branch-is-saved` in subscriber mode**: hidden via `display: none`, not labelled `[SUBSCRIBED]`. The subscribe state is a channel-list affordance (the row's `[SUBSCRIBED]` tag), not a head-indicator concept — the head-indicator only reports per-record state (`[SAVED]`/`[UNSAVED]` on BB, `[DRAFT]`/`[POSTED]` on BC owner). BB's `BBUI.updateIndicators` restores `style.display = ''` on the slot so navigating from a BC-subscriber context back to BB re-shows it.
 
 ### Toast & Messages
 

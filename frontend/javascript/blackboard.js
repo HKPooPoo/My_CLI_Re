@@ -366,8 +366,6 @@ async function renderPreviewRail() {
         if (ownerStr === 'local' || ownerStr.includes('[asynced]')) cls += ' unsynced';
         block.className = cls;
         block.dataset.head = String(idx);
-        const firstLine = (rec.text || '').split('\n', 1)[0];
-        block.title = firstLine || t('blackboard.topicPlaceholder');
         frag.appendChild(block);
     });
 
@@ -882,15 +880,18 @@ const scheduleSave = () => {
 BBUI.elements.textarea?.addEventListener("input", scheduleSave);
 BBUI.elements.topic?.addEventListener("input", scheduleSave);
 
-// Preview rail: hover to peek, click to navigate. Peek is READ-ONLY —
-// the textarea + topic are locked for the duration of the hover so the
-// user can't accidentally edit a past record's content while previewing.
-// If they want to edit, they click the block first (which navigates +
-// saves + unlocks) then edit normally.
+// Preview rail — Pointer Events API covers both mouse and touch in one
+// path. Peek is READ-ONLY: textarea + topic are locked for the duration
+// so the user can't accidentally edit a past record's content while
+// previewing. If they want to edit, they click/tap the block first,
+// which navigates + saves + unlocks.
 //
-// Snapshot is captured on first enter and restored on final leave; the
-// active-element guard only matters on the initial entry (can't peek
-// while mid-type).
+// Touch interaction: pointerdown on a block begins peek; dragging across
+// blocks updates peek in real-time (via elementFromPoint, since
+// pointerover on touch only fires when capture is released); pointerup
+// inside a block navigates to it, pointerup outside the rail restores
+// without navigating. Holding on a block shows preview instantly — the
+// mobile-native "press and hold to peek" gesture.
 const $previewRail = document.getElementById('bb-preview-rail');
 
 function lockEditors(locked) {
@@ -898,12 +899,8 @@ function lockEditors(locked) {
     if (BBUI.elements.topic)    BBUI.elements.topic.readOnly    = locked;
 }
 
-$previewRail?.addEventListener('mouseover', (e) => {
-    const block = e.target.closest('.page-preview-block');
+function _peekBlock(block) {
     if (!block) return;
-    if (!_hoverSnapshot &&
-        (document.activeElement === BBUI.elements.textarea ||
-         document.activeElement === BBUI.elements.topic)) return;
     const head = parseInt(block.dataset.head, 10);
     if (Number.isNaN(head) || head < 0) return;
     const rec = _previewRailCache[head];
@@ -916,36 +913,93 @@ $previewRail?.addEventListener('mouseover', (e) => {
         lockEditors(true);
     }
     BBUI.setTextarea(rec.text || '');
-});
+}
 
-$previewRail?.addEventListener('mouseleave', () => {
+function _restorePeek() {
     if (!_hoverSnapshot) return;
     const { topic, body } = _hoverSnapshot;
     const combined = topic ? (body ? `${topic}\n${body}` : topic) : body;
     BBUI.setTextarea(combined);
     _hoverSnapshot = null;
     lockEditors(false);
-});
+}
 
-$previewRail?.addEventListener('click', async (e) => {
-    const block = e.target.closest('.page-preview-block');
+async function _navigateToBlock(block) {
     if (!block) return;
     const head = parseInt(block.dataset.head, 10);
     if (Number.isNaN(head) || head < 0) return;
-    // Commit the peek: restore snapshot silently, then navigate. The
-    // navigation's syncView will repaint from the clicked record, so the
-    // restored snapshot only matters for the brief pre-save window.
-    if (_hoverSnapshot) {
-        const { topic, body } = _hoverSnapshot;
-        const combined = topic ? (body ? `${topic}\n${body}` : topic) : body;
-        BBUI.setTextarea(combined);
-        _hoverSnapshot = null;
-    }
-    lockEditors(false);
+    _restorePeek();
     await BBVCS.save(state, BBUI.getTextareaValue());
     state.isVirtual = false;
     state.currentHead = head;
     await syncView();
+}
+
+// Mouse path — classic hover to peek, mouseleave to restore.
+$previewRail?.addEventListener('pointerover', (e) => {
+    if (e.pointerType !== 'mouse') return;
+    const block = e.target.closest('.page-preview-block');
+    if (!block) return;
+    if (!_hoverSnapshot &&
+        (document.activeElement === BBUI.elements.textarea ||
+         document.activeElement === BBUI.elements.topic)) return;
+    _peekBlock(block);
+});
+
+$previewRail?.addEventListener('pointerleave', (e) => {
+    if (e.pointerType !== 'mouse') return;
+    _restorePeek();
+});
+
+// Touch path — press-and-hold to peek, drag across blocks to change
+// peek target, release inside the rail to navigate to the current block.
+let _touchPeekBlock = null;
+$previewRail?.addEventListener('pointerdown', (e) => {
+    if (e.pointerType !== 'touch') return;
+    const block = e.target.closest('.page-preview-block');
+    if (!block) return;
+    _touchPeekBlock = block;
+    _peekBlock(block);
+    $previewRail.setPointerCapture?.(e.pointerId);
+});
+
+$previewRail?.addEventListener('pointermove', (e) => {
+    if (e.pointerType !== 'touch') return;
+    if (!_hoverSnapshot) return;
+    const target = document.elementFromPoint(e.clientX, e.clientY);
+    const block = target?.closest?.('.page-preview-block');
+    if (block && block !== _touchPeekBlock) {
+        _touchPeekBlock = block;
+        _peekBlock(block);
+    }
+});
+
+$previewRail?.addEventListener('pointerup', async (e) => {
+    if (e.pointerType !== 'touch') return;
+    const target = document.elementFromPoint(e.clientX, e.clientY);
+    const block = target?.closest?.('.page-preview-block');
+    const navigateTarget = block || _touchPeekBlock;
+    _touchPeekBlock = null;
+    if (block) {
+        await _navigateToBlock(navigateTarget);
+    } else {
+        _restorePeek();
+    }
+});
+
+$previewRail?.addEventListener('pointercancel', (e) => {
+    if (e.pointerType !== 'touch') return;
+    _touchPeekBlock = null;
+    _restorePeek();
+});
+
+// Mouse click to navigate (touch uses pointerup above).
+$previewRail?.addEventListener('click', async (e) => {
+    // Touch click would double-fire after pointerup's navigate; skip it.
+    if (e.pointerType && e.pointerType !== 'mouse') return;
+    const block = e.target.closest('.page-preview-block');
+    if (!block) return;
+    await _navigateToBlock(block);
 });
 
 // 監聯分支更名事件
