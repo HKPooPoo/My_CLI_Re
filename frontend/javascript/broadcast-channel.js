@@ -87,9 +87,10 @@ export const BCChannel = {
         this.bindEvents();
         this.lockTextarea();
         this.clearIndicators();
-        // DELETE PAGE defaults hidden until a channel is opened in owner mode.
-        const $del = document.getElementById('bc-delete-page-btn');
-        if ($del) $del.style.display = 'none';
+        // Editor actions (RESET + DELETE PAGE) default hidden until a
+        // channel is opened in owner mode.
+        const $actions = document.querySelector('#bc-drop-zone .editor-actions');
+        if ($actions) $actions.style.display = 'none';
     },
 
     // =====================================================================
@@ -126,6 +127,7 @@ export const BCChannel = {
                     }
                 }
                 this.updateIndicators();
+                await this._markLocalDirty();
                 CrossTabSync.broadcast('bc:record:mutated', {
                     localChannelId: this.state.localChannelId,
                     timestamp: touchedTimestamp
@@ -142,6 +144,7 @@ export const BCChannel = {
                         touchedTimestamp = entry.timestamp;
                     }
                 }
+                await this._markLocalDirty();
                 CrossTabSync.broadcast('bc:record:mutated', {
                     localChannelId: this.state.localChannelId,
                     timestamp: touchedTimestamp
@@ -158,6 +161,7 @@ export const BCChannel = {
                 const binData = { hash: newHash, ...meta };
                 await BCDb.updateBinInPlace(this.state.localChannelId, entry.timestamp, binData);
                 this.updateIndicators();
+                await this._markLocalDirty();
                 CrossTabSync.broadcast('bc:record:mutated', {
                     localChannelId: this.state.localChannelId,
                     timestamp: entry.timestamp
@@ -248,8 +252,8 @@ export const BCChannel = {
             this._previewRailCache = [];
             const rail = document.getElementById('bc-preview-rail');
             if (rail) rail.replaceChildren();
-            const $bcDel = document.getElementById('bc-delete-page-btn');
-            if ($bcDel) $bcDel.style.display = 'none';
+            const $bcActions = document.querySelector('#bc-drop-zone .editor-actions');
+            if ($bcActions) $bcActions.style.display = 'none';
         });
 
         // Channel deleted → clear display
@@ -265,8 +269,8 @@ export const BCChannel = {
             this._previewRailCache = [];
             const rail = document.getElementById('bc-preview-rail');
             if (rail) rail.replaceChildren();
-            const $bcDel = document.getElementById('bc-delete-page-btn');
-            if ($bcDel) $bcDel.style.display = 'none';
+            const $bcActions = document.querySelector('#bc-drop-zone .editor-actions');
+            if ($bcActions) $bcActions.style.display = 'none';
         });
 
         // Channel renamed → update indicator
@@ -471,6 +475,7 @@ export const BCChannel = {
                         const newHead = await BCDb.swapRecordsByHead(self.state.localChannelId, startHead, endHead);
                         if (newHead >= 0) self.state.currentHead = newHead;
                         await self.syncOwnerView();
+                        await self._markLocalDirty();
                         CrossTabSync.broadcast('bc:record:mutated', {
                             localChannelId: self.state.localChannelId,
                             timestamp: null
@@ -518,6 +523,7 @@ export const BCChannel = {
                 const newHead = await BCDb.swapRecordsByHead(self.state.localChannelId, fromHead, toHead);
                 if (newHead >= 0) self.state.currentHead = newHead;
                 await self.syncOwnerView();
+                await self._markLocalDirty();
                 CrossTabSync.broadcast('bc:record:mutated', {
                     localChannelId: self.state.localChannelId,
                     timestamp: null
@@ -585,10 +591,15 @@ export const BCChannel = {
         // silently skip the DB write, causing UI/record desync until re-render.
         this.bcAttach?.setReadOnly(!this.isOwnerMode);
 
-        // DELETE PAGE is owner-only; hide for readers so the button itself
-        // isn't a confusing no-op target.
-        const $bcDel = document.getElementById('bc-delete-page-btn');
-        if ($bcDel) $bcDel.style.display = this.isOwnerMode ? '' : 'none';
+        // Editor actions (RESET + DELETE PAGE) are owner-only; RESET
+        // additionally requires a server copy. We hide the whole wrapper
+        // for readers, then individually hide RESET when uncast.
+        const $bcActions = document.querySelector('#bc-drop-zone .editor-actions');
+        if ($bcActions) {
+            $bcActions.style.display = this.isOwnerMode ? '' : 'none';
+            const $reset = document.getElementById('bc-reset-btn');
+            if ($reset) $reset.style.display = channel.serverChannelId ? '' : 'none';
+        }
 
         if (this.isOwnerMode) {
             await this.loadOwnerMode(channel);
@@ -793,12 +804,14 @@ export const BCChannel = {
     async save(text) {
         if (!this.isOwnerMode) return;
 
+        let mutated = false;
         try {
             if (this.state.isVirtual) {
                 if (text && text.trim()) {
                     await BCDb.addRecord(this.state.localChannelId, text);
                     this.state.isVirtual = false;
                     this.state.currentHead = 0;
+                    mutated = true;
                 }
                 return;
             }
@@ -809,16 +822,38 @@ export const BCChannel = {
                 // Tier 18: always in-place edit (no rebase).
                 if (entry.text !== text) {
                     await BCDb.updateTextInPlace(this.state.localChannelId, entry.timestamp, text);
+                    mutated = true;
                 }
             } else if (this.state.currentHead === 0) {
                 // Initial state (no records yet)
                 if (text && text.trim()) {
                     await BCDb.addRecord(this.state.localChannelId, text);
+                    mutated = true;
                 }
             }
         } catch (e) {
             console.error('BCChannel: save failed', e);
+        } finally {
+            if (mutated) await this._markLocalDirty();
         }
+    },
+
+    /**
+     * Tier 22.9: owner mutated local content on an already-cast channel.
+     * Sets the persistent dirty flag (BCMeta) so the list row's icon
+     * flips from cloud → cloud-with-cross and fires a window event so
+     * broadcast-list re-fetches. Uncast channels are `isLocalOnly` and
+     * don't carry a dirty flag by design. Called from every owner-side
+     * mutation site (save / attach / detach / rename / reorder / delete).
+     */
+    async _markLocalDirty() {
+        if (!this.isOwnerMode) return;
+        if (!this.currentChannel?.serverChannelId) return;
+        if (!this.state.localChannelId) return;
+        await BCMeta.setDirty(this.state.localChannelId, true);
+        window.dispatchEvent(new CustomEvent('broadcast:localDirty', {
+            detail: { localId: this.state.localChannelId }
+        }));
     },
 
     // =====================================================================
@@ -1008,6 +1043,7 @@ if ($bcDeleteBtn) {
                     BCChannel.state.currentHead = count - 1;
                 }
                 await BCChannel.syncOwnerView();
+                await BCChannel._markLocalDirty();
                 CrossTabSync.broadcast('bc:record:mutated', {
                     localChannelId: BCChannel.state.localChannelId,
                     timestamp: null
@@ -1016,6 +1052,74 @@ if ($bcDeleteBtn) {
             } catch (err) {
                 console.error('BC delete page failed:', err);
                 BBMessage.error(t('common.deletePageFailed'));
+            }
+        }
+    });
+}
+
+// RESET — re-download this channel's content from the server, replacing
+// all local records. Wipes the owner's unpushed changes (3-step destructive).
+// Owner-only and requires a server copy (the button is hidden otherwise
+// — same visibility policy as DELETE PAGE).
+const $bcResetBtn = document.getElementById('bc-reset-btn');
+if ($bcResetBtn) {
+    new MultiStepButton($bcResetBtn, {
+        sound: "Click.mp3",
+        steps: 3,
+        action: async () => {
+            const activePage = document.querySelector('.page.active');
+            if (activePage?.dataset?.page !== 'broadcast-channel') return;
+            if (!BCChannel.isOwnerMode) {
+                BBMessage.error(t('broadcast.notOwner'));
+                return;
+            }
+            const ch = BCChannel.currentChannel;
+            if (!ch?.serverChannelId) {
+                BBMessage.info(t('common.resetChannelFailed'));
+                return;
+            }
+            const msg = BBMessage.loading(t('common.resetChannel'));
+            try {
+                // Fetch server records and the channel metadata (incl. calendar)
+                const [boardsData, listData] = await Promise.all([
+                    BroadcastService.fetchBoards(ch.serverChannelId),
+                    BroadcastService.listChannels(),
+                ]);
+                const serverRecords = boardsData?.records ?? [];
+                const serverCh = (listData?.channels ?? []).find(c => c.id === ch.serverChannelId);
+
+                // Wipe local + import fresh. BCDb.importRecords handles the
+                // timestamp/file_hash reshape and uses bulkPut so it's atomic.
+                await BCDb.deleteAllRecords(BCChannel.state.localChannelId);
+                if (serverRecords.length > 0) {
+                    await BCDb.importRecords(BCChannel.state.localChannelId, serverRecords);
+                }
+                if (serverCh) {
+                    await BCMeta.updateLastSignal(BCChannel.state.localChannelId, serverCh.last_signal);
+                    if (serverCh.calendar && typeof serverCh.calendar === 'object') {
+                        await BCMeta.setCalendar(BCChannel.state.localChannelId, serverCh.calendar);
+                    }
+                }
+                await BCMeta.setDirty(BCChannel.state.localChannelId, false);
+
+                // Reset cursor + re-paint. Dispatching `broadcast:localBootstrapped`
+                // triggers broadcast-list.fetchAndRender(), which rebuilds the
+                // channel array with the freshly-cleared `isDirty: false`
+                // from BCMeta — the list row's icon flips back cloud-with-
+                // cross → cloud without a separate event.
+                BCChannel.state.currentHead = 0;
+                BCChannel.state.isVirtual = (serverRecords.length === 0);
+                await BCChannel.syncOwnerView();
+                window.dispatchEvent(new CustomEvent('broadcast:localBootstrapped'));
+                CrossTabSync.broadcast('bc:record:mutated', {
+                    localChannelId: BCChannel.state.localChannelId,
+                    timestamp: null
+                });
+                msg.update(t('common.channelReset'));
+            } catch (err) {
+                console.error('BC reset failed:', err);
+                msg.close();
+                BBMessage.error(t('common.resetChannelFailed'));
             }
         }
     });

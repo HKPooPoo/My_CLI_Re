@@ -166,6 +166,18 @@ export const BCList = {
             this.render();
         });
 
+        // Tier 22.9: owner mutated content in BCChannel (same tab) — flip
+        // the row's isDirty flag and re-render so the cloud icon swaps
+        // to cloud-with-cross without a full network fetch.
+        window.addEventListener('broadcast:localDirty', (e) => {
+            const localId = e.detail?.localId;
+            if (!localId) return;
+            const ch = this.channels.find(c => c.localId === localId);
+            if (!ch) return;
+            ch.isDirty = true;
+            this.render();
+        });
+
         // Tier 18: loopList setting removed — InfiniteList.loop always false.
 
         // --- PIN ---
@@ -292,9 +304,15 @@ export const BCList = {
                         // Store server ID mapping locally
                         await BCMeta.setServerChannelId(ch.localId, serverCh.id);
                         await BCMeta.updateLastSignal(ch.localId, serverCh.last_signal);
+                        // Tier 22.9: cast success clears the dirty flag —
+                        // local and server are now byte-for-byte equal. The
+                        // list row's icon flips back cloud-with-cross → cloud
+                        // on next render.
+                        await BCMeta.setDirty(ch.localId, false);
 
                         ch.serverChannelId = serverCh.id;
                         ch.lastSignal = serverCh.last_signal;
+                        ch.isDirty = false;
 
                         // Honest status: "complete" only when all files uploaded.
                         msg.update(failedCount === 0
@@ -433,7 +451,11 @@ export const BCList = {
                     ownerTitle: meta.owner_title ?? '',
                     isPinned: false,
                     isLocal: true,
-                    isLocalOnly: !meta.server_channel_id
+                    isLocalOnly: !meta.server_channel_id,
+                    // Tier 22.9: dirty = owner has local content that hasn't
+                    // been cast yet on an already-cast channel. Drives the
+                    // cloud → cloud-with-cross icon on the list row.
+                    isDirty: !!meta.isDirty,
                 });
             }
 

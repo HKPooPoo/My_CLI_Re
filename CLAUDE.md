@@ -343,6 +343,38 @@ Log section; every new user decision gets appended with a date.
       disk pending a future cleanup pass). Active set: `head / local /
       synced / asynced` (4 files).
 
+14. **Tier 22.9 — BC dirty tracking + RESET button + drop-overlay
+    scope**.
+    - `BCMeta.setDirty(localId, bool)` + `BCMeta.isDirty(localId)`
+      persist a channel-level dirty flag in `broadcast_channels.isDirty`
+      (Dexie schemaless field).
+    - `BCChannel._markLocalDirty()` helper called from every owner
+      mutation site (save, attach, detach, rename, drag swap, delete
+      page) — flips the flag when the channel has a `serverChannelId`
+      (uncast channels stay `isLocalOnly` and show no icon either way).
+    - Cast success clears the flag in `broadcast-list.js` cast
+      handler; `BCMeta.setDirty(localId, false)` is called right after
+      `setServerChannelId`.
+    - `broadcast:localDirty` window event (fired by `_markLocalDirty`)
+      lets `broadcast-list.js` flip the row's `isDirty` and re-render
+      without a network fetch.
+    - `broadcast-list.js fetchChannels` now reads `meta.isDirty` into
+      `ch.isDirty` so cross-tab / cross-device refreshes pick up the
+      dirty state naturally.
+    - **BC RESET button** (`#bc-reset-btn`) lives next to DELETE PAGE
+      inside a new `.editor-actions` flex wrapper in the BC editor.
+      3-step destructive. Handler fetches server records + channel
+      metadata, wipes local records via `BCDb.deleteAllRecords`,
+      re-imports via `BCDb.importRecords`, clears dirty, dispatches
+      `broadcast:localBootstrapped` to refresh the list. Visibility:
+      owner-only AND requires `serverChannelId` (uncast channels have
+      nothing to reset to).
+    - **Drop-overlay scope** — the dashed frame now hugs only the
+      textarea area. BB/BC override shifts `left: calc(8vw + 56px)`
+      (8vw gutter + 48 px preview rail + 8 px gap) so the overlay
+      doesn't cover the preview rail. WT keeps `left: 8vw`. Small-
+      screen media query echoes the offset with `4vw` gutter.
+
 12. **Tier 20 — DELETE PAGE button**. Adds `#bb-delete-page-btn`,
     `#wt-delete-page-btn`, `#bc-delete-page-btn` inside each editor-
     wrapper. All three use `MultiStepButton { steps: 3 }` (destructive

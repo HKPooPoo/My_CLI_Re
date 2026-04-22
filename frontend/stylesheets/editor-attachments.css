@@ -257,11 +257,11 @@ input.attachment-chip-name[readonly] {
 /* --- Drop Overlay --- */
 
 .drop-overlay {
-    /* Tier 22.5 — shrink the drop-visual to the textarea area only
-       (roughly — matches `.log-editor-row` margin). The drop EVENT
-       listener still lives on `.editor-wrapper` so the whole drop-
-       zone accepts files; only the visual frame is smaller so the
-       hint sits where the user expects content to land. */
+    /* Tier 22.9 — frame strictly hugs the textarea area. The drop EVENT
+       listener still lives on `.editor-wrapper` so the whole drop-zone
+       accepts files; only the visual frame is tight so the hint sits
+       where the user expects content to land.
+       Default inset (WT has no preview rail → matches textarea margin). */
     position: absolute;
     top: calc(4vh + 0.4rem);
     left: 8vw;
@@ -285,6 +285,14 @@ input.attachment-chip-name[readonly] {
         visibility var(--transition-normal);
 }
 
+/* BB / BC have a 48 px preview rail inside `.log-editor-row` at the
+   textarea's left edge + an 8 px gap. Shift the overlay's left edge
+   past the rail so the dashed frame hugs ONLY the textarea. */
+#bb-drop-zone .drop-overlay,
+#bc-drop-zone .drop-overlay {
+    left: calc(8vw + 56px);
+}
+
 .drop-overlay.active {
     opacity: 1;
     visibility: visible;
@@ -297,7 +305,29 @@ input.attachment-chip-name[readonly] {
    destructive action lives away from the main editing zone. Colour
    intent: --brand (wine red) on hover / armed, matching MISC page
    WIPE / DROP buttons. */
-.delete-page-btn {
+/* Editor-actions wrapper (BC only, Tier 22.9). Holds the RESET + DELETE
+   PAGE pair as a horizontal row at top-right of the editor-wrapper.
+   When the wrapper is present, its children use static positioning;
+   when absent (BB, WT), `.delete-page-btn` falls back to its own
+   absolute-top-right position below. */
+.editor-actions {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    z-index: 2;
+    flex-direction: row;
+    gap: 4px;
+}
+
+.editor-actions > .delete-page-btn,
+.editor-actions > .reset-page-btn {
+    position: static;
+    top: auto;
+    right: auto;
+}
+
+.delete-page-btn,
+.reset-page-btn {
     position: absolute;
     top: 8px;
     right: 8px;
@@ -330,6 +360,24 @@ input.attachment-chip-name[readonly] {
 }
 
 .delete-page-btn.btn-armed {
+    color: #ffffff;
+    background: var(--brand-dark);
+    border-color: var(--brand-dark);
+}
+
+/* RESET button — same 3-step destructive shape as DELETE PAGE (it
+   throws away unpushed local changes). Hover + armed states match so
+   both buttons feel like one "destructive gesture" surface. */
+@media (hover: hover) {
+    .reset-page-btn:hover {
+        color: #ffffff !important;
+        background: var(--brand) !important;
+        border-color: var(--brand-dark) !important;
+        box-shadow: 0 2px 8px var(--shadow-brand);
+    }
+}
+
+.reset-page-btn.btn-armed {
     color: #ffffff;
     background: var(--brand-dark);
     border-color: var(--brand-dark);

@@ -44,6 +44,10 @@
         left: 4vw;
         right: 4vw;
     }
+    #bb-drop-zone .drop-overlay,
+    #bc-drop-zone .drop-overlay {
+        left: calc(4vw + 56px);
+    }
 }
 
 @media (max-width: 768px) or (max-height: 768px) {

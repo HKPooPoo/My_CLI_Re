@@ -11,7 +11,12 @@
     "deletePageX2": "DELETE PAGEx2",
     "deletePageFinal": "DELETE PAGE!",
     "pageDeleted": "PAGE DELETED",
-    "deletePageFailed": "DELETE FAILED"
+    "deletePageFailed": "DELETE FAILED",
+    "resetChannel": "RESET",
+    "resetChannelX2": "RESETx2",
+    "resetChannelFinal": "RESET!",
+    "channelReset": "CHANNEL RELOADED FROM SERVER",
+    "resetChannelFailed": "RESET FAILED"
   },
   "nav": {
     "blackboard": "NOTEBOOK",
@@ -271,6 +276,7 @@
     "push": "Go to a newer note. If you're already at the newest, a blank page opens — type anything to create a new one.",
     "pull": "Go to an older note. If the current blank page has text, it's saved first.",
     "deletePage": "Permanently delete the current page. If it's the last one, the notebook / channel becomes empty. Three-step confirm.",
+    "resetChannel": "Re-download this channel's content from the server, discarding any local changes you haven't cast yet. Owner-only. Three-step confirm.",
     "commit": "Upload ALL notes in this notebook to the cloud, replacing the cloud copy. Your latest version wins. Files included. Failed file uploads retry next time.",
     "checkout": "Re-download the selected notebook from the cloud, replacing your local copy.",
     "switch": "Open a different notebook. If it only lives in the cloud, it's downloaded first.",

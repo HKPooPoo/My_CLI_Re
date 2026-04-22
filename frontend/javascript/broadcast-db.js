@@ -263,5 +263,23 @@ export const BCMeta = {
 
     async setCalendar(localId, calendar) {
         await db.broadcast_channels.update(localId, { calendar });
+    },
+
+    /**
+     * Owner-side dirty flag — set when the owner mutates local content
+     * (save / attach / detach / rename / reorder / delete-page) on a
+     * channel that has already been cast. Cleared on successful cast
+     * or RESET. Uncast (`server_channel_id === null`) channels don't
+     * track dirty — they're `isLocalOnly` by definition and already
+     * show no cloud icon. broadcast-list.js reads this flag to pick
+     * cloud vs cloud-with-cross on owner rows.
+     */
+    async setDirty(localId, dirty) {
+        await db.broadcast_channels.update(localId, { isDirty: !!dirty });
+    },
+
+    async isDirty(localId) {
+        const row = await db.broadcast_channels.get(localId);
+        return !!(row && row.isDirty);
     }
 };
