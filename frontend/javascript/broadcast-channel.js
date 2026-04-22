@@ -344,16 +344,14 @@ export const BCChannel = {
             lockReaderSafe(false);
         });
 
-        $rail?.addEventListener('click', async (e) => {
-            const block = e.target.closest('.page-preview-block');
-            if (!block) return;
-            const head = parseInt(block.dataset.head, 10);
-            if (Number.isNaN(head) || head < 0) return;
+        // Navigation = shared between desktop click + mobile short-tap.
+        const navigateBC = async (head) => {
             if (self._hoverSnapshot) {
                 if (self.elements.textarea) self.elements.textarea.value = self._hoverSnapshot.body;
                 self._hoverSnapshot = null;
             }
             lockReaderSafe(false);
+            clearPeekMarker();
             if (self.isOwnerMode) {
                 await self.save(self.elements.textarea?.value ?? '');
                 self.state.isVirtual = false;
@@ -363,6 +361,111 @@ export const BCChannel = {
                 self.readerHead = head;
                 self.syncReaderView();
             }
+        };
+
+        $rail?.addEventListener('click', async (e) => {
+            const block = e.target.closest('.page-preview-block');
+            if (!block) return;
+            const head = parseInt(block.dataset.head, 10);
+            if (Number.isNaN(head) || head < 0) return;
+            await navigateBC(head);
+        });
+
+        // --- Mobile long-press + touchmove (same shape as BB) -------
+        let touchTimer = null;
+        let touchStartPos = null;
+        let inTouchPeek = false;
+
+        const clearPeekMarker = () => {
+            $rail?.querySelectorAll('.peeking').forEach(el => el.classList.remove('peeking'));
+        };
+
+        const peekFromPoint = (x, y) => {
+            const el = document.elementFromPoint(x, y);
+            return el?.closest?.('.page-preview-block') || null;
+        };
+
+        const applyPeek = (block) => {
+            if (!block) return;
+            const head = parseInt(block.dataset.head, 10);
+            if (Number.isNaN(head) || head < 0) return;
+            const rec = self._previewRailCache[head];
+            if (!rec) return;
+            clearPeekMarker();
+            block.classList.add('peeking');
+            if (self.elements.textarea) self.elements.textarea.value = rec.text || '';
+        };
+
+        $rail?.addEventListener('touchstart', (e) => {
+            const block = e.target.closest('.page-preview-block');
+            if (!block) return;
+            const touch = e.touches[0];
+            touchStartPos = { x: touch.clientX, y: touch.clientY };
+            touchTimer = setTimeout(() => {
+                touchTimer = null;
+                inTouchPeek = true;
+                if (self.isOwnerMode && document.activeElement === self.elements.textarea) return;
+                self._hoverSnapshot = { body: self.elements.textarea?.value ?? '' };
+                lockReaderSafe(true);
+                applyPeek(block);
+            }, 300);
+        }, { passive: true });
+
+        $rail?.addEventListener('touchmove', (e) => {
+            const touch = e.touches[0];
+            if (touchTimer && touchStartPos) {
+                const dx = touch.clientX - touchStartPos.x;
+                const dy = touch.clientY - touchStartPos.y;
+                if (dx * dx + dy * dy > 100) {
+                    clearTimeout(touchTimer);
+                    touchTimer = null;
+                    return;
+                }
+            }
+            if (!inTouchPeek) return;
+            applyPeek(peekFromPoint(touch.clientX, touch.clientY));
+        }, { passive: true });
+
+        $rail?.addEventListener('touchend', async (e) => {
+            if (touchTimer) {
+                clearTimeout(touchTimer);
+                touchTimer = null;
+                const t = e.changedTouches[0];
+                const block = peekFromPoint(t.clientX, t.clientY);
+                if (block) {
+                    const head = parseInt(block.dataset.head, 10);
+                    if (!Number.isNaN(head) && head >= 0) {
+                        e.preventDefault();
+                        await navigateBC(head);
+                    }
+                }
+                touchStartPos = null;
+                return;
+            }
+            if (inTouchPeek) {
+                inTouchPeek = false;
+                if (self._hoverSnapshot) {
+                    if (self.elements.textarea) self.elements.textarea.value = self._hoverSnapshot.body;
+                    self._hoverSnapshot = null;
+                }
+                lockReaderSafe(false);
+                clearPeekMarker();
+            }
+            touchStartPos = null;
+        });
+
+        $rail?.addEventListener('touchcancel', () => {
+            if (touchTimer) { clearTimeout(touchTimer); touchTimer = null; }
+            if (inTouchPeek) {
+                inTouchPeek = false;
+                if (self._hoverSnapshot) {
+                    if (self.elements.textarea) self.elements.textarea.value = self._hoverSnapshot.body;
+                    self._hoverSnapshot = null;
+                }
+                lockReaderSafe(false);
+                clearPeekMarker();
+            }
+            touchStartPos = null;
         });
     },
 

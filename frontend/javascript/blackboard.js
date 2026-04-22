@@ -870,20 +870,134 @@ $previewRail?.addEventListener('mouseleave', () => {
     lockEditors(false);
 });
 
-$previewRail?.addEventListener('click', async (e) => {
-    const block = e.target.closest('.page-preview-block');
-    if (!block) return;
-    const head = parseInt(block.dataset.head, 10);
-    if (Number.isNaN(head) || head < 0) return;
+async function _navigateToHead(head) {
     if (_hoverSnapshot) {
         BBUI.setTextarea(_hoverSnapshot.body);
         _hoverSnapshot = null;
     }
     lockEditors(false);
+    _clearPeekMarker();
     await BBVCS.save(state, BBUI.getTextareaValue());
     state.isVirtual = false;
     state.currentHead = head;
     await syncView();
+}
+
+$previewRail?.addEventListener('click', async (e) => {
+    const block = e.target.closest('.page-preview-block');
+    if (!block) return;
+    const head = parseInt(block.dataset.head, 10);
+    if (Number.isNaN(head) || head < 0) return;
+    await _navigateToHead(head);
+});
+
+// Mobile touch: long-press enters preview mode (300 ms), `touchmove`
+// tracks the block under the finger via `elementFromPoint` (mirrors the
+// desktop hover semantic where moving over a block swaps the preview),
+// and `touchend` restores the snapshot. A release *before* 300 ms falls
+// through as a click → navigation. `touch-action: none` on the rail
+// (CSS) keeps the browser from hijacking this gesture for scrolling.
+let _touchTimer = null;
+let _touchStartPos = null;
+let _inTouchPeek = false;
+
+function _clearPeekMarker() {
+    $previewRail?.querySelectorAll('.peeking').forEach(el => el.classList.remove('peeking'));
+}
+
+function _peekBlockFromPoint(x, y) {
+    const el = document.elementFromPoint(x, y);
+    return el?.closest?.('.page-preview-block') || null;
+}
+
+function _applyPeek(block) {
+    if (!block) return;
+    const head = parseInt(block.dataset.head, 10);
+    if (Number.isNaN(head) || head < 0) return;
+    const rec = _previewRailCache[head];
+    if (!rec) return;
+    _clearPeekMarker();
+    block.classList.add('peeking');
+    BBUI.setTextarea(rec.text || '');
+}
+
+$previewRail?.addEventListener('touchstart', (e) => {
+    const block = e.target.closest('.page-preview-block');
+    if (!block) return;
+    const touch = e.touches[0];
+    _touchStartPos = { x: touch.clientX, y: touch.clientY };
+    _touchTimer = setTimeout(() => {
+        _touchTimer = null;
+        _inTouchPeek = true;
+        if (document.activeElement === BBUI.elements.textarea) return;
+        _hoverSnapshot = { body: BBUI.elements.textarea?.value ?? '' };
+        lockEditors(true);
+        _applyPeek(block);
+    }, 300);
+}, { passive: true });
+
+$previewRail?.addEventListener('touchmove', (e) => {
+    const touch = e.touches[0];
+    // If the user drags before the peek timer fires, cancel the peek
+    // (treat as a scroll gesture). Threshold 10 px matches native
+    // click-vs-drag disambiguation.
+    if (_touchTimer && _touchStartPos) {
+        const dx = touch.clientX - _touchStartPos.x;
+        const dy = touch.clientY - _touchStartPos.y;
+        if (dx * dx + dy * dy > 100) {
+            clearTimeout(_touchTimer);
+            _touchTimer = null;
+            return;
+        }
+    }
+    if (!_inTouchPeek) return;
+    const block = _peekBlockFromPoint(touch.clientX, touch.clientY);
+    _applyPeek(block);
+}, { passive: true });
+
+$previewRail?.addEventListener('touchend', async (e) => {
+    if (_touchTimer) {
+        clearTimeout(_touchTimer);
+        _touchTimer = null;
+        // Short tap — treat as click navigate. Find the block the
+        // original touchstart was on via the changedTouches final
+        // position (touchend has no e.touches).
+        const t = e.changedTouches[0];
+        const block = _peekBlockFromPoint(t.clientX, t.clientY);
+        if (block) {
+            const head = parseInt(block.dataset.head, 10);
+            if (!Number.isNaN(head) && head >= 0) {
+                e.preventDefault();
+                await _navigateToHead(head);
+            }
+        }
+        _touchStartPos = null;
+        return;
+    }
+    if (_inTouchPeek) {
+        _inTouchPeek = false;
+        if (_hoverSnapshot) {
+            BBUI.setTextarea(_hoverSnapshot.body);
+            _hoverSnapshot = null;
+        }
+        lockEditors(false);
+        _clearPeekMarker();
+    }
+    _touchStartPos = null;
+});
+
+$previewRail?.addEventListener('touchcancel', () => {
+    if (_touchTimer) { clearTimeout(_touchTimer); _touchTimer = null; }
+    if (_inTouchPeek) {
+        _inTouchPeek = false;
+        if (_hoverSnapshot) {
+            BBUI.setTextarea(_hoverSnapshot.body);
+            _hoverSnapshot = null;
+        }
+        lockEditors(false);
+        _clearPeekMarker();
+    }
+    _touchStartPos = null;
 });
 
 // 監聯分支更名事件

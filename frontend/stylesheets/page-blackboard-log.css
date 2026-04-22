@@ -100,26 +100,40 @@
     gap: 8px;
 }
 
+/* Tier 19 — Preview rail redesigned for touch.
+   48px wide = Material-Design minimum touch target. Alternating bg
+   gives clear per-block separation so users can see block boundaries
+   before hovering. Active block uses a 6px brand left-border accent
+   so the current head is unmistakable. */
 .page-preview-rail {
     flex-shrink: 0;
-    width: 12px;
+    width: 48px;
     flex-direction: column;
-    gap: 2px;
+    gap: 6px;
     padding: 0;
+    touch-action: none;  /* let our touchmove own the gesture */
 }
 
 .page-preview-block {
     flex: 1;
-    min-height: 6px;
+    min-height: 12px;
     background: var(--bg-secondary);
-    border-left: 3px solid transparent;
+    border: 2px solid var(--border-subtle);
+    border-left: 6px solid transparent;
     cursor: pointer;
     transition: border-color var(--transition-normal), background var(--transition-normal);
 }
 
-.page-preview-block:hover {
+/* Alternating colour block so neighbours are visually distinct even
+   when the rail is dense. Even-indexed blocks tint toward brand. */
+.page-preview-block:nth-child(even) {
     background: var(--bg-card);
-    border-left-color: var(--text-muted);
+}
+
+.page-preview-block:hover,
+.page-preview-block.peeking {
+    background: var(--brand);
+    border-left-color: var(--brand-dark);
 }
 
 .page-preview-block.active {
@@ -131,7 +145,7 @@
     border-left-color: var(--accent);
     background: transparent;
     border-style: dashed;
-    border-width: 0 0 0 3px;
+    border-width: 0 0 0 6px;
 }
 
 #log-textarea {

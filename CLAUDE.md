@@ -721,7 +721,14 @@ Topic input was proposed in Tier 11 part 1 and reverted in Tier 11.5 per stakeho
 - `_previewRailCache` backs the hover lookup so mouseover doesn't hit IndexedDB per enter.
 - **Active-element guard on first entry**: if the user is already typing when the mouse enters, no snapshot + no overwrite — peek is inert.
 
-**Mobile**: deferred to Tier 19 (48 px blocks + alternating colours + `touchstart` long-press + `touchmove elementFromPoint` tracking). Tier 11.5 ships desktop hover only.
+**Mobile (Tier 19)**:
+- Block width 48 px (Material-Design touch minimum), gap 6 px, border-left 6 px.
+- Alternating `:nth-child(even)` `--bg-card` tint so neighbouring blocks read as distinct targets even when the rail is dense.
+- `touchstart` on a block starts a 300 ms timer. A release before the timer fires is a short tap → navigate (same handler as desktop `click`). Holding past 300 ms enters **preview mode**: snapshot textarea, lock `readOnly`, paint the tapped block's content.
+- `touchmove` during preview mode resolves the block under the finger via `document.elementFromPoint(clientX, clientY)` → `closest('.page-preview-block')` and swaps the preview. This mirrors desktop `mouseover` + `mouseout` semantics, which aren't fired during touch. Mid-gesture drag > 10 px before the timer cancels the peek (treated as a scroll — user was reaching past the rail).
+- `touchend` / `touchcancel` restore the snapshot, unlock, and clear the `.peeking` marker.
+- `.page-preview-rail { touch-action: none }` in CSS prevents the browser from hijacking the gesture for scrolling.
+- `.peeking` class marks the block currently being previewed; desktop `:hover` uses the same visual so the two input paths converge on the same style.
 
 ### Toast & Messages
 
