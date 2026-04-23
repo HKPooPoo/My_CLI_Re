@@ -292,19 +292,33 @@ function navigate(direction) {
     const deck = _currentDeck;
     if (!deck || deck.cards.length === 0) return;
     const n = deck.cards.length;
+    const curr = deck.playState.currentIdx;
 
     if (deck.mode === 'sequential') {
-        const idx = deck.playState.currentIdx;
-        const next = (idx + direction + n) % n;
-        deck.playState.currentIdx = next;
+        deck.playState.currentIdx = (curr + direction + n) % n;
     } else {
-        // Tier 9d-3 will add proper random history stack; stub with
-        // pure-random until then.
-        let next = Math.floor(Math.random() * n);
-        if (n > 1 && next === deck.playState.currentIdx) {
-            next = (next + 1) % n;
+        // Random mode with 10-deep history stack.
+        //   NEWER (+1): push current, pick random != current.
+        //   OLDER (-1): pop from history; empty stack → random pick.
+        const hist = Array.isArray(deck.playState.randomHistory)
+            ? deck.playState.randomHistory : [];
+        if (direction === +1) {
+            hist.push(curr);
+            if (hist.length > 10) hist.shift();
+            let next = Math.floor(Math.random() * n);
+            if (n > 1 && next === curr) next = (next + 1) % n;
+            deck.playState.currentIdx = next;
+        } else {
+            if (hist.length > 0) {
+                deck.playState.currentIdx = hist.pop();
+            } else {
+                // Empty history → fall back to a fresh random pick.
+                let next = Math.floor(Math.random() * n);
+                if (n > 1 && next === curr) next = (next + 1) % n;
+                deck.playState.currentIdx = next;
+            }
         }
-        deck.playState.currentIdx = next;
+        deck.playState.randomHistory = hist;
     }
     deck.playState.face = 'front';
     saveDeck(_currentScope, _currentDeck);
@@ -346,10 +360,51 @@ function wirePlayerEvents() {
     $nextBtn()?.addEventListener('click', () => navigate(+1));
     $closeBtn()?.addEventListener('click', closePlayer);
 
-    // ESC closes (9d-3 adds arrow keys + Space-to-flip)
+    // Tier 9d-3 — keyboard: arrows navigate, space flips, ESC closes.
+    // Bound to document so focus doesn't need to be on the overlay.
     document.addEventListener('keydown', (e) => {
         if (!_playerOpen) return;
-        if (e.key === 'Escape') { e.preventDefault(); closePlayer(); }
+        // Avoid hijacking keys when user is typing elsewhere (shouldn't
+        // happen in the player — textarea-less — but defensive).
+        const target = e.target;
+        if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA')) return;
+        if (e.key === 'Escape')     { e.preventDefault(); closePlayer(); }
+        else if (e.key === 'ArrowLeft')  { e.preventDefault(); navigate(-1); }
+        else if (e.key === 'ArrowRight') { e.preventDefault(); navigate(+1); }
+        else if (e.key === ' ')     { e.preventDefault(); flipCard(); }
+    });
+
+    // Tier 9d-3 — mobile swipe on the card: horizontal gesture > 50 px
+    // navigates; a lone tap (< 10 px movement) falls through to the
+    // click handler → flip. Vertical swipes are ignored so the user
+    // can still scroll the page behind the overlay (well, not while
+    // the overlay's open, but doesn't hurt).
+    let touchStartX = null, touchStartY = null, touchMoved = false;
+    const card = $card();
+    card?.addEventListener('touchstart', (e) => {
+        const t = e.touches[0];
+        touchStartX = t.clientX; touchStartY = t.clientY;
+        touchMoved = false;
+    }, { passive: true });
+    card?.addEventListener('touchmove', (e) => {
+        if (touchStartX == null) return;
+        const t = e.touches[0];
+        const dx = Math.abs(t.clientX - touchStartX);
+        const dy = Math.abs(t.clientY - touchStartY);
+        if (dx > 10 || dy > 10) touchMoved = true;
+    }, { passive: true });
+    card?.addEventListener('touchend', (e) => {
+        if (touchStartX == null) return;
+        const t = e.changedTouches[0];
+        const dx = t.clientX - touchStartX;
+        const dy = t.clientY - touchStartY;
+        touchStartX = null; touchStartY = null;
+        if (!touchMoved) return;  // small movement → browser click fires flip
+        // Horizontal dominant + > 50 px → navigate; otherwise ignore
+        if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy)) {
+            e.preventDefault();
+            navigate(dx > 0 ? -1 : +1);  // swipe-right = OLDER, swipe-left = NEWER
+        }
     });
 }
 
