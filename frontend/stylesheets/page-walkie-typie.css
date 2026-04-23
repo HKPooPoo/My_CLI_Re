@@ -246,12 +246,12 @@
    with no margin, so the default top-right corner places the button
    ON the textarea. Shift it upward with a negative top offset so the
    button protrudes above the textarea into the gap between push-btn
-   and the editor-wrapper. `right: 8px` because WT page has no
+   and the editor-wrapper. `right: -48px` because WT page has no
    feature-container buttons on it, so no need for the
    `var(--sub-navi-height)` clearance other boards use. */
 #wt-delete-page-btn {
-    top: -18px;
-    right: 8px;
+    top: 0px;
+    right: -48px;
 }
 
 .page[data-page="walkie-typie-text"].swapped {
