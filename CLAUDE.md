@@ -347,8 +347,9 @@ Log section; every new user decision gets appended with a date.
     - `frontend/javascript/content-search.js` — shared helper
       `attachContentSearch({ root, getRecords, getCurrentHead,
       navigateTo })`. Creates a 36 px circular magnifying-glass
-      toggle button (top-left of `editor-wrapper`), expands to a
-      pill with input + prev (◀) + next (▶) + `N/M` match count.
+      toggle button anchored at the **textarea's bottom-left corner
+      (inside the textarea's visible area)**; expands to a pill
+      with input + prev (◀) + next (▶) + `N/M` match count.
     - **Keyboard contract**: Enter = next match, Shift+Enter = prev,
       Esc = collapse. Click anywhere outside the pill also collapses.
     - **Match anchoring**: on open (or after each input change), if
@@ -379,11 +380,13 @@ Log section; every new user decision gets appended with a date.
       `.editor-search > .editor-search-toggle + .editor-search-pill`
       to the editor-wrapper). `index.html` is untouched — adding the
       feature to a new editor is a one-liner.
-    - **Positioning contract**: `.editor-search` is `position: absolute;
-      top: 8px; left: 8px` inside `.editor-wrapper`. BB and BC override
-      `.page-preview-rail { padding-top: 44px }` so the rail's first
-      preview block clears the circular toggle. WT has no rail so no
-      padding needed there.
+    - **Positioning contract**: `.editor-search` uses the same offset
+      math as `.drop-overlay` so the search button and the drop
+      frame agree on where the textarea visually starts. WT:
+      `bottom: calc(4vh + 0.4rem + 8px); left: calc(8vw + 8px)`.
+      BB / BC override `left: calc(8vw + 56px + 8px)` to skip past
+      the 48 px preview rail + 8 px gap. No `padding-top` on the
+      rail is needed anymore (the button left the top-left corner).
     - **i18n**: `search.placeholder` for the input; `hints.search.open
       / prev / next` for the three button hints.
 

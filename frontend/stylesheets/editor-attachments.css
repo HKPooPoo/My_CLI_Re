@@ -437,27 +437,34 @@ input.attachment-chip-name[readonly] {
 }
 
 /* --- Content Search pill (Tier 24) ---------------------------------- */
-/* Mirror of `.editor-actions` but anchored top-left. Collapsed state =
-   36 px circular icon button matching DELETE/RESET. Expanded state =
-   horizontal pill with input + prev/next + "N/M" count, expanding to
-   the RIGHT of the icon so the icon itself stays an anchor. */
+/* Sits INSIDE the textarea area at its bottom-left corner. Offsets use
+   the same math as `.drop-overlay` so the search button and the drop
+   frame agree on where the textarea visually starts:
+     top-of-textarea    = editor-wrapper top + (4vh + 0.4rem)
+     left-of-textarea   = editor-wrapper left + 8vw (WT) or 8vw + 56px (BB/BC rail)
+   `+ 8px` on top of those positions the button 8 px inside the
+   textarea's visible edge, matching where DELETE/RESET sit on the
+   opposite corner. Expanded state grows RIGHTWARD from the icon —
+   anchor stays put so the user's mental model of "search lives here"
+   survives open/close cycles.
+   Collapsed = 36 px circular icon; expanded = input + ◀/▶ + count. */
 .editor-search {
     position: absolute;
-    top: 8px;
-    left: 8px;
+    bottom: calc(4vh + 0.4rem + 8px);
+    left: calc(8vw + 8px);
     z-index: 2;
     flex-direction: row;
     align-items: center;
     gap: 4px;
 }
 
-/* BB / BC: preview rail lives directly under the editor-wrapper's top
-   edge. Push the first rail block down so the circular search button
-   doesn't overlap it. Rail top-padding only; gap between blocks is
-   unchanged so the overall cadence is preserved. */
-#bb-drop-zone .page-preview-rail,
-#bc-drop-zone .page-preview-rail {
-    padding-top: 44px;
+/* BB / BC: textarea sits to the right of the 48 px preview rail +
+   8 px gap = 56 px of editor-wrapper gutter. Push the search pill
+   past the rail so it still anchors to the textarea's left edge,
+   not the editor-wrapper's. */
+#bb-drop-zone .editor-search,
+#bc-drop-zone .editor-search {
+    left: calc(8vw + 56px + 8px);
 }
 
 /* Circular toggle button — same visual language as DELETE/RESET so
