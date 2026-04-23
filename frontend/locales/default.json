@@ -349,7 +349,10 @@
     "playComingSoon": "Player ships in the next tier — Maker is live now",
     "flipHint": "tap card to flip",
     "unavailable": "Open a notebook page first to start a deck here.",
-    "loading": "Loading flashcards…"
+    "loading": "Loading flashcards…",
+    "aiSuccess": "AI generated {count} flashcards — saved to this notebook",
+    "aiParseFail": "AI response wasn't valid flashcard JSON — try again",
+    "aiScopeMissing": "Open a notebook page before asking AI to create flashcards"
   },
   "config": {
     "autoSync": "AUTO SYNC",

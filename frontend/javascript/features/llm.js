@@ -15,7 +15,8 @@ import { BBState } from '../blackboard.js';
 import { BCChannel } from '../broadcast-channel.js';
 import { BBCore } from '../blackboard-core.js';
 import { BBMessage } from '../blackboard-msg.js';
-import { getSetting } from '../sync-service.js';
+import { getSetting, setSetting } from '../sync-service.js';
+import { t } from '../i18n.js';
 
 const ICON_URL = '/images/ai-tutor.svg';
 const MODEL = 'qwen3.5:4b';
@@ -56,6 +57,16 @@ const PROMPTS = [
         // calendar / all-past events) can be addressed with instructions
         // tailored to the actual data state. See composeSchedulePrompt.
         prompt: '__DYNAMIC_SCHEDULE__',
+    },
+    {
+        key: 'create_flashcards',
+        label: 'Create flashcards from this notebook / channel',
+        scope: 'branch',
+        prompt:
+            'Create 10–15 flashcards from the content below. Respond with ONLY a JSON array — no prose, no ' +
+            'markdown fence — in this exact shape: [{"front":"...","back":"..."}]. ' +
+            'FRONT should be a short question or term; BACK should be a concise answer or definition. ' +
+            'Cover the most important concepts. Skip trivial details. The content:',
     },
 ];
 
@@ -333,17 +344,77 @@ async function send() {
         setBusy(false);
     }
 
-    // Create-flashcards hook — Tier 9d will persist to per-branch storage.
-    // Detection stays general (any response shape with front/back pairs).
-    if (fullText.trim()) {
-        try {
-            const cleaned = fullText.trim().replace(/^```json\s*|\s*```$/g, '');
-            const parsed = JSON.parse(cleaned);
-            if (Array.isArray(parsed) && parsed.every(c => c?.front && c?.back)) {
-                BBMessage.success(`AI generated ${parsed.length} flashcards`);
-            }
-        } catch { /* not JSON */ }
+    // Tier 9d-4: Create-flashcards hook.
+    // Detection = "any response that parses as an array of {front,back}
+    // objects", even on non-create actions (resilient if user pastes a
+    // flashcard JSON and asks for summarisation — it just won't persist
+    // because we only persist when the chosen action is create_flashcards).
+    if (fullText.trim() && chosenKey === 'create_flashcards') {
+        const parsed = parseFlashcardsJson(fullText);
+        if (parsed && parsed.length > 0) {
+            persistFlashcards(parsed);
+        } else {
+            BBMessage.error(t('flashcards.aiParseFail'));
+        }
     }
+}
+
+/**
+ * Lenient JSON-array extractor. Small local models (qwen3.5:4b) often
+ * prepend a sentence before the JSON or wrap it in a ```json fence —
+ * this strips the common variants and tries JSON.parse on the first
+ * plausible `[ ... ]` slice. Returns null on any failure.
+ */
+function parseFlashcardsJson(raw) {
+    let text = raw.trim();
+    // Strip ```json fences
+    text = text.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '');
+    // Find the first `[` and the matching closing `]` at the outermost level.
+    const start = text.indexOf('[');
+    const end   = text.lastIndexOf(']');
+    if (start < 0 || end <= start) return null;
+    const slice = text.slice(start, end + 1);
+    try {
+        const arr = JSON.parse(slice);
+        if (!Array.isArray(arr)) return null;
+        const cards = arr
+            .map(c => ({
+                front: typeof c?.front === 'string' ? c.front.trim() : '',
+                back:  typeof c?.back  === 'string' ? c.back.trim()  : '',
+            }))
+            .filter(c => c.front || c.back);
+        return cards.length > 0 ? cards : null;
+    } catch { return null; }
+}
+
+/**
+ * Persist AI-generated cards into the current BB branch's flashcard
+ * deck (via sync-service). Preserves the user's existing mode +
+ * playState — only `cards` is replaced. BC scope persistence arrives
+ * in Tier 9e-2.
+ */
+function persistFlashcards(cards) {
+    const page = getCurrentPage();
+    if (page !== 'blackboard-log') {
+        BBMessage.info(t('flashcards.aiScopeMissing'));
+        return;
+    }
+    const branchId = BBState?.branchId;
+    if (!branchId) {
+        BBMessage.error(t('flashcards.aiScopeMissing'));
+        return;
+    }
+    const path = `branchAssets.${branchId}.flashcard`;
+    const existing = getSetting(path, {}) || {};
+    const next = {
+        cards,
+        mode: existing.mode || 'sequential',
+        playState: existing.playState || { currentIdx: 0, face: 'front', randomHistory: [] },
+    };
+    // Clamp currentIdx into the new range
+    if (next.playState.currentIdx >= cards.length) next.playState.currentIdx = 0;
+    setSetting(path, next);
+    BBMessage.success(t('flashcards.aiSuccess', { count: cards.length }));
 }
 
 // ── Feature contract ──────────────────────────────────────────────
