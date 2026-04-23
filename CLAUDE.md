@@ -343,6 +343,38 @@ Log section; every new user decision gets appended with a date.
       disk pending a future cleanup pass). Active set: `head / local /
       synced / asynced` (4 files).
 
+17. **Tier 9d — BB Flashcards (Maker + Player + LLM)**.
+    - `frontend/javascript/features/flashcard.js` — full BB impl.
+      Data lives at `users.settings.branchAssets.{branchId}.flashcard =
+      { cards: [{front, back}, ...], mode, playState }`, synced via
+      sync-service (cross-device). No backend work.
+    - **Maker (shelf)**: FRONT + BACK inputs + ADD (Enter commits) ·
+      mode toggle (SEQUENTIAL / RANDOM) · card list with × remove ·
+      PLAY (primary brand button, disabled when empty) · RESET ALL
+      (self-contained 3-click destructive, reuses `.btn-armed`).
+    - **Player (full-page overlay)**: uses `#press-start-overlay`
+      with new `.flashcard-mode` class — mutually exclusive with
+      `.dashboard-mode`. Card has CSS 3D-flip (`rotateY(180deg)` when
+      `.is-flipped`). Sequential: `idx = (idx ± 1) mod n`. Random:
+      10-deep history stack — NEWER pushes + random-picks, OLDER
+      pops; empty stack falls back to random. playState + face
+      persist immediately via sync-service.
+    - **Input map**: card click = flip; Prev/Next buttons or
+      keyboard `←` / `→` = navigate; `Space` = flip; `Esc` = close.
+      Mobile touch: swipe right = OLDER, swipe left = NEWER (> 50 px
+      horizontal, dominant over vertical, tap with < 10 px movement
+      falls through to click→flip).
+    - **LLM "Create flashcards" action** (`features/llm.js`):
+      new prompt key `create_flashcards`, scope = 'branch'. Lenient
+      JSON extractor (`parseFlashcardsJson`) strips `” ```json ”`
+      fences + isolates first `[...]` slice. Persists to current
+      BB branch deck, preserving user's mode + playState. Only
+      persists when chosen action IS `create_flashcards` (guards
+      against overwriting deck if user pastes JSON into summarise
+      by accident).
+    - Press-start-overlay click-dismiss now guards both
+      `.dashboard-mode` AND `.flashcard-mode`.
+
 16. **Tier 22.12 — icon buttons + width-hover + grip visibility**.
     - **DELETE PAGE + RESET** became **circular icon buttons** (36 px
       round). SVG icons via mask: `btn-delete.svg` (trash can) and
