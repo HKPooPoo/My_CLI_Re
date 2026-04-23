@@ -245,12 +245,112 @@ function attachResetBtn($btn) {
     });
 }
 
-// ── Player overlay (Tier 9d-2) — stub; real overlay ships next tier
-//    when the press-start-overlay gets the .flashcard-mode class. ────
+// ── Player overlay (Tier 9d-2) ─────────────────────────────────────
+// Uses #press-start-overlay with .flashcard-mode class (same multi-
+// modal pattern dashboard already uses). Sequential navigation wired
+// here; random mode handler lands in Tier 9d-3 alongside keyboard +
+// mobile swipe support.
+
+const $overlay      = () => document.getElementById('press-start-overlay');
+const $card         = () => document.getElementById('flashcard-card');
+const $frontFace    = () => document.querySelector('#flashcard-card .flashcard-face-front');
+const $backFace     = () => document.querySelector('#flashcard-card .flashcard-face-back');
+const $counter      = () => document.getElementById('flashcard-counter');
+const $modeLabel    = () => document.getElementById('flashcard-mode-label');
+const $prevBtn      = () => document.getElementById('flashcard-prev-btn');
+const $nextBtn      = () => document.getElementById('flashcard-next-btn');
+const $closeBtn     = () => document.getElementById('flashcard-close-btn');
+
+let _playerOpen = false;
+
+function paintCard() {
+    const deck = _currentDeck;
+    if (!deck || deck.cards.length === 0) return;
+    const idx = Math.min(deck.playState.currentIdx, deck.cards.length - 1);
+    const card = deck.cards[idx];
+    if ($frontFace()) $frontFace().textContent = card.front || '';
+    if ($backFace())  $backFace().textContent  = card.back  || '';
+    if ($counter())   $counter().textContent   = `${idx + 1} / ${deck.cards.length}`;
+    if ($modeLabel()) $modeLabel().textContent = deck.mode === 'random'
+        ? t('flashcards.modeRandom')
+        : t('flashcards.modeSequential');
+
+    // Reset flip state when navigating to a new card
+    if ($card()) $card().classList.toggle('is-flipped', deck.playState.face === 'back');
+}
+
+function flipCard() {
+    if (!_currentDeck || _currentDeck.cards.length === 0) return;
+    const next = _currentDeck.playState.face === 'front' ? 'back' : 'front';
+    _currentDeck.playState.face = next;
+    saveDeck(_currentScope, _currentDeck);
+    if ($card()) $card().classList.toggle('is-flipped', next === 'back');
+}
+
+function navigate(direction) {
+    // direction: +1 = NEWER/forward, -1 = OLDER/backward
+    const deck = _currentDeck;
+    if (!deck || deck.cards.length === 0) return;
+    const n = deck.cards.length;
+
+    if (deck.mode === 'sequential') {
+        const idx = deck.playState.currentIdx;
+        const next = (idx + direction + n) % n;
+        deck.playState.currentIdx = next;
+    } else {
+        // Tier 9d-3 will add proper random history stack; stub with
+        // pure-random until then.
+        let next = Math.floor(Math.random() * n);
+        if (n > 1 && next === deck.playState.currentIdx) {
+            next = (next + 1) % n;
+        }
+        deck.playState.currentIdx = next;
+    }
+    deck.playState.face = 'front';
+    saveDeck(_currentScope, _currentDeck);
+    paintCard();
+}
 
 function openPlayer() {
-    // Placeholder toast so Maker is usable on its own while 9d-2 lands.
-    BBMessage.info(t('flashcards.playComingSoon'));
+    if (_currentDeck.cards.length === 0) return;
+    const ov = $overlay();
+    if (!ov) return;
+    // Mutually-exclusive with dashboard-mode: dismiss it explicitly
+    // so the two panels never stack.
+    ov.classList.remove('dashboard-mode');
+    ov.classList.add('flashcard-mode');
+    ov.style.display = 'flex';
+    _playerOpen = true;
+    paintCard();
+    wirePlayerEvents();
+}
+
+function closePlayer() {
+    const ov = $overlay();
+    if (!ov) return;
+    ov.classList.remove('flashcard-mode');
+    ov.style.display = 'none';
+    _playerOpen = false;
+    // Defensive: drop any stray 'is-flipped' so next session starts
+    // on the front regardless of last saved face.
+    $card()?.classList.remove('is-flipped');
+}
+
+let _playerWired = false;
+function wirePlayerEvents() {
+    if (_playerWired) return;
+    _playerWired = true;
+
+    $card()?.addEventListener('click', flipCard);
+    $prevBtn()?.addEventListener('click', () => navigate(-1));
+    $nextBtn()?.addEventListener('click', () => navigate(+1));
+    $closeBtn()?.addEventListener('click', closePlayer);
+
+    // ESC closes (9d-3 adds arrow keys + Space-to-flip)
+    document.addEventListener('keydown', (e) => {
+        if (!_playerOpen) return;
+        if (e.key === 'Escape') { e.preventDefault(); closePlayer(); }
+    });
 }
 
 // ── Feature module export ──────────────────────────────────────────

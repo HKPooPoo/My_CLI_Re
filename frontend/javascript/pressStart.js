@@ -67,10 +67,12 @@ window.addEventListener("focus", () => {
  */
 overlay.addEventListener("click", () => {
     if (overlay.style.display === "none" || justGainedFocus) return;
-    // Dashboard mode: overlay shares DOM with press-start, but clicks
-    // inside it must not trigger the splash-dismiss + nav-restore
-    // flow. Dashboard-internal click handling lives in dashboard.js.
+    // Multi-mode guard: overlay DOM is shared with dashboard (Tier 12)
+    // and flashcard player (Tier 9d-2). Clicks in either mode must NOT
+    // trigger the splash-dismiss + nav-restore flow — each mode's own
+    // close handler owns cleanup.
     if (overlay.classList.contains("dashboard-mode")) return;
+    if (overlay.classList.contains("flashcard-mode")) return;
     overlay.dataset.handled = '1';
 
     // Session changed in another tab → reload instead of the standard
