@@ -231,7 +231,7 @@ export const AuthManager = {
             new MultiStepButton(this.elements.registerBtn, {
                 sound: "Click.mp3",
                 fireSound: "Cassette.mp3",
-                steps: 3,
+                steps: 1,
                 timeout: 4000,
                 action: async () => {
                     const uid = this.elements.uidInput.value.trim();
@@ -270,7 +270,7 @@ export const AuthManager = {
         if (this.elements.logoutBtn) {
             new MultiStepButton(this.elements.logoutBtn, {
                 sound: "UISelectOff.mp3",
-                steps: 3,
+                steps: 1,
                 action: async () => {
                     const msg = BBMessage.loading(t('auth.loggingOut'));
                     try {
@@ -349,7 +349,7 @@ export const AuthManager = {
         if (this.elements.emailBindBtn) {
             new MultiStepButton(this.elements.emailBindBtn, {
                 sound: 'UIGeneralFocus.mp3',
-                steps: 3,
+                steps: 1,
                 action: async () => {
                     const input = this.elements.emailInput.value.trim();
                     if (!input) return BBMessage.error(t('auth.emailRequired'));
@@ -398,7 +398,7 @@ export const AuthManager = {
         if (this.elements.unbindEmailBtn) {
             new MultiStepButton(this.elements.unbindEmailBtn, {
                 sound: 'UISelectOff.mp3',
-                steps: 3,
+                steps: 1,
                 action: async () => {
                     const passcode = this.elements.confirmPasscodeInput?.value?.trim();
                     if (!passcode) {
@@ -432,7 +432,7 @@ export const AuthManager = {
         if (this.elements.deleteAccountBtn) {
             new MultiStepButton(this.elements.deleteAccountBtn, {
                 sound: 'UISelectOff.mp3',
-                steps: 3,
+                steps: 1,
                 action: async () => {
                     const passcode = this.elements.confirmPasscodeInput?.value?.trim();
                     if (!passcode) {

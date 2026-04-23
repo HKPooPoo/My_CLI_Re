@@ -343,22 +343,29 @@ Log section; every new user decision gets appended with a date.
       disk pending a future cleanup pass). Active set: `head / local /
       synced / asynced` (4 files).
 
-17. **Tier 9d — BB Flashcards (Maker + Player + LLM)**.
+17. **Tier 9d + 22.14 — BB Flashcards (shelf-local Maker + Player)**.
     - `frontend/javascript/features/flashcard.js` — full BB impl.
       Data lives at `users.settings.branchAssets.{branchId}.flashcard =
       { cards: [{front, back}, ...], mode, playState }`, synced via
       sync-service (cross-device). No backend work.
     - **Maker (shelf)**: FRONT + BACK inputs + ADD (Enter commits) ·
-      mode toggle (SEQUENTIAL / RANDOM) · card list with × remove ·
-      PLAY (primary brand button, disabled when empty) · RESET ALL
-      (self-contained 3-click destructive, reuses `.btn-armed`).
-    - **Player (full-page overlay)**: uses `#press-start-overlay`
-      with new `.flashcard-mode` class — mutually exclusive with
-      `.dashboard-mode`. Card has CSS 3D-flip (`rotateY(180deg)` when
-      `.is-flipped`). Sequential: `idx = (idx ± 1) mod n`. Random:
-      10-deep history stack — NEWER pushes + random-picks, OLDER
-      pops; empty stack falls back to random. playState + face
-      persist immediately via sync-service.
+      card list with × remove · PLAY (primary brand button,
+      disabled when empty) · RESET ALL (**1-click** destructive —
+      Tier 22.14 dropped all 3-step arming project-wide).
+    - **Player lives INSIDE the same shelf panel** (Tier 22.14 —
+      no more `#press-start-overlay` takeover). Toggled by a `_view`
+      state variable: clicking PLAY calls `renderPlayer()`, which
+      replaces the Maker HTML with Player HTML in the same shelf
+      root. A `⟵ BACK` button on the Player top row returns to the
+      Maker view. Less stacking + no overlay state to thrash.
+    - **Mode toggle is a single button on the Player**, not Maker:
+      `[ SEQUENTIAL ⟳ ]`. Label shows the CURRENT mode; click flips
+      to the other (history stack resets when entering random).
+    - Card CSS 3D-flip (`rotateY(180deg)` when `.is-flipped`).
+      Sequential: `idx = (idx ± 1) mod n`. Random: 10-deep history
+      stack — NEWER pushes + random-picks, OLDER pops; empty stack
+      falls back to random. `playState` + `face` persist
+      immediately via sync-service.
     - **Input map**: card click = flip; Prev/Next buttons or
       keyboard `←` / `→` = navigate; `Space` = flip; `Esc` = close.
       Mobile touch: swipe right = OLDER, swipe left = NEWER (> 50 px

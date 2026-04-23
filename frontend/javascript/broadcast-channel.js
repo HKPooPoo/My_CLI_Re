@@ -1019,7 +1019,7 @@ const $bcDeleteBtn = document.getElementById('bc-delete-page-btn');
 if ($bcDeleteBtn) {
     new MultiStepButton($bcDeleteBtn, {
         sound: "Click.mp3",
-        steps: 3,
+        steps: 1,
         action: async () => {
             const activePage = document.querySelector('.page.active');
             if (activePage?.dataset?.page !== 'broadcast-channel') return;
@@ -1065,7 +1065,7 @@ const $bcResetBtn = document.getElementById('bc-reset-btn');
 if ($bcResetBtn) {
     new MultiStepButton($bcResetBtn, {
         sound: "Click.mp3",
-        steps: 3,
+        steps: 1,
         action: async () => {
             const activePage = document.querySelector('.page.active');
             if (activePage?.dataset?.page !== 'broadcast-channel') return;

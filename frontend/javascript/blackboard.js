@@ -501,7 +501,7 @@ const $bbDeleteBtn = document.getElementById('bb-delete-page-btn');
 if ($bbDeleteBtn) {
     new MultiStepButton($bbDeleteBtn, {
         sound: "Click.mp3",
-        steps: 3,
+        steps: 1,
         action: async () => {
             if (!isBlackboardPageActive()) return;
             if (state.isVirtual) {
@@ -587,7 +587,7 @@ if (BBUI.elements.branchBtn) {
 if (BBUI.elements.commitBtn) {
     new MultiStepButton(BBUI.elements.commitBtn, {
         sound: "UIPipboyOKPress.mp3",
-        steps: 3,
+        steps: 1,
         action: async () => {
             BBSync.cancelPendingCommit();
             const selected = getSelectedBranchInfo();
@@ -674,7 +674,7 @@ if (checkoutBtnEl) {
         // SWITCH just moves the editor pointer to another branch; if the
         // new branch is local, no data is destroyed; if it's remote, the
         // initial fetch is a read, not an overwrite. 1-click.
-        steps: () => currentCheckoutAction === 'checkout' ? 3 : 1,
+        steps: 1,
         dynamicLabel: true,
         action: async () => {
             if (!currentCheckoutAction) return;
@@ -778,7 +778,7 @@ async function updateDropButtonState() {
 if (dropBtnEl) {
     dropMsb = new MultiStepButton(dropBtnEl, {
         sound: "UIGeneralCancel.mp3",
-        steps: () => currentDropAction === 'clean' ? 3 : 1,
+        steps: 1,
         dynamicLabel: true,
         action: async () => {
             if (!currentDropAction) return;

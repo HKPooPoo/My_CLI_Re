@@ -1,22 +1,21 @@
 /**
- * Feature: Flashcard Maker + Player
+ * Feature: Flashcard Maker + Player (shelf-local)
  * =================================================================
- * Tier 9d-1: BB Maker in shelf; data persisted via sync-service
- *            at users.settings.branchAssets[branchId].flashcard.
- * Tier 9d-2: Player overlay (press-start-overlay + .flashcard-mode).
- * Tier 9e : BC owner/subscriber flashcards (separate tier — uses
- *            broadcast_channels.flashcards JSONB via cast cadence).
+ * Tier 9d-5 (revised from 9d-2): Player no longer takes over the
+ * press-start-overlay — it lives INSIDE the same shelf panel as
+ * the Maker, toggled by the PLAY / BACK controls. Keeps the user
+ * inside one UI surface (less context-switch, fewer stacking
+ * layers to debug).
  *
- * Data shape:
+ * Data shape (unchanged):
  *     {
  *         cards: [{ front, back }, ...],
  *         mode:  "sequential" | "random",
  *         playState: { currentIdx, face, randomHistory }
  *     }
  *
- * BB path uses sync-service (cross-device).  BC cast-bundle path is
- * added in Tier 9e-2 — this module already branches on the active
- * page so that extension plugs in cleanly.
+ * BB path uses sync-service (cross-device). BC extension point
+ * stays in resolveScope(); Tier 9e-2 will populate it.
  * =================================================================
  */
 
@@ -55,14 +54,13 @@ function normaliseDeck(raw) {
         deck.playState.face = (ps.face === 'back') ? 'back' : 'front';
         deck.playState.randomHistory = Array.isArray(ps.randomHistory) ? ps.randomHistory.slice(-10) : [];
     }
-    // Clamp currentIdx to valid range
     if (deck.cards.length === 0) deck.playState.currentIdx = 0;
     else if (deck.playState.currentIdx >= deck.cards.length) deck.playState.currentIdx = deck.cards.length - 1;
     else if (deck.playState.currentIdx < 0) deck.playState.currentIdx = 0;
     return deck;
 }
 
-// ── Context: which board + which scope ─────────────────────────────
+// ── Context ────────────────────────────────────────────────────────
 
 function getActivePage() {
     return document.querySelector('.page.active')?.dataset.page || null;
@@ -75,11 +73,8 @@ function resolveScope() {
         if (!branchId) return null;
         return { kind: 'bb', branchId, title: (BBState?.branch || 'NOTEBOOK') };
     }
-    // BC resolution is wired in Tier 9e-2; BB-only for now.
     return null;
 }
-
-// ── Load / Save ────────────────────────────────────────────────────
 
 function loadDeck(scope) {
     if (!scope) return defaultDeck();
@@ -95,16 +90,25 @@ function saveDeck(scope, deck) {
     if (scope.kind === 'bb') {
         setSetting(`branchAssets.${scope.branchId}.flashcard`, deck);
     }
-    // BC save in Tier 9e-2.
 }
 
-// ── Shelf UI (Maker) ───────────────────────────────────────────────
+function escapeHtml(s) {
+    return String(s ?? '').replace(/[&<>"']/g, c => ({
+        '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;',
+    })[c]);
+}
+function escapeAttr(s) { return escapeHtml(s); }
+
+// ── State + shelf root ─────────────────────────────────────────────
 
 let $shelfRoot = null;
 let _currentDeck = defaultDeck();
 let _currentScope = null;
+let _view = 'maker';  // 'maker' | 'player'
 
-function render() {
+// ── Maker view ─────────────────────────────────────────────────────
+
+function renderMaker() {
     if (!$shelfRoot) return;
     const deck = _currentDeck;
     const title = _currentScope?.title || 'FLASHCARDS';
@@ -117,12 +121,6 @@ function render() {
                 <input type="text" class="fc-add-front" placeholder="${escapeAttr(t('flashcards.frontPlaceholder'))}" />
                 <input type="text" class="fc-add-back"  placeholder="${escapeAttr(t('flashcards.backPlaceholder'))}" />
                 <button class="fc-add-btn">${t('flashcards.addBtn')}</button>
-            </div>
-
-            <div class="fc-mode-row">
-                <span class="fc-mode-label">${t('flashcards.modeLabel')}</span>
-                <button class="fc-mode-btn ${deck.mode === 'sequential' ? 'active' : ''}" data-mode="sequential">${t('flashcards.modeSequential')}</button>
-                <button class="fc-mode-btn ${deck.mode === 'random'     ? 'active' : ''}" data-mode="random">${t('flashcards.modeRandom')}</button>
             </div>
 
             <div class="fc-list-label">${t('flashcards.listLabel', { count: deck.cards.length })}</div>
@@ -149,20 +147,10 @@ function render() {
         </div>
     `;
 
-    wireEvents();
+    wireMaker();
 }
 
-function escapeHtml(s) {
-    return String(s ?? '').replace(/[&<>"']/g, c => ({
-        '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;',
-    })[c]);
-}
-function escapeAttr(s) { return escapeHtml(s); }
-
-// ── Event wiring ───────────────────────────────────────────────────
-
-function wireEvents() {
-    if (!$shelfRoot) return;
+function wireMaker() {
     const $front = $shelfRoot.querySelector('.fc-add-front');
     const $back  = $shelfRoot.querySelector('.fc-add-back');
     const $addBtn = $shelfRoot.querySelector('.fc-add-btn');
@@ -173,22 +161,12 @@ function wireEvents() {
         if (!front && !back) return;
         _currentDeck.cards.push({ front, back });
         saveDeck(_currentScope, _currentDeck);
-        render();
+        renderMaker();
     };
     $addBtn?.addEventListener('click', submitAdd);
     [$front, $back].forEach(el => {
         el?.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') { e.preventDefault(); submitAdd(); }
-        });
-    });
-
-    $shelfRoot.querySelectorAll('.fc-mode-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            const mode = btn.dataset.mode;
-            if (mode !== 'sequential' && mode !== 'random') return;
-            _currentDeck.mode = mode;
-            saveDeck(_currentScope, _currentDeck);
-            render();
         });
     });
 
@@ -198,97 +176,105 @@ function wireEvents() {
             const idx = parseInt(btn.dataset.idx, 10);
             if (Number.isNaN(idx)) return;
             _currentDeck.cards.splice(idx, 1);
-            // Clamp currentIdx if it now exceeds the deck
             if (_currentDeck.playState.currentIdx >= _currentDeck.cards.length) {
                 _currentDeck.playState.currentIdx = Math.max(0, _currentDeck.cards.length - 1);
             }
             saveDeck(_currentScope, _currentDeck);
-            render();
+            renderMaker();
         });
     });
 
-    // PLAY — Tier 9d-2 hook. Opens full-screen Player overlay.
     $shelfRoot.querySelector('.fc-play-btn')?.addEventListener('click', () => {
         if (_currentDeck.cards.length === 0) return;
-        openPlayer();
+        _view = 'player';
+        renderPlayer();
     });
 
-    // RESET — wipes all cards (3-step destructive, same pattern as
-    // delete-page-btn). We use a lightweight 3-click counter here
-    // instead of MultiStepButton to avoid importing the whole module
-    // for one button; the 3-click sequence is self-contained.
-    const $resetBtn = $shelfRoot.querySelector('.fc-reset-btn');
-    if ($resetBtn) attachResetBtn($resetBtn);
-}
-
-let _resetClickCount = 0;
-let _resetTimer = null;
-function attachResetBtn($btn) {
-    $btn.addEventListener('click', () => {
+    // RESET — one-step destructive per Tier 22.14. Wipes the deck on a
+    // single click. Button is disabled while deck is empty so there's
+    // nothing to wipe accidentally.
+    $shelfRoot.querySelector('.fc-reset-btn')?.addEventListener('click', () => {
         if (_currentDeck.cards.length === 0) return;
-        _resetClickCount++;
-        $btn.classList.add('btn-armed');
-        clearTimeout(_resetTimer);
-        if (_resetClickCount >= 3) {
-            _resetClickCount = 0;
-            $btn.classList.remove('btn-armed');
-            _currentDeck = defaultDeck();
-            saveDeck(_currentScope, _currentDeck);
-            render();
-            BBMessage.info(t('flashcards.resetComplete'));
-            return;
-        }
-        _resetTimer = setTimeout(() => {
-            _resetClickCount = 0;
-            $btn.classList.remove('btn-armed');
-        }, 3000);
+        _currentDeck = defaultDeck();
+        saveDeck(_currentScope, _currentDeck);
+        renderMaker();
+        BBMessage.info(t('flashcards.resetComplete'));
     });
 }
 
-// ── Player overlay (Tier 9d-2) ─────────────────────────────────────
-// Uses #press-start-overlay with .flashcard-mode class (same multi-
-// modal pattern dashboard already uses). Sequential navigation wired
-// here; random mode handler lands in Tier 9d-3 alongside keyboard +
-// mobile swipe support.
+// ── Player view (shelf-local) ──────────────────────────────────────
 
-const $overlay      = () => document.getElementById('press-start-overlay');
-const $card         = () => document.getElementById('flashcard-card');
-const $frontFace    = () => document.querySelector('#flashcard-card .flashcard-face-front');
-const $backFace     = () => document.querySelector('#flashcard-card .flashcard-face-back');
-const $counter      = () => document.getElementById('flashcard-counter');
-const $modeLabel    = () => document.getElementById('flashcard-mode-label');
-const $prevBtn      = () => document.getElementById('flashcard-prev-btn');
-const $nextBtn      = () => document.getElementById('flashcard-next-btn');
-const $closeBtn     = () => document.getElementById('flashcard-close-btn');
-
-let _playerOpen = false;
-
-function paintCard() {
+function renderPlayer() {
+    if (!$shelfRoot) return;
     const deck = _currentDeck;
-    if (!deck || deck.cards.length === 0) return;
+    if (deck.cards.length === 0) { _view = 'maker'; renderMaker(); return; }
+
     const idx = Math.min(deck.playState.currentIdx, deck.cards.length - 1);
     const card = deck.cards[idx];
-    if ($frontFace()) $frontFace().textContent = card.front || '';
-    if ($backFace())  $backFace().textContent  = card.back  || '';
-    if ($counter())   $counter().textContent   = `${idx + 1} / ${deck.cards.length}`;
-    if ($modeLabel()) $modeLabel().textContent = deck.mode === 'random'
-        ? t('flashcards.modeRandom')
-        : t('flashcards.modeSequential');
+    const isFlipped = deck.playState.face === 'back';
 
-    // Reset flip state when navigating to a new card
-    if ($card()) $card().classList.toggle('is-flipped', deck.playState.face === 'back');
+    $shelfRoot.innerHTML = `
+        <div class="feature-panel" data-feature="flashcard">
+            <div class="fc-player-top">
+                <button class="fc-back-btn" aria-label="${escapeAttr(t('flashcards.backToMaker'))}">⟵ ${t('flashcards.backToMaker')}</button>
+                <div class="fc-player-counter">${idx + 1} / ${deck.cards.length}</div>
+            </div>
+
+            <div class="fc-stage">
+                <div class="fc-card ${isFlipped ? 'is-flipped' : ''}">
+                    <div class="fc-face fc-face-front">${escapeHtml(card.front)}</div>
+                    <div class="fc-face fc-face-back">${escapeHtml(card.back)}</div>
+                </div>
+                <div class="fc-flip-hint">${t('flashcards.flipHint')}</div>
+            </div>
+
+            <div class="fc-player-nav">
+                <button class="fc-prev-btn" aria-label="${escapeAttr(t('common.pull'))}">⟵</button>
+                <button class="fc-mode-toggle" aria-label="${escapeAttr(t('flashcards.modeLabel'))}">
+                    <span class="fc-mode-current">${deck.mode === 'random' ? t('flashcards.modeRandom') : t('flashcards.modeSequential')}</span>
+                    <span class="fc-mode-swap-icon">⟳</span>
+                </button>
+                <button class="fc-next-btn" aria-label="${escapeAttr(t('common.push'))}">⟶</button>
+            </div>
+        </div>
+    `;
+
+    wirePlayer();
+}
+
+function wirePlayer() {
+    // BACK → Maker
+    $shelfRoot.querySelector('.fc-back-btn')?.addEventListener('click', () => {
+        _view = 'maker';
+        renderMaker();
+    });
+
+    // Card click → flip
+    $shelfRoot.querySelector('.fc-card')?.addEventListener('click', flipCard);
+
+    // Nav buttons
+    $shelfRoot.querySelector('.fc-prev-btn')?.addEventListener('click', () => navigate(-1));
+    $shelfRoot.querySelector('.fc-next-btn')?.addEventListener('click', () => navigate(+1));
+
+    // Mode toggle — single button flips between SEQUENTIAL ↔ RANDOM.
+    // Label shows the CURRENT mode; click flips to the other.
+    $shelfRoot.querySelector('.fc-mode-toggle')?.addEventListener('click', () => {
+        _currentDeck.mode = _currentDeck.mode === 'sequential' ? 'random' : 'sequential';
+        // Reset history when switching into random so the stack starts clean.
+        if (_currentDeck.mode === 'random') _currentDeck.playState.randomHistory = [];
+        saveDeck(_currentScope, _currentDeck);
+        renderPlayer();
+    });
 }
 
 function flipCard() {
-    if (!_currentDeck || _currentDeck.cards.length === 0) return;
-    const next = _currentDeck.playState.face === 'front' ? 'back' : 'front';
-    _currentDeck.playState.face = next;
+    if (_currentDeck.cards.length === 0) return;
+    _currentDeck.playState.face = _currentDeck.playState.face === 'front' ? 'back' : 'front';
     saveDeck(_currentScope, _currentDeck);
-    if ($card()) $card().classList.toggle('is-flipped', next === 'back');
+    $shelfRoot.querySelector('.fc-card')?.classList.toggle('is-flipped', _currentDeck.playState.face === 'back');
 }
 
 function navigate(direction) {
-    // direction: +1 = NEWER/forward, -1 = OLDER/backward
     const deck = _currentDeck;
     if (!deck || deck.cards.length === 0) return;
     const n = deck.cards.length;
@@ -297,11 +283,7 @@ function navigate(direction) {
     if (deck.mode === 'sequential') {
         deck.playState.currentIdx = (curr + direction + n) % n;
     } else {
-        // Random mode with 10-deep history stack.
-        //   NEWER (+1): push current, pick random != current.
-        //   OLDER (-1): pop from history; empty stack → random pick.
-        const hist = Array.isArray(deck.playState.randomHistory)
-            ? deck.playState.randomHistory : [];
+        const hist = Array.isArray(deck.playState.randomHistory) ? deck.playState.randomHistory : [];
         if (direction === +1) {
             hist.push(curr);
             if (hist.length > 10) hist.shift();
@@ -312,7 +294,6 @@ function navigate(direction) {
             if (hist.length > 0) {
                 deck.playState.currentIdx = hist.pop();
             } else {
-                // Empty history → fall back to a fresh random pick.
                 let next = Math.floor(Math.random() * n);
                 if (n > 1 && next === curr) next = (next + 1) % n;
                 deck.playState.currentIdx = next;
@@ -322,93 +303,54 @@ function navigate(direction) {
     }
     deck.playState.face = 'front';
     saveDeck(_currentScope, _currentDeck);
-    paintCard();
+    renderPlayer();
 }
 
-function openPlayer() {
-    if (_currentDeck.cards.length === 0) return;
-    const ov = $overlay();
-    if (!ov) return;
-    // Mutually-exclusive with dashboard-mode: dismiss it explicitly
-    // so the two panels never stack.
-    ov.classList.remove('dashboard-mode');
-    ov.classList.add('flashcard-mode');
-    ov.style.display = 'flex';
-    _playerOpen = true;
-    paintCard();
-    wirePlayerEvents();
+// ── Keyboard + swipe (Player only, when shelf is visible) ──────────
+
+function isPlayerVisible() {
+    return _view === 'player' && $shelfRoot && $shelfRoot.offsetParent !== null;
 }
 
-function closePlayer() {
-    const ov = $overlay();
-    if (!ov) return;
-    ov.classList.remove('flashcard-mode');
-    ov.style.display = 'none';
-    _playerOpen = false;
-    // Defensive: drop any stray 'is-flipped' so next session starts
-    // on the front regardless of last saved face.
-    $card()?.classList.remove('is-flipped');
-}
+document.addEventListener('keydown', (e) => {
+    if (!isPlayerVisible()) return;
+    const target = e.target;
+    if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA')) return;
+    if (e.key === 'ArrowLeft')       { e.preventDefault(); navigate(-1); }
+    else if (e.key === 'ArrowRight') { e.preventDefault(); navigate(+1); }
+    else if (e.key === ' ')          { e.preventDefault(); flipCard(); }
+});
 
-let _playerWired = false;
-function wirePlayerEvents() {
-    if (_playerWired) return;
-    _playerWired = true;
+// Swipe on card — attached per-render inside wirePlayer via event
+// delegation would be cleaner; simpler to bind at document and check
+// target membership.
+let _touchStartX = null, _touchStartY = null, _touchMoved = false;
+document.addEventListener('touchstart', (e) => {
+    if (!isPlayerVisible()) return;
+    const card = e.target.closest?.('.fc-card');
+    if (!card) return;
+    const t = e.touches[0];
+    _touchStartX = t.clientX; _touchStartY = t.clientY; _touchMoved = false;
+}, { passive: true });
+document.addEventListener('touchmove', (e) => {
+    if (_touchStartX == null) return;
+    const t = e.touches[0];
+    if (Math.abs(t.clientX - _touchStartX) > 10 || Math.abs(t.clientY - _touchStartY) > 10) _touchMoved = true;
+}, { passive: true });
+document.addEventListener('touchend', (e) => {
+    if (_touchStartX == null) return;
+    const t = e.changedTouches[0];
+    const dx = t.clientX - _touchStartX;
+    const dy = t.clientY - _touchStartY;
+    const moved = _touchMoved;
+    _touchStartX = null; _touchStartY = null;
+    if (!moved) return;
+    if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy)) {
+        navigate(dx > 0 ? -1 : +1);
+    }
+});
 
-    $card()?.addEventListener('click', flipCard);
-    $prevBtn()?.addEventListener('click', () => navigate(-1));
-    $nextBtn()?.addEventListener('click', () => navigate(+1));
-    $closeBtn()?.addEventListener('click', closePlayer);
-
-    // Tier 9d-3 — keyboard: arrows navigate, space flips, ESC closes.
-    // Bound to document so focus doesn't need to be on the overlay.
-    document.addEventListener('keydown', (e) => {
-        if (!_playerOpen) return;
-        // Avoid hijacking keys when user is typing elsewhere (shouldn't
-        // happen in the player — textarea-less — but defensive).
-        const target = e.target;
-        if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA')) return;
-        if (e.key === 'Escape')     { e.preventDefault(); closePlayer(); }
-        else if (e.key === 'ArrowLeft')  { e.preventDefault(); navigate(-1); }
-        else if (e.key === 'ArrowRight') { e.preventDefault(); navigate(+1); }
-        else if (e.key === ' ')     { e.preventDefault(); flipCard(); }
-    });
-
-    // Tier 9d-3 — mobile swipe on the card: horizontal gesture > 50 px
-    // navigates; a lone tap (< 10 px movement) falls through to the
-    // click handler → flip. Vertical swipes are ignored so the user
-    // can still scroll the page behind the overlay (well, not while
-    // the overlay's open, but doesn't hurt).
-    let touchStartX = null, touchStartY = null, touchMoved = false;
-    const card = $card();
-    card?.addEventListener('touchstart', (e) => {
-        const t = e.touches[0];
-        touchStartX = t.clientX; touchStartY = t.clientY;
-        touchMoved = false;
-    }, { passive: true });
-    card?.addEventListener('touchmove', (e) => {
-        if (touchStartX == null) return;
-        const t = e.touches[0];
-        const dx = Math.abs(t.clientX - touchStartX);
-        const dy = Math.abs(t.clientY - touchStartY);
-        if (dx > 10 || dy > 10) touchMoved = true;
-    }, { passive: true });
-    card?.addEventListener('touchend', (e) => {
-        if (touchStartX == null) return;
-        const t = e.changedTouches[0];
-        const dx = t.clientX - touchStartX;
-        const dy = t.clientY - touchStartY;
-        touchStartX = null; touchStartY = null;
-        if (!touchMoved) return;  // small movement → browser click fires flip
-        // Horizontal dominant + > 50 px → navigate; otherwise ignore
-        if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy)) {
-            e.preventDefault();
-            navigate(dx > 0 ? -1 : +1);  // swipe-right = OLDER, swipe-left = NEWER
-        }
-    });
-}
-
-// ── Feature module export ──────────────────────────────────────────
+// ── Feature export ─────────────────────────────────────────────────
 
 export const feature = {
     id: 'flashcard',
@@ -435,6 +377,7 @@ export const feature = {
             return;
         }
         _currentDeck = loadDeck(_currentScope);
-        render();
+        _view = 'maker';
+        renderMaker();
     },
 };

@@ -117,7 +117,7 @@ export function createResetButton(parentContainer, scope, onReset) {
 
     new MultiStepButton(btn, {
         sound: 'UIGeneralCancel.mp3',
-        steps: 3,
+        steps: 1,
         action: async () => {
             Settings.resetScope(scope);
             BBMessage.success(t('config.resetComplete'));
@@ -250,7 +250,7 @@ export const MISC = {
         if (this.elements.initDataBtn) {
             new MultiStepButton(this.elements.initDataBtn, {
                 sound: 'UISelectOff.mp3',
-                steps: 3,
+                steps: 1,
                 action: async () => {
                     const msg = BBMessage.loading(t('misc.initializingWebsiteData'));
                     try {
@@ -291,7 +291,7 @@ export const MISC = {
         if (this.elements.resetBtn) {
             new MultiStepButton(this.elements.resetBtn, {
                 sound: 'UIGeneralCancel.mp3',
-                steps: 3,
+                steps: 1,
                 action: async () => {
                     Settings.resetScope('bb');
                     Settings.resetGlobals();
@@ -308,7 +308,7 @@ export const MISC = {
         if (this.elements.wipeLocalBtn) {
             new MultiStepButton(this.elements.wipeLocalBtn, {
                 sound: 'UISelectOff.mp3',
-                steps: 3,
+                steps: 1,
                 action: async () => {
                     try {
                         const db = (await import('./indexedDB.js')).default;
@@ -336,7 +336,7 @@ export const MISC = {
         if (this.elements.dropAllBranchesBtn) {
             new MultiStepButton(this.elements.dropAllBranchesBtn, {
                 sound: 'UISelectOff.mp3',
-                steps: 3,
+                steps: 1,
                 action: async () => {
                     if (!localStorage.getItem('currentUser')) {
                         BBMessage.requireLogin();

@@ -558,47 +558,6 @@
     background: var(--brand-dark);
 }
 
-[data-feature="flashcard"] .fc-mode-row {
-    flex-direction: row;
-    align-items: center;
-    gap: 6px;
-}
-
-[data-feature="flashcard"] .fc-mode-label {
-    font-size: 0.78em;
-    font-weight: 700;
-    color: var(--text-muted);
-    letter-spacing: 0.1em;
-    margin-right: 4px;
-}
-
-[data-feature="flashcard"] .fc-mode-btn {
-    flex: 1 1 0;
-    padding: 5px 0;
-    border: 1px solid var(--border-subtle);
-    border-radius: 4px;
-    background: var(--bg-page);
-    color: var(--text-muted);
-    font-size: 0.78em;
-    font-weight: 700;
-    letter-spacing: 0.1em;
-    cursor: pointer;
-    transition: border-color var(--transition-normal),
-                color var(--transition-normal),
-                background var(--transition-normal);
-}
-
-[data-feature="flashcard"] .fc-mode-btn:hover {
-    border-color: var(--brand);
-    color: var(--brand);
-}
-
-[data-feature="flashcard"] .fc-mode-btn.active {
-    border-color: var(--brand);
-    background: var(--brand);
-    color: #ffffff;
-}
-
 [data-feature="flashcard"] .fc-list-label {
     font-size: 0.82em;
     font-weight: 700;
@@ -767,6 +726,189 @@
 [data-feature="flashcard"] .fc-reset-btn:disabled {
     opacity: 0.4;
     cursor: not-allowed;
+}
+
+/* ============ Flashcard Player (shelf-local, Tier 22.14) ============
+   Player replaces the Maker content inside the same shelf panel.
+   No overlay layer — the shelf's own drawer is the study surface. */
+
+[data-feature="flashcard"] .fc-player-top {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding-bottom: 4px;
+    border-bottom: 2px solid var(--border-subtle);
+}
+
+[data-feature="flashcard"] .fc-back-btn {
+    padding: 4px 12px;
+    border: 1px solid var(--border-subtle);
+    border-radius: 4px;
+    background: transparent;
+    color: var(--text-muted);
+    font-size: 0.78em;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    cursor: pointer;
+    transition: border-color var(--transition-normal),
+                color var(--transition-normal),
+                background var(--transition-normal);
+}
+
+[data-feature="flashcard"] .fc-back-btn:hover {
+    border-color: var(--brand);
+    color: var(--brand);
+    background: var(--bg-card);
+}
+
+[data-feature="flashcard"] .fc-player-counter {
+    color: var(--brand);
+    font-weight: 700;
+    font-size: 0.95em;
+    letter-spacing: 0.08em;
+    font-variant-numeric: tabular-nums;
+}
+
+/* Stage — fills most of the shelf height, 3D perspective for flip. */
+[data-feature="flashcard"] .fc-stage {
+    flex: 1 1 0;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    perspective: 1200px;
+    user-select: none;
+    min-height: 180px;
+}
+
+[data-feature="flashcard"] .fc-card {
+    position: relative;
+    width: 100%;
+    max-width: 480px;
+    flex: 1 1 0;
+    min-height: 160px;
+    max-height: 48vh;
+    transform-style: preserve-3d;
+    transition: transform 0.5s cubic-bezier(0.4, 0.0, 0.2, 1);
+    cursor: pointer;
+}
+
+[data-feature="flashcard"] .fc-card.is-flipped {
+    transform: rotateY(180deg);
+}
+
+[data-feature="flashcard"] .fc-face {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    border: 2px solid var(--brand);
+    border-radius: var(--border-radius);
+    background: var(--bg-card);
+    color: var(--text-body);
+    font-size: calc(var(--textbox-font-size) * 1.2);
+    line-height: 1.4;
+    text-align: center;
+    font-weight: 500;
+    word-break: break-word;
+    overflow: auto;
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+    user-select: text;
+    box-shadow: 0 4px 16px var(--shadow-brand);
+}
+
+[data-feature="flashcard"] .fc-face-back {
+    transform: rotateY(180deg);
+    background: var(--brand);
+    color: #ffffff;
+    border-color: var(--brand-dark);
+}
+
+[data-feature="flashcard"] .fc-flip-hint {
+    color: var(--text-muted);
+    font-size: 0.75em;
+    letter-spacing: 0.1em;
+    opacity: 0.7;
+    user-select: none;
+}
+
+/* Player nav row — PREV ⟵ | MODE-TOGGLE | NEWER ⟶ */
+[data-feature="flashcard"] .fc-player-nav {
+    flex-direction: row;
+    align-items: stretch;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+[data-feature="flashcard"] .fc-prev-btn,
+[data-feature="flashcard"] .fc-next-btn {
+    flex: 0 0 auto;
+    width: 48px;
+    height: 40px;
+    padding: 0;
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--border-radius);
+    background: var(--bg-page);
+    color: var(--brand);
+    font-size: 1.1em;
+    font-weight: 700;
+    cursor: pointer;
+    transition: border-color var(--transition-normal),
+                background var(--transition-normal),
+                transform var(--transition-normal);
+}
+
+[data-feature="flashcard"] .fc-prev-btn:hover,
+[data-feature="flashcard"] .fc-next-btn:hover {
+    border-color: var(--brand);
+    background: var(--bg-card);
+    transform: scale(1.04);
+}
+
+/* Single mode toggler — spans the centre. Label shows CURRENT mode;
+   click flips to the other. Circular swap icon on the right. */
+[data-feature="flashcard"] .fc-mode-toggle {
+    flex: 1 1 0;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 0 12px;
+    height: 40px;
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--border-radius);
+    background: var(--bg-page);
+    color: var(--text-body);
+    font-size: 0.82em;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    cursor: pointer;
+    transition: border-color var(--transition-normal),
+                background var(--transition-normal);
+}
+
+[data-feature="flashcard"] .fc-mode-toggle:hover {
+    border-color: var(--brand);
+    background: var(--bg-card);
+}
+
+[data-feature="flashcard"] .fc-mode-current {
+    color: var(--brand);
+}
+
+[data-feature="flashcard"] .fc-mode-swap-icon {
+    color: var(--text-muted);
+    font-size: 1.1em;
+    transition: transform var(--transition-normal);
+}
+
+[data-feature="flashcard"] .fc-mode-toggle:hover .fc-mode-swap-icon {
+    transform: rotate(180deg);
+    color: var(--brand);
 }
 
 /* Markdown output inside the Markdown Preview feature panel */

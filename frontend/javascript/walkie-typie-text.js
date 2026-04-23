@@ -327,7 +327,7 @@ export const WTText = {
         if (this.elements.weDeleteBtn) {
             new MultiStepButton(this.elements.weDeleteBtn, {
                 sound: "Click.mp3",
-                steps: 3,
+                steps: 1,
                 action: async () => {
                     if (!this.currentConnection) return;
                     if (this.weState.isVirtual) {

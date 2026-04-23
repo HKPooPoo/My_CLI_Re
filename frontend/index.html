@@ -65,7 +65,7 @@
         <script type="module" src="./javascript/dashboard.js"></script>
     </div>
     <div class="body">
-        <!--pressStart.js + dashboard.js + flashcard player (multi-mode overlay)-->
+        <!--pressStart.js + dashboard.js (dashboard reuses this overlay via .dashboard-mode class)-->
         <div id="press-start-overlay">
             <div id="press-start-label" data-i18n="pressStart.label">PRESS START</div>
             <div id="dashboard-content">
@@ -84,31 +84,6 @@
                     </div>
                 </div>
             </div>
-            <div id="flashcard-player">
-                <button id="flashcard-close-btn" aria-label="close" type="button">×</button>
-                <div id="flashcard-header">
-                    <span id="flashcard-counter">0 / 0</span>
-                    <span class="flashcard-sep">·</span>
-                    <span id="flashcard-mode-label">SEQUENTIAL</span>
-                </div>
-                <div id="flashcard-stage">
-                    <div id="flashcard-card">
-                        <div class="flashcard-face flashcard-face-front"></div>
-                        <div class="flashcard-face flashcard-face-back"></div>
-                    </div>
-                    <div id="flashcard-flip-hint" data-i18n="flashcards.flipHint">tap card to flip</div>
-                </div>
-                <div id="flashcard-nav">
-                    <button id="flashcard-prev-btn" type="button">
-                        <span class="flashcard-nav-arrow">⟵</span>
-                        <span data-i18n="common.pull">OLDER</span>
-                    </button>
-                    <button id="flashcard-next-btn" type="button">
-                        <span data-i18n="common.push">NEWER</span>
-                        <span class="flashcard-nav-arrow">⟶</span>
-                    </button>
-                </div>
-            </div>
         </div>
         <script>
             // Inline fallback: if pressStart.js module fails to load (e.g. tunnel cold start),
@@ -120,7 +95,6 @@
                     if (el.style.display === 'none') return;
                     if (el.dataset.handled) return;
                     if (el.classList.contains('dashboard-mode')) return;
-                    if (el.classList.contains('flashcard-mode')) return;
                     el.dataset.handled = '1';
                     el.classList.add('crt-switch-off');
                     el.addEventListener('animationend', function() {

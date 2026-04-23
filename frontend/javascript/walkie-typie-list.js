@@ -106,7 +106,7 @@ export const WTList = {
         if (this.elements.addBtn) {
             new MultiStepButton(this.elements.addBtn, {
                 sound: "UIGeneralOK.mp3",
-                steps: 3,
+                steps: 1,
                 action: async () => {
                     const uid = this.elements.uidInput?.value?.trim();
                     if (!uid) {
@@ -136,7 +136,7 @@ export const WTList = {
         if (this.elements.cutBtn) {
             new MultiStepButton(this.elements.cutBtn, {
                 sound: "UIGeneralCancel.mp3",
-                steps: 3,
+                steps: 1,
                 action: async () => {
                     if (!this.selectedConnection) {
                         BBMessage.error(t('walkieTypie.noTarget'));
