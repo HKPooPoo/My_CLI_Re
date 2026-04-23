@@ -34,6 +34,7 @@ import * as Settings from './settings.js';
 import { TimerGroup } from './timer-group.js';
 import * as CrossTabSync from './cross-tab-sync.js';
 import { MultiStepButton } from './multiStepButton.js';
+import { attachContentSearch } from './content-search.js';
 
 // Single-slot "beep" state. First signal while the tab is backgrounded
 // pushes a notification and locks the slot; further signals are
@@ -86,6 +87,40 @@ export const WTText = {
         this.initAttachments();
         this.bindEvents();
         this.lockBoards();
+
+        // Tier 24 — content search on the WE side only. THEY records
+        // are in-memory, read-only, and WT's focus is live chat (not
+        // history browsing) so per-user feedback during demo said a
+        // single-sided search covers the intent. Extending to THEY
+        // later is a one-liner (second attachContentSearch call +
+        // distinct root) if the stakeholder asks.
+        this._weSearch = attachContentSearch({
+            root: document.getElementById('wt-drop-zone'),
+            getRecords: async () => {
+                if (!this.currentConnection || this.weState.isVirtual) return [];
+                // WTDb returns oldest→newest; search helper expects
+                // newest-first so it aligns with how WT push/pull
+                // traverses the same records (head 0 = newest).
+                const records = await WTDb.getAllRecordsForBranch(this.weState.branchId);
+                return [...records].sort((a, b) => b.timestamp - a.timestamp);
+            },
+            getCurrentHead: () => {
+                if (!this.currentConnection || this.weState.isVirtual) return null;
+                return this.weState.currentHead;
+            },
+            navigateTo: async (head) => {
+                if (!this.currentConnection) return;
+                // Flush pending debounced save first — matches the
+                // flow of push/pull which also guarantees current
+                // textarea content is persisted before moving head.
+                const liveText = this.elements.weTextarea?.value ?? '';
+                this.timers.cancel('save');
+                await WTVCS.save(this.weState, liveText);
+                this.weState.currentHead = head;
+                this.weState.isVirtual = false;
+                await this.refreshWE();
+            },
+        });
     },
 
     initAttachments() {
@@ -670,6 +705,9 @@ export const WTText = {
                 this.currentBin = bin;
                 this.wtWeAttach?.setFromRecord(bin?.hash, bin);
             }
+            // Keep search match-count fresh after any WE redraw.
+            // No-op when the pill is collapsed.
+            this._weSearch?.refresh();
         } catch (err) {
             console.error("WE read error:", err);
         }

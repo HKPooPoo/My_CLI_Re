@@ -343,6 +343,50 @@ Log section; every new user decision gets appended with a date.
       disk pending a future cleanup pass). Active set: `head / local /
       synced / asynced` (4 files).
 
+18. **Tier 24 — Content search bar (BB / WT-WE / BC)**.
+    - `frontend/javascript/content-search.js` — shared helper
+      `attachContentSearch({ root, getRecords, getCurrentHead,
+      navigateTo })`. Creates a 36 px circular magnifying-glass
+      toggle button (top-left of `editor-wrapper`), expands to a
+      pill with input + prev (◀) + next (▶) + `N/M` match count.
+    - **Keyboard contract**: Enter = next match, Shift+Enter = prev,
+      Esc = collapse. Click anywhere outside the pill also collapses.
+    - **Match anchoring**: on open (or after each input change), if
+      the current head is itself a match, the cursor snaps to it so
+      the first Next/Prev press feels incremental rather than
+      jumping to page 0. Implemented in `_refreshMatches` via
+      `this.matches.indexOf(curr)`.
+    - **Scope per board**:
+      - BB: reads `_previewRailCache` (already newest-first);
+        `navigateTo` uses the existing `_navigateToHead` shared with
+        preview-rail clicks (save + clear peek + syncView).
+      - BC: reads `this._previewRailCache`; `navigateTo` branches
+        on `this.isOwnerMode` — owner mode saves current draft then
+        `syncOwnerView()`, reader mode just moves `this.readerHead`
+        and calls `syncReaderView()`.
+      - WT (WE side only): loads `WTDb.getAllRecordsForBranch` lazily
+        and sorts newest-first (WTDb returns oldest→newest natively).
+        `navigateTo` cancels pending save timer, flushes the current
+        textarea via `WTVCS.save`, then moves `weState.currentHead`.
+        THEY side is not wired — WT is primarily live chat; history
+        browsing is secondary. Add a second `attachContentSearch` call
+        if stakeholder asks.
+    - **Refresh trigger**: each board calls `this._search?.refresh()`
+      after its preview-rail render (BB `renderPreviewRail`, BC
+      `renderPreviewRail`, WT `refreshWE`). The helper itself no-ops
+      when the pill is collapsed, so the refresh is cheap to sprinkle.
+    - **DOM**: injected entirely by JS (`attachContentSearch` appends
+      `.editor-search > .editor-search-toggle + .editor-search-pill`
+      to the editor-wrapper). `index.html` is untouched — adding the
+      feature to a new editor is a one-liner.
+    - **Positioning contract**: `.editor-search` is `position: absolute;
+      top: 8px; left: 8px` inside `.editor-wrapper`. BB and BC override
+      `.page-preview-rail { padding-top: 44px }` so the rail's first
+      preview block clears the circular toggle. WT has no rail so no
+      padding needed there.
+    - **i18n**: `search.placeholder` for the input; `hints.search.open
+      / prev / next` for the three button hints.
+
 17. **Tier 9d + 22.14 — BB Flashcards (shelf-local Maker + Player)**.
     - `frontend/javascript/features/flashcard.js` — full BB impl.
       Data lives at `users.settings.branchAssets.{branchId}.flashcard =

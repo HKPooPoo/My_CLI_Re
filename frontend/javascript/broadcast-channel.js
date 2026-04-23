@@ -40,6 +40,7 @@ import { TimerGroup } from './timer-group.js';
 import { MultiStepButton } from './multiStepButton.js';
 import db from './indexedDB.js';
 import * as CrossTabSync from './cross-tab-sync.js';
+import { attachContentSearch } from './content-search.js';
 
 const _readerCache = new Map();  // serverChannelId → { records, fetchedAt }
 
@@ -91,6 +92,34 @@ export const BCChannel = {
         // channel is opened in owner mode.
         const $actions = document.querySelector('#bc-drop-zone .editor-actions');
         if ($actions) $actions.style.display = 'none';
+
+        // Tier 24 — content search pill. Reads the same cache the
+        // preview rail reads; owner mode saves current draft before
+        // jumping via `save + syncOwnerView`, reader mode just moves
+        // the in-memory `readerHead`. Works transparently across
+        // mode changes because getRecords / navigateTo re-check
+        // `this.isOwnerMode` at call time.
+        this._search = attachContentSearch({
+            root: document.getElementById('bc-drop-zone'),
+            getRecords: () => this._previewRailCache || [],
+            getCurrentHead: () => {
+                if (!this.currentChannel) return null;
+                if (this.isOwnerMode) return this.state?.isVirtual ? null : this.state?.currentHead;
+                return this.readerHead;
+            },
+            navigateTo: async (head) => {
+                if (!this.currentChannel) return;
+                if (this.isOwnerMode) {
+                    await this.save(this.elements.textarea?.value ?? '');
+                    this.state.isVirtual = false;
+                    this.state.currentHead = head;
+                    await this.syncOwnerView();
+                } else {
+                    this.readerHead = head;
+                    this.syncReaderView();
+                }
+            },
+        });
     },
 
     // =====================================================================
@@ -951,6 +980,11 @@ export const BCChannel = {
         });
 
         rail.replaceChildren(frag);
+
+        // Keep search pill count honest across remote pushes, cast,
+        // cross-tab mutations, owner/reader mode swaps. No-op when
+        // collapsed.
+        this._search?.refresh();
     },
 
     // =====================================================================

@@ -26,6 +26,7 @@ import * as Settings from './settings.js';
 import { BBSync } from './blackboard-sync.js';
 import { TimerGroup } from './timer-group.js';
 import * as CrossTabSync from './cross-tab-sync.js';
+import { attachContentSearch } from './content-search.js';
 
 // --- 全域狀態聲明 ---
 const state = {
@@ -330,6 +331,11 @@ async function renderPreviewRail() {
     });
 
     rail.replaceChildren(frag);
+
+    // If the search pill is open, the record set may have changed
+    // (commit, cross-tab mutation, push/pull). Re-run match count so
+    // `N/M` stays honest. No-op when collapsed.
+    bbSearch?.refresh();
 }
 
 /**
@@ -887,6 +893,19 @@ const $previewRail = document.getElementById('bb-preview-rail');
 function lockEditors(locked) {
     if (BBUI.elements.textarea) BBUI.elements.textarea.readOnly = locked;
 }
+
+// Tier 24 — content search pill on the editor's top-left. Reads from
+// the same `_previewRailCache` that backs the preview rail (newest-
+// first indexed, matches head numbering) so search results align with
+// the rail's visual order. `_navigateToHead` is the shared save +
+// syncView path used by rail clicks and drag-and-drop, so a search
+// jump lands with identical side effects.
+const bbSearch = attachContentSearch({
+    root: document.getElementById('bb-drop-zone'),
+    getRecords: () => _previewRailCache,
+    getCurrentHead: () => state.isVirtual ? null : state.currentHead,
+    navigateTo: (head) => _navigateToHead(head),
+});
 
 $previewRail?.addEventListener('mouseover', (e) => {
     const block = e.target.closest('.page-preview-block');

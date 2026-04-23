@@ -435,3 +435,141 @@ input.attachment-chip-name[readonly] {
 .walkie-typie-blackboard>.attachment-chips.has-items {
     padding: 6px;
 }
+
+/* --- Content Search pill (Tier 24) ---------------------------------- */
+/* Mirror of `.editor-actions` but anchored top-left. Collapsed state =
+   36 px circular icon button matching DELETE/RESET. Expanded state =
+   horizontal pill with input + prev/next + "N/M" count, expanding to
+   the RIGHT of the icon so the icon itself stays an anchor. */
+.editor-search {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    z-index: 2;
+    flex-direction: row;
+    align-items: center;
+    gap: 4px;
+}
+
+/* BB / BC: preview rail lives directly under the editor-wrapper's top
+   edge. Push the first rail block down so the circular search button
+   doesn't overlap it. Rail top-padding only; gap between blocks is
+   unchanged so the overall cadence is preserved. */
+#bb-drop-zone .page-preview-rail,
+#bc-drop-zone .page-preview-rail {
+    padding-top: 44px;
+}
+
+/* Circular toggle button — same visual language as DELETE/RESET so
+   the editor corners read as a consistent action set. */
+.editor-search-toggle {
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    font-size: 0;
+    color: var(--text-muted);
+    background: var(--bg-page);
+    border: 1px solid var(--border-subtle);
+    border-radius: 50%;
+    cursor: pointer;
+    transition: color var(--transition-normal),
+                border-color var(--transition-normal),
+                background var(--transition-normal),
+                transform var(--transition-normal),
+                box-shadow var(--transition-normal);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.editor-search-toggle::after {
+    content: "";
+    width: 20px;
+    height: 20px;
+    background-color: currentColor;
+    -webkit-mask: url('../images/btn-search.svg') center/contain no-repeat;
+    mask: url('../images/btn-search.svg') center/contain no-repeat;
+}
+
+@media (hover: hover) {
+    .editor-search-toggle:hover {
+        color: #ffffff !important;
+        background: var(--brand) !important;
+        border-color: var(--brand-dark) !important;
+        box-shadow: 0 2px 8px var(--shadow-brand);
+        transform: scale(1.08);
+    }
+}
+
+/* Active ring when the pill is open — signals the toggle is "engaged"
+   so the user knows clicking it again closes. */
+.editor-search.expanded .editor-search-toggle {
+    color: #ffffff;
+    background: var(--brand);
+    border-color: var(--brand-dark);
+    box-shadow: 0 0 0 3px var(--shadow-brand);
+}
+
+/* Expanded pill — hidden by default. Using `display: none` (not just
+   visibility) so the DOM doesn't steal layout width when collapsed. */
+.editor-search-pill {
+    display: none;
+    flex-direction: row;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 6px;
+    background: var(--bg-page);
+    border: 1px solid var(--border-subtle);
+    border-radius: 18px;
+    box-shadow: 0 2px 8px var(--shadow-subtle, rgba(0, 0, 0, 0.08));
+}
+
+.editor-search.expanded .editor-search-pill {
+    display: flex;
+}
+
+.editor-search-input {
+    border: none;
+    outline: none;
+    background: transparent;
+    color: var(--text-body);
+    font-size: 0.875rem;
+    min-width: 140px;
+    padding: 4px 6px;
+}
+
+.editor-search-nav {
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    font-size: 0.75rem;
+    line-height: 1;
+    color: var(--text-muted);
+    background: transparent;
+    border: 1px solid var(--border-subtle);
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color var(--transition-normal),
+                background var(--transition-normal),
+                border-color var(--transition-normal);
+}
+
+@media (hover: hover) {
+    .editor-search-nav:hover {
+        color: #ffffff !important;
+        background: var(--brand) !important;
+        border-color: var(--brand-dark) !important;
+    }
+}
+
+.editor-search-count {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    min-width: 32px;
+    text-align: right;
+    padding-right: 4px;
+}
