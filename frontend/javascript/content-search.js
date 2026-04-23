@@ -1,27 +1,34 @@
 /**
  * Content Search (Tier 24)
  * =================================================================
- * Shared search pill that lives on BB / BC / WT editor-wrapper top-
- * left. Collapsed = 36px circular magnifying-glass icon. Expanded =
- * pill row [icon] [input] [prev ◀] [next ▶] [count].
+ * Shared search pill. Collapsed = 36 px circular magnifying-glass
+ * icon. Expanded = [icon] [input] [prev ◀] [next ▶] [count].
  *
- * Search target: the records backing the currently-open branch /
+ * Two placements so the pill can sit where each board has visual
+ * room:
+ *
+ *   placement: 'rail' (BB / BC)
+ *     Appended into the preview rail column. Uses `margin-top: auto`
+ *     so it docks at the BOTTOM of the rail, just under the last
+ *     preview block. Rail → textarea parity: the rail is already
+ *     always the full textarea height, so "rail bottom" reads as
+ *     "textarea bottom-left".
+ *
+ *   placement: 'overlay' (WT WE + WT THEY)
+ *     Absolute-positioned inside `root`, anchored bottom-left. WT
+ *     has no rail and the textarea fills the panel edge-to-edge, so
+ *     this overlay sits visually inside the textarea's bottom-left.
+ *
+ * Match target: the records backing the currently-open branch /
  * channel / connection. A match moves HEAD to that record via the
  * board-supplied `navigateTo(head)` adapter. No cross-branch search
- * — users switch branches via the list page, search stays local to
- * the open container.
- *
- * Why a helper (not three ad-hoc inline implementations):
- *   - Identical UX across three boards = less for stakeholders to
- *     re-learn per section.
- *   - Keyboard contract (Enter → next, Shift+Enter → prev, Esc →
- *     collapse) has to be bug-for-bug identical or users hit the
- *     wrong one.
- *   - Match index (`current / total`) display is easy to miswire.
+ * — users switch containers via the list page, search stays local
+ * to the open one.
  *
  * Consumer contract — attachContentSearch({
- *   root,          // editor-wrapper element that hosts the search UI
- *   getRecords,    // async () => [{ text, head }, ...] indexed newest-first
+ *   root,          // container the UI is appended to (rail or panel)
+ *   placement,     // 'rail' | 'overlay' (default 'overlay')
+ *   getRecords,    // async () => [{ text, head }, ...] newest-first
  *   getCurrentHead,// () => number (or null when virtual/no selection)
  *   navigateTo,    // async (head) => { move HEAD + redraw editor }
  * })
@@ -57,8 +64,9 @@ class ContentSearchInstance {
     }
 
     _buildDom() {
+        const placement = this.config.placement === 'rail' ? 'rail' : 'overlay';
         const wrap = document.createElement('div');
-        wrap.className = 'editor-search';
+        wrap.className = `editor-search editor-search--${placement}`;
 
         const toggleBtn = document.createElement('button');
         toggleBtn.type = 'button';

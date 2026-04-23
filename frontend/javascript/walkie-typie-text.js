@@ -88,14 +88,15 @@ export const WTText = {
         this.bindEvents();
         this.lockBoards();
 
-        // Tier 24 — content search on the WE side only. THEY records
-        // are in-memory, read-only, and WT's focus is live chat (not
-        // history browsing) so per-user feedback during demo said a
-        // single-sided search covers the intent. Extending to THEY
-        // later is a one-liner (second attachContentSearch call +
-        // distinct root) if the stakeholder asks.
+        // Tier 24 — content search on BOTH WE and THEY side. WT has
+        // no preview rail, so the pills overlay the textarea's
+        // bottom-left (via `.editor-search--overlay`) inside each
+        // side's editor-wrapper. The THEY wrapper (`#wt-they-drop-zone`)
+        // was added in Tier 24's fine-tune pass to give the THEY
+        // pill an anchoring parent.
         this._weSearch = attachContentSearch({
             root: document.getElementById('wt-drop-zone'),
+            placement: 'overlay',
             getRecords: async () => {
                 if (!this.currentConnection || this.weState.isVirtual) return [];
                 // WTDb returns oldest→newest; search helper expects
@@ -119,6 +120,31 @@ export const WTText = {
                 this.weState.currentHead = head;
                 this.weState.isVirtual = false;
                 await this.refreshWE();
+            },
+        });
+
+        // THEY side — read-only history; `theyRecords` is an in-memory
+        // array loaded from the server (oldest → newest). The search
+        // helper expects newest-first (head 0 = newest), so we flip
+        // the order. NavigateTo sets `theyState.currentHead` and
+        // refreshes; no save path on a read-only side.
+        this._theySearch = attachContentSearch({
+            root: document.getElementById('wt-they-drop-zone'),
+            placement: 'overlay',
+            getRecords: () => {
+                if (!this.currentConnection) return [];
+                // Reverse so index 0 = newest, aligning with
+                // `theyState.currentHead` semantics used by push/pull.
+                return [...this.theyRecords].reverse();
+            },
+            getCurrentHead: () => {
+                if (!this.currentConnection) return null;
+                return this.theyState.currentHead;
+            },
+            navigateTo: (head) => {
+                if (!this.currentConnection) return;
+                this.theyState.currentHead = head;
+                this.refreshTHEY();
             },
         });
     },
@@ -744,6 +770,11 @@ export const WTText = {
 
         // Render Attachment
         this.wtTheyAttach?.setFromRecord(theyBin?.hash, theyBin);
+
+        // Keep the THEY-side search match count fresh after any
+        // refresh (new committed record from partner, live whisper,
+        // head-navigate). No-op when the pill is collapsed.
+        this._theySearch?.refresh();
     },
 
     refreshTitles() {

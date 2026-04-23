@@ -112,6 +112,17 @@
     gap: 6px;
     padding: 0;
     touch-action: none;  /* let our touchmove own the gesture */
+    /* Height parity with the sibling textarea. `.log-editor-row` is
+       `flex: 1` under the editor-wrapper and `align-items: stretch`
+       by default, so the rail auto-stretches to the row height. We
+       spell out `align-self: stretch` defensively so a future rule
+       can't silently break parity; `height: 100%` is the fallback
+       for non-flex parents. The rail OWNS its own flex column
+       (blocks stacked + `.editor-search--rail` docked at bottom via
+       `margin-top: auto`), so the container MUST be full-height or
+       the bottom-anchored search drifts. */
+    align-self: stretch;
+    height: 100%;
 }
 
 .page-preview-block {

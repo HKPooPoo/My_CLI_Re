@@ -343,52 +343,59 @@ Log section; every new user decision gets appended with a date.
       disk pending a future cleanup pass). Active set: `head / local /
       synced / asynced` (4 files).
 
-18. **Tier 24 — Content search bar (BB / WT-WE / BC)**.
+18. **Tier 24 — Content search bar (BB / WT-WE / WT-THEY / BC)**.
     - `frontend/javascript/content-search.js` — shared helper
-      `attachContentSearch({ root, getRecords, getCurrentHead,
-      navigateTo })`. Creates a 36 px circular magnifying-glass
-      toggle button anchored at the **textarea's bottom-left corner
-      (inside the textarea's visible area)**; expands to a pill
-      with input + prev (◀) + next (▶) + `N/M` match count.
-    - **Keyboard contract**: Enter = next match, Shift+Enter = prev,
-      Esc = collapse. Click anywhere outside the pill also collapses.
-    - **Match anchoring**: on open (or after each input change), if
-      the current head is itself a match, the cursor snaps to it so
-      the first Next/Prev press feels incremental rather than
-      jumping to page 0. Implemented in `_refreshMatches` via
-      `this.matches.indexOf(curr)`.
+      `attachContentSearch({ root, placement, getRecords,
+      getCurrentHead, navigateTo })`. 36 px circular magnifying-glass
+      toggle; expands to a pill with input + ◀ + ▶ + `N/M`.
+    - **Two placements**:
+      - `placement: 'rail'` (BB / BC): appended INTO the rail element
+        (`#bb-preview-rail` / `#bc-preview-rail`). `.editor-search--rail`
+        sits at the BOTTOM of the rail's flex column via
+        `margin-top: auto`. Expanded pill absolute-floats to the
+        right of the 48 px rail (`left: calc(100% + 8px)`) into the
+        textarea gutter so the 240 px pill isn't forced inside 48 px.
+        Because the rail stretches full-height, "rail bottom" reads
+        visually as "textarea bottom-left".
+      - `placement: 'overlay'` (WT WE + WT THEY): WT has no rail, so
+        `.editor-search--overlay` absolute-positions to
+        `bottom: 8px; left: 8px` inside each textarea's wrapper
+        (`#wt-drop-zone` WE, `#wt-they-drop-zone` THEY). The THEY
+        wrapper is new in this tier — previously THEY textarea had
+        no `editor-wrapper` around it.
+    - **Rail height parity**: `.page-preview-rail` carries explicit
+      `align-self: stretch; height: 100%`. Previously relied on
+      flex-row implicit stretch; with a bottom-anchored search dock
+      now required, the rail MUST be full-height or the search
+      drifts up mid-column.
+    - **Render-preserving `.editor-search`**: BB and BC's
+      `renderPreviewRail` used to call `rail.replaceChildren(frag)`
+      which wiped the docked search. Both now do
+      `rail.querySelectorAll('.page-preview-block').forEach(b => b.remove())`
+      then `insertBefore(frag, search)`. BC's `auth:updated` and
+      `broadcast:cleared` teardown handlers use the same pattern so
+      signing out doesn't destroy the search UI.
+    - **Keyboard**: Enter = next, Shift+Enter = prev, Esc = collapse.
+      Outside click collapses. Match cursor anchors to current head
+      if it's a match so first Next/Prev feels incremental.
     - **Scope per board**:
-      - BB: reads `_previewRailCache` (already newest-first);
-        `navigateTo` uses the existing `_navigateToHead` shared with
-        preview-rail clicks (save + clear peek + syncView).
-      - BC: reads `this._previewRailCache`; `navigateTo` branches
-        on `this.isOwnerMode` — owner mode saves current draft then
-        `syncOwnerView()`, reader mode just moves `this.readerHead`
-        and calls `syncReaderView()`.
-      - WT (WE side only): loads `WTDb.getAllRecordsForBranch` lazily
-        and sorts newest-first (WTDb returns oldest→newest natively).
-        `navigateTo` cancels pending save timer, flushes the current
-        textarea via `WTVCS.save`, then moves `weState.currentHead`.
-        THEY side is not wired — WT is primarily live chat; history
-        browsing is secondary. Add a second `attachContentSearch` call
-        if stakeholder asks.
+      - BB: reads `_previewRailCache`; `navigateTo` uses the
+        existing `_navigateToHead` shared with preview-rail clicks.
+      - BC: reads `this._previewRailCache`; `navigateTo` branches on
+        `this.isOwnerMode` — owner saves draft then `syncOwnerView`,
+        reader just moves `this.readerHead` + `syncReaderView`.
+      - WT WE: loads `WTDb.getAllRecordsForBranch` lazily + sorts
+        newest-first (WTDb returns oldest→newest).
+      - WT THEY: reads `this.theyRecords.slice().reverse()` so index
+        0 = newest, aligning with `theyState.currentHead` semantics.
+        `navigateTo` sets `theyState.currentHead` + `refreshTHEY`.
+        Read-only — no save path.
     - **Refresh trigger**: each board calls `this._search?.refresh()`
-      after its preview-rail render (BB `renderPreviewRail`, BC
-      `renderPreviewRail`, WT `refreshWE`). The helper itself no-ops
-      when the pill is collapsed, so the refresh is cheap to sprinkle.
-    - **DOM**: injected entirely by JS (`attachContentSearch` appends
-      `.editor-search > .editor-search-toggle + .editor-search-pill`
-      to the editor-wrapper). `index.html` is untouched — adding the
-      feature to a new editor is a one-liner.
-    - **Positioning contract**: `.editor-search` uses the same offset
-      math as `.drop-overlay` so the search button and the drop
-      frame agree on where the textarea visually starts. WT:
-      `bottom: calc(4vh + 0.4rem + 8px); left: calc(8vw + 8px)`.
-      BB / BC override `left: calc(8vw + 56px + 8px)` to skip past
-      the 48 px preview rail + 8 px gap. No `padding-top` on the
-      rail is needed anymore (the button left the top-left corner).
-    - **i18n**: `search.placeholder` for the input; `hints.search.open
-      / prev / next` for the three button hints.
+      (or `_weSearch` / `_theySearch` on WT) after its render (BB
+      `renderPreviewRail`, BC `renderPreviewRail`, WT `refreshWE` /
+      `refreshTHEY`). No-op when collapsed.
+    - **i18n**: `search.placeholder` for input; `hints.search.open /
+      prev / next` for the three buttons.
 
 17. **Tier 9d + 22.14 — BB Flashcards (shelf-local Maker + Player)**.
     - `frontend/javascript/features/flashcard.js` — full BB impl.

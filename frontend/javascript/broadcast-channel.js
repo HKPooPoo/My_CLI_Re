@@ -93,14 +93,16 @@ export const BCChannel = {
         const $actions = document.querySelector('#bc-drop-zone .editor-actions');
         if ($actions) $actions.style.display = 'none';
 
-        // Tier 24 — content search pill. Reads the same cache the
-        // preview rail reads; owner mode saves current draft before
-        // jumping via `save + syncOwnerView`, reader mode just moves
-        // the in-memory `readerHead`. Works transparently across
-        // mode changes because getRecords / navigateTo re-check
-        // `this.isOwnerMode` at call time.
+        // Tier 24 — content search pill docked at the bottom of the
+        // preview rail. Reads the same cache the rail reads; owner
+        // mode saves current draft before jumping via
+        // `save + syncOwnerView`, reader mode just moves the in-memory
+        // `readerHead`. Works transparently across mode changes
+        // because getRecords / navigateTo re-check `this.isOwnerMode`
+        // at call time.
         this._search = attachContentSearch({
-            root: document.getElementById('bc-drop-zone'),
+            root: document.getElementById('bc-preview-rail'),
+            placement: 'rail',
             getRecords: () => this._previewRailCache || [],
             getCurrentHead: () => {
                 if (!this.currentChannel) return null;
@@ -280,7 +282,10 @@ export const BCChannel = {
             if (this.elements.textarea) this.elements.textarea.value = '';
             this._previewRailCache = [];
             const rail = document.getElementById('bc-preview-rail');
-            if (rail) rail.replaceChildren();
+            // Only remove preview blocks; `.editor-search` lives in the
+            // rail and is attached once at boot — wiping it breaks
+            // search on the next channel open.
+            rail?.querySelectorAll('.page-preview-block').forEach(b => b.remove());
             const $bcActions = document.querySelector('#bc-drop-zone .editor-actions');
             if ($bcActions) $bcActions.style.display = 'none';
         });
@@ -297,7 +302,7 @@ export const BCChannel = {
             if (this.elements.textarea) this.elements.textarea.value = '';
             this._previewRailCache = [];
             const rail = document.getElementById('bc-preview-rail');
-            if (rail) rail.replaceChildren();
+            rail?.querySelectorAll('.page-preview-block').forEach(b => b.remove());
             const $bcActions = document.querySelector('#bc-drop-zone .editor-actions');
             if ($bcActions) $bcActions.style.display = 'none';
         });
@@ -979,7 +984,13 @@ export const BCChannel = {
             frag.appendChild(block);
         });
 
-        rail.replaceChildren(frag);
+        // Replace only the block children; the docked `.editor-search`
+        // lives in the rail and must survive re-renders (same pattern
+        // as BB's renderPreviewRail).
+        rail.querySelectorAll('.page-preview-block').forEach(b => b.remove());
+        const search = rail.querySelector('.editor-search');
+        if (search) rail.insertBefore(frag, search);
+        else rail.appendChild(frag);
 
         // Keep search pill count honest across remote pushes, cast,
         // cross-tab mutations, owner/reader mode swaps. No-op when

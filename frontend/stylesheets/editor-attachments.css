@@ -437,34 +437,47 @@ input.attachment-chip-name[readonly] {
 }
 
 /* --- Content Search pill (Tier 24) ---------------------------------- */
-/* Sits INSIDE the textarea area at its bottom-left corner. Offsets use
-   the same math as `.drop-overlay` so the search button and the drop
-   frame agree on where the textarea visually starts:
-     top-of-textarea    = editor-wrapper top + (4vh + 0.4rem)
-     left-of-textarea   = editor-wrapper left + 8vw (WT) or 8vw + 56px (BB/BC rail)
-   `+ 8px` on top of those positions the button 8 px inside the
-   textarea's visible edge, matching where DELETE/RESET sit on the
-   opposite corner. Expanded state grows RIGHTWARD from the icon —
-   anchor stays put so the user's mental model of "search lives here"
-   survives open/close cycles.
-   Collapsed = 36 px circular icon; expanded = input + ◀/▶ + count. */
+/* Two placements.
+   .editor-search--rail lives INSIDE the preview rail (BB / BC) and docks
+     to the bottom via `margin-top: auto`, so it sits right under the last
+     preview block. The rail itself stretches to match the textarea height
+     (see page-blackboard-log.css `.page-preview-rail { align-self: stretch }`),
+     so "rail bottom" visually reads as "left-bottom of the textarea."
+   .editor-search--overlay lives on WT (WE + THEY side). WT has no rail,
+     so we absolute-position bottom-left inside the textarea's wrapper
+     (`#wt-drop-zone` / `#wt-they-drop-zone`). */
 .editor-search {
-    position: absolute;
-    bottom: calc(4vh + 0.4rem + 8px);
-    left: calc(8vw + 8px);
-    z-index: 2;
     flex-direction: row;
     align-items: center;
     gap: 4px;
+    z-index: 3;
 }
 
-/* BB / BC: textarea sits to the right of the 48 px preview rail +
-   8 px gap = 56 px of editor-wrapper gutter. Push the search pill
-   past the rail so it still anchors to the textarea's left edge,
-   not the editor-wrapper's. */
-#bb-drop-zone .editor-search,
-#bc-drop-zone .editor-search {
-    left: calc(8vw + 56px + 8px);
+.editor-search--rail {
+    /* Flow-layout inside the rail's flex-column. `margin-top: auto`
+       is what pushes this block to the bottom of the column.
+       `position: relative` so the expanded pill can absolute-float
+       out to the right of the 48 px rail into the textarea gutter. */
+    position: relative;
+    margin-top: auto;
+    padding-top: 8px;
+    align-self: center;
+}
+
+/* When the pill expands from a rail-placed toggle, float it out to
+   the right so the 240 px pill doesn't try to fit inside the 48 px
+   rail. Positioned bottom-aligned with the toggle so they read as
+   one horizontal unit. */
+.editor-search--rail.expanded .editor-search-pill {
+    position: absolute;
+    bottom: 0;
+    left: calc(100% + 8px);
+}
+
+.editor-search--overlay {
+    position: absolute;
+    bottom: 8px;
+    left: 8px;
 }
 
 /* Circular toggle button — same visual language as DELETE/RESET so

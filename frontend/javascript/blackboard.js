@@ -330,7 +330,13 @@ async function renderPreviewRail() {
         frag.appendChild(block);
     });
 
-    rail.replaceChildren(frag);
+    // Replace ONLY the preview blocks — keep the docked `.editor-search`
+    // at the bottom of the rail alive across renders. Using
+    // `replaceChildren(frag)` wiped the search UI with every syncView.
+    rail.querySelectorAll('.page-preview-block').forEach(b => b.remove());
+    const search = rail.querySelector('.editor-search');
+    if (search) rail.insertBefore(frag, search);
+    else rail.appendChild(frag);
 
     // If the search pill is open, the record set may have changed
     // (commit, cross-tab mutation, push/pull). Re-run match count so
@@ -894,14 +900,16 @@ function lockEditors(locked) {
     if (BBUI.elements.textarea) BBUI.elements.textarea.readOnly = locked;
 }
 
-// Tier 24 — content search pill on the editor's top-left. Reads from
-// the same `_previewRailCache` that backs the preview rail (newest-
-// first indexed, matches head numbering) so search results align with
-// the rail's visual order. `_navigateToHead` is the shared save +
-// syncView path used by rail clicks and drag-and-drop, so a search
-// jump lands with identical side effects.
+// Tier 24 — content search pill docked at the bottom of the preview
+// rail. Root is the rail itself (not the editor-wrapper) so the
+// toggle sits visually under the last preview block, exactly where
+// the user's eye already rests when scanning history. Reads from the
+// same `_previewRailCache` that backs the rail. `_navigateToHead` is
+// the shared save + syncView path used by rail clicks / drag-and-drop
+// so a search jump lands with identical side effects.
 const bbSearch = attachContentSearch({
-    root: document.getElementById('bb-drop-zone'),
+    root: $previewRail,
+    placement: 'rail',
     getRecords: () => _previewRailCache,
     getCurrentHead: () => state.isVirtual ? null : state.currentHead,
     navigateTo: (head) => _navigateToHead(head),
