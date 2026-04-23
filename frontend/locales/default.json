@@ -333,6 +333,23 @@
       "button": "Render the current note as formatted Markdown below."
     }
   },
+  "flashcards": {
+    "titleSuffix": "FLASHCARDS",
+    "frontPlaceholder": "Front — question or term",
+    "backPlaceholder": "Back — answer or definition",
+    "addBtn": "ADD",
+    "modeLabel": "MODE",
+    "modeSequential": "SEQUENTIAL",
+    "modeRandom": "RANDOM",
+    "listLabel": "CARDS ({count})",
+    "empty": "No cards yet. Add your first above — or use the AI Tutor's \"Create flashcards\" action.",
+    "playBtn": "PLAY",
+    "resetBtn": "RESET ALL",
+    "resetComplete": "FLASHCARDS CLEARED",
+    "playComingSoon": "Player ships in the next tier — Maker is live now",
+    "unavailable": "Open a notebook page first to start a deck here.",
+    "loading": "Loading flashcards…"
+  },
   "config": {
     "autoSync": "AUTO SYNC",
     "notifications": "NOTIFICATIONS",
