@@ -629,6 +629,42 @@ Log section; every new user decision gets appended with a date.
 - **Tier 9d** ✅ (shipped) — BB Flashcards.
 - **Tier 9e** ✅ (shipped 2026-04-24) — BC Flashcards. See the
   BC Flashcards (Tier 9e) section below for the cast-bundle contract.
+- **Tier 9g — Access Whitelist backbone (shared by BC + Inbox)**.
+  Spec per stakeholder 2026-04-24: Broadcast channels AND Inbox
+  containers both gated by the same polymorphic whitelist system.
+  Empty whitelist = public (backward-compat for existing channels);
+  non-empty = `{whitelisted uids} ∪ {owner}` only. Must ship BEFORE
+  Tier 23-A so Inbox can reuse the same `AccessWhitelistService` /
+  `access_whitelists` table / UI component rather than reinventing.
+    - New table `access_whitelists(container_type, container_id,
+      uid)` + UNIQUE + INDEX. container_type = `'broadcast' | 'inbox'`.
+      Polymorphic — chosen over two per-table whitelists for
+      code/UI reuse; cascade handled at app level on channel /
+      inbox destroy (no DB FK across polymorphic ref).
+    - `AccessWhitelistService::{list, add, remove, isVisibleTo}`.
+      `isVisibleTo` is the gate called by every read path:
+      `listChannels` filters, `fetchBoards / getCalendar /
+      getFlashcards` return 403 when hidden, WS channel auth in
+      `routes/channels.php` rejects non-whitelisted subscribers.
+    - Owner endpoints: `GET/POST/DELETE
+      /api/broadcast/channels/{id}/whitelist[/{uid}]`. Inbox
+      mirrors the shape on `/api/inbox/{id}/whitelist`.
+    - Frontend: channel/inbox objects carry `isPublic: bool`,
+      list rows lock-icon private channels, owner editor exposes
+      a "Manage Access" shelf reading / writing the whitelist.
+      Non-whitelisted subscribers either don't see the row (list
+      filter) or get an access-denied toast on pin attempt.
+    - Tests: `AccessWhitelistServiceTest` (CRUD + isVisibleTo
+      truth table) + controller tests (owner-only guard, 403 when
+      hidden, 200 when whitelisted / public). Existing BC / Inbox
+      read-path tests extended to cover the whitelist gate.
+- **Tier 23 — Inbox system** (depends on 9g). BC variant with a
+  whitelist (reuses 9g), sender 4-component view, receiver preview
+  rail + search + whitelist management. Independent tables
+  (`inboxes`, `inbox_submissions`, `inbox_feedback`) — NOT a
+  `broadcast_channels.type` overload. Name locked as "inbox" (no
+  "mailbox" ambiguity). Unidirectional feedback thread (not WT-
+  style bi-directional).
 - **Tier 14 part 2** — (superseded by 9e) server-side sync for BC
   Flashcard data now flows through the existing `cast` endpoint.
 - **Tier 13** — List status icons + 4 px left border sweep.
@@ -637,6 +673,11 @@ Log section; every new user decision gets appended with a date.
 - **Tier 17** — README + SW precache rebuild.
 - **Pending mission**: LLM multi-branch aggregation (memory:
   `project_pending_llm_multipage.md`).
+
+**Execution order (updated 2026-04-24):**
+`24 ✅ → 9e ✅ → 9g → 23-A → 23-B → 23-C`. 9g was added
+per stakeholder request to extend whitelist from Inbox-only to
+a shared BC+Inbox subsystem.
 
 ### Doc-discipline rule for this session
 
