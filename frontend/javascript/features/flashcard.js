@@ -28,6 +28,7 @@ import { BBState } from '../blackboard.js';
 import { BBMessage } from '../blackboard-msg.js';
 import { BCChannel } from '../broadcast-channel.js';
 import { BCMeta } from '../broadcast-db.js';
+import { BroadcastFlashcardsService } from '../services/broadcast-flashcards-service.js';
 import { t } from '../i18n.js';
 
 const ICON_URL = '/images/flashcard.svg';
@@ -467,5 +468,71 @@ export const feature = {
 
         _view = 'maker';
         renderMaker();
+
+        // Owner-side cross-device refresh. If the channel has no
+        // pending local edits (`isDirty === false`), pull the
+        // current server deck and overwrite BCMeta — so a device
+        // that didn't cast the latest version still catches up the
+        // moment the owner opens the shelf. When dirty, SKIP — local
+        // has unsent work we must not clobber.
+        //
+        // Runs AFTER the initial render so the user sees their local
+        // copy immediately; a fresher server deck swaps in a frame
+        // later via re-render.
+        if (_currentScope.kind === 'bc' && _currentScope.serverChannelId) {
+            refreshOwnerDeckFromServer(_currentScope).catch(err =>
+                console.warn('[flashcard] owner refresh failed', err)
+            );
+        }
     },
 };
+
+/**
+ * Background refresh for BC owner: compare server deck to local,
+ * adopt server if differs AND channel isn't dirty. Skips entirely
+ * on dirty channels (local has unsent edits = local is newer).
+ *
+ * Called fire-and-forget from onOpen. A later user edit races against
+ * this refresh: saveDeck will overwrite whatever we write here, which
+ * is correct — the user's in-flight input wins over a stale async
+ * fetch result.
+ */
+async function refreshOwnerDeckFromServer(scope) {
+    // Guard: another shelf-open swapped scope while we were awaiting.
+    if (scope !== _currentScope) return;
+
+    const dirty = await BCMeta.isDirty(scope.localId);
+    if (dirty) return;  // Don't clobber unsent local work.
+
+    const res = await BroadcastFlashcardsService.fetch(scope.serverChannelId);
+    // `flashcards: []` means "no deck set" on the server; treat as null.
+    const serverRaw = res?.flashcards;
+    const serverDeck = normaliseDeck(
+        (serverRaw && typeof serverRaw === 'object' && !Array.isArray(serverRaw))
+            ? serverRaw : null
+    );
+
+    // Scope may have changed while awaiting (user switched channels).
+    if (scope !== _currentScope) return;
+
+    // Compare the meaningful part of the deck (cards) — playState
+    // differences between devices are expected and not a trigger to
+    // re-render.
+    const localCardsJson = JSON.stringify(_currentDeck.cards);
+    const serverCardsJson = JSON.stringify(serverDeck.cards);
+    if (localCardsJson === serverCardsJson) return;
+
+    // Adopt server deck. Write to BCMeta so the next open reads the
+    // fresh value from local cache; re-render shelf so the user sees
+    // the refreshed deck immediately.
+    _currentDeck = serverDeck;
+    await BCMeta.setFlashcards(scope.localId, serverDeck);
+
+    // Re-render whichever view the user is on.
+    if (_view === 'player' && _currentDeck.cards.length > 0) {
+        renderPlayer();
+    } else {
+        _view = 'maker';
+        renderMaker();
+    }
+}
