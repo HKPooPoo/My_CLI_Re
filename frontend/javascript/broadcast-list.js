@@ -22,7 +22,7 @@
 
 import { BroadcastService } from './services/broadcast-service.js';
 import { FileService } from './services/file-service.js';
-import { BCDb, BCMeta, getHKTTimestamp } from './broadcast-db.js';
+import { BCDb, BCMeta, getHKTTimestamp, _parseJsonbColumn } from './broadcast-db.js';
 import { InfiniteList } from './blackboard-ui-list.js';
 import { MultiStepButton } from './multiStepButton.js';
 import { BBMessage } from './blackboard-msg.js';
@@ -483,6 +483,18 @@ export const BCList = {
                     found.ownerTitle = sch.owner_title ?? '';
                     found.isPinned = sch.is_pinned ?? false;
                     found.isLocalOnly = false;
+                    // Tier 9e — pipe server JSONB blobs (calendar +
+                    // flashcards) onto the merged channel. DB facade
+                    // returns these as raw JSON strings; `_parseJsonbColumn`
+                    // decodes to real objects. Feature modules
+                    // (features/calendar.js, features/flashcard.js) read
+                    // these through `BCChannel.currentChannel`.
+                    // For owner-local rows we PREFER server (matches
+                    // LWW semantics — the last cast wins across devices),
+                    // but guard with a null check so the existing
+                    // subscriber-path and uncast rows still work.
+                    found.calendar = _parseJsonbColumn(sch.calendar, null);
+                    found.flashcards = _parseJsonbColumn(sch.flashcards, null);
                 } else {
                     // Server-only channel (not owned locally)
                     const pseudoLocalId = -(sch.id); // negative to avoid collision with Dexie auto-increment
@@ -495,7 +507,9 @@ export const BCList = {
                         ownerTitle: sch.owner_title ?? '',
                         isPinned: sch.is_pinned ?? false,
                         isLocal: false,
-                        isLocalOnly: false
+                        isLocalOnly: false,
+                        calendar: _parseJsonbColumn(sch.calendar, null),
+                        flashcards: _parseJsonbColumn(sch.flashcards, null),
                     });
                 }
             }

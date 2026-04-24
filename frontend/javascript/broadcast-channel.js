@@ -29,6 +29,7 @@
 
 import { BCDb, BCMeta, getHKTTimestamp } from './broadcast-db.js';
 import { BroadcastService } from './services/broadcast-service.js';
+import { BroadcastFlashcardsService } from './services/broadcast-flashcards-service.js';
 import { EditorAttachments } from './editor-attachments.js';
 import { playAudio } from './audio.js';
 import { BBMessage } from './blackboard-msg.js';
@@ -239,7 +240,25 @@ export const BCChannel = {
                         return;
                     }
                     _readerCache.delete(e.channel_id);
-                    if (!this.isOwnerMode) this.loadReaderMode(this.currentChannel);
+                    if (!this.isOwnerMode) {
+                        this.loadReaderMode(this.currentChannel);
+                        // Tier 9e — the cast event means server's flashcards
+                        // blob may have changed. Without this refresh, the
+                        // subscriber's `currentChannel.flashcards` sits on
+                        // whatever value was in the last channel-list merge,
+                        // so the flashcard shelf would keep showing the old
+                        // deck after the owner casts a new one. Fetch is
+                        // cheap (single row GET) and fire-and-forget — a
+                        // race against shelf re-open is self-healing (next
+                        // open sees the new value).
+                        BroadcastFlashcardsService.fetch(e.channel_id)
+                            .then(data => {
+                                if (this.currentChannel?.serverChannelId === e.channel_id) {
+                                    this.currentChannel.flashcards = data?.flashcards ?? null;
+                                }
+                            })
+                            .catch(err => console.warn('[BC] flashcards refresh failed', err));
+                    }
                     window.dispatchEvent(new CustomEvent('broadcast:signalUpdated', {
                         detail: { serverChannelId: e.channel_id, lastSignal: e.last_signal }
                     }));

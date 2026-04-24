@@ -15,8 +15,14 @@ import * as Settings from './settings.js';
  * (Eloquent's `$casts` is what would auto-decode; listChannels uses
  * DB facade). Parse here so the rest of the code sees a real object.
  * Bad strings / null / undefined fall back to the supplied default.
+ *
+ * Exported so the channel-list merge step (broadcast-list.js) can
+ * apply the same parse rule. Without this, subscribers end up with
+ * `channel.flashcards` as a raw JSON string, the flashcard feature
+ * sees `typeof === 'string'` and falls back to an empty deck — this
+ * was the "Broadcast Flashcard unusable" symptom.
  */
-function _parseJsonbColumn(raw, fallback) {
+export function _parseJsonbColumn(raw, fallback) {
     if (raw === null || raw === undefined) return fallback;
     if (typeof raw === 'object') return raw;
     if (typeof raw !== 'string') return fallback;
