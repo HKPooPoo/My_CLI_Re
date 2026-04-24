@@ -61,18 +61,18 @@ class BroadcastChannelService
     /**
      * Cast (publish) a channel to the server.
      *
-     * `calendar` is optional; when provided it is persisted to
-     * broadcast_channels.calendar in the same transaction as records.
-     * This keeps the calendar on the same manual-sync cadence as
+     * `calendar` and `flashcards` are optional; when provided each is
+     * persisted to its own JSONB column in the same transaction as
+     * records. This keeps both on the same manual-sync cadence as
      * text + files — no live per-edit writes.
      */
-    public function cast(User $user, string $channelName, array $records, ?array $calendar = null): object
+    public function cast(User $user, string $channelName, array $records, ?array $calendar = null, ?array $flashcards = null): object
     {
         if (!$user->title) {
             abort(403, 'TITLE REQUIRED');
         }
 
-        $channel = DB::transaction(function () use ($user, $channelName, $records, $calendar) {
+        $channel = DB::transaction(function () use ($user, $channelName, $records, $calendar, $flashcards) {
             $nowMs = (int) (microtime(true) * 1000);
 
             $channel = DB::table('broadcast_channels')
@@ -83,6 +83,9 @@ class BroadcastChannelService
             if ($calendar !== null) {
                 $channelUpdateFields['calendar'] = json_encode($calendar);
             }
+            if ($flashcards !== null) {
+                $channelUpdateFields['flashcards'] = json_encode($flashcards);
+            }
 
             if (!$channel) {
                 $channelId = DB::table('broadcast_channels')->insertGetId([
@@ -90,6 +93,7 @@ class BroadcastChannelService
                     'user_id'     => $user->id,
                     'last_signal' => $nowMs,
                     'calendar'    => $calendar !== null ? json_encode($calendar) : null,
+                    'flashcards'  => $flashcards !== null ? json_encode($flashcards) : null,
                     'created_at'  => now(),
                     'updated_at'  => now(),
                 ]);
@@ -301,6 +305,24 @@ class BroadcastChannelService
         $raw = DB::table('broadcast_channels')
             ->where('id', $channelId)
             ->value('calendar');
+        if (!$raw) return [];
+        $decoded = is_array($raw) ? $raw : json_decode($raw, true);
+        return is_array($decoded) ? $decoded : [];
+    }
+
+    /**
+     * Fetch a channel's flashcards dict. Public read; returns an empty
+     * object when the channel has none or does not exist. Same
+     * "cast is the only writer" contract as getCalendar.
+     *
+     * Shape when populated:
+     *   { cards: [{ front, back }, ...], mode, playState: { ... } }
+     */
+    public function getFlashcards(int $channelId): array
+    {
+        $raw = DB::table('broadcast_channels')
+            ->where('id', $channelId)
+            ->value('flashcards');
         if (!$raw) return [];
         $decoded = is_array($raw) ? $raw : json_decode($raw, true);
         return is_array($decoded) ? $decoded : [];

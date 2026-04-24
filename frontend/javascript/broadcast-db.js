@@ -10,6 +10,19 @@ import db, { Dexie } from './indexedDB.js';
 export { getHKTTimestamp } from './utils.js';
 import * as Settings from './settings.js';
 
+/**
+ * JSONB columns come back from Laravel DB raw queries as strings
+ * (Eloquent's `$casts` is what would auto-decode; listChannels uses
+ * DB facade). Parse here so the rest of the code sees a real object.
+ * Bad strings / null / undefined fall back to the supplied default.
+ */
+function _parseJsonbColumn(raw, fallback) {
+    if (raw === null || raw === undefined) return fallback;
+    if (typeof raw === 'object') return raw;
+    if (typeof raw !== 'string') return fallback;
+    try { return JSON.parse(raw); } catch { return fallback; }
+}
+
 // =============================================================
 //  Board Operations (broadcast_boards)
 // =============================================================
@@ -191,11 +204,14 @@ export const BCMeta = {
                 owner_title: serverSide.owner_title || '',
                 last_signal: serverSide.last_signal || Date.now(),
                 // Carry the server's current calendar into the local row so
-                // the owner's next open shows their last cast. Null / non-
-                // object values fall back to an empty dict.
-                calendar: (serverSide.calendar && typeof serverSide.calendar === 'object')
-                    ? serverSide.calendar
-                    : {},
+                // the owner's next open shows their last cast. DB facade
+                // returns JSONB as a string — parse defensively; bad
+                // strings fall back to an empty dict.
+                calendar: _parseJsonbColumn(serverSide.calendar, {}),
+                // Same rule for flashcards — owner's last-cast deck copied
+                // into local on bootstrap so cross-device / post-WIPE opens
+                // resume rather than start empty.
+                flashcards: _parseJsonbColumn(serverSide.flashcards, null),
             });
 
             if (records && records.length > 0) {
@@ -263,6 +279,26 @@ export const BCMeta = {
 
     async setCalendar(localId, calendar) {
         await db.broadcast_channels.update(localId, { calendar });
+    },
+
+    /**
+     * Local per-channel flashcards state — shape:
+     *   { cards: [{ front, back }], mode, playState: { ... } } | null
+     * Same schemaless storage + cast-cadence as calendar. The whole
+     * blob is owner-authoritative; readers only read via the server
+     * GET endpoint or the broadcast channel index response. Returns
+     * `null` when the channel has never had a deck so the feature can
+     * tell "no deck yet" apart from "empty deck with zero cards".
+     */
+    async getFlashcards(localId) {
+        const row = await db.broadcast_channels.get(localId);
+        if (!row) return null;
+        if (row.flashcards === null || row.flashcards === undefined) return null;
+        return (typeof row.flashcards === 'object') ? row.flashcards : null;
+    },
+
+    async setFlashcards(localId, flashcards) {
+        await db.broadcast_channels.update(localId, { flashcards });
     },
 
     /**

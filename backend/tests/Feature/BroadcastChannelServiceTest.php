@@ -326,4 +326,129 @@ class BroadcastChannelServiceTest extends TestCase
         $this->expectException(HttpException::class);
         $this->service->pin($this->admin, 9999);
     }
+
+    // =========================================================================
+    //  cast() — calendar bundle (Tier 9c sanity)
+    // =========================================================================
+
+    #[Test] /* C19 */
+    public function cast_persists_calendar_when_provided(): void
+    {
+        $calendar = ['2026-05-01' => ['Midterm']];
+
+        $channel = $this->service->cast(
+            $this->admin, 'classroom', [['timestamp' => 1000, 'text' => 'hi']], $calendar
+        );
+
+        $stored = DB::table('broadcast_channels')->where('id', $channel->id)->value('calendar');
+        $this->assertEquals($calendar, json_decode($stored, true));
+    }
+
+    #[Test] /* C20 */
+    public function cast_keeps_existing_calendar_when_omitted(): void
+    {
+        // First cast writes calendar.
+        $first = $this->service->cast(
+            $this->admin, 'classroom', [['timestamp' => 1000, 'text' => 'a']],
+            ['2026-05-01' => ['Midterm']]
+        );
+
+        // Second cast omits calendar → existing value must survive.
+        $this->service->cast(
+            $this->admin, 'classroom', [['timestamp' => 2000, 'text' => 'b']]
+        );
+
+        $stored = DB::table('broadcast_channels')->where('id', $first->id)->value('calendar');
+        $this->assertEquals(['2026-05-01' => ['Midterm']], json_decode($stored, true));
+    }
+
+    // =========================================================================
+    //  cast() — flashcards bundle (Tier 9e)
+    // =========================================================================
+
+    #[Test] /* C21 */
+    public function cast_persists_flashcards_when_provided(): void
+    {
+        $deck = [
+            'cards' => [
+                ['front' => 'HTTP', 'back' => 'Hypertext Transfer Protocol'],
+                ['front' => 'DNS',  'back' => 'Domain Name System'],
+            ],
+            'mode' => 'sequential',
+            'playState' => ['currentIdx' => 0, 'face' => 'front', 'randomHistory' => []],
+        ];
+
+        $channel = $this->service->cast(
+            $this->admin, 'net101', [['timestamp' => 1000, 'text' => 'hi']], null, $deck
+        );
+
+        $stored = DB::table('broadcast_channels')->where('id', $channel->id)->value('flashcards');
+        $this->assertEquals($deck, json_decode($stored, true));
+    }
+
+    #[Test] /* C22 */
+    public function cast_keeps_existing_flashcards_when_omitted(): void
+    {
+        $deck = ['cards' => [['front' => 'a', 'back' => 'b']], 'mode' => 'random'];
+
+        $first = $this->service->cast(
+            $this->admin, 'deckchannel', [['timestamp' => 1000, 'text' => 'x']], null, $deck
+        );
+
+        // Second cast omits flashcards → must NOT wipe the stored deck.
+        $this->service->cast(
+            $this->admin, 'deckchannel', [['timestamp' => 2000, 'text' => 'y']]
+        );
+
+        $stored = DB::table('broadcast_channels')->where('id', $first->id)->value('flashcards');
+        $this->assertEquals($deck, json_decode($stored, true));
+    }
+
+    #[Test] /* C23 */
+    public function cast_updates_flashcards_on_resubmit(): void
+    {
+        $first = $this->service->cast(
+            $this->admin, 'deckchannel', [['timestamp' => 1000, 'text' => 'x']],
+            null, ['cards' => [['front' => 'old', 'back' => 'deck']], 'mode' => 'sequential']
+        );
+
+        $newDeck = ['cards' => [['front' => 'new', 'back' => 'deck']], 'mode' => 'random'];
+
+        $this->service->cast(
+            $this->admin, 'deckchannel', [['timestamp' => 2000, 'text' => 'y']], null, $newDeck
+        );
+
+        $stored = DB::table('broadcast_channels')->where('id', $first->id)->value('flashcards');
+        $this->assertEquals($newDeck, json_decode($stored, true));
+    }
+
+    #[Test] /* C24 */
+    public function get_flashcards_returns_empty_when_missing(): void
+    {
+        $channelId = $this->createChannel();
+        $this->assertEquals([], $this->service->getFlashcards($channelId));
+    }
+
+    #[Test] /* C25 */
+    public function get_flashcards_returns_stored_value(): void
+    {
+        $deck = [
+            'cards' => [['front' => 'a', 'back' => 'b']],
+            'mode' => 'sequential',
+            'playState' => ['currentIdx' => 0, 'face' => 'front', 'randomHistory' => []],
+        ];
+
+        $this->service->cast(
+            $this->admin, 'ch', [['timestamp' => 1000, 'text' => 'x']], null, $deck
+        );
+        $channel = DB::table('broadcast_channels')->where('name', 'ch')->first();
+
+        $this->assertEquals($deck, $this->service->getFlashcards($channel->id));
+    }
+
+    #[Test] /* C26 */
+    public function get_flashcards_returns_empty_for_nonexistent_channel(): void
+    {
+        $this->assertEquals([], $this->service->getFlashcards(99999));
+    }
 }

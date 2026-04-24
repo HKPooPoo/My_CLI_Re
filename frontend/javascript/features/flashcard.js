@@ -1,27 +1,33 @@
 /**
  * Feature: Flashcard Maker + Player (shelf-local)
  * =================================================================
- * Tier 9d-5 (revised from 9d-2): Player no longer takes over the
- * press-start-overlay — it lives INSIDE the same shelf panel as
- * the Maker, toggled by the PLAY / BACK controls. Keeps the user
- * inside one UI surface (less context-switch, fewer stacking
- * layers to debug).
+ * Tier 9d-5: Player lives INSIDE the shelf panel (no overlay
+ * takeover). Tier 9e extends to BC channels — owner edits locally
+ * via BCMeta and ships the deck to the server bundled with the
+ * next CAST; subscribers read via `BroadcastFlashcardsService`
+ * (falls back to the deck already in the channel-index response
+ * when present).
  *
- * Data shape (unchanged):
+ * Data shape (BB + BC both):
  *     {
  *         cards: [{ front, back }, ...],
  *         mode:  "sequential" | "random",
  *         playState: { currentIdx, face, randomHistory }
  *     }
  *
- * BB path uses sync-service (cross-device). BC extension point
- * stays in resolveScope(); Tier 9e-2 will populate it.
+ * Scope branching:
+ *   - BB:  users.settings.branchAssets.{branchId}.flashcard via sync-service
+ *   - BC owner:  db.broadcast_channels[localId].flashcards via BCMeta
+ *   - BC reader: BCChannel.currentChannel.flashcards (seeded from index
+ *     response; no direct fetch needed on open)
  * =================================================================
  */
 
 import { getSetting, setSetting } from '../sync-service.js';
 import { BBState } from '../blackboard.js';
 import { BBMessage } from '../blackboard-msg.js';
+import { BCChannel } from '../broadcast-channel.js';
+import { BCMeta } from '../broadcast-db.js';
 import { t } from '../i18n.js';
 
 const ICON_URL = '/images/flashcard.svg';
@@ -38,6 +44,15 @@ function defaultDeck() {
 
 function normaliseDeck(raw) {
     const deck = defaultDeck();
+    // Laravel DB facade returns JSONB columns as strings (not
+    // auto-decoded the way Eloquent `$casts = ['col' => 'array']`
+    // would). The channel-index snapshot therefore hands `flashcards`
+    // to us as a JSON string. Parse defensively — a bad string
+    // (manual DB tinkering, truncation) falls back to an empty deck.
+    if (typeof raw === 'string') {
+        try { raw = JSON.parse(raw); }
+        catch { return deck; }
+    }
     if (!raw || typeof raw !== 'object') return deck;
     if (Array.isArray(raw.cards)) {
         deck.cards = raw.cards
@@ -71,24 +86,73 @@ function resolveScope() {
     if (page === 'blackboard-log') {
         const branchId = BBState?.branchId;
         if (!branchId) return null;
-        return { kind: 'bb', branchId, title: (BBState?.branch || 'NOTEBOOK') };
+        return {
+            kind: 'bb',
+            branchId,
+            title: (BBState?.branch || 'NOTEBOOK'),
+            readOnly: false,
+        };
+    }
+    if (page === 'broadcast-channel') {
+        const ch = BCChannel?.currentChannel;
+        if (!ch) return null;
+        const isOwner = !!BCChannel?.isOwnerMode;
+        // Reader uses the server's snapshot sitting on the channel
+        // object (from the /channels index response). Owner uses the
+        // local BCMeta row so in-progress edits between casts don't
+        // leak to subscribers prematurely.
+        return {
+            kind: 'bc',
+            localId: ch.localId ?? null,
+            serverChannelId: ch.serverChannelId ?? null,
+            channelSnapshot: ch,          // reader fallback source
+            title: ch.name || 'CHANNEL',
+            readOnly: !isOwner,
+        };
     }
     return null;
 }
 
-function loadDeck(scope) {
+async function loadDeck(scope) {
     if (!scope) return defaultDeck();
     if (scope.kind === 'bb') {
         const raw = getSetting(`branchAssets.${scope.branchId}.flashcard`, null);
+        return normaliseDeck(raw);
+    }
+    if (scope.kind === 'bc') {
+        if (!scope.readOnly && scope.localId != null) {
+            // Owner path — local is the source of truth between casts.
+            const raw = await BCMeta.getFlashcards(scope.localId);
+            return normaliseDeck(raw);
+        }
+        // Reader path — trust the snapshot from the channel-index
+        // response first (cheap, already loaded). No direct fetch on
+        // open; stakeholder-facing subscribers can pull `latest` via
+        // `BroadcastFlashcardsService.fetch()` if we later add a
+        // refresh button.
+        const raw = scope.channelSnapshot?.flashcards ?? null;
         return normaliseDeck(raw);
     }
     return defaultDeck();
 }
 
 function saveDeck(scope, deck) {
-    if (!scope) return;
+    if (!scope || scope.readOnly) return;
     if (scope.kind === 'bb') {
         setSetting(`branchAssets.${scope.branchId}.flashcard`, deck);
+        return;
+    }
+    if (scope.kind === 'bc' && scope.localId != null) {
+        // Fire-and-forget — Dexie update is fast; caller doesn't need
+        // to await a persist just to render the next frame. A failure
+        // here is logged but doesn't block the UI (the deck is still
+        // in memory; next save has another chance). Mark the channel
+        // dirty so the list icon flips to "unsynced" and the owner
+        // knows a cast is owed.
+        BCMeta.setFlashcards(scope.localId, deck).catch(err =>
+            console.warn('[flashcard] BCMeta.setFlashcards failed', err)
+        );
+        BCChannel?._markLocalDirty?.();
     }
 }
 
@@ -213,10 +277,16 @@ function renderPlayer() {
     const card = deck.cards[idx];
     const isFlipped = deck.playState.face === 'back';
 
+    // Reader has no Maker to go back to — hide the BACK control so
+    // subscribers don't land on an edit UI whose saves silently no-op.
+    const showBackBtn = !_currentScope?.readOnly;
+
     $shelfRoot.innerHTML = `
         <div class="feature-panel" data-feature="flashcard">
             <div class="fc-player-top">
-                <button class="fc-back-btn" aria-label="${escapeAttr(t('flashcards.backToMaker'))}">⟵ ${t('flashcards.backToMaker')}</button>
+                ${showBackBtn
+                    ? `<button class="fc-back-btn" aria-label="${escapeAttr(t('flashcards.backToMaker'))}">⟵ ${t('flashcards.backToMaker')}</button>`
+                    : `<span class="fc-reader-badge">${t('flashcards.readerBadge')}</span>`}
                 <div class="fc-player-counter">${idx + 1} / ${deck.cards.length}</div>
             </div>
 
@@ -366,7 +436,7 @@ export const feature = {
         </div>`;
     },
 
-    onOpen($shelf) {
+    async onOpen($shelf) {
         $shelfRoot = $shelf;
         _currentScope = resolveScope();
         if (!_currentScope) {
@@ -376,7 +446,25 @@ export const feature = {
             </div>`;
             return;
         }
-        _currentDeck = loadDeck(_currentScope);
+        _currentDeck = await loadDeck(_currentScope);
+
+        // Reader skips the Maker entirely. An empty deck shows a
+        // read-only placeholder (nothing to study); a non-empty deck
+        // opens directly into the Player. Owner and BB paths keep
+        // the existing Maker-first flow.
+        if (_currentScope.readOnly) {
+            if (_currentDeck.cards.length === 0) {
+                $shelf.innerHTML = `<div class="feature-panel" data-feature="flashcard">
+                    <div class="feature-title fc-title">${escapeHtml(_currentScope.title || 'FLASHCARDS')} ${t('flashcards.titleSuffix')}</div>
+                    <div class="feature-placeholder">${t('flashcards.readerEmpty')}</div>
+                </div>`;
+                return;
+            }
+            _view = 'player';
+            renderPlayer();
+            return;
+        }
+
         _view = 'maker';
         renderMaker();
     },

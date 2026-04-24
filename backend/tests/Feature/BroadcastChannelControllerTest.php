@@ -542,4 +542,93 @@ class BroadcastChannelControllerTest extends TestCase
         $this->assertDatabaseCount('broadcast_boards', 0);
         $this->assertDatabaseCount('broadcast_pins', 0);
     }
+
+    // =========================================================================
+    //  Tier 9e — flashcards bundle via cast + dedicated GET endpoint
+    // =========================================================================
+
+    #[Test]
+    public function cast_accepts_flashcards_payload(): void
+    {
+        $deck = [
+            'cards' => [['front' => 'a', 'back' => 'b']],
+            'mode' => 'sequential',
+        ];
+
+        $response = $this->actingAs($this->titled)->postJson('/api/broadcast/channels/cast', [
+            'channel_name' => 'deckchannel',
+            'records' => [['timestamp' => 1000, 'text' => 'hello']],
+            'flashcards' => $deck,
+        ]);
+
+        $response->assertStatus(200);
+        $stored = DB::table('broadcast_channels')->where('name', 'deckchannel')->value('flashcards');
+        $this->assertEquals($deck, json_decode($stored, true));
+    }
+
+    #[Test]
+    public function cast_rejects_flashcards_non_array(): void
+    {
+        $response = $this->actingAs($this->titled)->postJson('/api/broadcast/channels/cast', [
+            'channel_name' => 'deckchannel',
+            'records' => [['timestamp' => 1000, 'text' => 'hi']],
+            'flashcards' => 'not-an-array',
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['flashcards']);
+    }
+
+    #[Test]
+    public function show_flashcards_returns_empty_for_channel_with_no_deck(): void
+    {
+        $chId = $this->createChannel('empty-deck');
+
+        $response = $this->getJson("/api/broadcast/channels/{$chId}/flashcards");
+
+        $response->assertStatus(200)
+            ->assertJson(['flashcards' => []]);
+    }
+
+    #[Test]
+    public function show_flashcards_returns_stored_deck(): void
+    {
+        $deck = [
+            'cards' => [['front' => 'HTTP', 'back' => 'Hypertext Transfer Protocol']],
+            'mode' => 'random',
+            'playState' => ['currentIdx' => 0, 'face' => 'front', 'randomHistory' => []],
+        ];
+
+        $this->actingAs($this->titled)->postJson('/api/broadcast/channels/cast', [
+            'channel_name' => 'net101',
+            'records' => [['timestamp' => 1000, 'text' => 'x']],
+            'flashcards' => $deck,
+        ])->assertStatus(200);
+
+        $chId = DB::table('broadcast_channels')->where('name', 'net101')->value('id');
+
+        $response = $this->getJson("/api/broadcast/channels/{$chId}/flashcards");
+
+        $response->assertStatus(200)
+            ->assertJson(['flashcards' => $deck]);
+    }
+
+    #[Test]
+    public function show_flashcards_is_public_no_auth_required(): void
+    {
+        $deck = ['cards' => [['front' => 'a', 'back' => 'b']]];
+
+        $this->actingAs($this->titled)->postJson('/api/broadcast/channels/cast', [
+            'channel_name' => 'pub',
+            'records' => [['timestamp' => 1000, 'text' => 'x']],
+            'flashcards' => $deck,
+        ]);
+
+        $chId = DB::table('broadcast_channels')->where('name', 'pub')->value('id');
+
+        // Guest (no actingAs) — must still succeed.
+        $this->getJson("/api/broadcast/channels/{$chId}/flashcards")
+            ->assertStatus(200)
+            ->assertJson(['flashcards' => $deck]);
+    }
 }

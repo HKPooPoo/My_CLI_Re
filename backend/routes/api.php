@@ -30,6 +30,7 @@ Route::get('/status', [StatusController::class, 'check']);
 Route::get('/broadcast/channels', [BroadcastChannelController::class, 'index']);
 Route::get('/broadcast/channels/{channelId}/boards', [BroadcastChannelController::class, 'fetchBoards']);
 Route::get('/broadcast/channels/{channelId}/calendar', [BroadcastChannelController::class, 'showCalendar']);
+Route::get('/broadcast/channels/{channelId}/flashcards', [BroadcastChannelController::class, 'showFlashcards']);
 
 // Timing config — read once at app boot (frontend caches in memory)
 Route::get('/config/timing', fn() => response()->json(config('timing')));

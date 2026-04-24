@@ -289,14 +289,19 @@ export const BCList = {
                             });
                         }
 
-                        // Include local calendar in cast payload — bundled
-                        // with records, same manual-sync cadence as text + files.
+                        // Include local calendar + flashcards in cast payload
+                        // — bundled with records, same manual-sync cadence as
+                        // text + files. Flashcards may be `null` when the
+                        // owner has never opened the deck; pass the raw value
+                        // through so backend can null it consistently.
                         const localCalendar = await BCMeta.getCalendar(ch.localId);
+                        const localFlashcards = await BCMeta.getFlashcards(ch.localId);
 
                         const result = await BroadcastService.cast({
                             channel_name: ch.name,
                             records: apiRecords,
                             calendar: localCalendar,
+                            flashcards: localFlashcards,
                         });
 
                         const serverCh = result.channel;

@@ -358,7 +358,9 @@
     "loading": "Loading flashcards…",
     "aiSuccess": "AI generated {count} flashcards — saved to this notebook",
     "aiParseFail": "AI response wasn't valid flashcard JSON — try again",
-    "aiScopeMissing": "Open a notebook page before asking AI to create flashcards"
+    "aiScopeMissing": "Open a notebook page before asking AI to create flashcards",
+    "readerEmpty": "No flashcards cast for this channel yet. The owner's next CAST will publish their deck here.",
+    "readerBadge": "READ-ONLY"
   },
   "search": {
     "placeholder": "Search pages…"

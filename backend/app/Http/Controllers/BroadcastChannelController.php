@@ -42,13 +42,15 @@ class BroadcastChannelController extends Controller
             'records.*.timestamp' => 'required|integer',
             'records.*.file_hash' => 'nullable|string|max:65535',
             'calendar'           => 'nullable|array',
+            'flashcards'         => 'nullable|array',
         ]);
 
         $channel = $this->service->cast(
             $user,
             $request->input('channel_name'),
             $request->input('records'),
-            $request->input('calendar')
+            $request->input('calendar'),
+            $request->input('flashcards')
         );
 
         return response()->json(['message' => 'CAST COMPLETE', 'channel' => $channel]);
@@ -137,5 +139,17 @@ class BroadcastChannelController extends Controller
     {
         $calendar = $this->service->getCalendar((int) $channelId);
         return response()->json(['calendar' => $calendar]);
+    }
+
+    /**
+     * GET /api/broadcast/channels/{channelId}/flashcards
+     *
+     * Public read (same contract as showCalendar). Writes bundle
+     * with records in the cast endpoint.
+     */
+    public function showFlashcards($channelId)
+    {
+        $flashcards = $this->service->getFlashcards((int) $channelId);
+        return response()->json(['flashcards' => $flashcards]);
     }
 }

@@ -397,6 +397,73 @@ Log section; every new user decision gets appended with a date.
     - **i18n**: `search.placeholder` for input; `hints.search.open /
       prev / next` for the three buttons.
 
+19. **Tier 9e — BC Flashcards (cast-bundle, mirror of 9c Calendar)**.
+    - **Migration**: `2026_04_24_000001_add_flashcards_to_broadcast_channels.php`
+      adds `flashcards` JSONB column (nullable, positioned after
+      `calendar`). No data migration — existing channels resolve to
+      `null → normaliseDeck → empty deck`.
+    - **Backend service**:
+      `BroadcastChannelService::cast(User, name, records, ?calendar, ?flashcards)`
+      — new 5th argument. Persists via `json_encode` in the same
+      DB transaction as records. Owner-only enforcement is inherited
+      from the existing title + user_id guard. New `getFlashcards(int)`
+      method for the public read endpoint.
+    - **Routes**:
+      - `POST /api/broadcast/channels/cast` — validates `flashcards`
+        as `nullable|array`; no nested schema enforcement (client-
+        opinionated shape).
+      - `GET /api/broadcast/channels/{channelId}/flashcards` — public
+        read, no auth (same contract as `/calendar`).
+    - **Frontend persistence**:
+      - **Owner**: `BCMeta.getFlashcards(localId)` /
+        `setFlashcards(localId, deck)` — Dexie schemaless field on
+        `db.broadcast_channels`. On any `setFlashcards` call,
+        `features/flashcard.js` also fires `BCChannel._markLocalDirty()`
+        so the list row icon flips to cloud-with-cross until the
+        next cast.
+      - **Reader**: snapshot from the channel-index response
+        (`BCChannel.currentChannel.flashcards`) is the default
+        source; `BroadcastFlashcardsService.fetch(channelId)` is
+        wired but not auto-called (subscribers rely on the index
+        poll / WebSocket re-fetch).
+    - **Cast path**: `broadcast-list.js` reads
+      `BCMeta.getFlashcards(ch.localId)` and attaches `flashcards`
+      to the cast payload alongside the existing `calendar` field.
+      Bundled — one transaction, one WebSocket event.
+    - **Bootstrap**: `BCMeta.bootstrapFromServer` copies
+      `serverSide.flashcards` into the new local row so cross-
+      device / post-WIPE owner opens resume rather than starting
+      empty. Uses a new `_parseJsonbColumn` helper because
+      Laravel's DB facade returns JSONB as a string (not auto-
+      decoded); applied to both `calendar` and `flashcards` so the
+      parse is centralised.
+    - **features/flashcard.js scope branching**:
+      - `resolveScope()` now returns `{ kind: 'bc', localId,
+        serverChannelId, channelSnapshot, title, readOnly }` when
+        the page is `broadcast-channel`. `readOnly = !isOwnerMode`.
+      - `loadDeck` is now async; owner reads from `BCMeta`, reader
+        reads from `scope.channelSnapshot.flashcards` (parsed via
+        the same `normaliseDeck` string-tolerant entry point).
+      - `saveDeck` early-returns when `scope.readOnly` is true —
+        keeps the Player state updates in memory for the subscriber
+        but never writes back.
+      - Reader UI: empty deck shows `flashcards.readerEmpty`
+        placeholder (no Maker, no Player); non-empty deck opens
+        straight into the Player with a `READ-ONLY` badge in place
+        of the BACK button (they have no Maker to go back to).
+    - **Tests**: 13 new cases (`BroadcastChannelServiceTest` C19–C26 +
+      `BroadcastChannelControllerTest` 5 new methods) cover
+      calendar persistence sanity (one gap closed from the 9c
+      decision-log note) + every flashcards path: persist on
+      provide, keep-existing-on-omit, update-on-resubmit,
+      `getFlashcards` empty + populated, HTTP validation rejection,
+      dedicated GET endpoint (owner + guest). Total suite now
+      306 passed / 694 assertions.
+    - **Known behaviour**: cast omits `flashcards` → the existing
+      server value is preserved (not wiped). Same pattern as
+      calendar. Matches the "cast re-uploads text + files
+      unconditionally but auxiliary blobs are sticky" spec.
+
 17. **Tier 9d + 22.14 — BB Flashcards (shelf-local Maker + Player)**.
     - `frontend/javascript/features/flashcard.js` — full BB impl.
       Data lives at `users.settings.branchAssets.{branchId}.flashcard =
@@ -558,13 +625,12 @@ Log section; every new user decision gets appended with a date.
 
 ### Still pending (post-demo backlog)
 
-- **Tier 9c** — BC Calendar server-side (new table or
-  `broadcast_channels.calendar` JSONB), owner-writes / subscribers-
-  read. Title: `{channel name} CALENDAR`.
-- **Tier 9d** — BB Flashcard maker + player (per-branch, sync-backed).
-- **Tier 9e** — BC Flashcard (per-channel server-side, same
-  ownership semantics as BC Calendar).
-- **Tier 14 part 2** — Server sync for Flashcard data.
+- **Tier 9c** ✅ (shipped) — BC Calendar server-side.
+- **Tier 9d** ✅ (shipped) — BB Flashcards.
+- **Tier 9e** ✅ (shipped 2026-04-24) — BC Flashcards. See the
+  BC Flashcards (Tier 9e) section below for the cast-bundle contract.
+- **Tier 14 part 2** — (superseded by 9e) server-side sync for BC
+  Flashcard data now flows through the existing `cast` endpoint.
 - **Tier 13** — List status icons + 4 px left border sweep.
 - **Tier 15** — Read/PIN ratio on announcements + Ctrl-K search.
 - **Tier 16** — Restaurant backend purge.
@@ -726,7 +792,7 @@ docker exec my-cli-api php artisan test                        # Run all tests (
 docker exec my-cli-api php artisan test --filter TestClassName # Run single test class
 ```
 
-### Test Suite (293 tests, 674 assertions)
+### Test Suite (306 tests, 694 assertions)
 
 | Test Class | Tests | What it covers |
 |------------|-------|----------------|
@@ -735,8 +801,8 @@ docker exec my-cli-api php artisan test --filter TestClassName # Run single test
 | `BackendServiceControllerTest` | 22 | HTTP integration: status health check, translation validation + mock, speech validation + size limit, LLM chat validation + provider routing, ollama health mock + cache |
 | `BlackboardServiceTest` | 19 | LWW commit, blank skip, dedup, cache, events, CRUD |
 | `BlackboardControllerTest` | 36 | HTTP integration: commit validation, auth guards, response format, round-trip, LWW via HTTP, fetch filters unavailable file_hash (A5), DANGER ZONE delete-all-branches |
-| `BroadcastChannelServiceTest` | 19 | cast (DELETE+INSERT), rename, destroy, pin/unpin, title guard |
-| `BroadcastChannelControllerTest` | 34 | HTTP integration: public index/fetchBoards, cast validation + title guard, rename/destroy ownership, pin/unpin, lifecycle |
+| `BroadcastChannelServiceTest` | 27 | cast (DELETE+INSERT), rename, destroy, pin/unpin, title guard, calendar persistence (C19–C20, Tier 9c sanity), flashcards persistence + getFlashcards (C21–C26, Tier 9e) |
+| `BroadcastChannelControllerTest` | 39 | HTTP integration: public index/fetchBoards, cast validation + title guard, rename/destroy ownership, pin/unpin, lifecycle, flashcards cast bundle + validation rejection + public GET endpoint (Tier 9e) |
 | `FileControllerTest` | 29 | HTTP integration: upload + name-sensitive dedup (same name dedupes, different name creates separate hashes), extension whitelist (script/exec types rejected, unknown/extensionless rejected, common doc/media types accepted), download (happy + disk missing), status transitions (staged→committed via BB/WT/BC commit/cast), orphan detection across BB/WT/BC tables, clean command, full lifecycle |
 | `FileServiceTest` | 15 | name-sensitive upload dedup (same content + same name dedupes; same content + different name → separate rows), markCommitted, markOrphaned, cleanupOrphaned |
 | `WalkieTypieControllerTest` | 40 | HTTP integration: connection CRUD, signal, tag update (incl. non-connected 404), board commit/fetch, lifecycle round-trip |
