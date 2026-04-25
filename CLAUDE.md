@@ -676,11 +676,17 @@ Log section; every new user decision gets appended with a date.
       channels/{id}/whitelist` body `{whitelist_id: int|null}`,
       owner-only + applicant grant required, null detaches.
     - **Artisan (admin) commands**: `whitelist:create / list /
-      show / delete / add-member / add-by-title / remove-member /
-      grant / ungrant`. `add-by-title` does the bulk distribution
-      step ("先按 title 分配, 再按 uid 個別追加" pattern); both
-      title path and direct-uid path go through SQL UNIQUE +
-      JSONB set semantics, so double-distribution is impossible.
+      show / delete / add-member / add-members / add-by-title /
+      remove-member / set-members / grant / ungrant`.
+      `add-by-title` does the bulk distribution step ("先按 title
+      分配, 再按 uid 個別追加" pattern); `add-members` accepts a
+      uid list via positional args, `--json='[…]'`, or STDIN
+      (`cat roster.txt | docker exec -i … php artisan
+      whitelist:add-members CODE`); `set-members` wholesale-
+      replaces the JSONB members array (destructive — uids not
+      in the input are DROPPED; confirmation gate unless --force).
+      All paths go through SQL UNIQUE + JSONB set semantics so
+      double-distribution is impossible.
     - **Tests**: 15 `WhitelistServiceTest` cases (CRUD, dedup,
       title bulk, distribution OR-logic, applicant-list filter,
       cascade delete) + 20 `BroadcastWhitelistGatingTest` cases

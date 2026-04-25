@@ -204,6 +204,72 @@ class WhitelistService
     }
 
     /**
+     * Batch add — direct uid list version of addMembersByTitle.
+     * Each uid merges into the JSONB set; duplicates inside $uids
+     * and duplicates against existing members are both silently
+     * dropped. Returns the count actually added (0 when every
+     * input uid was already present).
+     */
+    public function addMembers(int $whitelistId, array $uids): int
+    {
+        $clean = $this->sanitiseUidList($uids);
+        if (empty($clean)) return 0;
+        return DB::transaction(fn() => $this->mergeMembers($whitelistId, $clean));
+    }
+
+    /**
+     * Replace the entire members set with $uids (destructive —
+     * uids currently in the set but not in $uids are REMOVED).
+     * Use for "re-base a class roster at start of semester" type
+     * operations where the admin has a fresh authoritative list
+     * and wants to wipe the drift from previous semester.
+     *
+     * Returns a diff tuple so the caller can surface what changed.
+     */
+    public function setMembers(int $whitelistId, array $uids): array
+    {
+        $clean = $this->sanitiseUidList($uids);
+
+        return DB::transaction(function () use ($whitelistId, $clean) {
+            $row = DB::table('whitelists')->where('id', $whitelistId)->first();
+            if (!$row) return ['added' => 0, 'removed' => 0, 'kept' => 0];
+
+            $before = $this->decodeMembers($row->members);
+            $beforeSet = array_flip($before);
+            $afterSet  = array_flip($clean);
+
+            $added   = count(array_diff_key($afterSet, $beforeSet));
+            $removed = count(array_diff_key($beforeSet, $afterSet));
+            $kept    = count(array_intersect_key($beforeSet, $afterSet));
+
+            DB::table('whitelists')
+                ->where('id', $whitelistId)
+                ->update([
+                    'members'    => json_encode(array_values($clean)),
+                    'updated_at' => now(),
+                ]);
+
+            $this->forgetCaches();
+            return compact('added', 'removed', 'kept');
+        });
+    }
+
+    private function sanitiseUidList(array $raw): array
+    {
+        $seen = [];
+        $out  = [];
+        foreach ($raw as $u) {
+            if (!is_string($u)) continue;
+            $u = trim($u);
+            if ($u === '') continue;
+            if (isset($seen[$u])) continue;
+            $seen[$u] = true;
+            $out[] = $u;
+        }
+        return $out;
+    }
+
+    /**
      * Visibility check — viewer.uid ∈ members? Used by the BC read
      * gates. Null whitelistId means "no whitelist applied" ⇒ the
      * channel is public, so trivially visible.

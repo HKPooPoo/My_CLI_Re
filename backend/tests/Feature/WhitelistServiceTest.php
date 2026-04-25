@@ -222,4 +222,75 @@ class WhitelistServiceTest extends TestCase
         $this->assertTrue($this->service->removeDistribution($distId));
         $this->assertFalse($this->service->canUserApply($alice, $id));
     }
+
+    // =========================================================================
+    //  Batch member ops — addMembers + setMembers
+    // =========================================================================
+
+    #[Test] /* W16 */
+    public function add_members_merges_a_uid_list(): void
+    {
+        $id = $this->service->create('2026_TEST', 'Test');
+
+        $this->service->addMember($id, 'alice');
+        $added = $this->service->addMembers($id, ['alice', 'bob', 'carol']);
+
+        $this->assertEquals(2, $added); // alice dedup'd, bob+carol new
+        $this->assertEqualsCanonicalizing(
+            ['alice', 'bob', 'carol'],
+            $this->service->show($id)['members']
+        );
+    }
+
+    #[Test] /* W17 */
+    public function add_members_dedupes_duplicates_inside_input(): void
+    {
+        $id = $this->service->create('2026_TEST', 'Test');
+
+        $added = $this->service->addMembers($id, ['alice', 'alice', 'bob', 'alice']);
+        $this->assertEquals(2, $added);
+        $this->assertEqualsCanonicalizing(['alice', 'bob'], $this->service->show($id)['members']);
+    }
+
+    #[Test] /* W18 */
+    public function add_members_trims_empty_and_non_string_entries(): void
+    {
+        $id = $this->service->create('2026_TEST', 'Test');
+
+        $added = $this->service->addMembers($id, ['alice', '', '  ', null, 123, 'bob']);
+        $this->assertEquals(2, $added);
+        $this->assertEqualsCanonicalizing(['alice', 'bob'], $this->service->show($id)['members']);
+    }
+
+    #[Test] /* W19 */
+    public function set_members_replaces_whole_list_and_reports_diff(): void
+    {
+        $id = $this->service->create('2026_TEST', 'Test');
+        $this->service->addMembers($id, ['alice', 'bob', 'carol']);
+
+        $diff = $this->service->setMembers($id, ['bob', 'carol', 'dave']);
+
+        $this->assertEquals(1, $diff['added']);   // dave new
+        $this->assertEquals(1, $diff['removed']); // alice dropped
+        $this->assertEquals(2, $diff['kept']);    // bob + carol
+
+        $this->assertEqualsCanonicalizing(
+            ['bob', 'carol', 'dave'],
+            $this->service->show($id)['members']
+        );
+    }
+
+    #[Test] /* W20 */
+    public function set_members_with_empty_list_wipes_all(): void
+    {
+        $id = $this->service->create('2026_TEST', 'Test');
+        $this->service->addMembers($id, ['alice', 'bob']);
+
+        $diff = $this->service->setMembers($id, []);
+
+        $this->assertEquals(0, $diff['added']);
+        $this->assertEquals(2, $diff['removed']);
+        $this->assertEquals(0, $diff['kept']);
+        $this->assertEquals([], $this->service->show($id)['members']);
+    }
 }
