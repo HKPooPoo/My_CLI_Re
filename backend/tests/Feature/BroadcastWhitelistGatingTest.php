@@ -309,4 +309,66 @@ class BroadcastWhitelistGatingTest extends TestCase
         $this->assertEquals(2, $payload['member_count']);
         $this->assertArrayNotHasKey('members', $payload);
     }
+
+    // =========================================================================
+    //  GET /api/whitelists/{id}/members — apply-grant gated reveal
+    // =========================================================================
+
+    #[Test]
+    public function members_endpoint_requires_auth(): void
+    {
+        $id = $this->whitelistService->create('2026SEHH8005', '2026 SEHH8005 Members Test');
+        $r = $this->getJson("/api/whitelists/{$id}/members");
+        $r->assertStatus(401);
+    }
+
+    #[Test]
+    public function members_endpoint_404s_unknown_whitelist(): void
+    {
+        $r = $this->actingAs($this->owner)->getJson('/api/whitelists/99999/members');
+        $r->assertStatus(404);
+    }
+
+    #[Test]
+    public function members_endpoint_403s_user_without_apply_grant(): void
+    {
+        $id = $this->whitelistService->create('2026SEHH8005', '2026 SEHH8005 Members Test');
+        $this->whitelistService->addMember($id, 'student_bob');
+        // No T1 distribution rule grants this owner → 403
+
+        $r = $this->actingAs($this->owner)->getJson("/api/whitelists/{$id}/members");
+        $r->assertStatus(403);
+    }
+
+    #[Test]
+    public function members_endpoint_returns_uids_for_granted_user(): void
+    {
+        $id = $this->whitelistService->create('2026SEHH8005', '2026 SEHH8005 Members Test');
+        $this->whitelistService->addDistribution($id, 'rule', title: 'Faculty');
+        $this->whitelistService->addMember($id, 'student_bob');
+        $this->whitelistService->addMember($id, 'student_eve');
+
+        $r = $this->actingAs($this->owner)->getJson("/api/whitelists/{$id}/members");
+        $r->assertStatus(200)
+          ->assertJson([
+              'id'   => $id,
+              'code' => '2026SEHH8005',
+          ]);
+
+        $members = $r->json('members');
+        $this->assertEqualsCanonicalizing(['student_bob', 'student_eve'], $members);
+    }
+
+    #[Test]
+    public function members_endpoint_403s_subscriber_with_no_distribution(): void
+    {
+        // A user who's a MEMBER but doesn't have an apply grant
+        // shouldn't be able to see the full member list either.
+        $id = $this->whitelistService->create('2026SEHH8005', '2026 SEHH8005 Members Test');
+        $this->whitelistService->addDistribution($id, 'rule', title: 'Faculty');
+        $this->whitelistService->addMember($id, 'student_bob');
+
+        $r = $this->actingAs($this->member)->getJson("/api/whitelists/{$id}/members");
+        $r->assertStatus(403);
+    }
 }

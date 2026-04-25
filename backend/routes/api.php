@@ -105,6 +105,7 @@ Route::middleware([/*'auth:sanctum'*/])->prefix('broadcast')->group(function () 
 
 // Whitelist registry — public read of metadata only (no member uids)
 Route::get('/whitelists', [WhitelistController::class, 'index']);
+Route::get('/whitelists/{whitelistId}/members', [WhitelistController::class, 'members']);
 
 // MOD endpoints — public
 Route::prefix('mods')->group(function () {

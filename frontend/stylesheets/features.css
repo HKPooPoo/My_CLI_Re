@@ -1182,3 +1182,82 @@
     align-items: center;
     justify-content: center;
 }
+
+/* ── Members expand/collapse ── */
+
+[data-feature="whitelist"] .whitelist-shelf-meta-footer {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-top: 4px;
+}
+
+[data-feature="whitelist"] .whitelist-shelf-view-btn {
+    flex: 0 0 auto;
+    padding: 4px 10px;
+    border: 1px solid var(--border-subtle);
+    border-radius: 999px;
+    background: transparent;
+    color: var(--text-muted);
+    font-size: 0.7em;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    cursor: pointer;
+    transition: border-color var(--transition-normal),
+                color var(--transition-normal),
+                background var(--transition-normal);
+}
+
+[data-feature="whitelist"] .whitelist-shelf-view-btn:hover {
+    border-color: var(--brand);
+    color: var(--brand);
+}
+
+[data-feature="whitelist"] .whitelist-shelf-view-btn.is-open {
+    border-color: var(--brand);
+    color: #ffffff;
+    background: var(--brand);
+}
+
+[data-feature="whitelist"] .whitelist-shelf-members {
+    flex-direction: column;
+    margin-top: 8px;
+    padding: 8px 10px;
+    border: 1px dashed var(--border-subtle);
+    border-radius: var(--border-radius);
+    background: var(--bg-page);
+    max-height: 180px;
+    overflow-y: auto;
+    gap: 2px;
+    user-select: text;
+}
+
+[data-feature="whitelist"] .whitelist-shelf-members.is-loading,
+[data-feature="whitelist"] .whitelist-shelf-members.is-empty,
+[data-feature="whitelist"] .whitelist-shelf-members.is-error {
+    align-items: center;
+    justify-content: center;
+    padding: 14px 10px;
+    font-size: 0.8em;
+    color: var(--text-muted);
+    font-style: italic;
+}
+
+[data-feature="whitelist"] .whitelist-shelf-members.is-error {
+    color: var(--brand);
+    font-style: normal;
+    font-weight: 600;
+}
+
+[data-feature="whitelist"] .whitelist-shelf-member {
+    font-size: 0.82em;
+    color: var(--text-body);
+    font-variant-numeric: tabular-nums;
+    padding: 2px 4px;
+    border-bottom: 1px dotted var(--border-subtle);
+}
+
+[data-feature="whitelist"] .whitelist-shelf-member:last-child {
+    border-bottom: 0;
+}

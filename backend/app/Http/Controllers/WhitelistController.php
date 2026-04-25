@@ -30,4 +30,39 @@ class WhitelistController extends Controller
         }
         return response()->json(['whitelists' => $this->service->listForApplicant($user)]);
     }
+
+    /**
+     * GET /api/whitelists/{id}/members
+     *
+     * Returns the full uid array of one preset, but only when the
+     * authenticated user has been distributed permission to apply
+     * it (T1 grant). A user who can SEE the preset metadata via
+     * `index` but doesn't have an apply grant gets 403 here —
+     * being able to apply implies you'll see who's in your audience,
+     * but bare visibility doesn't.
+     */
+    public function members($whitelistId)
+    {
+        $user = Auth::user();
+        if (!$user) {
+            return response()->json(['message' => 'Unauthorized'], 401);
+        }
+
+        $id = (int) $whitelistId;
+        $detail = $this->service->show($id);
+        if (!$detail) {
+            return response()->json(['message' => 'WHITELIST NOT FOUND'], 404);
+        }
+
+        if (!$this->service->canUserApply($user, $id)) {
+            return response()->json(['message' => 'NOT AUTHORISED'], 403);
+        }
+
+        return response()->json([
+            'id'      => $detail['id'],
+            'code'    => $detail['code'],
+            'name'    => $detail['name'],
+            'members' => $detail['members'],
+        ]);
+    }
 }

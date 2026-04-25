@@ -23,6 +23,14 @@ export const BroadcastWhitelistService = {
     listApplicable(signal) {
         return apiRequest('/whitelists', signal ? { signal } : {});
     },
+    /**
+     * Auth + apply-grant required. Server returns 403 unless the
+     * caller has a T1 grant for this preset. Member uids are
+     * sensitive — don't pre-fetch the whole catalogue at boot.
+     */
+    fetchMembers(whitelistId) {
+        return apiRequest(`/whitelists/${whitelistId}/members`);
+    },
     apply(channelId, whitelistId) {
         return apiRequest(`/broadcast/channels/${channelId}/whitelist`, {
             method: 'PUT',

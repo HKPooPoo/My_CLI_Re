@@ -383,7 +383,13 @@
     "detached": "Reverted to public.",
     "errNotAuthorised": "Not authorised for this preset (or not channel owner).",
     "errNotFound": "Whitelist no longer exists.",
-    "errApplyFailed": "Apply failed."
+    "errApplyFailed": "Apply failed.",
+    "viewMembers": "VIEW",
+    "hideMembers": "HIDE",
+    "loadingMembers": "Loading members…",
+    "membersEmpty": "No members yet.",
+    "errFetchMembers": "Failed to load members.",
+    "errMembersForbidden": "Not authorised to view this list."
   },
   "search": {
     "placeholder": "Search pages…"

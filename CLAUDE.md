@@ -683,9 +683,12 @@ Log section; every new user decision gets appended with a date.
       inline in `routes/channels.php`.
     - **HTTP endpoints**: `GET /api/whitelists` (returns presets
       the authenticated user is cleared to apply, member uids NOT
-      included — only `member_count`); `PUT /api/broadcast/
-      channels/{id}/whitelist` body `{whitelist_id: int|null}`,
-      owner-only + applicant grant required, null detaches.
+      included — only `member_count`); `GET /api/whitelists/{id}/
+      members` (returns the uid array, gated on `canUserApply` —
+      a viewer who has the metadata but no apply grant gets 403);
+      `PUT /api/broadcast/channels/{id}/whitelist` body
+      `{whitelist_id: int|null}`, owner-only + applicant grant
+      required, null detaches.
     - **Artisan (admin) commands**: `whitelist:create / list /
       show / delete / add-member / add-members / add-by-title /
       remove-member / set-members / grant / ungrant`.
@@ -712,6 +715,10 @@ Log section; every new user decision gets appended with a date.
         button per row calls PUT; the currently-applied preset gets
         an `.is-active` marker + a DETACH button. Success fires
         `broadcast:localBootstrapped` so the list re-renders.
+        Per-row VIEW/HIDE toggle expands an inline member panel —
+        lazy-fetches the uid array via `GET /whitelists/{id}/members`
+        and caches it for the shelf-open session. Cache clears on
+        the next `onOpen` so cross-session changes are picked up.
       - `services/broadcast-whitelist-service.js` — minimal wrapper
         (`listApplicable` + `apply`).
       - `broadcast-list.js` — pipes `whitelist_id` through the

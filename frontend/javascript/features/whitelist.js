@@ -26,6 +26,14 @@ const ICON_URL = '/images/whitelist.svg';
 let _shelfRoot = null;
 let _presets = [];
 
+// Per-preset member cache. Members are sensitive — fetched lazily
+// the first time the user expands a row, then cached for the
+// session. Cleared on shelf re-open via refresh().
+//   Map<whitelistId, { state: 'loading'|'loaded'|'error', members?, error? }>
+const _membersCache = new Map();
+// Per-preset expand state.  Map<whitelistId, boolean>
+const _expanded = new Map();
+
 function currentChannelWhitelistId() {
     return BCChannel?.currentChannel?.whitelistId ?? null;
 }
@@ -150,10 +158,51 @@ function render() {
                 desc.textContent = p.description;
                 meta.appendChild(desc);
             }
+
+            // Footer row inside meta: count + view/hide toggle
+            const footer = document.createElement('div');
+            footer.className = 'whitelist-shelf-meta-footer';
             const count = document.createElement('div');
             count.className = 'whitelist-shelf-count';
             count.textContent = t('whitelist.memberCount', { count: p.member_count });
-            meta.appendChild(count);
+            footer.appendChild(count);
+
+            const isExpanded = !!_expanded.get(p.id);
+            const toggle = document.createElement('button');
+            toggle.type = 'button';
+            toggle.className = 'whitelist-shelf-view-btn' + (isExpanded ? ' is-open' : '');
+            toggle.textContent = isExpanded ? t('whitelist.hideMembers') : t('whitelist.viewMembers');
+            toggle.addEventListener('click', () => toggleMembers(p.id));
+            footer.appendChild(toggle);
+            meta.appendChild(footer);
+
+            // Member list block — only present when expanded
+            if (isExpanded) {
+                const membersBlock = document.createElement('div');
+                membersBlock.className = 'whitelist-shelf-members';
+                const cached = _membersCache.get(p.id);
+                if (!cached || cached.state === 'loading') {
+                    membersBlock.classList.add('is-loading');
+                    membersBlock.textContent = t('whitelist.loadingMembers');
+                } else if (cached.state === 'error') {
+                    membersBlock.classList.add('is-error');
+                    membersBlock.textContent = cached.error || t('whitelist.errFetchMembers');
+                } else if (cached.state === 'loaded') {
+                    if ((cached.members || []).length === 0) {
+                        membersBlock.classList.add('is-empty');
+                        membersBlock.textContent = t('whitelist.membersEmpty');
+                    } else {
+                        for (const uid of cached.members) {
+                            const item = document.createElement('div');
+                            item.className = 'whitelist-shelf-member';
+                            item.textContent = uid;
+                            membersBlock.appendChild(item);
+                        }
+                    }
+                }
+                meta.appendChild(membersBlock);
+            }
+
             row.appendChild(meta);
 
             list.appendChild(row);
@@ -188,12 +237,46 @@ async function apply(whitelistId) {
 }
 
 async function refresh() {
+    // New shelf-open session — drop any stale member caches so the
+    // user sees fresh data if a preset's roster changed.
+    _membersCache.clear();
+    _expanded.clear();
     try {
         const data = await BroadcastWhitelistService.listApplicable();
         _presets = data?.whitelists ?? [];
     } catch (e) {
         console.error('[Whitelist] fetch failed', e);
         _presets = [];
+    }
+    render();
+}
+
+async function toggleMembers(whitelistId) {
+    const wasExpanded = !!_expanded.get(whitelistId);
+    if (wasExpanded) {
+        _expanded.set(whitelistId, false);
+        render();
+        return;
+    }
+
+    _expanded.set(whitelistId, true);
+    if (!_membersCache.has(whitelistId)) {
+        _membersCache.set(whitelistId, { state: 'loading' });
+        render();
+        try {
+            const data = await BroadcastWhitelistService.fetchMembers(whitelistId);
+            _membersCache.set(whitelistId, {
+                state: 'loaded',
+                members: data?.members ?? [],
+            });
+        } catch (e) {
+            console.error('[Whitelist] members fetch failed', e);
+            const status = e?.status || e?.response?.status;
+            const error = status === 403
+                ? t('whitelist.errMembersForbidden')
+                : t('whitelist.errFetchMembers');
+            _membersCache.set(whitelistId, { state: 'error', error });
+        }
     }
     render();
 }
