@@ -77,6 +77,18 @@ function render() {
             row.className = 'whitelist-shelf-row';
             if (p.id === currentId) row.classList.add('is-active');
 
+            // APPLY first so it docks left — same row layout as the
+            // LLM shelf's SEND button (primary action on the drag-
+            // away side, drops the row's eye to the trigger first).
+            if (p.id !== currentId) {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'whitelist-shelf-apply';
+                btn.textContent = t('whitelist.applyBtn');
+                btn.addEventListener('click', () => apply(p.id));
+                row.appendChild(btn);
+            }
+
             const meta = document.createElement('div');
             meta.className = 'whitelist-shelf-meta';
             const codeEl = document.createElement('div');
@@ -98,15 +110,6 @@ function render() {
             count.textContent = t('whitelist.memberCount', { count: p.member_count });
             meta.appendChild(count);
             row.appendChild(meta);
-
-            if (p.id !== currentId) {
-                const btn = document.createElement('button');
-                btn.type = 'button';
-                btn.className = 'whitelist-shelf-apply';
-                btn.textContent = t('whitelist.applyBtn');
-                btn.addEventListener('click', () => apply(p.id));
-                row.appendChild(btn);
-            }
 
             list.appendChild(row);
         }
