@@ -249,15 +249,16 @@
     display: flex;
 }
 
-/* ── Sender mode FEEDBACK pane proportions ────────────────────
-   Sender's primary task is writing the SUBMISSION; the FEEDBACK
-   pane is contextual (read-only, smaller). When no feedback yet,
-   collapse to a slim placeholder so SUBMISSION dominates. */
-.page[data-mode="sender"] .inbox-textarea-section.is-feedback {
-    flex: 0.4;
-}
+/* ── Sender mode FEEDBACK pane: equal height, just empty-state hint ──
+   Per user direction, INBOX + FEEDBACK get equal vertical share
+   (both `flex: 1` from the base rule above). The earlier "FEEDBACK
+   shrinks to 0.4 / 56 px when empty" behaviour is dropped — sender
+   sees both panes at the same size regardless of feedback state.
+   When `feedback_at` is null we still hide the read-only textarea
+   and surface a centred placeholder, but the section's outer
+   dimensions match SUBMISSION exactly so the layout doesn't jump
+   on first feedback arrival. */
 .page[data-mode="sender"] .inbox-textarea-section.is-feedback.is-empty {
-    flex: 0 0 56px;
     background: transparent;
     border-style: dashed;
     border-color: var(--border-subtle);
@@ -272,8 +273,12 @@
     font-style: italic;
     font-size: calc(var(--font-size) * 0.85);
     padding: 0 16px;
-    align-self: center;
+    flex: 1;
+    align-self: stretch;
+    align-items: center;
+    justify-content: center;
     text-align: center;
+    display: flex;
 }
 
 /* Sender mode hides the receiver-only preview rail — the rail
