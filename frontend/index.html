@@ -570,11 +570,17 @@
                         <div class="inbox-receiver-empty" id="inbox-receiver-empty"
                              data-i18n="inbox.awaitingSubmissions">AWAITING FIRST SUBMISSION</div>
                     </div>
-                    <div class="editor-actions inbox-action-row">
+                    <!-- Bottom-centred action row (NOT inside .editor-actions
+                         which is reserved for circular icon buttons). POST + PULL
+                         are primary text actions; placing them as a flow-layout
+                         footer keeps them out of the textarea reading zone and
+                         well clear of the drop-overlay frame. -->
+                    <div class="inbox-actions-footer">
                         <button type="button" class="inbox-action-btn" id="inbox-pull-btn"
                                 data-hint="hints.inbox.pull"
                                 data-i18n="inbox.pullBtn">PULL</button>
-                        <button type="button" class="inbox-action-btn" id="inbox-post-btn"
+                        <button type="button" class="inbox-action-btn inbox-action-btn--primary"
+                                id="inbox-post-btn"
                                 data-hint="hints.inbox.post"
                                 data-i18n="inbox.postBtn">POST</button>
                     </div>
