@@ -30,6 +30,11 @@ const _newMessagePartners = new Set();
 // Surgical DOM patch for a single row — avoids WTList.render() which
 // wipes innerHTML and makes InfiniteList lose its active cursor, which
 // cascades to a fresh loadConnection() (SFX + full board reload).
+//
+// Updates BOTH the inline `[NEW]` text suffix on the partner uid AND
+// the status-legend icon block (envelope), so the visual cue stays in
+// lock-step with the textual one. Previously only touched the text —
+// the envelope icon never appeared mid-session, only on full render.
 function _applyNewTagToRow(partnerUid) {
     const container = WTList.elements?.container;
     if (!container) return;
@@ -37,11 +42,27 @@ function _applyNewTagToRow(partnerUid) {
         `.walkie-typie-list-list-item[data-partner-uid="${CSS.escape(partnerUid)}"]`
     );
     if (!item) return;
+
+    const isNew = _newMessagePartners.has(partnerUid);
+
     const uidEl = item.querySelector('.walkie-typie-list-uid');
-    if (!uidEl) return;
-    uidEl.textContent = _newMessagePartners.has(partnerUid)
-        ? `${partnerUid} ${t('walkieTypie.statusNew')}`
-        : partnerUid;
+    if (uidEl) {
+        uidEl.textContent = isNew
+            ? `${partnerUid} ${t('walkieTypie.statusNew')}`
+            : partnerUid;
+    }
+
+    // Swap the status-icon wrap so the envelope icon flips in/out
+    // alongside the text change. makeStatusLegend returns a real
+    // div when at least one slot fires; an empty doc-fragment when
+    // none fires. Both are safely replaceable / appendable.
+    const oldIcons = item.querySelector('.list-status-icons');
+    const newIcons = makeStatusLegend({ new: isNew });
+    if (oldIcons) {
+        oldIcons.replaceWith(newIcons);
+    } else {
+        item.appendChild(newIcons);
+    }
 }
 
 // Mark: server signal arrived for this partner. walkie-typie-core.js
