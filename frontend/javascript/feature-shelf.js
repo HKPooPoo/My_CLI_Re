@@ -110,13 +110,15 @@ window.addEventListener('navi:pageChanged', ({ detail }) => {
 
 // Re-evaluate when BC owner mode flips (e.g. user selects a channel they own
 // vs one they don't). broadcast-channel.js emits this on selection change.
-window.addEventListener('broadcast:selected', () => {
-    const activePage = document.querySelector('.page.active');
-    if (activePage) updateFeatureButtons(activePage.dataset.page);
-});
-window.addEventListener('broadcast:cleared', () => {
-    const activePage = document.querySelector('.page.active');
-    if (activePage) updateFeatureButtons(activePage.dataset.page);
+// Inbox emits the analogous events on inbox-list selection — whitelist
+// shelf gates on `IXThread.inbox.owner_uid === currentUid`, so we have to
+// re-evaluate when the active inbox changes.
+['broadcast:selected', 'broadcast:cleared',
+ 'inbox:selected', 'inbox:cleared'].forEach(evtName => {
+    window.addEventListener(evtName, () => {
+        const activePage = document.querySelector('.page.active');
+        if (activePage) updateFeatureButtons(activePage.dataset.page);
+    });
 });
 
 // ── Click handler ──

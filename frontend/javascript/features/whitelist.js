@@ -1,46 +1,99 @@
 /**
- * Feature: Whitelist — owner-side "Apply Preset" UI for BC channels.
+ * Feature: Whitelist — owner-side "Apply Preset" UI for both
+ * Broadcast channels and Inboxes.
  *
  * Presets themselves (T2 whitelists) and distribution grants (T1
  * whitelist_distributions) are admin-managed via artisan commands.
  * This shelf ONLY surfaces the subset the current user is cleared
- * to apply (server filters via WhitelistService::listForApplicant),
- * lets them pick one to attach to the active channel, or detach to
- * revert to public.
+ * to apply, lets them pick one to attach to the active target, or
+ * detach to revert to public.
  *
- * Visibility: broadcast-channel page only; owner mode; channel
- * must be cast (serverChannelId present — you can't apply a
- * whitelist to a draft that has no server row yet).
+ * Visibility is page-scoped:
+ *   - broadcast-channel  → owner of the active channel
+ *                          (BCChannel.isOwnerMode + serverChannelId set)
+ *   - inbox-thread       → owner of the active inbox
+ *                          (IXThread.inbox.owner_uid === currentUid)
+ *
+ * Whitelist semantics flip per-target — same preset means
+ * different things depending on which subsystem applied it:
+ *   BC: members can READ the channel
+ *   IX: members can SUBMIT to the inbox
+ * The shelf intentionally does NOT explain this — the preset's
+ * own name should communicate the audience scope.
  */
 
 import { BCChannel } from '../broadcast-channel.js';
+import { IXThread } from '../inbox-thread.js';
 import { BroadcastWhitelistService } from '../services/broadcast-whitelist-service.js';
+import { InboxService } from '../services/inbox-service.js';
 import { BBMessage } from '../blackboard-msg.js';
 import { t } from '../i18n.js';
 
 const ICON_URL = '/images/whitelist.svg';
 
-// Module-level cache of the last rendered shelf root so the apply
-// handler can re-render after a successful PUT without a bespoke
-// re-entry. Single-shelf so a bare reference is fine.
 let _shelfRoot = null;
 let _presets = [];
 
 // Per-preset member cache. Members are sensitive — fetched lazily
 // the first time the user expands a row, then cached for the
 // session. Cleared on shelf re-open via refresh().
-//   Map<whitelistId, { state: 'loading'|'loaded'|'error', members?, error? }>
 const _membersCache = new Map();
-// Per-preset expand state.  Map<whitelistId, boolean>
 const _expanded = new Map();
 
-function currentChannelWhitelistId() {
-    return BCChannel?.currentChannel?.whitelistId ?? null;
+/**
+ * Identify which subsystem the active page belongs to. Returns
+ * a small descriptor object so the rest of the file can stay
+ * page-agnostic. Returns null when no active inbox / channel.
+ */
+function currentScope() {
+    const activePage = document.querySelector('.page.active')?.dataset?.page;
+
+    if (activePage === 'broadcast-channel') {
+        const ch = BCChannel?.currentChannel;
+        if (!ch?.serverChannelId || !BCChannel?.isOwnerMode) return null;
+        return {
+            kind: 'bc',
+            id: ch.serverChannelId,
+            currentWhitelistId: ch.whitelistId ?? null,
+            apply: (whitelistId) => BroadcastWhitelistService.apply(ch.serverChannelId, whitelistId),
+            onAfterApply: (whitelistId) => {
+                ch.whitelistId = whitelistId ?? null;
+                window.dispatchEvent(new CustomEvent('broadcast:localBootstrapped'));
+            },
+            errNotCast: t('whitelist.notCast'),
+        };
+    }
+
+    if (activePage === 'inbox-thread') {
+        const ix = IXThread?.inbox;
+        const me = localStorage.getItem('currentUser');
+        if (!ix || !me || ix.owner_uid !== me) return null;
+        return {
+            kind: 'ix',
+            id: ix.id,
+            currentWhitelistId: ix.whitelist_id ?? null,
+            apply: (whitelistId) => InboxService.applyWhitelist(ix.id, whitelistId),
+            onAfterApply: (whitelistId) => {
+                ix.whitelist_id = whitelistId ?? null;
+                // Inbox list re-fetches on selection refresh — fire the
+                // same signal it listens to for live row updates.
+                window.dispatchEvent(new CustomEvent('inbox:signalUpdated', {
+                    detail: { inboxId: ix.id, lastSignal: ix.last_signal },
+                }));
+            },
+            errNotCast: t('whitelist.notCast'),
+        };
+    }
+
+    return null;
 }
 
 function render() {
     if (!_shelfRoot) return;
     _shelfRoot.innerHTML = '';
+
+    const scope = currentScope();
+    const currentId = scope?.currentWhitelistId ?? null;
 
     const panel = document.createElement('div');
     panel.className = 'feature-panel';
@@ -59,7 +112,6 @@ function render() {
     header.appendChild(headerTitle);
     panel.appendChild(header);
 
-    const currentId = currentChannelWhitelistId();
     const current = _presets.find(p => p.id === currentId) || null;
 
     // ── Current state card (PUBLIC vs PRIVATE) ──
@@ -126,8 +178,6 @@ function render() {
             const isActive = p.id === currentId;
             if (isActive) row.classList.add('is-active');
 
-            // APPLY first so it docks left, mirrors LLM SEND.
-            // Active row replaces APPLY with an "ACTIVE" badge.
             if (isActive) {
                 const badge = document.createElement('div');
                 badge.className = 'whitelist-shelf-active-badge';
@@ -159,7 +209,6 @@ function render() {
                 meta.appendChild(desc);
             }
 
-            // Footer row inside meta: count + view/hide toggle
             const footer = document.createElement('div');
             footer.className = 'whitelist-shelf-meta-footer';
             const count = document.createElement('div');
@@ -176,7 +225,6 @@ function render() {
             footer.appendChild(toggle);
             meta.appendChild(footer);
 
-            // Member list block — only present when expanded
             if (isExpanded) {
                 const membersBlock = document.createElement('div');
                 membersBlock.className = 'whitelist-shelf-members';
@@ -212,18 +260,15 @@ function render() {
 }
 
 async function apply(whitelistId) {
-    const ch = BCChannel?.currentChannel;
-    if (!ch?.serverChannelId) {
+    const scope = currentScope();
+    if (!scope) {
         BBMessage.error(t('whitelist.notCast'));
         return;
     }
     const msg = BBMessage.loading(whitelistId ? t('whitelist.applying') : t('whitelist.detaching'));
     try {
-        await BroadcastWhitelistService.apply(ch.serverChannelId, whitelistId);
-        ch.whitelistId = whitelistId ?? null;
-        // Let the list re-render its lock icon via the existing
-        // localBootstrapped path which refetches the channel list.
-        window.dispatchEvent(new CustomEvent('broadcast:localBootstrapped'));
+        await scope.apply(whitelistId);
+        scope.onAfterApply?.(whitelistId);
         msg.update(whitelistId ? t('whitelist.applied') : t('whitelist.detached'), 2000);
         render();
     } catch (e) {
@@ -237,8 +282,6 @@ async function apply(whitelistId) {
 }
 
 async function refresh() {
-    // New shelf-open session — drop any stale member caches so the
-    // user sees fresh data if a preset's roster changed.
     _membersCache.clear();
     _expanded.clear();
     try {
@@ -284,12 +327,19 @@ async function toggleMembers(whitelistId) {
 export const feature = {
     id: 'whitelist',
     iconUrl: ICON_URL,
-    pages: ['broadcast-channel'],
+    pages: ['broadcast-channel', 'inbox-thread'],
     hasShelf: true,
     shouldShow(page) {
-        if (page !== 'broadcast-channel') return false;
-        if (!BCChannel?.isOwnerMode) return false;
-        return !!BCChannel?.currentChannel?.serverChannelId;
+        if (page === 'broadcast-channel') {
+            if (!BCChannel?.isOwnerMode) return false;
+            return !!BCChannel?.currentChannel?.serverChannelId;
+        }
+        if (page === 'inbox-thread') {
+            const ix = IXThread?.inbox;
+            const me = localStorage.getItem('currentUser');
+            return !!(ix && me && ix.owner_uid === me);
+        }
+        return false;
     },
     initShelf($shelf) {
         $shelf.classList.add('whitelist-shelf');
