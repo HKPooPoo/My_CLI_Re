@@ -161,8 +161,16 @@ export const IXThread = {
             counter = 0;
             hideOverlay();
             if (this.mode !== 'sender' || !this.inbox || !this.canSubmit) return;
-            const file = e.dataTransfer?.files?.[0];
-            if (file) await this.attachFile(file);
+            // One file per submission. Silently taking files[0] (the
+            // earlier behaviour) violated the contract from the user's
+            // perspective — they'd drop three files and only one would
+            // attach with no feedback. Refuse the whole drop instead.
+            const files = e.dataTransfer?.files;
+            if (!files || files.length === 0) return;
+            if (files.length > 1) {
+                return BBMessage.error(t('inbox.multiFileRejected'));
+            }
+            await this.attachFile(files[0]);
         });
     },
 
@@ -851,6 +859,12 @@ export const IXThread = {
             return BBMessage.error(t('files.unsupportedType'));
         }
 
+        // One-file-per-submission rule. Inbox stores a single
+        // file_hash, so a new attach with an existing chip is a
+        // replacement — surface that explicitly so the user knows
+        // the previous file is gone. Silent overwrite was confusing.
+        const wasReplacing = !!this.submissions[0]?.file_hash;
+
         const msg = BBMessage.loading(t('inbox.staging'));
         try {
             const hash = await FileService.computeHash(file, file.name);
@@ -877,7 +891,7 @@ export const IXThread = {
                 this.submissions[0].file_hash = hash;
             }
             this.renderFileChip(hash);
-            msg.update(t('inbox.fileStaged'));
+            msg.update(wasReplacing ? t('inbox.fileReplaced') : t('inbox.fileStaged'));
         } catch (e) {
             console.error('Inbox attach failed', e);
             msg.close();

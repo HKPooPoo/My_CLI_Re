@@ -521,6 +521,8 @@
     "feedbackPosted": "FEEDBACK SUBMITTED",
     "feedbackPostFailed": "FEEDBACK SUBMIT FAILED",
     "noSubmissionToFeedback": "NO SUBMISSION SELECTED",
+    "multiFileRejected": "ONLY ONE FILE PER SUBMISSION",
+    "fileReplaced": "REPLACED EXISTING FILE",
     "staging": "STAGING FILE...",
     "fileStaged": "FILE STAGED — POST TO PUBLISH",
     "attachFailed": "ATTACH FAILED",
