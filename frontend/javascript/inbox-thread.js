@@ -161,14 +161,18 @@ export const IXThread = {
             counter = 0;
             hideOverlay();
             if (this.mode !== 'sender' || !this.inbox || !this.canSubmit) return;
-            // One file per submission. Silently taking files[0] (the
-            // earlier behaviour) violated the contract from the user's
-            // perspective — they'd drop three files and only one would
-            // attach with no feedback. Refuse the whole drop instead.
+            // One file per submission, manual replacement only — the
+            // user must delete the existing chip with × before
+            // attaching a new file. Both multi-file drop and
+            // single-file-while-attached are rejected with distinct
+            // toasts (different rule violations, different messages).
             const files = e.dataTransfer?.files;
             if (!files || files.length === 0) return;
             if (files.length > 1) {
                 return BBMessage.error(t('inbox.multiFileRejected'));
+            }
+            if (this.submissions[0]?.file_hash) {
+                return BBMessage.error(t('inbox.deleteExistingFirst'));
             }
             await this.attachFile(files[0]);
         });
@@ -240,10 +244,17 @@ export const IXThread = {
             });
         }
         // Click on empty chips area opens the file picker (mirrors BB/BC).
+        // If a chip already exists, the rule "one file per submission,
+        // manual delete required to replace" stops the picker from
+        // even opening — surfacing the rule before the OS file dialog
+        // appears, instead of dismissing it after pick.
         if (this.elements.chipsArea) {
             this.elements.chipsArea.addEventListener('click', (e) => {
                 if (this.mode !== 'sender' || !this.inbox || !this.canSubmit) return;
                 if (e.target.closest('.attachment-chip')) return;
+                if (this.submissions[0]?.file_hash) {
+                    return BBMessage.error(t('inbox.deleteExistingFirst'));
+                }
                 this.elements.fileInput?.click();
             });
         }
@@ -859,11 +870,13 @@ export const IXThread = {
             return BBMessage.error(t('files.unsupportedType'));
         }
 
-        // One-file-per-submission rule. Inbox stores a single
-        // file_hash, so a new attach with an existing chip is a
-        // replacement — surface that explicitly so the user knows
-        // the previous file is gone. Silent overwrite was confusing.
-        const wasReplacing = !!this.submissions[0]?.file_hash;
+        // One-file-per-submission rule with NO silent replacement —
+        // the user must delete the current chip with × first. Wrappers
+        // (drop / chips click) already enforce this; the check here is
+        // defense-in-depth against programmatic callers (DevTools).
+        if (this.submissions[0]?.file_hash) {
+            return BBMessage.error(t('inbox.deleteExistingFirst'));
+        }
 
         const msg = BBMessage.loading(t('inbox.staging'));
         try {
@@ -891,7 +904,7 @@ export const IXThread = {
                 this.submissions[0].file_hash = hash;
             }
             this.renderFileChip(hash);
-            msg.update(wasReplacing ? t('inbox.fileReplaced') : t('inbox.fileStaged'));
+            msg.update(t('inbox.fileStaged'));
         } catch (e) {
             console.error('Inbox attach failed', e);
             msg.close();
