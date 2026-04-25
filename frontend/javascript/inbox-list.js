@@ -329,9 +329,11 @@ export const IXList = {
             else if (inbox.has_my_submission) role.textContent += ` [${t('inbox.youSubmitted')}]`;
             if (flags[idx]) role.textContent += ` [${t('inbox.newFlag')}]`;
 
-            // Status icons — only the locked icon applies to inbox rows for now
+            // Lock icon retired — after the whitelist null=closed flip,
+            // every visible inbox row is restricted by definition, so
+            // a permanently-on lock is noise. Only the unread-feedback
+            // envelope remains useful.
             const iconsWrap = makeStatusLegend({
-                locked: !!inbox.whitelist_id,
                 new:    flags[idx],
             });
 

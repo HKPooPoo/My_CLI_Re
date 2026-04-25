@@ -675,10 +675,14 @@ export const BCList = {
             // signals "this is a restricted channel, not public". Owners
             // see it on their own private channels too so they remember
             // which presets are applied where.
+            // Lock icon retired — after the whitelist null=closed flip,
+            // every row visible in this list is restricted by definition
+            // (server pre-filters non-members), so a permanently-on
+            // lock conveys no information. Pinned + sync state are
+            // the only icon-worthy distinctions left.
             const iconsWrap = makeStatusLegend({
                 synced:  isCast && !(this.isOwnerOf(ch) && ch.isDirty),
                 asynced: isCast &&  (this.isOwnerOf(ch) && ch.isDirty),
-                locked:  isCast && !!ch.whitelistId,
                 pinned:  !!ch.isPinned,
             });
 
