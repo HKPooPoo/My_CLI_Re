@@ -21,26 +21,25 @@ class BroadcastChannelService
     }
 
     /**
-     * Visibility gate. Public channel → everyone. Private channel →
-     * owner OR uid-in-whitelist. Guests get nothing on private.
-     * Aborts 403 on miss; does NOT 404 (the channel exists, the
-     * caller just isn't authorised — surfacing existence is fine
-     * since channel ids are not secrets).
+     * Visibility gate. Owner always sees. Otherwise the viewer must
+     * be a member of the channel's whitelist preset. **No whitelist
+     * = closed** — the channel is invisible to non-owners until the
+     * owner explicitly applies a preset. Aborts 403 on miss (channel
+     * ids are not secrets so existence-leak is acceptable).
      */
     private function assertVisibleTo(object $channel, ?User $user): void
     {
-        if (empty($channel->whitelist_id)) return;
         if ($user && (int) $user->id === (int) $channel->user_id) return;
-        if ($user && $this->whitelistService->isMember((int) $channel->whitelist_id, $user->uid)) return;
+        if (!empty($channel->whitelist_id) && $user
+            && $this->whitelistService->isMember((int) $channel->whitelist_id, $user->uid)) return;
         abort(403, 'CHANNEL NOT AVAILABLE');
     }
 
     public function isVisibleTo(object $channel, ?User $user): bool
     {
-        if (empty($channel->whitelist_id)) return true;
         if ($user && (int) $user->id === (int) $channel->user_id) return true;
-        if ($user && $this->whitelistService->isMember((int) $channel->whitelist_id, $user->uid)) return true;
-        return false;
+        return !empty($channel->whitelist_id) && $user
+            && $this->whitelistService->isMember((int) $channel->whitelist_id, $user->uid);
     }
 
     /**
@@ -75,10 +74,13 @@ class BroadcastChannelService
         })->toArray();
 
         $result = array_values(array_filter($result, function ($ch) use ($user) {
-            if (empty($ch['whitelist_id'])) return true;
+            // Owner sees their own channel regardless of whitelist state.
             if ($user && (int) $user->id === (int) $ch['user_id']) return true;
-            if ($user && $this->whitelistService->isMember((int) $ch['whitelist_id'], $user->uid)) return true;
-            return false;
+            // Non-owners require an applied whitelist they're in.
+            // No whitelist = closed (the absence of a preset means the
+            // owner hasn't explicitly opened the channel to anyone yet).
+            return !empty($ch['whitelist_id']) && $user
+                && $this->whitelistService->isMember((int) $ch['whitelist_id'], $user->uid);
         }));
 
         usort($result, function ($a, $b) {

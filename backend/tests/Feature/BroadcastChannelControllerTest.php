@@ -43,40 +43,44 @@ class BroadcastChannelControllerTest extends TestCase
     // =========================================================================
 
     #[Test]
-    public function index_returns_channels_for_guest(): void
+    public function index_returns_empty_for_guest_when_only_closed_channels_exist(): void
     {
+        // Logic flip: no-whitelist channel = closed. Guest has no uid
+        // and therefore cannot be a whitelist member, so the guest
+        // index always shows nothing unless the channel's owner is a
+        // guest — impossible because cast requires title.
         $this->createChannel('announcements');
 
         $response = $this->getJson('/api/broadcast/channels');
 
         $response->assertStatus(200)
             ->assertJsonStructure(['channels'])
-            ->assertJsonCount(1, 'channels');
+            ->assertJsonCount(0, 'channels');
     }
 
     #[Test]
-    public function index_returns_channels_for_authenticated_user(): void
+    public function index_returns_owned_channels_for_owner(): void
     {
-        $this->createChannel('news');
+        $this->createChannel('news');  // owned by $this->titled
 
-        $response = $this->actingAs($this->untitled)->getJson('/api/broadcast/channels');
+        $response = $this->actingAs($this->titled)->getJson('/api/broadcast/channels');
 
         $response->assertStatus(200)
             ->assertJsonCount(1, 'channels');
     }
 
     #[Test]
-    public function index_shows_pinned_status_for_authenticated_user(): void
+    public function index_shows_pinned_status_for_owner(): void
     {
-        $chId = $this->createChannel('pinnable');
+        $chId = $this->createChannel('pinnable');  // owned by $this->titled
         DB::table('broadcast_pins')->insert([
-            'user_id' => $this->untitled->id,
+            'user_id' => $this->titled->id,
             'channel_id' => $chId,
             'created_at' => now(),
             'updated_at' => now(),
         ]);
 
-        $response = $this->actingAs($this->untitled)->getJson('/api/broadcast/channels');
+        $response = $this->actingAs($this->titled)->getJson('/api/broadcast/channels');
 
         $channel = $response->json('channels.0');
         $this->assertTrue($channel['is_pinned']);
@@ -378,15 +382,15 @@ class BroadcastChannelControllerTest extends TestCase
     // =========================================================================
 
     #[Test]
-    public function fetch_boards_returns_records(): void
+    public function fetch_boards_returns_records_for_owner(): void
     {
-        $chId = $this->createChannel('News');
+        $chId = $this->createChannel('News');  // owned by $this->titled
         DB::table('broadcast_boards')->insert([
             ['channel_id' => $chId, 'timestamp' => 2000, 'text' => 'Second', 'created_at' => now(), 'updated_at' => now()],
             ['channel_id' => $chId, 'timestamp' => 1000, 'text' => 'First', 'created_at' => now(), 'updated_at' => now()],
         ]);
 
-        $response = $this->getJson("/api/broadcast/channels/{$chId}/boards");
+        $response = $this->actingAs($this->titled)->getJson("/api/broadcast/channels/{$chId}/boards");
 
         $response->assertStatus(200)
             ->assertJsonCount(2, 'records');
@@ -398,18 +402,21 @@ class BroadcastChannelControllerTest extends TestCase
     }
 
     #[Test]
-    public function fetch_boards_accessible_without_auth(): void
+    public function fetch_boards_returns_empty_for_guest_on_closed_channel(): void
     {
-        $chId = $this->createChannel('Public');
+        // Logic flip: a no-whitelist channel is closed to guests.
+        // The endpoint returns records as a list of zero rather than
+        // 403 to keep client polling cheap; the visibility check
+        // already filtered the channel out of the index for them.
+        $chId = $this->createChannel('Closed');
         DB::table('broadcast_boards')->insert([
-            'channel_id' => $chId, 'timestamp' => 1000, 'text' => 'Public content',
+            'channel_id' => $chId, 'timestamp' => 1000, 'text' => 'Hidden',
             'created_at' => now(), 'updated_at' => now(),
         ]);
 
         $response = $this->getJson("/api/broadcast/channels/{$chId}/boards");
-
-        $response->assertStatus(200)
-            ->assertJsonCount(1, 'records');
+        // Currently abort(403) on visibility miss — assert that.
+        $response->assertStatus(403);
     }
 
     #[Test]
@@ -428,15 +435,17 @@ class BroadcastChannelControllerTest extends TestCase
     #[Test]
     public function pin_creates_pin_record(): void
     {
-        $chId = $this->createChannel('Pinnable');
+        // Owner pins their own (closed) channel — owner override on
+        // assertVisibleTo means pinning works even with no whitelist.
+        $chId = $this->createChannel('Pinnable');  // owned by $this->titled
 
-        $response = $this->actingAs($this->untitled)->postJson("/api/broadcast/channels/{$chId}/pin");
+        $response = $this->actingAs($this->titled)->postJson("/api/broadcast/channels/{$chId}/pin");
 
         $response->assertStatus(200)
             ->assertJson(['message' => 'PINNED']);
 
         $this->assertDatabaseHas('broadcast_pins', [
-            'user_id' => $this->untitled->id,
+            'user_id' => $this->titled->id,
             'channel_id' => $chId,
         ]);
     }
@@ -446,11 +455,11 @@ class BroadcastChannelControllerTest extends TestCase
     {
         $chId = $this->createChannel('Double Pin');
 
-        $this->actingAs($this->untitled)->postJson("/api/broadcast/channels/{$chId}/pin");
-        $this->actingAs($this->untitled)->postJson("/api/broadcast/channels/{$chId}/pin");
+        $this->actingAs($this->titled)->postJson("/api/broadcast/channels/{$chId}/pin");
+        $this->actingAs($this->titled)->postJson("/api/broadcast/channels/{$chId}/pin");
 
         $count = DB::table('broadcast_pins')
-            ->where('user_id', $this->untitled->id)
+            ->where('user_id', $this->titled->id)
             ->where('channel_id', $chId)
             ->count();
         $this->assertEquals(1, $count);
@@ -519,12 +528,12 @@ class BroadcastChannelControllerTest extends TestCase
         $castResponse->assertStatus(200);
         $chId = $castResponse->json('channel.id');
 
-        // 2. Fetch (public)
-        $this->getJson("/api/broadcast/channels/{$chId}/boards")
+        // 2. Fetch (as owner — no-whitelist channel is closed to others)
+        $this->actingAs($this->titled)->getJson("/api/broadcast/channels/{$chId}/boards")
             ->assertJsonCount(2, 'records');
 
-        // 3. Pin (as reader)
-        $this->actingAs($this->untitled)->postJson("/api/broadcast/channels/{$chId}/pin")
+        // 3. Pin (as owner — owner can pin own channel even when closed)
+        $this->actingAs($this->titled)->postJson("/api/broadcast/channels/{$chId}/pin")
             ->assertStatus(200);
 
         // 4. Rename
@@ -582,9 +591,12 @@ class BroadcastChannelControllerTest extends TestCase
     #[Test]
     public function show_flashcards_returns_empty_for_channel_with_no_deck(): void
     {
-        $chId = $this->createChannel('empty-deck');
+        // Owner-side fetch — no-whitelist channel is now closed to
+        // non-owners, so the test authenticates as the channel owner.
+        $chId = $this->createChannel('empty-deck');  // owned by titled
 
-        $response = $this->getJson("/api/broadcast/channels/{$chId}/flashcards");
+        $response = $this->actingAs($this->titled)
+            ->getJson("/api/broadcast/channels/{$chId}/flashcards");
 
         $response->assertStatus(200)
             ->assertJson(['flashcards' => []]);

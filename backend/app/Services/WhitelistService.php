@@ -308,15 +308,25 @@ class WhitelistService
     }
 
     /**
-     * Visibility check — viewer.uid ∈ members? Used by the BC read
-     * gates. Null whitelistId means "no whitelist applied" ⇒ the
-     * channel is public, so trivially visible.
+     * Visibility check — viewer.uid ∈ members? Used by BC + Inbox
+     * read gates.
+     *
+     * Null `$whitelistId` means "no whitelist applied" → returns
+     * **false**, treating the absence of a preset as a closed door.
+     * The semantic is "explicit grants only": until the owner picks
+     * an audience preset, nobody (except the owner, gated above this
+     * call) sees the resource. This is the conservative default so
+     * that creating-then-forgetting an inbox or channel doesn't
+     * accidentally publish it to everyone.
+     *
+     * A non-existent whitelistId (deleted preset) also returns
+     * false for the same reason — the row is dead.
      */
     public function isMember(?int $whitelistId, string $uid): bool
     {
-        if ($whitelistId === null) return true;
+        if ($whitelistId === null) return false;
         $row = DB::table('whitelists')->where('id', $whitelistId)->first();
-        if (!$row) return true;
+        if (!$row) return false;
         return in_array($uid, $this->decodeMembers($row->members), true);
     }
 

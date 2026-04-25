@@ -107,14 +107,17 @@ class InboxServiceTest extends TestCase
     // ── Visibility (read) ────────────────────────────────────────
 
     #[Test] /* I7 */
-    public function listing_includes_public_inbox_for_everyone(): void
+    public function listing_hides_no_whitelist_inbox_from_non_owners(): void
     {
-        $this->service->createInbox($this->owner, 'PubA');
+        // Logic flip 2026-04-25: a fresh inbox without a whitelist is
+        // CLOSED to non-owners (was: public). Owner still sees their
+        // own row; everyone else sees an empty list until a preset is
+        // applied.
+        $this->service->createInbox($this->owner, 'NoWhitelist');
         $rogue = User::factory()->create(['uid' => 'rogue']);
 
-        $list = $this->service->listInboxes($rogue);
-        $this->assertCount(1, $list);
-        $this->assertEquals('PubA', $list[0]['name']);
+        $this->assertCount(0, $this->service->listInboxes($rogue));
+        $this->assertCount(1, $this->service->listInboxes($this->owner));
     }
 
     #[Test] /* I8 */
@@ -198,15 +201,29 @@ class InboxServiceTest extends TestCase
     }
 
     #[Test] /* I16 */
-    public function public_inbox_accepts_submissions_from_anyone(): void
+    public function no_whitelist_inbox_rejects_submissions_from_non_owners(): void
     {
-        $inbox = $this->service->createInbox($this->owner, 'OpenInbox');
+        // Logic flip: without an applied whitelist the inbox is closed.
+        // The owner can still submit to themselves (mostly a hypothetical
+        // — no real workflow drives this — but it's a useful invariant).
+        // Anyone else gets 403.
+        $inbox = $this->service->createInbox($this->owner, 'ClosedInbox');
         $rando = User::factory()->create(['uid' => 'rando']);
-        $this->service->submit($rando, (int) $inbox->id, 'hi', null);
 
+        $this->expectException(HttpException::class);
+        $this->service->submit($rando, (int) $inbox->id, 'hi', null);
+    }
+
+    #[Test] /* I16b */
+    public function no_whitelist_inbox_accepts_owner_self_submission(): void
+    {
+        // Owner-self submission still works without a whitelist —
+        // owner override sits above the eligibility check.
+        $inbox = $this->service->createInbox($this->owner, 'SelfBox');
+        $this->service->submit($this->owner, (int) $inbox->id, 'mine', null);
         $this->assertDatabaseHas('inbox_submissions', [
             'inbox_id' => $inbox->id,
-            'user_id'  => $rando->id,
+            'user_id'  => $this->owner->id,
         ]);
     }
 
@@ -261,17 +278,24 @@ class InboxServiceTest extends TestCase
     }
 
     #[Test] /* I21 */
-    public function apply_whitelist_null_detaches_to_public(): void
+    public function apply_whitelist_null_detaches_to_closed(): void
     {
+        // Detach (apply null) clears the FK. Logic flip: closed state.
+        // Non-members can no longer list. Existing submitters keep
+        // read access via `inbox_submissions` row check (read-preserved).
         $inbox = $this->service->createInbox($this->owner, 'WD', null, $this->whitelistId);
+        $this->service->submit($this->studentA, (int) $inbox->id, 'pre-detach', null);
         $this->service->applyWhitelist($this->owner, (int) $inbox->id, null);
 
         $row = DB::table('inboxes')->where('id', $inbox->id)->first();
         $this->assertNull($row->whitelist_id);
 
-        // After detach studentC (never in whitelist) can list it
-        $list = $this->service->listInboxes($this->studentC);
-        $this->assertCount(1, $list);
+        // studentC: never submitted, no whitelist now → closed
+        $this->assertCount(0, $this->service->listInboxes($this->studentC));
+        // studentA: had submitted while in whitelist → read-preserved
+        $this->assertCount(1, $this->service->listInboxes($this->studentA));
+        // owner: always sees
+        $this->assertCount(1, $this->service->listInboxes($this->owner));
     }
 
     // ── Sender's own submission read ─────────────────────────────

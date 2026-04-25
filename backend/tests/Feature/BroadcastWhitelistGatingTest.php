@@ -77,16 +77,19 @@ class BroadcastWhitelistGatingTest extends TestCase
     // =========================================================================
 
     #[Test]
-    public function index_omits_private_channel_for_non_member(): void
+    public function index_omits_both_no_whitelist_and_non_member_channels(): void
     {
-        $publicId = $this->createChannel('public_ch', $this->owner);
+        // Logic flip 2026-04-25: a channel with no whitelist applied
+        // is closed to non-owners (was: public). So a non-member sees
+        // neither the no-whitelist channel nor the private one.
+        $closedId = $this->createChannel('closed_ch', $this->owner);
         [$privateId,] = $this->createPrivateChannel('private_ch', $this->owner, ['student_bob']);
 
         $r = $this->actingAs($this->nonMember)->getJson('/api/broadcast/channels');
         $r->assertStatus(200);
 
         $ids = collect($r->json('channels'))->pluck('id')->all();
-        $this->assertContains($publicId, $ids);
+        $this->assertNotContains($closedId, $ids);
         $this->assertNotContains($privateId, $ids);
     }
 

@@ -654,12 +654,26 @@ Log section; every new user decision gets appended with a date.
       (nullable), uid (nullable)`. A row matches a viewer when
       `viewer.title = title OR viewer.uid = uid` (NULL columns
       skipped). Both NULL is rejected at insert time.
-    - **`broadcast_channels.whitelist_id`** — nullable FK,
-      `ON DELETE SET NULL` (whitelist delete reverts the channel
-      to public, not cascades it dead).
-    - **Visibility contract**: `whitelist_id IS NULL` ⇒ public ⇒
-      everyone visible. Otherwise `viewer.uid ∈ whitelist.members
-      OR viewer is owner`.
+    - **`broadcast_channels.whitelist_id`** / **`inboxes.whitelist_id`** —
+      nullable FK, `ON DELETE SET NULL`. A whitelist row delete
+      detaches the channel/inbox; combined with the rule below
+      that's a hard close, not a fall-back to public.
+    - **Visibility contract** (logic flip 2026-04-25):
+      `whitelist_id IS NULL` ⇒ **closed** ⇒ owner-only. Otherwise
+      `viewer.uid ∈ whitelist.members OR viewer is owner`. This is
+      the conservative default — creating a channel / inbox does
+      NOT publish it; the owner must explicitly `applyWhitelist`
+      with a preset they have a T1 grant for. Inbox extends this
+      with a **read-preserved** rule: any user with a row in
+      `inbox_submissions` for this inbox keeps read access even
+      after the whitelist is detached or swapped, so a graded
+      submission doesn't disappear from the submitter's view if
+      the lecturer rebases the audience.
+    - **Sender eligibility (Inbox only)**: stricter than visibility.
+      Submitting requires owner OR current-whitelist member; an
+      evicted submitter can read their old row but cannot push
+      edits back. Mirrors BC's "no whitelist = no audience" with
+      "no whitelist = no submitters".
     - **Apply contract**: even owners cannot apply arbitrary
       presets — they must have a T1 row whose `title` or `uid`
       matches them. Distribution is admin-managed (no frontend

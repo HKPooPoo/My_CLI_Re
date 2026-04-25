@@ -39,19 +39,30 @@ class InboxService
 
     /**
      * Read gate. Inbox is visible to:
-     *   - public (whitelist_id IS NULL) → everyone
      *   - owner → always
-     *   - whitelist members → yes
+     *   - members of the currently-applied whitelist → yes
      *   - existing submitters whose row is still on the table → yes
-     *     (read-preserved after whitelist tightening; the data they
-     *     produced shouldn't disappear from their view)
+     *     (read-preserved: an evicted member or a member of a former
+     *     whitelist that has since been detached / swapped keeps
+     *     read access to data they personally produced)
+     *
+     * **No whitelist = closed.** A fresh inbox without an applied
+     * preset is invisible to non-owners (and impossible to submit
+     * to). The owner must explicitly apply a whitelist to open it.
      */
     private function isVisibleTo(object $inbox, ?User $user): bool
     {
-        if (empty($inbox->whitelist_id)) return true;
         if (!$user) return false;
         if ((int) $user->id === (int) $inbox->user_id) return true;
-        if ($this->whitelistService->isMember((int) $inbox->whitelist_id, $user->uid)) return true;
+        if (!empty($inbox->whitelist_id)
+            && $this->whitelistService->isMember((int) $inbox->whitelist_id, $user->uid)) {
+            return true;
+        }
+        // Read-preserved: the user has an existing submission on this
+        // inbox. Could be from when they were a member of the
+        // currently-applied whitelist, or from a previous whitelist
+        // that was swapped out, or from an open period before the
+        // current preset was applied.
         return DB::table('inbox_submissions')
             ->where('inbox_id', $inbox->id)
             ->where('user_id', $user->id)
@@ -67,15 +78,18 @@ class InboxService
      * Write gate for senders. Stricter than visibility — a removed
      * member can still SEE their old submission (read-preserved) but
      * cannot push further edits.
-     *   - public → anyone authenticated
-     *   - in current whitelist → yes
      *   - owner → yes (they can submit to their own inbox if they want)
+     *   - in current whitelist → yes
+     *   - everyone else → no
+     *
+     * **No whitelist = closed.** Without an applied preset the inbox
+     * accepts no submissions — not even from previous submitters.
      */
     private function isSenderEligible(object $inbox, ?User $user): bool
     {
         if (!$user) return false;
-        if (empty($inbox->whitelist_id)) return true;
         if ((int) $user->id === (int) $inbox->user_id) return true;
+        if (empty($inbox->whitelist_id)) return false;
         return $this->whitelistService->isMember((int) $inbox->whitelist_id, $user->uid);
     }
 

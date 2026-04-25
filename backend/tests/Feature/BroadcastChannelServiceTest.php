@@ -215,13 +215,15 @@ class BroadcastChannelServiceTest extends TestCase
     #[Test] /* C11 */
     public function fetch_boards_returns_records_ordered_by_timestamp(): void
     {
-        $channelId = $this->createChannel('news');
+        $channelId = $this->createChannel('news');  // owned by admin
         DB::table('broadcast_boards')->insert([
             ['channel_id' => $channelId, 'timestamp' => 3000, 'text' => 'Third', 'created_at' => now(), 'updated_at' => now()],
             ['channel_id' => $channelId, 'timestamp' => 1000, 'text' => 'First', 'created_at' => now(), 'updated_at' => now()],
         ]);
 
-        $boards = $this->service->fetchBoards($channelId);
+        // Logic flip: no-whitelist channel is closed to non-owners.
+        // Owner override lets admin (the owner) read their own boards.
+        $boards = $this->service->fetchBoards($channelId, $this->admin);
 
         $this->assertCount(2, $boards);
         $this->assertEquals(1000, $boards[0]->timestamp);
@@ -261,14 +263,17 @@ class BroadcastChannelServiceTest extends TestCase
     }
 
     #[Test] /* C14 */
-    public function list_channels_works_for_guest(): void
+    public function list_channels_returns_empty_for_guest_with_no_open_channels(): void
     {
-        $this->createChannel('public');
+        // Logic flip: a fresh channel without an applied whitelist is
+        // CLOSED. Guests see nothing until an owner explicitly applies
+        // a preset that covers them — and guests can't be in any
+        // whitelist (whitelists are uid-based; guests have no uid).
+        $this->createChannel('closed');
 
         $channels = $this->service->listChannels(null);
 
-        $this->assertCount(1, $channels);
-        $this->assertFalse($channels[0]['is_pinned']);
+        $this->assertCount(0, $channels);
     }
 
     // =========================================================================
@@ -426,7 +431,8 @@ class BroadcastChannelServiceTest extends TestCase
     public function get_flashcards_returns_empty_when_missing(): void
     {
         $channelId = $this->createChannel();
-        $this->assertEquals([], $this->service->getFlashcards($channelId));
+        // Owner override — non-owner would 403 on a no-whitelist channel.
+        $this->assertEquals([], $this->service->getFlashcards($channelId, $this->admin));
     }
 
     #[Test] /* C25 */
@@ -443,7 +449,7 @@ class BroadcastChannelServiceTest extends TestCase
         );
         $channel = DB::table('broadcast_channels')->where('name', 'ch')->first();
 
-        $this->assertEquals($deck, $this->service->getFlashcards($channel->id));
+        $this->assertEquals($deck, $this->service->getFlashcards($channel->id, $this->admin));
     }
 
     #[Test] /* C26 */

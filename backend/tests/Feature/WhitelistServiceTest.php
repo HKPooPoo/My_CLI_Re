@@ -93,9 +93,21 @@ class WhitelistServiceTest extends TestCase
     }
 
     #[Test] /* W6 */
-    public function is_member_handles_null_whitelist_as_public(): void
+    public function is_member_treats_null_whitelist_as_closed(): void
     {
-        $this->assertTrue($this->service->isMember(null, 'anyone'));
+        // Logic flip 2026-04-25: a null whitelistId means "no preset
+        // applied" → everyone is a non-member. Owners still see their
+        // own resource via the owner-override gate that lives ABOVE
+        // this primitive in the calling services.
+        $this->assertFalse($this->service->isMember(null, 'anyone'));
+    }
+
+    #[Test] /* W6b */
+    public function is_member_treats_missing_whitelist_id_as_closed(): void
+    {
+        // Same conservative posture for a deleted-or-never-existed id —
+        // not a member, even though the row doesn't exist to evaluate.
+        $this->assertFalse($this->service->isMember(99999, 'anyone'));
     }
 
     #[Test] /* W7 */
