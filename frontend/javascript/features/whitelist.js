@@ -16,6 +16,7 @@
 import { BCChannel } from '../broadcast-channel.js';
 import { BroadcastWhitelistService } from '../services/broadcast-whitelist-service.js';
 import { BBMessage } from '../blackboard-msg.js';
+import { t } from '../i18n.js';
 
 const ICON_URL = '/images/whitelist.svg';
 
@@ -40,7 +41,7 @@ function render() {
 
     const title = document.createElement('div');
     title.className = 'whitelist-shelf-title';
-    title.textContent = 'ACCESS PRESET';
+    title.textContent = t('whitelist.shelfTitle');
     panel.appendChild(title);
 
     const currentId = currentChannelWhitelistId();
@@ -49,15 +50,15 @@ function render() {
     const state = document.createElement('div');
     state.className = 'whitelist-shelf-current';
     state.textContent = current
-        ? `Currently applied: ${current.code} — ${current.name}`
-        : 'Currently: PUBLIC (no preset applied)';
+        ? t('whitelist.currentApplied', { code: current.code, name: current.name })
+        : t('whitelist.currentPublic');
     panel.appendChild(state);
 
     if (current) {
         const detach = document.createElement('button');
         detach.type = 'button';
         detach.className = 'whitelist-shelf-detach';
-        detach.textContent = 'DETACH (revert to public)';
+        detach.textContent = t('whitelist.detachBtn');
         detach.addEventListener('click', () => apply(null));
         panel.appendChild(detach);
     }
@@ -68,7 +69,7 @@ function render() {
     if (_presets.length === 0) {
         const empty = document.createElement('div');
         empty.className = 'whitelist-shelf-empty';
-        empty.textContent = 'No presets available. Ask an administrator to grant you a distribution rule (whitelist:grant).';
+        empty.textContent = t('whitelist.empty');
         list.appendChild(empty);
     } else {
         for (const p of _presets) {
@@ -94,7 +95,7 @@ function render() {
             }
             const count = document.createElement('div');
             count.className = 'whitelist-shelf-count';
-            count.textContent = `${p.member_count} member(s)`;
+            count.textContent = t('whitelist.memberCount', { count: p.member_count });
             meta.appendChild(count);
             row.appendChild(meta);
 
@@ -102,7 +103,7 @@ function render() {
                 const btn = document.createElement('button');
                 btn.type = 'button';
                 btn.className = 'whitelist-shelf-apply';
-                btn.textContent = 'APPLY';
+                btn.textContent = t('whitelist.applyBtn');
                 btn.addEventListener('click', () => apply(p.id));
                 row.appendChild(btn);
             }
@@ -116,24 +117,24 @@ function render() {
 async function apply(whitelistId) {
     const ch = BCChannel?.currentChannel;
     if (!ch?.serverChannelId) {
-        BBMessage.error('Channel not cast yet.');
+        BBMessage.error(t('whitelist.notCast'));
         return;
     }
-    const msg = BBMessage.loading(whitelistId ? 'Applying preset…' : 'Detaching preset…');
+    const msg = BBMessage.loading(whitelistId ? t('whitelist.applying') : t('whitelist.detaching'));
     try {
         await BroadcastWhitelistService.apply(ch.serverChannelId, whitelistId);
         ch.whitelistId = whitelistId ?? null;
         // Let the list re-render its lock icon via the existing
         // localBootstrapped path which refetches the channel list.
         window.dispatchEvent(new CustomEvent('broadcast:localBootstrapped'));
-        msg.update(whitelistId ? 'Preset applied.' : 'Reverted to public.', 2000);
+        msg.update(whitelistId ? t('whitelist.applied') : t('whitelist.detached'), 2000);
         render();
     } catch (e) {
         msg.close();
         const status = e?.status || e?.response?.status;
-        if (status === 403) BBMessage.error('Not authorised for this preset (or not channel owner).');
-        else if (status === 404) BBMessage.error('Whitelist no longer exists.');
-        else BBMessage.error('Apply failed.');
+        if (status === 403) BBMessage.error(t('whitelist.errNotAuthorised'));
+        else if (status === 404) BBMessage.error(t('whitelist.errNotFound'));
+        else BBMessage.error(t('whitelist.errApplyFailed'));
         console.error('[Whitelist] apply failed', e);
     }
 }

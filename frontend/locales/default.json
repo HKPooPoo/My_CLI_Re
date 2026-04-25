@@ -289,7 +289,8 @@
       "file-attach": "Attach a file to the current page. Drag and drop works too — drop straight onto the textarea.",
       "calendar": "Open the calendar for this notebook or channel. Add events per date; the AI tutor reads from here.",
       "flashcard": "Open flashcards for this notebook or channel. Maker for editing cards; Player for studying them.",
-      "llm": "AI Tutor. Pick a prompt (summarise, translate, suggest schedule) and send it against the current page."
+      "llm": "AI Tutor. Pick a prompt (summarise, translate, suggest schedule) and send it against the current page.",
+      "whitelist": "Apply an access preset to this channel. Owner only; the shelf lists the presets you've been distributed. Picking one restricts visibility to its members; DETACH reverts to public."
     },
     "search": {
       "open": "Search the pages of this notebook / channel / chat. Click to expand; Enter jumps to the next match.",
@@ -361,6 +362,23 @@
     "aiScopeMissing": "Open a notebook page before asking AI to create flashcards",
     "readerEmpty": "No flashcards cast for this channel yet. The owner's next CAST will publish their deck here.",
     "readerBadge": "READ-ONLY"
+  },
+  "whitelist": {
+    "shelfTitle": "ACCESS PRESET",
+    "currentApplied": "Currently applied: {code} — {name}",
+    "currentPublic": "Currently: PUBLIC (no preset applied)",
+    "detachBtn": "DETACH (revert to public)",
+    "applyBtn": "APPLY",
+    "memberCount": "{count} member(s)",
+    "empty": "No presets available. Ask an administrator to grant you a distribution rule.",
+    "notCast": "Cast the channel before applying a preset.",
+    "applying": "Applying preset…",
+    "detaching": "Detaching preset…",
+    "applied": "Preset applied.",
+    "detached": "Reverted to public.",
+    "errNotAuthorised": "Not authorised for this preset (or not channel owner).",
+    "errNotFound": "Whitelist no longer exists.",
+    "errApplyFailed": "Apply failed."
   },
   "search": {
     "placeholder": "Search pages…"
