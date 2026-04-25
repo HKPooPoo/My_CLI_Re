@@ -134,6 +134,12 @@ class InboxController extends Controller
 
         return response()->json([
             'submission' => $this->service->getMySubmission($user, (int) $inboxId),
+            // Server-authoritative eligibility flag. The front-end
+            // disables senderArea / POST / file picker when false so
+            // a read-preserved user (existing submission, no longer
+            // in whitelist) cannot type a change that the server
+            // would refuse to commit.
+            'can_submit' => $this->service->canSubmit($user, (int) $inboxId),
         ]);
     }
 

@@ -539,6 +539,12 @@
             <div class="page can-push-pull have-feature" data-page="inbox-thread">
                 <div class="editor-wrapper" id="inbox-drop-zone">
                     <div class="attachment-chips" id="inbox-attachment-chips"></div>
+                    <!-- Read-preserved banner — shown to senders whose
+                         submission rights were revoked (whitelist
+                         detached / swapped) but whose existing row is
+                         still readable. JS toggles the .visible class. -->
+                    <div class="inbox-read-only-banner" id="inbox-read-only-banner"
+                         data-i18n="inbox.readPreserved">YOU CAN NO LONGER SUBMIT — READ ONLY</div>
                     <div class="log-editor-row">
                         <div class="page-preview-rail" id="inbox-preview-rail"></div>
                         <div class="inbox-textareas">

@@ -325,4 +325,65 @@ class InboxServiceTest extends TestCase
         $this->expectException(HttpException::class);
         $this->service->getMySubmission($this->studentC, (int) $inbox->id);
     }
+
+    // ── canSubmit eligibility flag ───────────────────────────────
+
+    #[Test] /* I25 */
+    public function can_submit_true_for_current_member(): void
+    {
+        $inbox = $this->service->createInbox($this->owner, 'Live', null, $this->whitelistId);
+        $this->assertTrue($this->service->canSubmit($this->studentA, (int) $inbox->id));
+    }
+
+    #[Test] /* I26 */
+    public function can_submit_false_for_evicted_member_after_whitelist_removal(): void
+    {
+        // The bug fix: read-preserved must NOT imply write-preserved.
+        // Student submits while in whitelist → evicted → still has
+        // visibility (existing submission) but canSubmit is false.
+        $inbox = $this->service->createInbox($this->owner, 'Evict', null, $this->whitelistId);
+        $this->service->submit($this->studentA, (int) $inbox->id, 'first', null);
+        $this->whitelistService->removeMember($this->whitelistId, 'studA');
+
+        // Read-preserved: list still includes the inbox.
+        $this->assertCount(1, $this->service->listInboxes($this->studentA));
+        // Write-revoked: canSubmit false.
+        $this->assertFalse($this->service->canSubmit($this->studentA, (int) $inbox->id));
+    }
+
+    #[Test] /* I27 */
+    public function can_submit_false_after_whitelist_detach(): void
+    {
+        // Detach (PUT null) → inbox closes. Owner override keeps
+        // canSubmit=true for the owner; everyone else (including
+        // people who submitted before the detach) loses write access.
+        $inbox = $this->service->createInbox($this->owner, 'Detach', null, $this->whitelistId);
+        $this->service->submit($this->studentA, (int) $inbox->id, 'first', null);
+        $this->service->applyWhitelist($this->owner, (int) $inbox->id, null);
+
+        $this->assertTrue($this->service->canSubmit($this->owner, (int) $inbox->id));
+        $this->assertFalse($this->service->canSubmit($this->studentA, (int) $inbox->id));
+    }
+
+    #[Test] /* I28 */
+    public function can_submit_false_for_unauthenticated(): void
+    {
+        $inbox = $this->service->createInbox($this->owner, 'Open', null, $this->whitelistId);
+        $this->assertFalse($this->service->canSubmit(null, (int) $inbox->id));
+    }
+
+    #[Test] /* I29 */
+    public function listing_includes_can_submit_flag(): void
+    {
+        $inbox = $this->service->createInbox($this->owner, 'F', null, $this->whitelistId);
+        $list = $this->service->listInboxes($this->studentA);
+        $this->assertCount(1, $list);
+        $this->assertArrayHasKey('can_submit', $list[0]);
+        $this->assertTrue($list[0]['can_submit']);
+
+        // Owner sees it true via override (even though they're not
+        // in members).
+        $ownerList = $this->service->listInboxes($this->owner);
+        $this->assertTrue($ownerList[0]['can_submit']);
+    }
 }

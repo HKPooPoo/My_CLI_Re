@@ -60,6 +60,7 @@ export const IXThread = {
         wrapper: document.getElementById('inbox-drop-zone'),
         emptyOverlay: document.getElementById('inbox-empty-overlay'),
         receiverEmpty: document.getElementById('inbox-receiver-empty'),
+        readOnlyBanner: document.getElementById('inbox-read-only-banner'),
         chipsArea: document.getElementById('inbox-attachment-chips'),
         previewRail: document.getElementById('inbox-preview-rail'),
         senderArea: document.getElementById('inbox-sender-textarea'),
@@ -87,6 +88,16 @@ export const IXThread = {
     /** Save-debounce timers, keyed so we can cancel on inbox switch */
     timers: new TimerGroup(),
     _abortController: null,
+    /**
+     * Server-authoritative eligibility flag. true = sender can POST
+     * new edits; false = read-preserved (visible but write-revoked).
+     * Updated on every refreshFromServer. The frontend gates
+     * senderArea / POST button / file picker on this so a user
+     * whose whitelist was just removed can't TYPE a change that
+     * the server would refuse to commit. Receiver mode always sets
+     * this true (owner override on the backend).
+     */
+    canSubmit: false,
 
     init() {
         this.bindEvents();
@@ -141,13 +152,13 @@ export const IXThread = {
         const hideOverlay = () => overlay.classList.remove('active');
 
         zone.addEventListener('dragenter', (e) => {
-            if (this.mode !== 'sender' || !this.inbox) return;
+            if (this.mode !== 'sender' || !this.inbox || !this.canSubmit) return;
             e.preventDefault();
             counter++;
             showOverlay();
         });
         zone.addEventListener('dragover', (e) => {
-            if (this.mode !== 'sender' || !this.inbox) return;
+            if (this.mode !== 'sender' || !this.inbox || !this.canSubmit) return;
             e.preventDefault();
         });
         zone.addEventListener('dragleave', () => {
@@ -160,7 +171,7 @@ export const IXThread = {
             e.preventDefault();
             counter = 0;
             hideOverlay();
-            if (this.mode !== 'sender' || !this.inbox) return;
+            if (this.mode !== 'sender' || !this.inbox || !this.canSubmit) return;
             const file = e.dataTransfer?.files?.[0];
             if (file) await this.attachFile(file);
         });
@@ -206,6 +217,9 @@ export const IXThread = {
         if (this.elements.senderArea) {
             this.elements.senderArea.addEventListener('input', () => {
                 if (this.mode !== 'sender' || !this.inbox) return;
+                // Defensive: even if disabled is bypassed via DevTools,
+                // skip the IDB write when the server says we can't submit.
+                if (!this.canSubmit) return;
                 this.scheduleSaveSender();
             });
         }
@@ -231,7 +245,7 @@ export const IXThread = {
         // Click on empty chips area opens the file picker (mirrors BB/BC).
         if (this.elements.chipsArea) {
             this.elements.chipsArea.addEventListener('click', (e) => {
-                if (this.mode !== 'sender' || !this.inbox) return;
+                if (this.mode !== 'sender' || !this.inbox || !this.canSubmit) return;
                 if (e.target.closest('.attachment-chip')) return;
                 this.elements.fileInput?.click();
             });
@@ -359,6 +373,7 @@ export const IXThread = {
                 const data = await InboxService.fetchSubmissions(this.inbox.id, signal);
                 if (signal.aborted) return;
                 this.submissions = data?.submissions ?? [];
+                this.canSubmit = true;  // owner override — receiver always eligible
                 await IXSubmissions.replaceForInbox(this.inbox.id, this.submissions);
                 if (this.head >= this.submissions.length) this.head = Math.max(0, this.submissions.length - 1);
                 this.renderReceiverView();
@@ -367,6 +382,7 @@ export const IXThread = {
                 const data = await InboxService.getMySubmission(this.inbox.id, signal);
                 if (signal.aborted) return;
                 const row = data?.submission ?? null;
+                this.canSubmit = !!data?.can_submit;
                 if (row) {
                     const me = localStorage.getItem('currentUser');
                     await IXSubmissions.upsert({
@@ -415,13 +431,27 @@ export const IXThread = {
         const me = localStorage.getItem('currentUser') || '';
         const ownerLabel = this.inbox?.owner_uid || '';
 
+        // Eligibility gate — disables senderArea + POST + file when
+        // the user is read-preserved (had access, no longer does).
+        const canWrite = this.canSubmit;
+
         if (this.elements.senderArea) {
             this.elements.senderArea.value = row?.sender_text ?? '';
-            this.elements.senderArea.disabled = false;
+            this.elements.senderArea.disabled = !canWrite;
         }
         if (this.elements.receiverArea) {
             this.elements.receiverArea.value = row?.receiver_text ?? '';
             this.elements.receiverArea.disabled = true;
+        }
+        // Read-preserved banner — only show when user is in this state
+        // (has a submission to read, but no current submission rights).
+        if (this.elements.readOnlyBanner) {
+            const isReadPreserved = !canWrite && !!row;
+            this.elements.readOnlyBanner.classList.toggle('visible', isReadPreserved);
+        }
+        // POST button: hide when can't write at all.
+        if (this.elements.postBtn) {
+            this.elements.postBtn.style.display = canWrite ? '' : 'none';
         }
         // SUBMISSION pane: my own uid, my last submission timestamp.
         if (this.elements.senderUid) this.elements.senderUid.textContent = me;
@@ -464,6 +494,9 @@ export const IXThread = {
             this.elements.receiverArea.value = row?.receiver_text ?? '';
             this.elements.receiverArea.disabled = false;
         }
+        // Receiver mode — banner hidden, POST always shown.
+        this.elements.readOnlyBanner?.classList.remove('visible');
+        if (this.elements.postBtn) this.elements.postBtn.style.display = '';
         // SUBMISSION pane: current sender's uid + their last update.
         if (this.elements.senderUid) {
             this.elements.senderUid.textContent = row?.sender_uid ?? '';

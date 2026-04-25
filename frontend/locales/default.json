@@ -481,6 +481,8 @@
     "noInboxSelected": "SELECT AN INBOX FROM THE LIST",
     "awaitingSubmissions": "AWAITING FIRST SUBMISSION — share the inbox name with the audience.",
     "feedbackPending": "Awaiting feedback from {owner}.",
+    "readPreserved": "YOUR SUBMISSION RIGHTS HAVE BEEN REVOKED — read-only access to your past submission is preserved.",
+    "submitDisabled": "You're not in a whitelist that allows submission to this inbox.",
     "senderWindow": "INBOX TEXT",
     "receiverWindow": "FEEDBACK",
     "senderPlaceholder": "What you want to submit...",

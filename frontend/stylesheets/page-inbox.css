@@ -409,6 +409,34 @@
     transform: none;
 }
 
+/* Read-preserved banner — visible only to senders whose submission
+   rights were revoked (whitelist detached / swapped while they had
+   an existing row). JS toggles `.visible`; default hidden. */
+.inbox-read-only-banner {
+    display: none;
+    flex: 0 0 auto;
+    padding: 8px 16px;
+    margin-top: 4vh;
+    background: color-mix(in srgb, var(--accent) 16%, var(--bg-page));
+    border: 1px solid var(--accent);
+    border-radius: var(--border-radius);
+    color: var(--brand-dark);
+    font-weight: 600;
+    font-size: calc(var(--font-size) * 0.85);
+    text-align: center;
+    align-self: center;
+    max-width: 86%;
+}
+.inbox-read-only-banner.visible {
+    display: flex;
+}
+
+/* When the banner is showing, the chips area can drop its top margin —
+   banner already provides the clearance from the push-button zone. */
+.inbox-read-only-banner.visible ~ .log-editor-row {
+    margin-top: 0;
+}
+
 /* Empty-state overlay — shown when no inbox is selected. Same
    "centered card on dim backdrop" treatment as `#auth-locked-overlay`
    so guest UX and "select-something-first" UX feel uniform. */

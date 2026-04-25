@@ -93,6 +93,20 @@ class InboxService
         return $this->whitelistService->isMember((int) $inbox->whitelist_id, $user->uid);
     }
 
+    /**
+     * Public canSubmit check — used by the controller to embed an
+     * eligibility flag in the GET responses so the front-end can
+     * gate edits without a separate roundtrip per textarea keystroke.
+     * Returns false on missing inbox / unauthenticated user.
+     */
+    public function canSubmit(?User $user, int $inboxId): bool
+    {
+        if (!$user) return false;
+        $inbox = DB::table('inboxes')->where('id', $inboxId)->first();
+        if (!$inbox) return false;
+        return $this->isSenderEligible($inbox, $user);
+    }
+
     // ── Owner-side: list / fetch ─────────────────────────────────
 
     /**
@@ -118,7 +132,7 @@ class InboxService
 
         return $rows
             ->filter(fn($r) => $this->isVisibleTo($r, $user))
-            ->map(function ($r) use ($userId) {
+            ->map(function ($r) use ($userId, $user) {
                 $submissionCount = (int) DB::table('inbox_submissions')
                     ->where('inbox_id', $r->id)
                     ->count();
@@ -132,6 +146,12 @@ class InboxService
                         ->first();
                 }
 
+                // Eligibility flag — drives front-end disable rules
+                // for senderArea / POST / file picker. Read-preserved
+                // users (existing submission, no longer in whitelist)
+                // get can_submit=false here.
+                $canSubmit = $this->isSenderEligible($r, $user);
+
                 return [
                     'id'                => (int) $r->id,
                     'name'              => $r->name,
@@ -143,6 +163,7 @@ class InboxService
                     'submission_count'  => $submissionCount,
                     'has_my_submission' => $mySubmission !== null,
                     'my_feedback_at'    => $mySubmission?->feedback_at !== null ? (int) $mySubmission->feedback_at : null,
+                    'can_submit'        => $canSubmit,
                 ];
             })
             ->values()

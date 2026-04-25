@@ -784,14 +784,44 @@ Log section; every new user decision gets appended with a date.
         feedback_at bigint ms (null until owner first responds).
         UNIQUE(inbox_id, user_id) — one row per (inbox, sender) pair,
         so resubmit is UPDATE not INSERT.
-    - **Sync model** is BB/BC's commit/checkout, not auto:
-      - textarea → IDB: 200ms debounce auto-save (sender_text on
-        sender side, receiver_text on receiver side)
-      - IDB → server: explicit POST button (sender pushes file +
-        sender_text; receiver pushes receiver_text)
-      - server → IDB: explicit PULL button (full re-fetch)
-      - WS event re-fetches silently on the same page so observers
-        see live state without auto-pushing local edits to server
+    - **Sync model — server-update actions and timing**:
+
+      | Action | Direction | Trigger | Cadence |
+      |---|---|---|---|
+      | Per-submission textarea typing | textarea → IDB | every keystroke | 200 ms debounce (auto) |
+      | Sender publish | IDB → server (`PUT .../submission`) | POST button | manual, immediate |
+      | Receiver feedback | IDB → server (`PUT .../submission/{uid}/feedback`) | POST button | manual, immediate |
+      | Sender / receiver re-pull | server → IDB | PULL button OR `inbox:signalUpdated` WS event OR `navi:pageChanged` to inbox-thread | manual button = explicit; WS / navigation = silent |
+      | Owner inbox rename | input change → server (`PATCH .../inboxes/{id}`) | rename input commit (Enter / blur) | immediate, no debounce |
+      | Owner inbox delete | server (`DELETE .../inboxes/{id}`) | DELETE button (3-step) | immediate |
+      | Whitelist apply / detach | server (`PUT .../inboxes/{id}/whitelist`) | shelf APPLY / DETACH click | **immediate** — eligibility flips on the very next read for everyone, no propagation delay |
+      | Inbox create | server (`POST .../inboxes`) | CREATE button | immediate |
+
+      **The whitelist takes effect the moment the server PUT
+      returns 200.** Connected WS subscribers receive
+      `InboxUpdated{action:'whitelist'}` and silently re-pull, so
+      the affected senders' UI state (eligibility flag below)
+      flips within one HTTP roundtrip. There is no caching delay
+      and no eventual-consistency window.
+
+    - **`can_submit` flag** (server-authoritative eligibility):
+      embedded in `GET /inboxes` (per-row) and `GET .../submission`
+      (top-level). Mirrors `InboxService::isSenderEligible` exactly:
+      true for the inbox owner; true for current whitelist members;
+      false for everyone else (including read-preserved users — see
+      below). Frontend `inbox-thread.js` reads this and gates the
+      sender textarea's `disabled` attribute, the file picker
+      click + drag-drop handlers, and the POST button's visibility.
+      A read-preserved user (visibility yes, write no) sees the
+      `inbox.readPreserved` banner explaining the state.
+    - **Read-preserved invariant**: `isVisibleTo` extends to anyone
+      with a row in `inbox_submissions` for this inbox, regardless
+      of current whitelist membership. **`isSenderEligible` does
+      NOT extend** — eviction or detach immediately revokes write
+      access while leaving the past submission readable. The
+      `can_submit` flag is the authoritative source for what the
+      frontend should disable; the backend POST endpoint also
+      re-validates and returns 403 on miss as defence-in-depth.
     - **Read-preserved, write-revoked** policy on whitelist switch.
       `InboxService::isVisibleTo` extends to anyone with an existing
       submission on the inbox (so an evicted student keeps read
