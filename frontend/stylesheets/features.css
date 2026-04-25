@@ -1166,21 +1166,22 @@
     box-shadow: 0 2px 8px var(--shadow-brand);
 }
 
+/* Active badge mirrors .whitelist-shelf-apply's box exactly so the
+   APPLY → APPLIED swap doesn't shift any pixel of the row. Only
+   the text label and the missing pointer/hover treatment differ. */
 [data-feature="whitelist"] .whitelist-shelf-active-badge {
     flex: 0 0 auto;
     min-width: 90px;
-    padding: 10px 12px;
+    padding: 10px 16px;
+    border: 2px solid var(--brand);
     border-radius: var(--border-radius);
     background: var(--brand);
     color: #ffffff;
-    font-weight: 800;
-    font-size: 0.78em;
-    letter-spacing: 0.16em;
+    font-weight: 700;
+    font-size: 0.95em;
+    letter-spacing: 0.08em;
     text-align: center;
-    align-self: stretch;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    cursor: default;
 }
 
 /* ── Members expand/collapse ── */
