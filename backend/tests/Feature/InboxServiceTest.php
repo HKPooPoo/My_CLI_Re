@@ -1,0 +1,304 @@
+<?php
+
+namespace Tests\Feature;
+
+use App\Events\InboxUpdated;
+use App\Models\User;
+use App\Services\InboxService;
+use App\Services\WhitelistService;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Event;
+use PHPUnit\Framework\Attributes\Test;
+use Symfony\Component\HttpKernel\Exception\HttpException;
+use Tests\TestCase;
+
+class InboxServiceTest extends TestCase
+{
+    use RefreshDatabase;
+
+    private InboxService $service;
+    private WhitelistService $whitelistService;
+
+    private User $owner;
+    private User $studentA;
+    private User $studentB;
+    private User $studentC;
+    private int $whitelistId;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->service = app(InboxService::class);
+        $this->whitelistService = app(WhitelistService::class);
+
+        $this->owner    = User::factory()->withTitle('Faculty')->create(['uid' => 'teacher_x']);
+        $this->studentA = User::factory()->withTitle('Student')->create(['uid' => 'studA']);
+        $this->studentB = User::factory()->withTitle('Student')->create(['uid' => 'studB']);
+        $this->studentC = User::factory()->withTitle('Student')->create(['uid' => 'studC']); // never in whitelist
+
+        $this->whitelistId = $this->whitelistService->create('2026SEHH7777', '2026 SEHH7777 Inbox Test');
+        $this->whitelistService->addMember($this->whitelistId, 'studA');
+        $this->whitelistService->addMember($this->whitelistId, 'studB');
+        $this->whitelistService->addDistribution($this->whitelistId, 'rule', title: 'Faculty');
+    }
+
+    // ── Lifecycle ────────────────────────────────────────────────
+
+    #[Test] /* I1 */
+    public function create_persists_inbox_and_fires_event(): void
+    {
+        Event::fake([InboxUpdated::class]);
+        $inbox = $this->service->createInbox($this->owner, 'Midterm Essay', 'desc here');
+
+        $this->assertDatabaseHas('inboxes', [
+            'id'   => $inbox->id,
+            'name' => 'Midterm Essay',
+            'description' => 'desc here',
+            'user_id' => $this->owner->id,
+            'whitelist_id' => null,
+        ]);
+        Event::assertDispatched(InboxUpdated::class, fn($e) => $e->action === 'create' && $e->inboxId === (int) $inbox->id);
+    }
+
+    #[Test] /* I2 */
+    public function create_requires_title(): void
+    {
+        $titleless = User::factory()->create(['uid' => 'plain']);
+        $this->expectException(HttpException::class);
+        $this->service->createInbox($titleless, 'Whatever');
+    }
+
+    #[Test] /* I3 */
+    public function create_rejects_duplicate_name(): void
+    {
+        $this->service->createInbox($this->owner, 'Lab 1');
+        $this->expectException(HttpException::class);
+        $this->service->createInbox($this->owner, 'Lab 1');
+    }
+
+    #[Test] /* I4 */
+    public function create_with_whitelist_requires_t1_grant(): void
+    {
+        $rogue = User::factory()->withTitle('IntruderTitle')->create(['uid' => 'rogue']);
+        $this->expectException(HttpException::class);
+        $this->service->createInbox($rogue, 'Rogue Inbox', null, $this->whitelistId);
+    }
+
+    #[Test] /* I5 */
+    public function rename_owner_only(): void
+    {
+        $inbox = $this->service->createInbox($this->owner, 'Old');
+        $this->expectException(HttpException::class);
+        $this->service->renameInbox($this->studentA, (int) $inbox->id, 'Hijacked');
+    }
+
+    #[Test] /* I6 */
+    public function delete_removes_inbox_and_submissions_via_cascade(): void
+    {
+        $inbox = $this->service->createInbox($this->owner, 'Doomed', null, $this->whitelistId);
+        $this->service->submit($this->studentA, (int) $inbox->id, 'hi', null);
+        $this->service->deleteInbox($this->owner, (int) $inbox->id);
+
+        $this->assertDatabaseMissing('inboxes', ['id' => $inbox->id]);
+        $this->assertDatabaseMissing('inbox_submissions', ['inbox_id' => $inbox->id]);
+    }
+
+    // ── Visibility (read) ────────────────────────────────────────
+
+    #[Test] /* I7 */
+    public function listing_includes_public_inbox_for_everyone(): void
+    {
+        $this->service->createInbox($this->owner, 'PubA');
+        $rogue = User::factory()->create(['uid' => 'rogue']);
+
+        $list = $this->service->listInboxes($rogue);
+        $this->assertCount(1, $list);
+        $this->assertEquals('PubA', $list[0]['name']);
+    }
+
+    #[Test] /* I8 */
+    public function listing_omits_private_inbox_for_non_member(): void
+    {
+        $this->service->createInbox($this->owner, 'Priv', null, $this->whitelistId);
+        $list = $this->service->listInboxes($this->studentC);
+        $this->assertCount(0, $list);
+    }
+
+    #[Test] /* I9 */
+    public function listing_includes_private_inbox_for_owner(): void
+    {
+        $this->service->createInbox($this->owner, 'Priv', null, $this->whitelistId);
+        $list = $this->service->listInboxes($this->owner);
+        $this->assertCount(1, $list);
+    }
+
+    #[Test] /* I10 */
+    public function listing_includes_private_inbox_for_whitelist_member(): void
+    {
+        $this->service->createInbox($this->owner, 'Priv', null, $this->whitelistId);
+        $list = $this->service->listInboxes($this->studentA);
+        $this->assertCount(1, $list);
+    }
+
+    #[Test] /* I11 */
+    public function read_preserved_after_whitelist_removal(): void
+    {
+        $inbox = $this->service->createInbox($this->owner, 'PreserveTest', null, $this->whitelistId);
+        $this->service->submit($this->studentA, (int) $inbox->id, 'I submitted', null);
+
+        $this->whitelistService->removeMember($this->whitelistId, 'studA');
+
+        $list = $this->service->listInboxes($this->studentA);
+        $this->assertCount(1, $list, 'evicted student keeps read access via existing submission');
+        $this->assertTrue($list[0]['has_my_submission']);
+    }
+
+    // ── Submit (write) ───────────────────────────────────────────
+
+    #[Test] /* I12 */
+    public function submit_creates_unique_row_per_sender(): void
+    {
+        $inbox = $this->service->createInbox($this->owner, 'Sub', null, $this->whitelistId);
+        $this->service->submit($this->studentA, (int) $inbox->id, 'first', null);
+        $this->service->submit($this->studentB, (int) $inbox->id, 'second', null);
+
+        $this->assertEquals(2, DB::table('inbox_submissions')->where('inbox_id', $inbox->id)->count());
+    }
+
+    #[Test] /* I13 */
+    public function resubmit_updates_existing_row_in_place(): void
+    {
+        $inbox = $this->service->createInbox($this->owner, 'Re', null, $this->whitelistId);
+        $this->service->submit($this->studentA, (int) $inbox->id, 'v1', null);
+        $this->service->submit($this->studentA, (int) $inbox->id, 'v2', null);
+
+        $rows = DB::table('inbox_submissions')->where('inbox_id', $inbox->id)->get();
+        $this->assertCount(1, $rows);
+        $this->assertEquals('v2', $rows[0]->sender_text);
+    }
+
+    #[Test] /* I14 */
+    public function submit_blocked_for_non_member(): void
+    {
+        $inbox = $this->service->createInbox($this->owner, 'Sub', null, $this->whitelistId);
+        $this->expectException(HttpException::class);
+        $this->service->submit($this->studentC, (int) $inbox->id, 'sneaky', null);
+    }
+
+    #[Test] /* I15 */
+    public function write_revoked_after_whitelist_removal(): void
+    {
+        $inbox = $this->service->createInbox($this->owner, 'Wr', null, $this->whitelistId);
+        $this->service->submit($this->studentA, (int) $inbox->id, 'original', null);
+        $this->whitelistService->removeMember($this->whitelistId, 'studA');
+
+        $this->expectException(HttpException::class);
+        $this->service->submit($this->studentA, (int) $inbox->id, 'sneaky update', null);
+    }
+
+    #[Test] /* I16 */
+    public function public_inbox_accepts_submissions_from_anyone(): void
+    {
+        $inbox = $this->service->createInbox($this->owner, 'OpenInbox');
+        $rando = User::factory()->create(['uid' => 'rando']);
+        $this->service->submit($rando, (int) $inbox->id, 'hi', null);
+
+        $this->assertDatabaseHas('inbox_submissions', [
+            'inbox_id' => $inbox->id,
+            'user_id'  => $rando->id,
+        ]);
+    }
+
+    // ── Feedback ─────────────────────────────────────────────────
+
+    #[Test] /* I17 */
+    public function feedback_owner_only(): void
+    {
+        $inbox = $this->service->createInbox($this->owner, 'F', null, $this->whitelistId);
+        $this->service->submit($this->studentA, (int) $inbox->id, 'hi', null);
+
+        $this->expectException(HttpException::class);
+        $this->service->writeFeedback($this->studentB, (int) $inbox->id, 'studA', 'sneaky');
+    }
+
+    #[Test] /* I18 */
+    public function feedback_bumps_feedback_at_only_not_sender_text(): void
+    {
+        $inbox = $this->service->createInbox($this->owner, 'F2', null, $this->whitelistId);
+        $this->service->submit($this->studentA, (int) $inbox->id, 'student wrote this', null);
+
+        $this->service->writeFeedback($this->owner, (int) $inbox->id, 'studA', 'good job');
+
+        $row = DB::table('inbox_submissions')
+            ->where('inbox_id', $inbox->id)
+            ->where('user_id', $this->studentA->id)
+            ->first();
+        $this->assertEquals('student wrote this', $row->sender_text);
+        $this->assertEquals('good job', $row->receiver_text);
+        $this->assertNotNull($row->feedback_at);
+    }
+
+    #[Test] /* I19 */
+    public function feedback_404_when_submission_missing(): void
+    {
+        $inbox = $this->service->createInbox($this->owner, 'F3', null, $this->whitelistId);
+        $this->expectException(HttpException::class);
+        $this->service->writeFeedback($this->owner, (int) $inbox->id, 'studA', 'huh');
+    }
+
+    // ── Whitelist switching ──────────────────────────────────────
+
+    #[Test] /* I20 */
+    public function apply_whitelist_requires_t1_grant(): void
+    {
+        $inbox = $this->service->createInbox($this->owner, 'WSwitch');
+
+        $other = $this->whitelistService->create('2026SEHH8888', '2026 SEHH8888 No Grant');
+        // No distribution row for $other → owner cannot apply it
+        $this->expectException(HttpException::class);
+        $this->service->applyWhitelist($this->owner, (int) $inbox->id, $other);
+    }
+
+    #[Test] /* I21 */
+    public function apply_whitelist_null_detaches_to_public(): void
+    {
+        $inbox = $this->service->createInbox($this->owner, 'WD', null, $this->whitelistId);
+        $this->service->applyWhitelist($this->owner, (int) $inbox->id, null);
+
+        $row = DB::table('inboxes')->where('id', $inbox->id)->first();
+        $this->assertNull($row->whitelist_id);
+
+        // After detach studentC (never in whitelist) can list it
+        $list = $this->service->listInboxes($this->studentC);
+        $this->assertCount(1, $list);
+    }
+
+    // ── Sender's own submission read ─────────────────────────────
+
+    #[Test] /* I22 */
+    public function get_my_submission_returns_null_before_first_submit(): void
+    {
+        $inbox = $this->service->createInbox($this->owner, 'Empty', null, $this->whitelistId);
+        $this->assertNull($this->service->getMySubmission($this->studentA, (int) $inbox->id));
+    }
+
+    #[Test] /* I23 */
+    public function get_my_submission_returns_my_row_after_submit(): void
+    {
+        $inbox = $this->service->createInbox($this->owner, 'Mine', null, $this->whitelistId);
+        $this->service->submit($this->studentA, (int) $inbox->id, 'my work', null);
+
+        $row = $this->service->getMySubmission($this->studentA, (int) $inbox->id);
+        $this->assertNotNull($row);
+        $this->assertEquals('my work', $row['sender_text']);
+    }
+
+    #[Test] /* I24 */
+    public function get_my_submission_blocked_for_non_visible(): void
+    {
+        $inbox = $this->service->createInbox($this->owner, 'Closed', null, $this->whitelistId);
+        $this->expectException(HttpException::class);
+        $this->service->getMySubmission($this->studentC, (int) $inbox->id);
+    }
+}

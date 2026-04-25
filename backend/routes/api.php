@@ -11,6 +11,7 @@ use App\Http\Controllers\BroadcastChannelController;
 use App\Http\Controllers\LlmController;
 use App\Http\Controllers\UserSettingsController;
 use App\Http\Controllers\WhitelistController;
+use App\Http\Controllers\InboxController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Broadcast;
 
@@ -106,6 +107,20 @@ Route::middleware([/*'auth:sanctum'*/])->prefix('broadcast')->group(function () 
 // Whitelist registry — public read of metadata only (no member uids)
 Route::get('/whitelists', [WhitelistController::class, 'index']);
 Route::get('/whitelists/{whitelistId}/members', [WhitelistController::class, 'members']);
+
+// Inbox subsystem — many-to-one transposition of broadcast channels.
+// Listing is gated per-row inside the service (visibility = public OR
+// owner OR whitelist member OR existing submitter). Senders see their
+// own row only; owners see every submission.
+Route::get('/inboxes', [InboxController::class, 'index']);
+Route::post('/inboxes', [InboxController::class, 'store']);
+Route::patch('/inboxes/{inboxId}', [InboxController::class, 'update']);
+Route::delete('/inboxes/{inboxId}', [InboxController::class, 'destroy']);
+Route::put('/inboxes/{inboxId}/whitelist', [InboxController::class, 'applyWhitelist']);
+Route::get('/inboxes/{inboxId}/submissions', [InboxController::class, 'fetchSubmissions']);
+Route::get('/inboxes/{inboxId}/submission', [InboxController::class, 'getMySubmission']);
+Route::put('/inboxes/{inboxId}/submission', [InboxController::class, 'submit']);
+Route::put('/inboxes/{inboxId}/submission/{senderUid}/feedback', [InboxController::class, 'writeFeedback']);
 
 // MOD endpoints — public
 Route::prefix('mods')->group(function () {
