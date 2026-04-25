@@ -345,31 +345,41 @@
     left: calc(8vw + 56px);
 }
 
-/* Action row — bottom-centred POST + PULL footer inside the
-   editor-wrapper. Distinct from `.editor-actions` (top-right corner,
-   reserved for circular icon buttons like DELETE / RESET). */
-.inbox-actions-footer {
+/* Per-section RESET / SAVE pair. Sits at the bottom of each
+   `.inbox-textarea-section` (inside the bordered box, not in a
+   global footer). Hidden by default; the perspective gate below
+   only shows the pair on the editable section for the current
+   role:
+     • sender mode  → SUBMISSION pair visible, FEEDBACK pair hidden
+     • receiver mode → FEEDBACK pair visible, SUBMISSION pair hidden
+   `display: none` removes the buttons from layout entirely on the
+   read-only side, so they don't claim space or take up flex height. */
+.inbox-section-actions {
+    display: none;
     flex: 0 0 auto;
     flex-direction: row;
-    justify-content: center;
+    justify-content: flex-end;
     align-items: center;
-    gap: 16px;
-    padding: 12px 0 4px 0;
-    /* Sit above any potential drop-overlay overlap. */
-    z-index: 2;
+    gap: 8px;
+    padding: 6px 10px 8px 10px;
 }
 
-.inbox-action-btn {
-    padding: 10px 28px;
+.page[data-mode="sender"]   .is-submission .inbox-section-actions,
+.page[data-mode="receiver"] .is-feedback   .inbox-section-actions {
+    display: flex;
+}
+
+.inbox-section-btn {
+    padding: 6px 18px;
     border: 2px solid var(--brand);
     border-radius: var(--border-radius);
     background: var(--bg-page);
     color: var(--brand);
     font-weight: 700;
-    font-size: var(--font-size);
+    font-size: calc(var(--font-size) * 0.85);
     letter-spacing: 0.04em;
     cursor: pointer;
-    min-width: 100px;
+    min-width: 72px;
     transition: background var(--transition-normal),
                 color var(--transition-normal),
                 box-shadow var(--transition-normal),
@@ -377,33 +387,33 @@
 }
 
 @media (hover: hover) {
-    .inbox-action-btn:hover {
+    .inbox-section-btn:hover {
         background: var(--brand);
         color: #ffffff;
-        box-shadow: 0 4px 12px var(--shadow-brand);
+        box-shadow: 0 2px 8px var(--shadow-brand);
         transform: translateY(-1px);
     }
 }
 
-.inbox-action-btn:active {
+.inbox-section-btn:active {
     transform: translateY(0);
     box-shadow: 0 1px 4px var(--shadow-brand);
 }
 
-/* POST is the primary commit action — solid brand fill at rest so
-   it reads as the obvious next click. PULL stays outline (secondary). */
-.inbox-action-btn--primary {
+/* SAVE is the primary commit action — solid brand fill at rest so
+   it reads as the obvious next click. RESET stays outline (secondary). */
+.inbox-section-btn--primary {
     background: var(--brand);
     color: #ffffff;
 }
 @media (hover: hover) {
-    .inbox-action-btn--primary:hover {
+    .inbox-section-btn--primary:hover {
         background: var(--brand-dark);
         border-color: var(--brand-dark);
     }
 }
 
-.inbox-action-btn[aria-busy="true"] {
+.inbox-section-btn[aria-busy="true"] {
     opacity: 0.6;
     cursor: wait;
     transform: none;

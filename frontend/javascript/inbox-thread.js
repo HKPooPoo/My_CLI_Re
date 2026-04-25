@@ -73,8 +73,13 @@ export const IXThread = {
         receiverTs: document.getElementById('inbox-receiver-ts'),
         dropOverlay: document.getElementById('inbox-drop-overlay'),
         fileInput: document.getElementById('inbox-file-input'),
-        postBtn: document.getElementById('inbox-post-btn'),
-        pullBtn: document.getElementById('inbox-pull-btn'),
+        // Per-section RESET / SAVE buttons. CSS hides the wrong-side
+        // pair via `data-mode="sender|receiver"` × `.is-submission |
+        // .is-feedback` so we don't need to JS-toggle perspectives.
+        senderResetBtn:   document.getElementById('inbox-sender-reset-btn'),
+        senderSaveBtn:    document.getElementById('inbox-sender-save-btn'),
+        receiverResetBtn: document.getElementById('inbox-receiver-reset-btn'),
+        receiverSaveBtn:  document.getElementById('inbox-receiver-save-btn'),
     },
 
     /** Currently loaded inbox metadata (server snapshot) */
@@ -110,31 +115,14 @@ export const IXThread = {
     },
 
     /**
-     * Hide / show the global PUSH / PULL buttons inside `.page-container`.
-     * Sender mode: never show (single-page view, no navigation).
-     * Receiver mode: show only when there's more than one submission to
-     * scroll through. The transform values match navi.js's hidden /
-     * shown states so we don't fight its updatePage routine.
+     * Vestigial. Inbox-thread no longer carries the `can-push-pull`
+     * class, so navi.js auto-hides the global PUSH/PULL buttons on
+     * this page; submissions are reached via the preview rail and
+     * each editable section ships its own RESET / SAVE pair. Kept
+     * as a no-op to avoid touching the five call sites that still
+     * fire it; remove in a future cleanup.
      */
-    _syncGlobalButtons() {
-        const pushBtn = document.querySelector('.push-btn');
-        const pullBtn = document.querySelector('.pull-btn');
-        if (!pushBtn || !pullBtn) return;
-        const activePage = document.querySelector('.page.active');
-        const isInboxThread = activePage?.dataset.page === 'inbox-thread';
-        const shouldShow = isInboxThread
-            && this.mode === 'receiver'
-            && this.submissions.length > 1;
-        if (shouldShow) {
-            pushBtn.style.transform = 'translateY(0)';
-            pullBtn.style.transform = 'translateY(0)';
-        } else if (isInboxThread) {
-            // Only force-hide when the inbox-thread page is active —
-            // leave other pages' visibility decisions alone.
-            pushBtn.style.transform = 'translateY(-256%)';
-            pullBtn.style.transform = 'translateY(256%)';
-        }
-    },
+    _syncGlobalButtons() {},
 
     /**
      * Drag-and-drop wiring on the editor-wrapper. Mirrors BB/BC's
@@ -251,22 +239,26 @@ export const IXThread = {
             });
         }
 
-        // ── POST button ──
-        if (this.elements.postBtn) {
-            new MultiStepButton(this.elements.postBtn, {
+        // ── Per-section RESET + SAVE pairs ──
+        // The two SAVE buttons map to the two `postAs*` paths, one per
+        // role. RESET is identical for both — re-fetch from server,
+        // overwriting whatever's in the textarea. CSS hides the
+        // wrong-side pair so the wiring is symmetric per role; JS
+        // doesn't need to branch on `this.mode` here.
+        const wireSave = (btn, postFn) => {
+            if (!btn) return;
+            new MultiStepButton(btn, {
                 sound: 'UIPipboyOK.mp3',
                 steps: 1,
                 action: async () => {
                     if (!this.inbox) return BBMessage.error(t('inbox.noInboxSelected'));
-                    if (this.mode === 'sender') return this.postAsSender();
-                    return this.postAsReceiver();
+                    return postFn.call(this);
                 },
             });
-        }
-
-        // ── PULL button ──
-        if (this.elements.pullBtn) {
-            new MultiStepButton(this.elements.pullBtn, {
+        };
+        const wireReset = (btn) => {
+            if (!btn) return;
+            new MultiStepButton(btn, {
                 sound: 'UIGeneralFocus.mp3',
                 steps: 1,
                 action: async () => {
@@ -274,22 +266,12 @@ export const IXThread = {
                     await this.refreshFromServer({ silent: false });
                 },
             });
-        }
+        };
 
-        // ── Push / Pull head navigation (receiver only) ──
-        // Reuse the global push/pull buttons attached to .page-container.
-        document.querySelector('.push-btn')?.addEventListener('click', () => {
-            if (this.mode !== 'receiver') return;
-            const activePage = document.querySelector('.page.active');
-            if (activePage?.dataset.page !== 'inbox-thread') return;
-            this.movePush();
-        });
-        document.querySelector('.pull-btn')?.addEventListener('click', () => {
-            if (this.mode !== 'receiver') return;
-            const activePage = document.querySelector('.page.active');
-            if (activePage?.dataset.page !== 'inbox-thread') return;
-            this.movePull();
-        });
+        wireSave(this.elements.senderSaveBtn,   this.postAsSender);
+        wireSave(this.elements.receiverSaveBtn, this.postAsReceiver);
+        wireReset(this.elements.senderResetBtn);
+        wireReset(this.elements.receiverResetBtn);
     },
 
     // ── Loading / unloading ──────────────────────────────────────
@@ -478,9 +460,12 @@ export const IXThread = {
             const isReadPreserved = !canWrite && !!row;
             this.elements.readOnlyBanner.classList.toggle('visible', isReadPreserved);
         }
-        // POST button: hide when can't write at all.
-        if (this.elements.postBtn) {
-            this.elements.postBtn.style.display = canWrite ? '' : 'none';
+        // SAVE button on sender side: hide when can't write at all
+        // (read-preserved state). RESET stays available so the user
+        // can still refresh to see new feedback. CSS handles
+        // perspective gating; this is the can_submit gate only.
+        if (this.elements.senderSaveBtn) {
+            this.elements.senderSaveBtn.style.display = canWrite ? '' : 'none';
         }
         // SUBMISSION pane: my own uid, my last submission timestamp.
         if (this.elements.senderUid) this.elements.senderUid.textContent = me;
@@ -523,9 +508,11 @@ export const IXThread = {
             this.elements.receiverArea.value = row?.receiver_text ?? '';
             this.elements.receiverArea.disabled = false;
         }
-        // Receiver mode — banner hidden, POST always shown.
+        // Receiver mode — banner hidden. SAVE button visibility is
+        // perspective-gated by CSS; we just clear any can_submit
+        // override left over from a previous sender session.
         this.elements.readOnlyBanner?.classList.remove('visible');
-        if (this.elements.postBtn) this.elements.postBtn.style.display = '';
+        if (this.elements.senderSaveBtn) this.elements.senderSaveBtn.style.display = '';
         // SUBMISSION pane: current sender's uid + their last update.
         if (this.elements.senderUid) {
             this.elements.senderUid.textContent = row?.sender_uid ?? '';

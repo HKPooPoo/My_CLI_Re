@@ -558,6 +558,19 @@
                                 <textarea id="inbox-sender-textarea"
                                           data-i18n-placeholder="inbox.senderPlaceholder"
                                           placeholder="What you want to submit..."></textarea>
+                                <!-- Per-section RESET / SAVE pair. Visible only when
+                                     this section is the editable one for the current
+                                     perspective (sender mode → submission editable). -->
+                                <div class="inbox-section-actions">
+                                    <button type="button" class="inbox-section-btn"
+                                            id="inbox-sender-reset-btn"
+                                            data-hint="hints.inbox.pull"
+                                            data-i18n="inbox.pullBtn">RESET</button>
+                                    <button type="button" class="inbox-section-btn inbox-section-btn--primary"
+                                            id="inbox-sender-save-btn"
+                                            data-hint="hints.inbox.post"
+                                            data-i18n="inbox.postBtn">SAVE</button>
+                                </div>
                             </div>
                             <div class="inbox-textarea-section is-feedback">
                                 <div class="inbox-textarea-label">
@@ -569,26 +582,25 @@
                                 <textarea id="inbox-receiver-textarea"
                                           data-i18n-placeholder="inbox.receiverPlaceholder"
                                           placeholder="Feedback from the inbox owner..."></textarea>
+                                <!-- Per-section RESET / SAVE pair. Visible only when
+                                     this section is the editable one for the current
+                                     perspective (receiver mode → feedback editable). -->
+                                <div class="inbox-section-actions">
+                                    <button type="button" class="inbox-section-btn"
+                                            id="inbox-receiver-reset-btn"
+                                            data-hint="hints.inbox.pull"
+                                            data-i18n="inbox.pullBtn">RESET</button>
+                                    <button type="button" class="inbox-section-btn inbox-section-btn--primary"
+                                            id="inbox-receiver-save-btn"
+                                            data-hint="hints.inbox.post"
+                                            data-i18n="inbox.postBtn">SAVE</button>
+                                </div>
                             </div>
                         </div>
                         <!-- Receiver-mode 0-submissions placeholder. CSS-shown via
                              [data-empty-submissions="true"] on the parent .page. -->
                         <div class="inbox-receiver-empty" id="inbox-receiver-empty"
                              data-i18n="inbox.awaitingSubmissions">AWAITING FIRST SUBMISSION</div>
-                    </div>
-                    <!-- Bottom-centred action row (NOT inside .editor-actions
-                         which is reserved for circular icon buttons). POST + PULL
-                         are primary text actions; placing them as a flow-layout
-                         footer keeps them out of the textarea reading zone and
-                         well clear of the drop-overlay frame. -->
-                    <div class="inbox-actions-footer">
-                        <button type="button" class="inbox-action-btn" id="inbox-pull-btn"
-                                data-hint="hints.inbox.pull"
-                                data-i18n="inbox.pullBtn">PULL</button>
-                        <button type="button" class="inbox-action-btn inbox-action-btn--primary"
-                                id="inbox-post-btn"
-                                data-hint="hints.inbox.post"
-                                data-i18n="inbox.postBtn">POST</button>
                     </div>
                     <input type="file" id="inbox-file-input" hidden>
                     <div class="drop-overlay" id="inbox-drop-overlay"
