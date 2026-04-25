@@ -58,7 +58,13 @@ class BroadcastWhitelistGatingTest extends TestCase
 
     private function createPrivateChannel(string $name, User $owner, array $members = []): array
     {
-        $whitelistId = $this->whitelistService->create('CODE_' . $name, $name);
+        // Deterministic compliant-format code per channel name so each test
+        // gets a unique whitelist without colliding inside RefreshDatabase.
+        $code = '2026SEHH' . sprintf('%04d', abs(crc32($name)) % 10000);
+        $displayName = "{$code} Test {$name}";
+        // displayName must match /^\d{4} [A-Z]+\d+ .+$/ — split year out:
+        $displayName = '2026 ' . substr($code, 4) . ' Test ' . $name;
+        $whitelistId = $this->whitelistService->create($code, $displayName);
         foreach ($members as $uid) {
             $this->whitelistService->addMember($whitelistId, $uid);
         }
@@ -204,7 +210,7 @@ class BroadcastWhitelistGatingTest extends TestCase
     public function apply_whitelist_rejects_non_owner(): void
     {
         $id = $this->createChannel('ch', $this->owner);
-        $whitelistId = $this->whitelistService->create('CODE_X', 'X');
+        $whitelistId = $this->whitelistService->create('2026SEHH8001', '2026 SEHH8001 Gating Test X');
         $this->whitelistService->addDistribution($whitelistId, 'rule', title: 'Faculty');
 
         $other = User::factory()->withTitle('Faculty')->create(['uid' => 'other_teacher']);
@@ -216,7 +222,7 @@ class BroadcastWhitelistGatingTest extends TestCase
     public function apply_whitelist_rejects_owner_without_distribution_grant(): void
     {
         $id = $this->createChannel('ch', $this->owner);
-        $whitelistId = $this->whitelistService->create('CODE_X', 'X');
+        $whitelistId = $this->whitelistService->create('2026SEHH8001', '2026 SEHH8001 Gating Test X');
         // No distribution rule grants this owner the right to apply
 
         $r = $this->actingAs($this->owner)->putJson("/api/broadcast/channels/{$id}/whitelist", ['whitelist_id' => $whitelistId]);
@@ -227,7 +233,7 @@ class BroadcastWhitelistGatingTest extends TestCase
     public function apply_whitelist_succeeds_for_owner_with_grant(): void
     {
         $id = $this->createChannel('ch', $this->owner);
-        $whitelistId = $this->whitelistService->create('CODE_X', 'X');
+        $whitelistId = $this->whitelistService->create('2026SEHH8001', '2026 SEHH8001 Gating Test X');
         $this->whitelistService->addDistribution($whitelistId, 'rule', title: 'Faculty');
 
         $r = $this->actingAs($this->owner)->putJson("/api/broadcast/channels/{$id}/whitelist", ['whitelist_id' => $whitelistId]);
@@ -239,7 +245,7 @@ class BroadcastWhitelistGatingTest extends TestCase
     #[Test]
     public function apply_whitelist_null_detaches_back_to_public(): void
     {
-        $whitelistId = $this->whitelistService->create('CODE_X', 'X');
+        $whitelistId = $this->whitelistService->create('2026SEHH8001', '2026 SEHH8001 Gating Test X');
         $this->whitelistService->addDistribution($whitelistId, 'rule', title: 'Faculty');
         $id = $this->createChannel('ch', $this->owner, $whitelistId);
 
@@ -256,7 +262,7 @@ class BroadcastWhitelistGatingTest extends TestCase
     #[Test]
     public function whitelists_index_returns_empty_for_guest(): void
     {
-        $this->whitelistService->create('CODE_X', 'X');
+        $this->whitelistService->create('2026SEHH8001', '2026 SEHH8001 Gating Test X');
 
         $r = $this->getJson('/api/whitelists');
         $r->assertStatus(200)->assertJson(['whitelists' => []]);
@@ -265,7 +271,7 @@ class BroadcastWhitelistGatingTest extends TestCase
     #[Test]
     public function whitelists_index_returns_empty_for_user_without_distribution(): void
     {
-        $this->whitelistService->create('CODE_X', 'X');
+        $this->whitelistService->create('2026SEHH8001', '2026 SEHH8001 Gating Test X');
 
         $r = $this->actingAs($this->nonMember)->getJson('/api/whitelists');
         $r->assertStatus(200)->assertJson(['whitelists' => []]);
@@ -274,9 +280,9 @@ class BroadcastWhitelistGatingTest extends TestCase
     #[Test]
     public function whitelists_index_filters_by_user_distribution(): void
     {
-        $idA = $this->whitelistService->create('CODE_A', 'A');
-        $idB = $this->whitelistService->create('CODE_B', 'B');
-        $this->whitelistService->create('CODE_C', 'C'); // no grant
+        $idA = $this->whitelistService->create('2026SEHH8002', '2026 SEHH8002 Gating Test A');
+        $idB = $this->whitelistService->create('2026SEHH8003', '2026 SEHH8003 Gating Test B');
+        $this->whitelistService->create('2026SEHH8004', '2026 SEHH8004 Gating Test C'); // no grant
 
         $this->whitelistService->addDistribution($idA, 'r', title: 'Faculty');
         $this->whitelistService->addDistribution($idB, 'r', uid: 'teacher_alice');
@@ -285,13 +291,13 @@ class BroadcastWhitelistGatingTest extends TestCase
         $r->assertStatus(200);
 
         $codes = collect($r->json('whitelists'))->pluck('code')->sort()->values()->all();
-        $this->assertEquals(['CODE_A', 'CODE_B'], $codes);
+        $this->assertEquals(['2026SEHH8002', '2026SEHH8003'], $codes);
     }
 
     #[Test]
     public function whitelists_index_does_not_leak_member_uids(): void
     {
-        $idA = $this->whitelistService->create('CODE_A', 'A');
+        $idA = $this->whitelistService->create('2026SEHH8002', '2026 SEHH8002 Gating Test A');
         $this->whitelistService->addDistribution($idA, 'r', title: 'Faculty');
         $this->whitelistService->addMember($idA, 'student_bob');
         $this->whitelistService->addMember($idA, 'student_eve');

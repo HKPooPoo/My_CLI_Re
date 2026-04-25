@@ -635,9 +635,20 @@ Log section; every new user decision gets appended with a date.
   authorised to apply this preset" (T1). Designed for reuse by
   the future Inbox system; it ships BC-only for now.
     - **`whitelists`** (T2) — the audience set:
-      `id, code (UNIQUE, e.g. 2026_SEHH8964), name, description,
+      `id, code (UNIQUE, e.g. 2026SEHH2238), name, description,
       members (jsonb uid array)`. The `members` JSONB is the
       authoritative visibility set; the channel sees only this.
+      **Format constraints (Service-enforced)**:
+      `code` matches `/^\d{4}[A-Z]+\d+$/` — 4-digit year + course
+      family + course number, no separators
+      (✓ `2026SEHH2238` ✗ `2026_SEHH2238` ✗ `SEHH2238`).
+      `name` matches `/^\d{4} [A-Z]+\d+ .+$/` — year SP code SP
+      free-form (✓ `2026 SEHH2238 Programming Project`).
+      `addMember`/`addMembers` do NOT regex-validate uids — admin
+      controls which uids enter via `users:create-students`
+      (S{year}{NNNN}) or `users:create-user` (free uid for
+      lecturers/admins); enforcement happens at user-creation
+      time, not member-add time.
     - **`whitelist_distributions`** (T1) — the apply-permission rules:
       `id, name, description, whitelist_id (FK CASCADE), title
       (nullable), uid (nullable)`. A row matches a viewer when
@@ -715,10 +726,17 @@ Log section; every new user decision gets appended with a date.
       - `images/whitelist.svg` — shield-with-check feature-button
         icon.
     - **E2E seed**: `php artisan whitelist:smoke-seed` creates
-      teacher_alice (Faculty), student_bob (Student, member),
-      student_eve (Student, non-member), the CODE_SMOKE preset
-      and its Faculty distribution grant. All three users share
-      passcode `testpass`. Prints the test flow on success.
+      10 students `S20260001..S20260010` (title=Student),
+      `Lecturer01` (title=SEHH2238) + `Lecturer02` (title=SEHH3140),
+      and 2 whitelists `2026SEHH2238` (members 0001-0006) /
+      `2026SEHH3140` (members 0006-0010) with the matching
+      title-based distribution grants. `S20260006` overlaps both —
+      useful overlap test. All accounts share passcode `testpass`.
+      Idempotent (uses `updateOrInsert` + `findByCode` lookup).
+      Companion CLI: `users:create-students {first} {last}
+      [--year=]` for ad-hoc batch student creation outside the
+      smoke seed; `users:create-user {uid} --title=...` for single
+      lecturer/admin creation.
     - **Pending follow-ups**: Inbox reuse hookup when that subsystem
       lands; i18n strings (current shelf copy is inline English —
       fine for the demo, swap to `t()` keys when locales return).

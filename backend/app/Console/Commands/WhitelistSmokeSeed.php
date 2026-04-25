@@ -8,95 +8,134 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 
 /**
- * One-shot seed for end-to-end whitelist testing. Creates (or reuses)
- * three users + one preset + one distribution grant, so the human
- * tester can immediately log in and exercise the shelf UI.
+ * Realistic E2E seed for whitelist verification.
  *
- *   teacher_alice (title=Faculty)  passcode=testpass  ← apply-grantee
- *   student_bob   (title=Student)  passcode=testpass  ← whitelist member
- *   student_eve   (title=Student)  passcode=testpass  ← non-member
+ *   Students:   S20260001 .. S20260010   (title=Student, passcode=testpass)
+ *   Lecturers:  Lecturer01 (title=SEHH2238)
+ *               Lecturer02 (title=SEHH3140)
  *
- *   CODE_SMOKE preset with member { student_bob }
- *   Distribution: title=Faculty can apply CODE_SMOKE
+ *   Whitelists:
+ *     2026SEHH2238 — members S20260001..S20260006
+ *     2026SEHH3140 — members S20260006..S20260010
  *
- * Safe to re-run — uses updateOrInsert / findByCode / idempotent
- * add. Re-running wipes nothing.
+ *   Distributions:
+ *     title=SEHH2238 → can apply 2026SEHH2238
+ *     title=SEHH3140 → can apply 2026SEHH3140
+ *
+ * S20260006 is in BOTH whitelists — useful overlap test case.
+ * Idempotent — safe to re-run; existing rows are reused.
  */
 class WhitelistSmokeSeed extends Command
 {
     protected $signature = 'whitelist:smoke-seed';
-    protected $description = 'Seed three users + one whitelist + one distribution grant for E2E testing';
+    protected $description = 'Seed 10 students + 2 lecturers + 2 whitelists for end-to-end verification';
 
     public function handle(WhitelistService $service): int
     {
-        $this->ensureUser('teacher_alice', 'Faculty');
-        $this->ensureUser('student_bob',   'Student');
-        $this->ensureUser('student_eve',   'Student');
+        $hashed = Hash::make('testpass');
 
-        $existing = $service->findByCode('CODE_SMOKE');
-        if ($existing) {
-            $whitelistId = (int) $existing->id;
-            $this->info("Reusing existing whitelist id={$whitelistId}.");
-        } else {
-            $whitelistId = $service->create(
-                'CODE_SMOKE',
-                'Smoke-test whitelist',
-                'Created by whitelist:smoke-seed. Safe to delete after testing.'
+        // 10 students S20260001 .. S20260010
+        for ($i = 1; $i <= 10; $i++) {
+            $uid = sprintf('S2026%04d', $i);
+            DB::table('users')->updateOrInsert(
+                ['uid' => $uid],
+                [
+                    'title'      => 'Student',
+                    'passcode'   => $hashed,
+                    'email'      => null,
+                    'settings'   => null,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]
             );
-            $this->info("Created whitelist id={$whitelistId}.");
         }
 
-        $service->addMember($whitelistId, 'student_bob');
+        // 2 lecturers, title = the course code they teach
+        $this->ensureUser('Lecturer01', 'SEHH2238', $hashed);
+        $this->ensureUser('Lecturer02', 'SEHH3140', $hashed);
 
-        $hasGrant = DB::table('whitelist_distributions')
-            ->where('whitelist_id', $whitelistId)
-            ->where('title', 'Faculty')
-            ->exists();
+        // 2 whitelists (placeholder course names — admin can rename later
+        // via tinker; CLI rename helper not yet exposed)
+        $idA = $this->ensureWhitelist($service, '2026SEHH2238', '2026 SEHH2238 Course A');
+        $idB = $this->ensureWhitelist($service, '2026SEHH3140', '2026 SEHH3140 Course B');
 
-        if (!$hasGrant) {
-            $service->addDistribution(
-                $whitelistId,
-                'Faculty can apply CODE_SMOKE',
-                title: 'Faculty',
-                description: 'Auto-created by whitelist:smoke-seed',
-            );
-            $this->info('Granted Faculty title to apply CODE_SMOKE.');
+        // Memberships
+        for ($i = 1; $i <= 6; $i++) {
+            $service->addMember($idA, sprintf('S2026%04d', $i));
+        }
+        for ($i = 6; $i <= 10; $i++) {
+            $service->addMember($idB, sprintf('S2026%04d', $i));
         }
 
+        // Distribution grants — Faculty title gives apply-permission per course
+        $this->ensureDistribution($service, $idA, 'SEHH2238 Faculty', 'SEHH2238');
+        $this->ensureDistribution($service, $idB, 'SEHH3140 Faculty', 'SEHH3140');
+
         $this->newLine();
-        $this->info('─────────────────── TEST PLAN ───────────────────');
-        $this->line('Users (passcode = testpass for all three):');
-        $this->line('  • teacher_alice   (Faculty)   can apply CODE_SMOKE');
-        $this->line('  • student_bob     (Student)   member of CODE_SMOKE  → sees private channels');
-        $this->line('  • student_eve     (Student)   not a member          → private channels hidden');
+        $this->info('═══════════════════ E2E TEST PLAN ═══════════════════');
+        $this->line('Login passcode for everyone: testpass');
         $this->newLine();
-        $this->line('Flow:');
-        $this->line('  1. Log in as teacher_alice');
-        $this->line('  2. Broadcast tab → CREATE a channel (gives name, cast records)');
-        $this->line('  3. Open the channel → click the shield (whitelist) feature button');
-        $this->line('  4. Shelf lists CODE_SMOKE → click APPLY');
-        $this->line('  5. List row now shows padlock icon');
-        $this->line('  6. Log out, log in as student_bob → channel visible (padlock shown)');
-        $this->line('  7. Log out, log in as student_eve → channel NOT in list; GET the URL → 403');
-        $this->line('  8. Back as teacher_alice → click whitelist feature → DETACH → list re-renders public');
+        $this->line('Lecturers (titled — Apply-Preset shelf available):');
+        $this->line('  Lecturer01  title=SEHH2238  → can apply 2026SEHH2238');
+        $this->line('  Lecturer02  title=SEHH3140  → can apply 2026SEHH3140');
         $this->newLine();
-        $this->line('Reset: php artisan whitelist:delete CODE_SMOKE --force');
+        $this->line('Students (audience):');
+        $this->line('  S20260001..S20260005  → only sees 2026SEHH2238 channels');
+        $this->line('  S20260006             → sees BOTH (overlap)');
+        $this->line('  S20260007..S20260010  → only sees 2026SEHH3140 channels');
+        $this->newLine();
+        $this->line('Suggested flow:');
+        $this->line('  1. Login Lecturer01 → Broadcast → CREATE+CAST a channel');
+        $this->line('  2. Open channel → shield (whitelist) shelf → APPLY 2026SEHH2238');
+        $this->line('  3. List row shows padlock; whitelist shelf shows applied state');
+        $this->line('  4. Login S20260003 → channel visible (member)');
+        $this->line('  5. Login S20260008 → channel hidden (non-member)');
+        $this->line('  6. Login S20260006 → visible (overlap edge case)');
+        $this->line('  7. Login Lecturer02 → cannot apply 2026SEHH2238 (no grant)');
+        $this->line('     but the whitelist shelf does list 2026SEHH3140 for them');
+        $this->newLine();
+        $this->line('Reset:');
+        $this->line("  php artisan whitelist:delete 2026SEHH2238 --force");
+        $this->line("  php artisan whitelist:delete 2026SEHH3140 --force");
+        $this->line('  (User accounts persist — delete via tinker or wipe DB if needed)');
 
         return self::SUCCESS;
     }
 
-    private function ensureUser(string $uid, string $title): void
+    private function ensureUser(string $uid, string $title, string $hashedPasscode): void
     {
         DB::table('users')->updateOrInsert(
             ['uid' => $uid],
             [
                 'title'      => $title,
-                'passcode'   => Hash::make('testpass'),
+                'passcode'   => $hashedPasscode,
                 'email'      => null,
                 'settings'   => null,
                 'created_at' => now(),
                 'updated_at' => now(),
             ]
         );
+    }
+
+    private function ensureWhitelist(WhitelistService $service, string $code, string $name): int
+    {
+        $existing = $service->findByCode($code);
+        if ($existing) {
+            $this->info("Reusing existing whitelist '{$code}' (id={$existing->id}).");
+            return (int) $existing->id;
+        }
+        $id = $service->create($code, $name);
+        $this->info("Created whitelist '{$code}' (id={$id}).");
+        return $id;
+    }
+
+    private function ensureDistribution(WhitelistService $service, int $whitelistId, string $name, string $title): void
+    {
+        $exists = DB::table('whitelist_distributions')
+            ->where('whitelist_id', $whitelistId)
+            ->where('title', $title)
+            ->exists();
+        if ($exists) return;
+        $service->addDistribution($whitelistId, $name, title: $title);
     }
 }

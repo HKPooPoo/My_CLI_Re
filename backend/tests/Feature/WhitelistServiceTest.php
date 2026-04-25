@@ -31,12 +31,12 @@ class WhitelistServiceTest extends TestCase
     #[Test] /* W1 */
     public function create_persists_preset_with_empty_members(): void
     {
-        $id = $this->service->create('2026_TEST', 'Test Whitelist', 'desc');
+        $id = $this->service->create('2026SEHH9990', '2026 SEHH9990 Service Test A', 'desc');
 
         $this->assertDatabaseHas('whitelists', [
             'id' => $id,
-            'code' => '2026_TEST',
-            'name' => 'Test Whitelist',
+            'code' => '2026SEHH9990',
+            'name' => '2026 SEHH9990 Service Test A',
             'description' => 'desc',
         ]);
         $this->assertEquals([], $this->service->show($id)['members']);
@@ -45,7 +45,7 @@ class WhitelistServiceTest extends TestCase
     #[Test] /* W2 */
     public function add_member_is_idempotent(): void
     {
-        $id = $this->service->create('2026_TEST', 'Test');
+        $id = $this->service->create('2026SEHH9990', '2026 SEHH9990 Service Test A');
 
         $this->assertTrue($this->service->addMember($id, 'alice'));
         $this->assertFalse($this->service->addMember($id, 'alice'));
@@ -56,7 +56,7 @@ class WhitelistServiceTest extends TestCase
     #[Test] /* W3 */
     public function remove_member_clears_uid_from_set(): void
     {
-        $id = $this->service->create('2026_TEST', 'Test');
+        $id = $this->service->create('2026SEHH9990', '2026 SEHH9990 Service Test A');
         $this->service->addMember($id, 'alice');
         $this->service->addMember($id, 'bob');
 
@@ -73,7 +73,7 @@ class WhitelistServiceTest extends TestCase
         User::factory()->withTitle('STUDENT_A')->create(['uid' => 'bob']);
         User::factory()->withTitle('STUDENT_B')->create(['uid' => 'carol']);
 
-        $id = $this->service->create('2026_TEST', 'Test');
+        $id = $this->service->create('2026SEHH9990', '2026 SEHH9990 Service Test A');
 
         $added = $this->service->addMembersByTitle($id, 'STUDENT_A');
         $this->assertEquals(2, $added);
@@ -84,7 +84,7 @@ class WhitelistServiceTest extends TestCase
     public function add_by_title_then_direct_add_does_not_double_distribute(): void
     {
         User::factory()->withTitle('STUDENT')->create(['uid' => 'alice']);
-        $id = $this->service->create('2026_TEST', 'Test');
+        $id = $this->service->create('2026SEHH9990', '2026 SEHH9990 Service Test A');
 
         $this->service->addMembersByTitle($id, 'STUDENT'); // alice in via title
         $this->assertFalse($this->service->addMember($id, 'alice')); // direct add no-ops
@@ -101,7 +101,7 @@ class WhitelistServiceTest extends TestCase
     #[Test] /* W7 */
     public function is_member_returns_false_for_non_member(): void
     {
-        $id = $this->service->create('2026_TEST', 'Test');
+        $id = $this->service->create('2026SEHH9990', '2026 SEHH9990 Service Test A');
         $this->service->addMember($id, 'alice');
 
         $this->assertTrue($this->service->isMember($id, 'alice'));
@@ -111,7 +111,7 @@ class WhitelistServiceTest extends TestCase
     #[Test] /* W8 */
     public function delete_cascades_distributions(): void
     {
-        $id = $this->service->create('2026_TEST', 'Test');
+        $id = $this->service->create('2026SEHH9990', '2026 SEHH9990 Service Test A');
         $this->service->addDistribution($id, 'rule', title: 'Faculty');
 
         $this->service->delete($id);
@@ -127,7 +127,7 @@ class WhitelistServiceTest extends TestCase
     #[Test] /* W9 */
     public function add_distribution_rejects_when_both_title_and_uid_null(): void
     {
-        $id = $this->service->create('2026_TEST', 'Test');
+        $id = $this->service->create('2026SEHH9990', '2026 SEHH9990 Service Test A');
 
         $this->expectException(HttpException::class);
         $this->expectExceptionMessage('DISTRIBUTION REQUIRES TITLE OR UID');
@@ -140,7 +140,7 @@ class WhitelistServiceTest extends TestCase
         $faculty = User::factory()->withTitle('Faculty')->create(['uid' => 'alice']);
         $student = User::factory()->withTitle('Student')->create(['uid' => 'bob']);
 
-        $id = $this->service->create('2026_TEST', 'Test');
+        $id = $this->service->create('2026SEHH9990', '2026 SEHH9990 Service Test A');
         $this->service->addDistribution($id, 'rule', title: 'Faculty');
 
         $this->assertTrue($this->service->canUserApply($faculty, $id));
@@ -153,7 +153,7 @@ class WhitelistServiceTest extends TestCase
         $alice = User::factory()->withTitle('Faculty')->create(['uid' => 'alice']);
         $bob   = User::factory()->withTitle('Faculty')->create(['uid' => 'bob']);
 
-        $id = $this->service->create('2026_TEST', 'Test');
+        $id = $this->service->create('2026SEHH9990', '2026 SEHH9990 Service Test A');
         $this->service->addDistribution($id, 'rule', uid: 'alice');
 
         $this->assertTrue($this->service->canUserApply($alice, $id));
@@ -167,7 +167,7 @@ class WhitelistServiceTest extends TestCase
         $alice   = User::factory()->withTitle('Student')->create(['uid' => 'alice']);
         $bob     = User::factory()->withTitle('Student')->create(['uid' => 'bob']);
 
-        $id = $this->service->create('2026_TEST', 'Test');
+        $id = $this->service->create('2026SEHH9990', '2026 SEHH9990 Service Test A');
         $this->service->addDistribution($id, 'rule', title: 'Faculty', uid: 'alice');
 
         $this->assertTrue($this->service->canUserApply($faculty, $id));
@@ -178,7 +178,7 @@ class WhitelistServiceTest extends TestCase
     #[Test] /* W13 */
     public function can_user_apply_returns_false_for_guest(): void
     {
-        $id = $this->service->create('2026_TEST', 'Test');
+        $id = $this->service->create('2026SEHH9990', '2026 SEHH9990 Service Test A');
         $this->service->addDistribution($id, 'rule', title: 'Faculty');
 
         $this->assertFalse($this->service->canUserApply(null, $id));
@@ -190,9 +190,9 @@ class WhitelistServiceTest extends TestCase
         $faculty = User::factory()->withTitle('Faculty')->create(['uid' => 'alice']);
         $student = User::factory()->withTitle('Student')->create(['uid' => 'bob']);
 
-        $idA = $this->service->create('2026_A', 'A');
-        $idB = $this->service->create('2026_B', 'B');
-        $idC = $this->service->create('2026_C', 'C');
+        $idA = $this->service->create('2026SEHH9991', '2026 SEHH9991 Service Test B');
+        $idB = $this->service->create('2026SEHH9992', '2026 SEHH9992 Service Test C');
+        $idC = $this->service->create('2026SEHH9993', '2026 SEHH9993 Service Test D');
 
         $this->service->addDistribution($idA, 'r', title: 'Faculty');
         $this->service->addDistribution($idB, 'r', uid: 'alice');
@@ -203,7 +203,7 @@ class WhitelistServiceTest extends TestCase
         $guestList   = $this->service->listForApplicant(null);
 
         $this->assertEqualsCanonicalizing(
-            ['2026_A', '2026_B'],
+            ['2026SEHH9991', '2026SEHH9992'],
             array_column($facultyList, 'code')
         );
         $this->assertEquals([], $studentList);
@@ -215,7 +215,7 @@ class WhitelistServiceTest extends TestCase
     {
         $alice = User::factory()->withTitle('Faculty')->create(['uid' => 'alice']);
 
-        $id = $this->service->create('2026_TEST', 'Test');
+        $id = $this->service->create('2026SEHH9990', '2026 SEHH9990 Service Test A');
         $distId = $this->service->addDistribution($id, 'rule', title: 'Faculty');
 
         $this->assertTrue($this->service->canUserApply($alice, $id));
@@ -230,7 +230,7 @@ class WhitelistServiceTest extends TestCase
     #[Test] /* W16 */
     public function add_members_merges_a_uid_list(): void
     {
-        $id = $this->service->create('2026_TEST', 'Test');
+        $id = $this->service->create('2026SEHH9990', '2026 SEHH9990 Service Test A');
 
         $this->service->addMember($id, 'alice');
         $added = $this->service->addMembers($id, ['alice', 'bob', 'carol']);
@@ -245,7 +245,7 @@ class WhitelistServiceTest extends TestCase
     #[Test] /* W17 */
     public function add_members_dedupes_duplicates_inside_input(): void
     {
-        $id = $this->service->create('2026_TEST', 'Test');
+        $id = $this->service->create('2026SEHH9990', '2026 SEHH9990 Service Test A');
 
         $added = $this->service->addMembers($id, ['alice', 'alice', 'bob', 'alice']);
         $this->assertEquals(2, $added);
@@ -255,7 +255,7 @@ class WhitelistServiceTest extends TestCase
     #[Test] /* W18 */
     public function add_members_trims_empty_and_non_string_entries(): void
     {
-        $id = $this->service->create('2026_TEST', 'Test');
+        $id = $this->service->create('2026SEHH9990', '2026 SEHH9990 Service Test A');
 
         $added = $this->service->addMembers($id, ['alice', '', '  ', null, 123, 'bob']);
         $this->assertEquals(2, $added);
@@ -265,7 +265,7 @@ class WhitelistServiceTest extends TestCase
     #[Test] /* W19 */
     public function set_members_replaces_whole_list_and_reports_diff(): void
     {
-        $id = $this->service->create('2026_TEST', 'Test');
+        $id = $this->service->create('2026SEHH9990', '2026 SEHH9990 Service Test A');
         $this->service->addMembers($id, ['alice', 'bob', 'carol']);
 
         $diff = $this->service->setMembers($id, ['bob', 'carol', 'dave']);
@@ -283,7 +283,7 @@ class WhitelistServiceTest extends TestCase
     #[Test] /* W20 */
     public function set_members_with_empty_list_wipes_all(): void
     {
-        $id = $this->service->create('2026_TEST', 'Test');
+        $id = $this->service->create('2026SEHH9990', '2026 SEHH9990 Service Test A');
         $this->service->addMembers($id, ['alice', 'bob']);
 
         $diff = $this->service->setMembers($id, []);

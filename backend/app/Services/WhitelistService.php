@@ -30,6 +30,27 @@ use Illuminate\Support\Facades\DB;
 class WhitelistService
 {
     /**
+     * Whitelist code must be: 4-digit year + uppercase course family
+     * (≥1 letters) + course number (≥1 digits), all glued together.
+     *   ✓ 2026SEHH2238
+     *   ✓ 2026COMP1010
+     *   ✗ 2026_SEHH2238  (underscore)
+     *   ✗ SEHH2238       (no year)
+     *   ✗ 2026sehh2238   (lowercase)
+     */
+    private const CODE_PATTERN = '/^\d{4}[A-Z]+\d+$/';
+
+    /**
+     * Whitelist name must be: year + space + course code + space +
+     * free-form course name (≥1 char).
+     *   ✓ 2026 SEHH2238 Programming Project
+     *   ✗ SEHH2238 Programming Project  (no year)
+     *   ✗ 2026SEHH2238 Programming      (no space after year)
+     */
+    private const NAME_PATTERN = '/^\d{4} [A-Z]+\d+ .+$/';
+
+
+    /**
      * Admin-side full listing (e.g. for `whitelist:list` CLI).
      * Returns every preset with a member count summary, no
      * distribution details.
@@ -124,6 +145,9 @@ class WhitelistService
 
     public function create(string $code, string $name, ?string $description = null): int
     {
+        $this->assertValidCode($code);
+        $this->assertValidName($name);
+
         return DB::table('whitelists')->insertGetId([
             'code'        => $code,
             'name'        => $name,
@@ -136,10 +160,26 @@ class WhitelistService
 
     public function rename(int $whitelistId, string $newName): void
     {
+        $this->assertValidName($newName);
+
         DB::table('whitelists')
             ->where('id', $whitelistId)
             ->update(['name' => $newName, 'updated_at' => now()]);
         $this->forgetCaches();
+    }
+
+    private function assertValidCode(string $code): void
+    {
+        if (!preg_match(self::CODE_PATTERN, $code)) {
+            abort(422, 'CODE FORMAT INVALID: expected YYYY + COURSE_FAMILY + COURSE_NUMBER (e.g. 2026SEHH2238)');
+        }
+    }
+
+    private function assertValidName(string $name): void
+    {
+        if (!preg_match(self::NAME_PATTERN, $name)) {
+            abort(422, 'NAME FORMAT INVALID: expected "YYYY COURSE_CODE Course Name" (e.g. "2026 SEHH2238 Programming Project")');
+        }
     }
 
     public function setDescription(int $whitelistId, ?string $description): void
