@@ -39,20 +39,52 @@ function render() {
     panel.dataset.feature = 'whitelist';
     _shelfRoot.appendChild(panel);
 
-    const title = document.createElement('div');
-    title.className = 'whitelist-shelf-title';
-    title.textContent = t('whitelist.shelfTitle');
-    panel.appendChild(title);
+    // ── Header ──
+    const header = document.createElement('div');
+    header.className = 'whitelist-shelf-header';
+    const headerIcon = document.createElement('span');
+    headerIcon.className = 'whitelist-shelf-header-icon';
+    const headerTitle = document.createElement('span');
+    headerTitle.className = 'whitelist-shelf-header-title';
+    headerTitle.textContent = t('whitelist.shelfTitle');
+    header.appendChild(headerIcon);
+    header.appendChild(headerTitle);
+    panel.appendChild(header);
 
     const currentId = currentChannelWhitelistId();
     const current = _presets.find(p => p.id === currentId) || null;
 
-    const state = document.createElement('div');
-    state.className = 'whitelist-shelf-current';
-    state.textContent = current
-        ? t('whitelist.currentApplied', { code: current.code, name: current.name })
-        : t('whitelist.currentPublic');
-    panel.appendChild(state);
+    // ── Current state card (PUBLIC vs PRIVATE) ──
+    const stateCard = document.createElement('div');
+    stateCard.className = 'whitelist-shelf-state ' + (current ? 'is-private' : 'is-public');
+
+    const stateBadge = document.createElement('div');
+    stateBadge.className = 'whitelist-shelf-state-badge';
+    stateBadge.textContent = current ? t('whitelist.privateLabel') : t('whitelist.publicLabel');
+    stateCard.appendChild(stateBadge);
+
+    const stateBody = document.createElement('div');
+    stateBody.className = 'whitelist-shelf-state-body';
+    if (current) {
+        const codeLine = document.createElement('div');
+        codeLine.className = 'whitelist-shelf-state-code';
+        codeLine.textContent = current.code;
+        const nameLine = document.createElement('div');
+        nameLine.className = 'whitelist-shelf-state-name';
+        nameLine.textContent = current.name;
+        const countLine = document.createElement('div');
+        countLine.className = 'whitelist-shelf-state-count';
+        countLine.textContent = t('whitelist.memberCount', { count: current.member_count });
+        stateBody.appendChild(codeLine);
+        stateBody.appendChild(nameLine);
+        stateBody.appendChild(countLine);
+    } else {
+        const desc = document.createElement('div');
+        desc.className = 'whitelist-shelf-state-desc';
+        desc.textContent = t('whitelist.publicDesc');
+        stateBody.appendChild(desc);
+    }
+    stateCard.appendChild(stateBody);
 
     if (current) {
         const detach = document.createElement('button');
@@ -60,8 +92,16 @@ function render() {
         detach.className = 'whitelist-shelf-detach';
         detach.textContent = t('whitelist.detachBtn');
         detach.addEventListener('click', () => apply(null));
-        panel.appendChild(detach);
+        stateCard.appendChild(detach);
     }
+
+    panel.appendChild(stateCard);
+
+    // ── Available presets section ──
+    const sectionTitle = document.createElement('div');
+    sectionTitle.className = 'whitelist-shelf-section-title';
+    sectionTitle.textContent = t('whitelist.availableSection');
+    panel.appendChild(sectionTitle);
 
     const list = document.createElement('div');
     list.className = 'whitelist-shelf-list';
@@ -75,12 +115,17 @@ function render() {
         for (const p of _presets) {
             const row = document.createElement('div');
             row.className = 'whitelist-shelf-row';
-            if (p.id === currentId) row.classList.add('is-active');
+            const isActive = p.id === currentId;
+            if (isActive) row.classList.add('is-active');
 
-            // APPLY first so it docks left — same row layout as the
-            // LLM shelf's SEND button (primary action on the drag-
-            // away side, drops the row's eye to the trigger first).
-            if (p.id !== currentId) {
+            // APPLY first so it docks left, mirrors LLM SEND.
+            // Active row replaces APPLY with an "ACTIVE" badge.
+            if (isActive) {
+                const badge = document.createElement('div');
+                badge.className = 'whitelist-shelf-active-badge';
+                badge.textContent = t('whitelist.appliedBadge');
+                row.appendChild(badge);
+            } else {
                 const btn = document.createElement('button');
                 btn.type = 'button';
                 btn.className = 'whitelist-shelf-apply';

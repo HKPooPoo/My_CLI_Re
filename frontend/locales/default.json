@@ -364,10 +364,15 @@
     "readerBadge": "READ-ONLY"
   },
   "whitelist": {
-    "shelfTitle": "ACCESS PRESET",
+    "shelfTitle": "WHO CAN SEE THIS CHANNEL?",
+    "publicLabel": "PUBLIC",
+    "privateLabel": "PRIVATE",
+    "publicDesc": "Anyone signed in can read this channel.",
+    "availableSection": "AVAILABLE PRESETS",
+    "appliedBadge": "APPLIED",
     "currentApplied": "Currently applied: {code} — {name}",
     "currentPublic": "Currently: PUBLIC (no preset applied)",
-    "detachBtn": "DETACH (revert to public)",
+    "detachBtn": "MAKE PUBLIC",
     "applyBtn": "APPLY",
     "memberCount": "{count} member(s)",
     "empty": "No presets available. Ask an administrator to grant you a distribution rule.",
