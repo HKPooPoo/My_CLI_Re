@@ -291,14 +291,14 @@
       "calendar": "Open the calendar for this notebook or channel. Add events per date; the AI tutor reads from here.",
       "flashcard": "Open flashcards for this notebook or channel. Maker for editing cards; Player for studying them.",
       "llm": "AI Tutor. Pick a prompt (summarise, translate, suggest schedule) and send it against the current page.",
-      "whitelist": "Apply an access preset to this channel. Owner only; the shelf lists the presets you've been distributed. Picking one restricts visibility to its members; DETACH reverts to public."
+      "whitelist": "Apply an access preset. Owner only; the shelf lists presets you've been distributed. With no preset applied the channel is CLOSED — only you see it. Pick one to grant access to its members. DETACH closes it again."
     },
     "inbox": {
       "create": "Create a new inbox. You become its owner — only you receive submissions. Sign-in with a title required.",
       "delete": "Permanently delete this inbox and every submission inside it. Cannot be undone. Three-step confirm.",
       "post": "Push your latest local changes to the cloud. Sender posts file + sender text; receiver posts feedback. Edits stay local until POST.",
       "pull": "Re-fetch the latest from the server. Sender pulls feedback; receiver pulls every submitter's latest.",
-      "whitelist": "Restrict who can submit. Members of the chosen preset can post; non-members see the inbox but cannot submit. DETACH reverts to public."
+      "whitelist": "Pick which group can submit. Without a preset the inbox is CLOSED — nobody but you can see or submit. Picking a preset grants access to its members; DETACH closes it again."
     },
     "search": {
       "open": "Search the pages of this notebook / channel / chat. Click to expand; Enter jumps to the next match.",
@@ -372,15 +372,15 @@
     "readerBadge": "READ-ONLY"
   },
   "whitelist": {
-    "shelfTitle": "WHO CAN SEE THIS CHANNEL?",
-    "publicLabel": "PUBLIC",
-    "privateLabel": "PRIVATE",
-    "publicDesc": "Anyone signed in can read this channel.",
+    "shelfTitle": "WHO HAS ACCESS?",
+    "publicLabel": "CLOSED",
+    "privateLabel": "RESTRICTED",
+    "publicDesc": "Only you have access. Apply a preset below to grant access to a member group.",
     "availableSection": "AVAILABLE PRESETS",
     "appliedBadge": "APPLIED",
     "currentApplied": "Currently applied: {code} — {name}",
-    "currentPublic": "Currently: PUBLIC (no preset applied)",
-    "detachBtn": "MAKE PUBLIC",
+    "currentPublic": "Currently: CLOSED (no preset applied)",
+    "detachBtn": "DETACH",
     "applyBtn": "APPLY",
     "memberCount": "{count} member(s)",
     "empty": "No presets available. Ask an administrator to grant you a distribution rule.",
@@ -388,8 +388,8 @@
     "applying": "Applying preset…",
     "detaching": "Detaching preset…",
     "applied": "Preset applied.",
-    "detached": "Reverted to public.",
-    "errNotAuthorised": "Not authorised for this preset (or not channel owner).",
+    "detached": "Detached. Closed to all but you.",
+    "errNotAuthorised": "Not authorised for this preset (or not the owner).",
     "errNotFound": "Whitelist no longer exists.",
     "errApplyFailed": "Apply failed.",
     "viewMembers": "VIEW",
