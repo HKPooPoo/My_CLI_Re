@@ -221,6 +221,18 @@
 
 /* ============ Calendar shelf ============ */
 
+/* Calendar panel — owns its own height management. Outer
+   .feature-panel default has `overflow-y: auto`, but for calendar
+   we want NO outer scroll: the grid is clamped, the per-day
+   editor list is the only scrollable region inside. Otherwise the
+   wide-shelf case (60vw shelf) makes 1:1 cells huge, the grid
+   pushes the editor below the viewport, and the user scrolls the
+   whole panel — which then puts the grid off-screen too. */
+.feature-panel[data-feature="calendar"] {
+    overflow: hidden;
+    min-height: 0;
+}
+
 [data-feature="calendar"] {
     gap: 10px;
 }
@@ -262,26 +274,41 @@
     user-select: none;
 }
 
-/* Month grid — 7 columns */
+/* Month grid — 7 columns. Clamped height so the calendar doesn't
+   eat the whole shelf on wide layouts. Cells use flex (not aspect-
+   ratio) so the grid fills its allocated box without requiring the
+   panel to grow with cell width. */
 [data-feature="calendar"] .cal-grid {
     display: flex;
     flex-direction: column;
     gap: 2px;
     width: 100%;
     user-select: none;
+    flex: 0 0 auto;
+    /* Hard cap so even a 60vw shelf with square cells can't push
+       the editor list off-screen. Min ensures small viewports still
+       give cells useful tap area; max keeps wide shelves balanced. */
+    max-height: clamp(260px, 38vh, 400px);
+    /* Reserve a header row + 6 grid rows; flex children share. */
+    min-height: 220px;
 }
 
 [data-feature="calendar"] .cal-row {
+    flex: 1 1 0;
     flex-direction: row;
     display: flex;
     gap: 2px;
     width: 100%;
+    min-height: 0;
 }
 
 [data-feature="calendar"] .cal-cell {
     flex: 1 1 0;
     min-width: 0;
-    aspect-ratio: 1 / 1;
+    /* Drop the 1:1 aspect-ratio so cells stretch to fill row height
+       allocated by the grid's clamp. min-height ensures touch
+       target stays usable on dense weeks. */
+    min-height: 28px;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -374,7 +401,8 @@
 [data-feature="calendar"] .cal-day.is-selected .cal-dot-channel { background: #ffe8ff; }
 
 /* Editor panel — hidden by default, slides open when a day is picked.
-   Now a LIST of single-line entries instead of a free-form textarea. */
+   When active, takes ALL remaining vertical space inside the panel
+   so its inner list (cal-editor-list) is the sole scrollable region. */
 [data-feature="calendar"] .cal-editor {
     display: none;
     flex-direction: column;
@@ -383,6 +411,9 @@
     border: 2px solid var(--brand);
     border-radius: var(--border-radius);
     background: var(--bg-card);
+    flex: 1 1 0;
+    min-height: 0;
+    overflow: hidden;
 }
 
 [data-feature="calendar"] .cal-editor.active {
@@ -398,9 +429,26 @@
 [data-feature="calendar"] .cal-editor-list {
     flex-direction: column;
     gap: 4px;
-    max-height: 140px;
+    /* Flex inside the editor panel — takes whatever vertical space
+       is left after the editor's label + add-row. Scrolls when the
+       day's events exceed that allocation; otherwise stays compact. */
+    flex: 1 1 0;
+    min-height: 0;
     overflow-y: auto;
     user-select: text;
+    scrollbar-width: thin;
+    scrollbar-color: var(--text-muted) var(--bg-card);
+}
+
+[data-feature="calendar"] .cal-editor-list::-webkit-scrollbar {
+    width: 4px;
+}
+[data-feature="calendar"] .cal-editor-list::-webkit-scrollbar-track {
+    background: var(--bg-card);
+}
+[data-feature="calendar"] .cal-editor-list::-webkit-scrollbar-thumb {
+    background-color: var(--text-muted);
+    border-radius: 2px;
 }
 
 [data-feature="calendar"] .cal-editor-empty {
