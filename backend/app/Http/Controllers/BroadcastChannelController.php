@@ -95,7 +95,7 @@ class BroadcastChannelController extends Controller
      */
     public function fetchBoards($channelId)
     {
-        $records = $this->service->fetchBoards((int) $channelId);
+        $records = $this->service->fetchBoards((int) $channelId, Auth::user());
         return response()->json(['records' => $records]);
     }
 
@@ -137,7 +137,7 @@ class BroadcastChannelController extends Controller
      */
     public function showCalendar($channelId)
     {
-        $calendar = $this->service->getCalendar((int) $channelId);
+        $calendar = $this->service->getCalendar((int) $channelId, Auth::user());
         return response()->json(['calendar' => $calendar]);
     }
 
@@ -149,7 +149,32 @@ class BroadcastChannelController extends Controller
      */
     public function showFlashcards($channelId)
     {
-        $flashcards = $this->service->getFlashcards((int) $channelId);
+        $flashcards = $this->service->getFlashcards((int) $channelId, Auth::user());
         return response()->json(['flashcards' => $flashcards]);
+    }
+
+    /**
+     * PUT /api/broadcast/channels/{channelId}/whitelist
+     * Body: { whitelist_id: int|null } — null detaches and reverts
+     * the channel to public. Owner-only.
+     */
+    public function applyWhitelist(Request $request, $channelId)
+    {
+        $user = Auth::user();
+        if (!$user) {
+            return response()->json(['message' => 'Unauthorized'], 401);
+        }
+
+        $request->validate([
+            'whitelist_id' => 'nullable|integer',
+        ]);
+
+        $this->service->applyWhitelist(
+            $user,
+            (int) $channelId,
+            $request->input('whitelist_id') !== null ? (int) $request->input('whitelist_id') : null
+        );
+
+        return response()->json(['message' => 'WHITELIST APPLIED']);
     }
 }

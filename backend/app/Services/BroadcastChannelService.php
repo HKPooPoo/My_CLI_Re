@@ -7,14 +7,40 @@ use Illuminate\Support\Facades\Cache;
 use App\Events\BroadcastChannelUpdated;
 use App\Models\User;
 use App\Services\FileService;
+use App\Services\WhitelistService;
 
 class BroadcastChannelService
 {
     protected FileService $fileService;
+    protected WhitelistService $whitelistService;
 
-    public function __construct(FileService $fileService)
+    public function __construct(FileService $fileService, WhitelistService $whitelistService)
     {
         $this->fileService = $fileService;
+        $this->whitelistService = $whitelistService;
+    }
+
+    /**
+     * Visibility gate. Public channel → everyone. Private channel →
+     * owner OR uid-in-whitelist. Guests get nothing on private.
+     * Aborts 403 on miss; does NOT 404 (the channel exists, the
+     * caller just isn't authorised — surfacing existence is fine
+     * since channel ids are not secrets).
+     */
+    private function assertVisibleTo(object $channel, ?User $user): void
+    {
+        if (empty($channel->whitelist_id)) return;
+        if ($user && (int) $user->id === (int) $channel->user_id) return;
+        if ($user && $this->whitelistService->isMember((int) $channel->whitelist_id, $user->uid)) return;
+        abort(403, 'CHANNEL NOT AVAILABLE');
+    }
+
+    public function isVisibleTo(object $channel, ?User $user): bool
+    {
+        if (empty($channel->whitelist_id)) return true;
+        if ($user && (int) $user->id === (int) $channel->user_id) return true;
+        if ($user && $this->whitelistService->isMember((int) $channel->whitelist_id, $user->uid)) return true;
+        return false;
     }
 
     /**
@@ -47,6 +73,13 @@ class BroadcastChannelService
             $ch['is_pinned'] = isset($pinnedIds[$ch['id']]);
             return $ch;
         })->toArray();
+
+        $result = array_values(array_filter($result, function ($ch) use ($user) {
+            if (empty($ch['whitelist_id'])) return true;
+            if ($user && (int) $user->id === (int) $ch['user_id']) return true;
+            if ($user && $this->whitelistService->isMember((int) $ch['whitelist_id'], $user->uid)) return true;
+            return false;
+        }));
 
         usort($result, function ($a, $b) {
             if ($a['is_pinned'] !== $b['is_pinned']) {
@@ -199,6 +232,42 @@ class BroadcastChannelService
     }
 
     /**
+     * Owner applies (or detaches) a whitelist preset on this
+     * channel. `null` reverts the channel to public. Distinct from
+     * other owner mutations: even owners can only apply presets
+     * they're cleared to use via T1 distribution rules — owning
+     * the channel doesn't grant access to arbitrary preset ids.
+     */
+    public function applyWhitelist(User $user, int $channelId, ?int $whitelistId): void
+    {
+        if (!$user->title) {
+            abort(403, 'TITLE REQUIRED');
+        }
+
+        $channel = DB::table('broadcast_channels')->where('id', $channelId)->first();
+        if (!$channel) abort(404, 'CHANNEL NOT FOUND');
+        if ($channel->user_id !== $user->id) abort(403, 'NOT CHANNEL OWNER');
+
+        if ($whitelistId !== null) {
+            $exists = DB::table('whitelists')->where('id', $whitelistId)->exists();
+            if (!$exists) abort(404, 'WHITELIST NOT FOUND');
+            if (!$this->whitelistService->canUserApply($user, $whitelistId)) {
+                abort(403, 'NOT AUTHORISED FOR THIS WHITELIST');
+            }
+        }
+
+        DB::table('broadcast_channels')
+            ->where('id', $channelId)
+            ->update([
+                'whitelist_id' => $whitelistId,
+                'updated_at'   => now(),
+            ]);
+
+        Cache::forget('bc:channels:base');
+        Cache::forget("bc:boards:{$channelId}");
+    }
+
+    /**
      * Delete a channel.
      */
     public function destroy(User $user, int $channelId): void
@@ -233,10 +302,18 @@ class BroadcastChannelService
     }
 
     /**
-     * Fetch board records for a channel.
+     * Fetch board records for a channel. Whitelist-gated: a private
+     * channel returns 403 to non-members, 404 to nobody (existence
+     * is not a secret). The cached payload itself is identical
+     * across viewers, so the visibility check sits in front of the
+     * cache rather than inside the cache key.
      */
-    public function fetchBoards(int $channelId): array
+    public function fetchBoards(int $channelId, ?User $user = null): array
     {
+        $channel = DB::table('broadcast_channels')->where('id', $channelId)->first();
+        if (!$channel) return [];
+        $this->assertVisibleTo($channel, $user);
+
         return Cache::remember("bc:boards:{$channelId}", config('timing.backend.cacheTTL.bcBoards'), function () use ($channelId) {
             $records = DB::table('broadcast_boards')
                 ->where('broadcast_boards.channel_id', $channelId)
@@ -263,14 +340,17 @@ class BroadcastChannelService
     }
 
     /**
-     * Pin a channel for a user.
+     * Pin a channel for a user. Pin attempts on private channels
+     * the user can't see are rejected — leaking existence here
+     * would let non-members confirm channel ids by trying to pin.
      */
     public function pin(User $user, int $channelId): void
     {
-        $exists = DB::table('broadcast_channels')->where('id', $channelId)->exists();
-        if (!$exists) {
+        $channel = DB::table('broadcast_channels')->where('id', $channelId)->first();
+        if (!$channel) {
             abort(404, 'CHANNEL NOT FOUND');
         }
+        $this->assertVisibleTo($channel, $user);
 
         DB::table('broadcast_pins')->upsert(
             [['user_id' => $user->id, 'channel_id' => $channelId, 'created_at' => now(), 'updated_at' => now()]],
@@ -300,11 +380,13 @@ class BroadcastChannelService
      * broadcast.channel.updated event, without refetching the full
      * channel list. Writes go through cast() — never direct.
      */
-    public function getCalendar(int $channelId): array
+    public function getCalendar(int $channelId, ?User $user = null): array
     {
-        $raw = DB::table('broadcast_channels')
-            ->where('id', $channelId)
-            ->value('calendar');
+        $channel = DB::table('broadcast_channels')->where('id', $channelId)->first();
+        if (!$channel) return [];
+        $this->assertVisibleTo($channel, $user);
+
+        $raw = $channel->calendar;
         if (!$raw) return [];
         $decoded = is_array($raw) ? $raw : json_decode($raw, true);
         return is_array($decoded) ? $decoded : [];
@@ -318,11 +400,13 @@ class BroadcastChannelService
      * Shape when populated:
      *   { cards: [{ front, back }, ...], mode, playState: { ... } }
      */
-    public function getFlashcards(int $channelId): array
+    public function getFlashcards(int $channelId, ?User $user = null): array
     {
-        $raw = DB::table('broadcast_channels')
-            ->where('id', $channelId)
-            ->value('flashcards');
+        $channel = DB::table('broadcast_channels')->where('id', $channelId)->first();
+        if (!$channel) return [];
+        $this->assertVisibleTo($channel, $user);
+
+        $raw = $channel->flashcards;
         if (!$raw) return [];
         $decoded = is_array($raw) ? $raw : json_decode($raw, true);
         return is_array($decoded) ? $decoded : [];

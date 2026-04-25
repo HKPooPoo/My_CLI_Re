@@ -10,6 +10,7 @@ use App\Http\Controllers\FileController;
 use App\Http\Controllers\BroadcastChannelController;
 use App\Http\Controllers\LlmController;
 use App\Http\Controllers\UserSettingsController;
+use App\Http\Controllers\WhitelistController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Broadcast;
 
@@ -99,7 +100,11 @@ Route::middleware([/*'auth:sanctum'*/])->prefix('walkie-typie')->group(function 
 Route::middleware([/*'auth:sanctum'*/])->prefix('broadcast')->group(function () {
     Route::post('/channels/{channelId}/pin', [BroadcastChannelController::class, 'pin']);
     Route::delete('/channels/{channelId}/pin', [BroadcastChannelController::class, 'unpin']);
+    Route::put('/channels/{channelId}/whitelist', [BroadcastChannelController::class, 'applyWhitelist']);
 });
+
+// Whitelist registry — public read of metadata only (no member uids)
+Route::get('/whitelists', [WhitelistController::class, 'index']);
 
 // MOD endpoints — public
 Route::prefix('mods')->group(function () {

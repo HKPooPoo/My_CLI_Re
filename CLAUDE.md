@@ -629,35 +629,68 @@ Log section; every new user decision gets appended with a date.
 - **Tier 9d** ✅ (shipped) — BB Flashcards.
 - **Tier 9e** ✅ (shipped 2026-04-24) — BC Flashcards. See the
   BC Flashcards (Tier 9e) section below for the cast-bundle contract.
-- **Tier 9g — Access Whitelist backbone (shared by BC + Inbox)**.
-  Spec per stakeholder 2026-04-24: Broadcast channels AND Inbox
-  containers both gated by the same polymorphic whitelist system.
-  Empty whitelist = public (backward-compat for existing channels);
-  non-empty = `{whitelisted uids} ∪ {owner}` only. Must ship BEFORE
-  Tier 23-A so Inbox can reuse the same `AccessWhitelistService` /
-  `access_whitelists` table / UI component rather than reinventing.
-    - New table `access_whitelists(container_type, container_id,
-      uid)` + UNIQUE + INDEX. container_type = `'broadcast' | 'inbox'`.
-      Polymorphic — chosen over two per-table whitelists for
-      code/UI reuse; cascade handled at app level on channel /
-      inbox destroy (no DB FK across polymorphic ref).
-    - `AccessWhitelistService::{list, add, remove, isVisibleTo}`.
-      `isVisibleTo` is the gate called by every read path:
-      `listChannels` filters, `fetchBoards / getCalendar /
-      getFlashcards` return 403 when hidden, WS channel auth in
-      `routes/channels.php` rejects non-whitelisted subscribers.
-    - Owner endpoints: `GET/POST/DELETE
-      /api/broadcast/channels/{id}/whitelist[/{uid}]`. Inbox
-      mirrors the shape on `/api/inbox/{id}/whitelist`.
-    - Frontend: channel/inbox objects carry `isPublic: bool`,
-      list rows lock-icon private channels, owner editor exposes
-      a "Manage Access" shelf reading / writing the whitelist.
-      Non-whitelisted subscribers either don't see the row (list
-      filter) or get an access-denied toast on pin attempt.
-    - Tests: `AccessWhitelistServiceTest` (CRUD + isVisibleTo
-      truth table) + controller tests (owner-only guard, 403 when
-      hidden, 200 when whitelisted / public). Existing BC / Inbox
-      read-path tests extended to cover the whitelist gate.
+- **Whitelist + Distribution backbone** ✅ (shipped 2026-04-25 —
+  backend only; frontend "apply preset" UI deferred). Two-table
+  ACL split into "who can see this channel" (T2) and "who's
+  authorised to apply this preset" (T1). Designed for reuse by
+  the future Inbox system; it ships BC-only for now.
+    - **`whitelists`** (T2) — the audience set:
+      `id, code (UNIQUE, e.g. 2026_SEHH8964), name, description,
+      members (jsonb uid array)`. The `members` JSONB is the
+      authoritative visibility set; the channel sees only this.
+    - **`whitelist_distributions`** (T1) — the apply-permission rules:
+      `id, name, description, whitelist_id (FK CASCADE), title
+      (nullable), uid (nullable)`. A row matches a viewer when
+      `viewer.title = title OR viewer.uid = uid` (NULL columns
+      skipped). Both NULL is rejected at insert time.
+    - **`broadcast_channels.whitelist_id`** — nullable FK,
+      `ON DELETE SET NULL` (whitelist delete reverts the channel
+      to public, not cascades it dead).
+    - **Visibility contract**: `whitelist_id IS NULL` ⇒ public ⇒
+      everyone visible. Otherwise `viewer.uid ∈ whitelist.members
+      OR viewer is owner`.
+    - **Apply contract**: even owners cannot apply arbitrary
+      presets — they must have a T1 row whose `title` or `uid`
+      matches them. Distribution is admin-managed (no frontend
+      editor); see artisan commands below.
+    - **`WhitelistService`** (`backend/app/Services/`):
+      `listAll / listForApplicant(?User) / show / findByCode /
+      create / rename / setDescription / delete / addMember /
+      removeMember / addMembersByTitle / isMember / addDistribution /
+      removeDistribution / canUserApply`. JSONB read-modify-write
+      in PHP transactions for cross-driver portability.
+    - **Read-path gates** in `BroadcastChannelService`:
+      `listChannels` filters hidden rows out per-viewer (no leak
+      via the index endpoint); `fetchBoards / getCalendar /
+      getFlashcards / pin` abort 403 on hidden access (existence
+      not hidden — channel ids are not secrets). Owner override
+      bypasses every gate, even when not in `members`.
+    - **WS gate**: `broadcast-channel.{id}` stays a public WS
+      channel intentionally — payload only carries
+      `{channel_id, name, owner_uid, last_signal, action}`, no
+      record body. Content fetch is HTTP-gated. Rationale logged
+      inline in `routes/channels.php`.
+    - **HTTP endpoints**: `GET /api/whitelists` (returns presets
+      the authenticated user is cleared to apply, member uids NOT
+      included — only `member_count`); `PUT /api/broadcast/
+      channels/{id}/whitelist` body `{whitelist_id: int|null}`,
+      owner-only + applicant grant required, null detaches.
+    - **Artisan (admin) commands**: `whitelist:create / list /
+      show / delete / add-member / add-by-title / remove-member /
+      grant / ungrant`. `add-by-title` does the bulk distribution
+      step ("先按 title 分配, 再按 uid 個別追加" pattern); both
+      title path and direct-uid path go through SQL UNIQUE +
+      JSONB set semantics, so double-distribution is impossible.
+    - **Tests**: 15 `WhitelistServiceTest` cases (CRUD, dedup,
+      title bulk, distribution OR-logic, applicant-list filter,
+      cascade delete) + 20 `BroadcastWhitelistGatingTest` cases
+      (list filter × {guest, member, non-member, owner}; per-
+      endpoint 403 ladder; PUT auth + grant matrix; index
+      member-uid leak guard). 35 new tests; suite now 341 / 759.
+    - **Pending follow-ups**: frontend "Apply Preset" shelf in BC
+      channel editor (reads `GET /api/whitelists`, calls PUT);
+      lock-icon row affordance for private channels in BC list;
+      Inbox reuse hookup when that subsystem lands.
 - **Tier 23 — Inbox system** (depends on 9g). BC variant with a
   whitelist (reuses 9g), sender 4-component view, receiver preview
   rail + search + whitelist management. Independent tables
