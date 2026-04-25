@@ -1,0 +1,169 @@
+/**
+ * Feature: Whitelist — owner-side "Apply Preset" UI for BC channels.
+ *
+ * Presets themselves (T2 whitelists) and distribution grants (T1
+ * whitelist_distributions) are admin-managed via artisan commands.
+ * This shelf ONLY surfaces the subset the current user is cleared
+ * to apply (server filters via WhitelistService::listForApplicant),
+ * lets them pick one to attach to the active channel, or detach to
+ * revert to public.
+ *
+ * Visibility: broadcast-channel page only; owner mode; channel
+ * must be cast (serverChannelId present — you can't apply a
+ * whitelist to a draft that has no server row yet).
+ */
+
+import { BCChannel } from '../broadcast-channel.js';
+import { BroadcastWhitelistService } from '../services/broadcast-whitelist-service.js';
+import { BBMessage } from '../blackboard-msg.js';
+
+const ICON_URL = '/images/whitelist.svg';
+
+// Module-level cache of the last rendered shelf root so the apply
+// handler can re-render after a successful PUT without a bespoke
+// re-entry. Single-shelf so a bare reference is fine.
+let _shelfRoot = null;
+let _presets = [];
+
+function currentChannelWhitelistId() {
+    return BCChannel?.currentChannel?.whitelistId ?? null;
+}
+
+function render() {
+    if (!_shelfRoot) return;
+    _shelfRoot.innerHTML = '';
+
+    const panel = document.createElement('div');
+    panel.className = 'feature-panel';
+    panel.dataset.feature = 'whitelist';
+    _shelfRoot.appendChild(panel);
+
+    const title = document.createElement('div');
+    title.className = 'whitelist-shelf-title';
+    title.textContent = 'ACCESS PRESET';
+    panel.appendChild(title);
+
+    const currentId = currentChannelWhitelistId();
+    const current = _presets.find(p => p.id === currentId) || null;
+
+    const state = document.createElement('div');
+    state.className = 'whitelist-shelf-current';
+    state.textContent = current
+        ? `Currently applied: ${current.code} — ${current.name}`
+        : 'Currently: PUBLIC (no preset applied)';
+    panel.appendChild(state);
+
+    if (current) {
+        const detach = document.createElement('button');
+        detach.type = 'button';
+        detach.className = 'whitelist-shelf-detach';
+        detach.textContent = 'DETACH (revert to public)';
+        detach.addEventListener('click', () => apply(null));
+        panel.appendChild(detach);
+    }
+
+    const list = document.createElement('div');
+    list.className = 'whitelist-shelf-list';
+
+    if (_presets.length === 0) {
+        const empty = document.createElement('div');
+        empty.className = 'whitelist-shelf-empty';
+        empty.textContent = 'No presets available. Ask an administrator to grant you a distribution rule (whitelist:grant).';
+        list.appendChild(empty);
+    } else {
+        for (const p of _presets) {
+            const row = document.createElement('div');
+            row.className = 'whitelist-shelf-row';
+            if (p.id === currentId) row.classList.add('is-active');
+
+            const meta = document.createElement('div');
+            meta.className = 'whitelist-shelf-meta';
+            const codeEl = document.createElement('div');
+            codeEl.className = 'whitelist-shelf-code';
+            codeEl.textContent = p.code;
+            const nameEl = document.createElement('div');
+            nameEl.className = 'whitelist-shelf-name';
+            nameEl.textContent = p.name;
+            meta.appendChild(codeEl);
+            meta.appendChild(nameEl);
+            if (p.description) {
+                const desc = document.createElement('div');
+                desc.className = 'whitelist-shelf-desc';
+                desc.textContent = p.description;
+                meta.appendChild(desc);
+            }
+            const count = document.createElement('div');
+            count.className = 'whitelist-shelf-count';
+            count.textContent = `${p.member_count} member(s)`;
+            meta.appendChild(count);
+            row.appendChild(meta);
+
+            if (p.id !== currentId) {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'whitelist-shelf-apply';
+                btn.textContent = 'APPLY';
+                btn.addEventListener('click', () => apply(p.id));
+                row.appendChild(btn);
+            }
+
+            list.appendChild(row);
+        }
+    }
+    panel.appendChild(list);
+}
+
+async function apply(whitelistId) {
+    const ch = BCChannel?.currentChannel;
+    if (!ch?.serverChannelId) {
+        BBMessage.error('Channel not cast yet.');
+        return;
+    }
+    const msg = BBMessage.loading(whitelistId ? 'Applying preset…' : 'Detaching preset…');
+    try {
+        await BroadcastWhitelistService.apply(ch.serverChannelId, whitelistId);
+        ch.whitelistId = whitelistId ?? null;
+        // Let the list re-render its lock icon via the existing
+        // localBootstrapped path which refetches the channel list.
+        window.dispatchEvent(new CustomEvent('broadcast:localBootstrapped'));
+        msg.update(whitelistId ? 'Preset applied.' : 'Reverted to public.', 2000);
+        render();
+    } catch (e) {
+        msg.close();
+        const status = e?.status || e?.response?.status;
+        if (status === 403) BBMessage.error('Not authorised for this preset (or not channel owner).');
+        else if (status === 404) BBMessage.error('Whitelist no longer exists.');
+        else BBMessage.error('Apply failed.');
+        console.error('[Whitelist] apply failed', e);
+    }
+}
+
+async function refresh() {
+    try {
+        const data = await BroadcastWhitelistService.listApplicable();
+        _presets = data?.whitelists ?? [];
+    } catch (e) {
+        console.error('[Whitelist] fetch failed', e);
+        _presets = [];
+    }
+    render();
+}
+
+export const feature = {
+    id: 'whitelist',
+    iconUrl: ICON_URL,
+    pages: ['broadcast-channel'],
+    hasShelf: true,
+    shouldShow(page) {
+        if (page !== 'broadcast-channel') return false;
+        if (!BCChannel?.isOwnerMode) return false;
+        return !!BCChannel?.currentChannel?.serverChannelId;
+    },
+    initShelf($shelf) {
+        $shelf.classList.add('whitelist-shelf');
+        _shelfRoot = $shelf;
+    },
+    onOpen() {
+        refresh();
+    },
+};

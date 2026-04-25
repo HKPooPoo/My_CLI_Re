@@ -687,10 +687,35 @@ Log section; every new user decision gets appended with a date.
       (list filter × {guest, member, non-member, owner}; per-
       endpoint 403 ladder; PUT auth + grant matrix; index
       member-uid leak guard). 35 new tests; suite now 341 / 759.
-    - **Pending follow-ups**: frontend "Apply Preset" shelf in BC
-      channel editor (reads `GET /api/whitelists`, calls PUT);
-      lock-icon row affordance for private channels in BC list;
-      Inbox reuse hookup when that subsystem lands.
+    - **Frontend (shipped 2026-04-25)**:
+      - `features/whitelist.js` — owner-only shelf on BC channel.
+        Rendered when `BCChannel.isOwnerMode && currentChannel.serverChannelId`
+        (draft channels with no server row yet hide the button).
+        Lists applicable presets via `GET /api/whitelists`; APPLY
+        button per row calls PUT; the currently-applied preset gets
+        an `.is-active` marker + a DETACH button. Success fires
+        `broadcast:localBootstrapped` so the list re-renders.
+      - `services/broadcast-whitelist-service.js` — minimal wrapper
+        (`listApplicable` + `apply`).
+      - `broadcast-list.js` — pipes `whitelist_id` through the
+        server→local merge as `whitelistId` on each channel row;
+        passes `locked: isCast && !!ch.whitelistId` into the list
+        status legend. The server already filters hidden rows out of
+        `listChannels`, so non-members never see the row to begin
+        with — the lock icon is for owner + member rows only.
+      - `list-status.js` + `status-locked.svg` — new 6th slot in
+        the shared icon legend (padlock, draws in brand colour).
+      - `features.css` — `.whitelist-shelf-*` scoped styles.
+      - `images/whitelist.svg` — shield-with-check feature-button
+        icon.
+    - **E2E seed**: `php artisan whitelist:smoke-seed` creates
+      teacher_alice (Faculty), student_bob (Student, member),
+      student_eve (Student, non-member), the CODE_SMOKE preset
+      and its Faculty distribution grant. All three users share
+      passcode `testpass`. Prints the test flow on success.
+    - **Pending follow-ups**: Inbox reuse hookup when that subsystem
+      lands; i18n strings (current shelf copy is inline English —
+      fine for the demo, swap to `t()` keys when locales return).
 - **Tier 23 — Inbox system** (depends on 9g). BC variant with a
   whitelist (reuses 9g), sender 4-component view, receiver preview
   rail + search + whitelist management. Independent tables

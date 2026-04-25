@@ -495,6 +495,7 @@ export const BCList = {
                     // subscriber-path and uncast rows still work.
                     found.calendar = _parseJsonbColumn(sch.calendar, null);
                     found.flashcards = _parseJsonbColumn(sch.flashcards, null);
+                    found.whitelistId = sch.whitelist_id ?? null;
                 } else {
                     // Server-only channel (not owned locally)
                     const pseudoLocalId = -(sch.id); // negative to avoid collision with Dexie auto-increment
@@ -510,6 +511,7 @@ export const BCList = {
                         isLocalOnly: false,
                         calendar: _parseJsonbColumn(sch.calendar, null),
                         flashcards: _parseJsonbColumn(sch.flashcards, null),
+                        whitelistId: sch.whitelist_id ?? null,
                     });
                 }
             }
@@ -637,9 +639,17 @@ export const BCList = {
             //             can't mutate server content so "divergence"
             //             would be meaningless for them)
             const isCast = !!(ch.serverChannelId && !ch.isLocalOnly);
+            // `locked` fires whenever the server row has a whitelist
+            // attached. It's purely a visibility affordance for the
+            // viewer — they're ALREADY able to see the row (the server
+            // filtered out rows they can't access), the lock icon just
+            // signals "this is a restricted channel, not public". Owners
+            // see it on their own private channels too so they remember
+            // which presets are applied where.
             const iconsWrap = makeStatusLegend({
                 synced:  isCast && !(this.isOwnerOf(ch) && ch.isDirty),
                 asynced: isCast &&  (this.isOwnerOf(ch) && ch.isDirty),
+                locked:  isCast && !!ch.whitelistId,
             });
 
             item.appendChild(nameInput);

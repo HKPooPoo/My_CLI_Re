@@ -926,3 +926,138 @@
     font-style: italic;
     padding: var(--panel-gap) 0;
 }
+
+/* ============ Whitelist Apply-Preset Shelf (BC owner) ============ */
+
+[data-feature="whitelist"] {
+    gap: 10px;
+    padding: 8px;
+    overflow-y: auto;
+}
+
+[data-feature="whitelist"] .whitelist-shelf-title {
+    font-size: 0.95em;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    color: var(--brand);
+    border-bottom: 2px solid var(--brand);
+    padding-bottom: 6px;
+}
+
+[data-feature="whitelist"] .whitelist-shelf-current {
+    font-size: 0.88em;
+    color: var(--text-body);
+    padding: 8px 10px;
+    background: var(--bg-card);
+    border-left: 4px solid var(--brand);
+    border-radius: 3px;
+    user-select: text;
+}
+
+[data-feature="whitelist"] .whitelist-shelf-detach {
+    align-self: flex-start;
+    padding: 6px 14px;
+    border: 1px solid var(--border-subtle);
+    border-radius: 4px;
+    background: transparent;
+    color: var(--text-muted);
+    font-size: 0.82em;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    cursor: pointer;
+    transition: border-color var(--transition-normal),
+                color var(--transition-normal),
+                background var(--transition-normal);
+}
+
+[data-feature="whitelist"] .whitelist-shelf-detach:hover {
+    border-color: var(--brand);
+    color: var(--brand);
+    background: var(--bg-card);
+}
+
+[data-feature="whitelist"] .whitelist-shelf-list {
+    flex-direction: column;
+    gap: 6px;
+}
+
+[data-feature="whitelist"] .whitelist-shelf-empty {
+    padding: 12px 10px;
+    color: var(--text-muted);
+    font-style: italic;
+    font-size: 0.85em;
+    text-align: center;
+    border: 1px dashed var(--border-subtle);
+    border-radius: 4px;
+}
+
+[data-feature="whitelist"] .whitelist-shelf-row {
+    flex-direction: row;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    border: 1px solid var(--border-subtle);
+    border-left: 4px solid var(--accent);
+    border-radius: 4px;
+    background: var(--bg-page);
+}
+
+[data-feature="whitelist"] .whitelist-shelf-row.is-active {
+    border-left-color: var(--brand);
+    background: var(--bg-card);
+}
+
+[data-feature="whitelist"] .whitelist-shelf-meta {
+    flex: 1 1 0;
+    min-width: 0;
+    gap: 2px;
+}
+
+[data-feature="whitelist"] .whitelist-shelf-code {
+    font-size: 0.78em;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    color: var(--accent);
+    font-variant-numeric: tabular-nums;
+}
+
+[data-feature="whitelist"] .whitelist-shelf-row.is-active .whitelist-shelf-code {
+    color: var(--brand);
+}
+
+[data-feature="whitelist"] .whitelist-shelf-name {
+    font-size: 0.92em;
+    color: var(--text-body);
+    font-weight: 600;
+    user-select: text;
+}
+
+[data-feature="whitelist"] .whitelist-shelf-desc {
+    font-size: 0.8em;
+    color: var(--text-muted);
+    user-select: text;
+}
+
+[data-feature="whitelist"] .whitelist-shelf-count {
+    font-size: 0.75em;
+    color: var(--text-muted);
+    letter-spacing: 0.08em;
+}
+
+[data-feature="whitelist"] .whitelist-shelf-apply {
+    flex: 0 0 auto;
+    padding: 6px 14px;
+    border: 2px solid var(--brand);
+    border-radius: 4px;
+    background: var(--brand);
+    color: #ffffff;
+    font-weight: 700;
+    font-size: 0.78em;
+    letter-spacing: 0.1em;
+    cursor: pointer;
+    transition: background var(--transition-normal);
+}
+
+[data-feature="whitelist"] .whitelist-shelf-apply:hover {
+    background: var(--brand-dark);
+}

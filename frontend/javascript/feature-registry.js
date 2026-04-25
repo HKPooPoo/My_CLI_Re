@@ -17,12 +17,14 @@ import { feature as FileAttachFeature } from './features/file-attach.js';
 import { feature as CalendarFeature   } from './features/calendar.js';
 import { feature as FlashcardFeature  } from './features/flashcard.js';
 import { feature as LlmFeature        } from './features/llm.js';
+import { feature as WhitelistFeature  } from './features/whitelist.js';
 
 export const FEATURES = [
     FileAttachFeature,
     CalendarFeature,
     FlashcardFeature,
     LlmFeature,
+    WhitelistFeature,
 ];
 
 export function getFeature(id) {
