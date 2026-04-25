@@ -314,12 +314,18 @@
     color: var(--brand);
     margin-bottom: 2px;
 }
-.page-preview-block.active .inbox-preview-block-marker,
-.page-preview-block.peeking .inbox-preview-block-marker {
+/* Marker colour MUST track block background, same trap the label
+   rule above had to dodge. Block bg per state:
+     • rest / .active            → bg-card / bg-secondary (light grey)
+     • :hover / .peeking          → brand (wine red)
+   So white only fires on the brand-bg states. `.active` is excluded
+   via :not(.active) to handle the active+hover combo (active wins
+   for block bg, so marker must stay brand on grey, not white). */
+.page-preview-block.peeking:not(.active) .inbox-preview-block-marker {
     color: #ffffff;
 }
 @media (hover: hover) {
-    .page-preview-block:hover .inbox-preview-block-marker {
+    .page-preview-block:hover:not(.active) .inbox-preview-block-marker {
         color: #ffffff;
     }
 }
