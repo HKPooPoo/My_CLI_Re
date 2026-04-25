@@ -39,16 +39,14 @@ const SAVE_DEBOUNCE_KEY = 'inboxAutoSave';
 export const IXThread = {
     elements: {
         page: document.querySelector('.page[data-page="inbox-thread"]'),
-        container: document.getElementById('inbox-thread-container'),
-        empty: document.getElementById('inbox-thread-empty'),
-        body: document.getElementById('inbox-thread-body'),
+        wrapper: document.getElementById('inbox-drop-zone'),
+        emptyOverlay: document.getElementById('inbox-empty-overlay'),
+        chipsArea: document.getElementById('inbox-attachment-chips'),
         previewRail: document.getElementById('inbox-preview-rail'),
         senderArea: document.getElementById('inbox-sender-textarea'),
         receiverArea: document.getElementById('inbox-receiver-textarea'),
-        fileSlot: document.getElementById('inbox-file-slot'),
-        filePickBtn: document.getElementById('inbox-file-pick-btn'),
+        dropOverlay: document.getElementById('inbox-drop-overlay'),
         fileInput: document.getElementById('inbox-file-input'),
-        fileChip: document.getElementById('inbox-file-chip'),
         postBtn: document.getElementById('inbox-post-btn'),
         pullBtn: document.getElementById('inbox-pull-btn'),
     },
@@ -67,8 +65,52 @@ export const IXThread = {
 
     init() {
         this.bindEvents();
-        // Hide receiver-only chrome by default
-        if (this.elements.previewRail) this.elements.previewRail.style.display = 'none';
+        this._wireDropZone();
+        // Empty overlay starts visible — JS hides it once an inbox loads
+        if (this.elements.emptyOverlay) {
+            this.elements.emptyOverlay.style.display = '';
+        }
+    },
+
+    /**
+     * Drag-and-drop wiring on the editor-wrapper. Mirrors BB/BC's
+     * dragenter / dragover / dragleave / drop counter pattern but
+     * stays slim because Inbox is single-file and senders only —
+     * we don't need the full EditorAttachments machinery.
+     */
+    _wireDropZone() {
+        const zone = this.elements.wrapper;
+        const overlay = this.elements.dropOverlay;
+        if (!zone || !overlay) return;
+
+        let counter = 0;
+        const showOverlay = () => overlay.classList.add('active');
+        const hideOverlay = () => overlay.classList.remove('active');
+
+        zone.addEventListener('dragenter', (e) => {
+            if (this.mode !== 'sender' || !this.inbox) return;
+            e.preventDefault();
+            counter++;
+            showOverlay();
+        });
+        zone.addEventListener('dragover', (e) => {
+            if (this.mode !== 'sender' || !this.inbox) return;
+            e.preventDefault();
+        });
+        zone.addEventListener('dragleave', () => {
+            if (--counter <= 0) {
+                counter = 0;
+                hideOverlay();
+            }
+        });
+        zone.addEventListener('drop', async (e) => {
+            e.preventDefault();
+            counter = 0;
+            hideOverlay();
+            if (this.mode !== 'sender' || !this.inbox) return;
+            const file = e.dataTransfer?.files?.[0];
+            if (file) await this.attachFile(file);
+        });
     },
 
     // ── Events ───────────────────────────────────────────────────
@@ -119,18 +161,22 @@ export const IXThread = {
             });
         }
 
-        // ── File slot (sender only) ──
-        if (this.elements.filePickBtn) {
-            this.elements.filePickBtn.addEventListener('click', () => {
-                if (this.mode !== 'sender') return;
-                this.elements.fileInput?.click();
-            });
-        }
+        // ── File picker (sender only) — triggered from the empty
+        //    chips area when no chip is rendered, or from the chip's
+        //    swap action.
         if (this.elements.fileInput) {
             this.elements.fileInput.addEventListener('change', async (e) => {
                 const file = e.target.files?.[0];
                 if (file) await this.attachFile(file);
                 e.target.value = ''; // reset for re-pick of same file
+            });
+        }
+        // Click on empty chips area opens the file picker (mirrors BB/BC).
+        if (this.elements.chipsArea) {
+            this.elements.chipsArea.addEventListener('click', (e) => {
+                if (this.mode !== 'sender' || !this.inbox) return;
+                if (e.target.closest('.attachment-chip')) return;
+                this.elements.fileInput?.click();
             });
         }
 
@@ -187,12 +233,8 @@ export const IXThread = {
         this.mode = (me && inbox.owner_uid === me) ? 'receiver' : 'sender';
         this.elements.page?.setAttribute('data-mode', this.mode);
 
-        // UI scaffolding
-        if (this.elements.empty) this.elements.empty.style.display = 'none';
-        if (this.elements.body) this.elements.body.style.display = '';
-        if (this.elements.previewRail) {
-            this.elements.previewRail.style.display = this.mode === 'receiver' ? '' : 'none';
-        }
+        // Hide the empty-state overlay; show the editor scaffold.
+        if (this.elements.emptyOverlay) this.elements.emptyOverlay.style.display = 'none';
 
         await this.refreshFromServer({ silent: false });
         this._subscribeWS(inbox.id);
@@ -204,8 +246,8 @@ export const IXThread = {
         this.submissions = [];
         this.head = 0;
         this.mode = 'sender';
-        if (this.elements.empty) this.elements.empty.style.display = '';
-        if (this.elements.body) this.elements.body.style.display = 'none';
+        this.elements.page?.removeAttribute('data-mode');
+        if (this.elements.emptyOverlay) this.elements.emptyOverlay.style.display = '';
         if (this.elements.senderArea) this.elements.senderArea.value = '';
         if (this.elements.receiverArea) this.elements.receiverArea.value = '';
         this.renderFileChip(null);
@@ -318,8 +360,7 @@ export const IXThread = {
             this.elements.receiverArea.value = row?.receiver_text ?? '';
             this.elements.receiverArea.disabled = true;
         }
-        this.renderFileChip(row?.file_hash ?? null);
-        this.elements.filePickBtn?.style.setProperty('display', '');
+        this.renderFileChip(row?.file_hash ?? null, /*readOnly*/ false);
     },
 
     renderReceiverView() {
@@ -333,8 +374,6 @@ export const IXThread = {
             this.elements.receiverArea.disabled = false;
         }
         this.renderFileChip(row?.file_hash ?? null, /*readOnly*/ true);
-        // Receiver doesn't get the attach picker
-        this.elements.filePickBtn?.style.setProperty('display', 'none');
         this.renderPreviewRail();
     },
 
@@ -363,35 +402,61 @@ export const IXThread = {
         });
     },
 
+    /**
+     * Render the file chip into `.attachment-chips` using the same
+     * class structure BB / BC use, so the standard chip styling
+     * (state colours, hover, etc.) applies for free. 1-file max:
+     * we wipe the chips area and append at most one chip.
+     *
+     * Read-only mode (receiver viewing a sender's file) skips the
+     * remove button — `.attachment-chips.readonly` triggers the
+     * standard "no remove" CSS rule too.
+     */
     renderFileChip(hash, readOnly = false) {
-        const chip = this.elements.fileChip;
-        if (!chip) return;
+        const wrap = this.elements.chipsArea;
+        if (!wrap) return;
+        wrap.innerHTML = '';
+        wrap.classList.toggle('readonly', !!readOnly);
+
         if (!hash) {
-            chip.style.display = 'none';
-            chip.innerHTML = '';
-            if (this.elements.filePickBtn) this.elements.filePickBtn.style.display = '';
+            wrap.classList.remove('has-items');
             return;
         }
-        chip.style.display = '';
-        chip.innerHTML = '';
-        const link = document.createElement('a');
-        link.className = 'inbox-file-chip-name';
-        link.href = `/api/files/${hash}?inline=1`;
-        link.target = '_blank';
-        link.rel = 'noopener';
-        link.textContent = hash.substring(0, 16) + '…';
-        chip.appendChild(link);
+        wrap.classList.add('has-items');
+
+        const chip = document.createElement('div');
+        chip.className = 'attachment-chip is-synced';
+        chip.dataset.hash = hash;
+
+        const top = document.createElement('div');
+        top.className = 'attachment-chip-top';
+
+        const icon = document.createElement('a');
+        icon.className = 'attachment-chip-icon';
+        icon.href = `/api/files/${hash}?inline=1`;
+        icon.target = '_blank';
+        icon.rel = 'noopener';
+        icon.textContent = '📎';
+        top.appendChild(icon);
+
+        const name = document.createElement('span');
+        name.className = 'attachment-chip-name';
+        name.textContent = hash.substring(0, 12) + '…';
+        top.appendChild(name);
 
         if (!readOnly) {
             const remove = document.createElement('button');
             remove.type = 'button';
-            remove.className = 'inbox-file-chip-remove';
+            remove.className = 'attachment-chip-remove';
             remove.textContent = '×';
-            remove.addEventListener('click', () => this.detachFile());
-            chip.appendChild(remove);
-            // Keep PICK button hidden while a file is attached (1 max)
-            if (this.elements.filePickBtn) this.elements.filePickBtn.style.display = 'none';
+            remove.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.detachFile();
+            });
+            top.appendChild(remove);
         }
+        chip.appendChild(top);
+        wrap.appendChild(chip);
     },
 
     // ── Sender actions ───────────────────────────────────────────

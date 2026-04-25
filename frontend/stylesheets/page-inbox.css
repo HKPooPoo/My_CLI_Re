@@ -1,316 +1,233 @@
 /**
- * Inbox subsystem styling — list page + 3-window thread page.
- * Tone follows BC (`page-broadcast.css`); only the bits unique to
- * the many-to-one model live here.
+ * Inbox subsystem styling.
+ *
+ * Goal: visually identical scaffolding to BB / WT / BC. The Inbox
+ * THREAD page is structured exactly like BB log and BC channel —
+ * `.editor-wrapper` as drop zone, `.attachment-chips` at top,
+ * `.log-editor-row` (preview rail + textarea region) in the middle,
+ * `.drop-overlay` covering the textarea zone. The only Inbox-specific
+ * shape is the dual-textarea split inside `.log-editor-row` (sender
+ * + receiver stacked) — every other rule in this file is consumer-
+ * specific tweaks layered on top of shared editor scaffolding.
+ *
+ * The LIST page mirrors BC's `.broadcast-list-container` exactly,
+ * down to the same shapes / paddings / scrollbar treatment.
  */
 
-/* ── Inbox List Page ────────────────────────────────────────── */
+/* ── List page (mirror BC channel list) ─────────────────────── */
 
 .inbox-list-container {
-    flex: 1;
-    flex-direction: column;
-    align-items: center;
-    width: 100%;
-    height: 100%;
-    padding: 16px clamp(8px, 4vw, 32px);
-    box-sizing: border-box;
-    gap: 12px;
+    justify-content: space-around;
+    gap: var(--panel-gap);
+    width: var(--container-width);
+    max-width: var(--container-max-width);
+    margin: var(--container-margin);
+    padding: var(--panel-padding);
+    border: var(--border-line);
+    max-height: 86%;
 }
 
-.inbox-list-title {
-    font-weight: 600;
-    font-size: 1.1rem;
-    margin-bottom: 4px;
-    text-align: center;
-    width: 100%;
-    color: var(--brand);
+.inbox-list-container > .inbox-list-title {
+    position: absolute;
+    top: 0;
+    transform: translateY(-50%);
+    left: 16px;
+    background-color: var(--bg-secondary);
+    padding: var(--title-padding);
+    width: max-content;
+    transition: left var(--transition-normal) ease-in,
+                transform var(--transition-normal) ease-in;
 }
 
 .inbox-search-input {
+    border-bottom: var(--border-line);
+    padding: calc(var(--panel-gap) / 2);
+    font-size: var(--font-size);
     width: 100%;
-    max-width: var(--container-width);
-    padding: 8px 12px;
-    border: var(--border-line);
-    background: var(--bg-card);
-    color: var(--text-body);
-    font: inherit;
-    box-sizing: border-box;
+}
+
+.inbox-search-input:focus {
+    border-bottom-color: var(--text-orange);
 }
 
 .inbox-list-list-container {
-    flex: 1;
-    width: 100%;
-    max-width: var(--container-width);
+    border-bottom: var(--border-line);
+    height: clamp(192px, calc(var(--container-width) / 2), 56vh);
     overflow-y: auto;
     overflow-x: hidden;
-    gap: 6px;
-    padding: 4px 0;
+    scrollbar-width: thin;
+    scrollbar-color: var(--text-muted) var(--bg-card);
+}
+
+.inbox-list-list-container::-webkit-scrollbar { width: 4px; }
+.inbox-list-list-container::-webkit-scrollbar-track { background: var(--bg-card); }
+.inbox-list-list-container::-webkit-scrollbar-thumb {
+    background-color: var(--text-muted);
+    border-radius: 2px;
 }
 
 .inbox-list-list-item {
-    width: 100%;
-    background: var(--bg-card);
-    border: var(--border-line);
-    border-left: 4px solid transparent;
-    padding: 8px 12px;
-    box-sizing: border-box;
-    cursor: pointer;
-    transition: border-left-color 120ms ease, background-color 120ms ease;
-    position: relative;
-    flex-direction: column;
-    gap: 2px;
-}
-
-.inbox-list-list-item:hover {
-    background: color-mix(in srgb, var(--brand) 6%, var(--bg-card));
+    padding: calc(var(--panel-gap) / 4);
 }
 
 .inbox-list-list-item.active {
-    border-left-color: var(--brand);
-    background: color-mix(in srgb, var(--brand) 10%, var(--bg-card));
+    background: var(--brand);
+    color: #ffffff;
+    box-shadow: 0 2px 8px rgba(166, 46, 66, 0.28);
+}
+
+.inbox-list-list-item.active .inbox-list-tag,
+.inbox-list-list-item.active .inbox-list-meta,
+.inbox-list-list-item.active .inbox-list-role {
+    color: #ffffff;
 }
 
 .inbox-list-tag {
-    flex: 1;
-    width: 100%;
     background: transparent;
     border: none;
-    color: var(--text-body);
-    font-weight: 600;
-    font-size: 1rem;
+    color: inherit;
+    font: inherit;
+    width: 100%;
     padding: 0;
-    box-sizing: border-box;
+    outline: none;
 }
 
+.inbox-list-tag[readonly],
 .inbox-list-tag:disabled {
-    opacity: 0.65;
+    opacity: 0.6;
     cursor: default;
-    caret-color: transparent;
 }
 
 .inbox-list-meta,
 .inbox-list-role {
-    font-size: 0.78rem;
+    font-size: calc(var(--font-size) * 0.78);
     color: var(--text-muted);
 }
 
 #inbox-create-btn,
 #inbox-delete-btn {
-    align-self: center;
-    min-width: 120px;
-    padding: 8px 16px;
     border: var(--border-line);
-    background: var(--bg-card);
-    cursor: pointer;
-    font-weight: 600;
+    border-radius: var(--border-radius);
+    padding: 8px 0;
 }
 
-#inbox-create-btn:hover { background: color-mix(in srgb, var(--brand) 10%, var(--bg-card)); }
-#inbox-delete-btn:hover { background: color-mix(in srgb, #c00 10%, var(--bg-card)); }
+/* ── Thread page (mirror BB log / BC channel scaffolding) ───── */
 
-/* ── Inbox Thread Page (3 windows) ──────────────────────────── */
+/* The page is `flex-direction: column` by default (style.css); the
+   editor-wrapper takes flex:1, the action row sits underneath, and
+   the empty overlay floats over everything via absolute positioning. */
 
-.inbox-thread-container {
+#inbox-drop-zone {
+    /* `.editor-wrapper` already has flex:1; nothing else needed. */
+}
+
+/* Stacked sender + receiver textareas inside the standard
+   `.log-editor-row` (which is flex-row: rail + content). The content
+   half here flips back to flex-column so the two textareas stack
+   vertically. Each section is its own labelled mini-pane. */
+.inbox-textareas {
+    flex: 1;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+}
+
+.inbox-textarea-section {
+    flex: 1;
+    flex-direction: column;
+    min-height: 0;
+    border: var(--border-line);
+    position: relative;
+}
+
+.inbox-textarea-label {
+    position: absolute;
+    top: 0;
+    transform: translateY(-50%);
+    left: 8px;
+    background-color: var(--bg-secondary);
+    padding: var(--title-padding);
+    font-size: calc(var(--font-size) * 0.85);
+    width: max-content;
+    z-index: 1;
+}
+
+#inbox-sender-textarea,
+#inbox-receiver-textarea {
     flex: 1;
     width: 100%;
-    height: 100%;
-    flex-direction: column;
-    align-items: stretch;
-    padding: 16px clamp(8px, 4vw, 32px);
-    box-sizing: border-box;
-    overflow: hidden;
+    margin: 0;
+    padding: 12px 10px 8px 10px;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--text-body);
+    font: inherit;
+    font-size: var(--textbox-font-size);
+    resize: none;
 }
 
-.inbox-thread-empty {
-    flex: 1;
+#inbox-sender-textarea:disabled,
+#inbox-receiver-textarea:disabled {
+    opacity: 0.65;
+    cursor: default;
+    caret-color: transparent;
+    background: color-mix(in srgb, var(--text-muted) 6%, transparent);
+}
+
+/* Sender mode hides the receiver-only preview rail. Same gating
+   pattern WT uses for THEY-side controls when they're irrelevant. */
+.page[data-mode="sender"] #inbox-preview-rail {
+    display: none;
+}
+
+/* Drop-overlay inset — Inbox has the same 48 px preview rail + 8 px
+   gap as BB / BC, so the dashed frame should clear the rail. Reuses
+   the same offset rule the editor-attachments stylesheet uses for
+   #bb-drop-zone / #bc-drop-zone. */
+#inbox-drop-zone .drop-overlay {
+    left: calc(8vw + 56px);
+}
+
+/* Action row at the bottom — POST + PULL. Reuses `.vcs-button-container`
+   so it inherits the BB BRANCH page's button row geometry without
+   having to re-derive the proportions. */
+.inbox-action-row {
+    flex: 0 0 auto;
+    flex-direction: row;
+    justify-content: center;
+    gap: var(--panel-gap);
+    padding: 12px 0;
+}
+
+.inbox-action-row .vcs-btn {
+    min-width: 96px;
+}
+
+/* Empty-state overlay — shown when no inbox is selected. Same
+   "centered card on dim backdrop" treatment as `#auth-locked-overlay`
+   so guest UX and "select-something-first" UX feel uniform. */
+.inbox-empty-overlay {
+    position: absolute;
+    inset: 0;
     align-items: center;
     justify-content: center;
     color: var(--text-muted);
     font-style: italic;
+    font-size: calc(var(--font-size) * 1.05);
+    background: color-mix(in srgb, var(--bg-page) 92%, transparent);
+    pointer-events: none;
+    /* JS toggles `display: none` once an inbox is loaded. */
 }
 
-.inbox-thread-body {
-    flex: 1;
-    flex-direction: row;
-    align-items: stretch;
-    gap: 12px;
-    overflow: hidden;
-}
-
-/* Receiver-only preview rail; sender mode hides it inline. */
-.inbox-thread-body .page-preview-rail {
-    flex: 0 0 auto;
-    width: 48px;
-    flex-direction: column;
-    gap: 6px;
-    padding: 6px 0;
-    overflow-y: auto;
-}
-
-.inbox-thread-windows {
-    flex: 1;
-    flex-direction: column;
-    gap: 8px;
-    overflow: hidden;
-}
-
-.inbox-window {
-    flex: 1;
-    flex-direction: column;
-    border: var(--border-line);
-    background: var(--bg-card);
-    border-radius: 4px;
-    overflow: hidden;
-    min-height: 80px;
-}
-
-.inbox-window-title {
-    flex: 0 0 auto;
-    padding: 4px 10px;
-    font-size: 0.72rem;
-    font-weight: 700;
-    letter-spacing: 0.04em;
-    color: var(--brand);
-    background: var(--bg-page);
-    border-bottom: 1px solid var(--border-subtle);
-}
-
-.inbox-file-window {
-    flex: 0 0 auto;
-}
-
-.inbox-file-slot {
-    flex-direction: row;
-    align-items: center;
-    gap: 8px;
-    padding: 8px 12px;
-}
-
-.inbox-file-pick-btn {
-    padding: 6px 14px;
-    background: var(--bg-page);
-    border: var(--border-line);
-    cursor: pointer;
-    font-weight: 600;
-    color: var(--brand);
-}
-
-.inbox-file-pick-btn:hover {
-    background: color-mix(in srgb, var(--brand) 10%, var(--bg-page));
-}
-
-.inbox-file-chip {
-    flex-direction: row;
-    align-items: center;
-    gap: 6px;
-    padding: 4px 10px;
-    background: var(--bg-page);
-    border: var(--border-line);
-}
-
-.inbox-file-chip-name {
-    color: var(--brand);
-    text-decoration: none;
-    font-family: monospace;
-}
-
-.inbox-file-chip-name:hover {
-    text-decoration: underline;
-}
-
-.inbox-file-chip-remove {
-    background: transparent;
-    border: none;
-    color: var(--text-muted);
-    cursor: pointer;
-    font-size: 1rem;
-    padding: 0 4px;
-}
-
-.inbox-file-chip-remove:hover { color: var(--brand); }
-
-.inbox-sender-window textarea,
-.inbox-receiver-window textarea {
-    flex: 1;
-    border: none;
-    background: transparent;
-    color: var(--text-body);
-    font: inherit;
-    padding: 10px 12px;
-    box-sizing: border-box;
-    resize: none;
-    outline: none;
-    width: 100%;
-}
-
-.inbox-receiver-window textarea:disabled,
-.inbox-sender-window textarea:disabled {
-    opacity: 0.7;
-    cursor: default;
-    caret-color: transparent;
-    background: color-mix(in srgb, var(--text-muted) 6%, var(--bg-card));
-}
-
-/* Action row at the bottom of the thread page. POST docks left, PULL right. */
-.inbox-thread-actions {
-    flex: 0 0 auto;
-    flex-direction: row;
-    gap: 8px;
-    padding: 8px 0 0 0;
-    justify-content: flex-end;
-}
-
-.inbox-action-btn {
-    padding: 8px 18px;
-    border: var(--border-line);
-    background: var(--bg-card);
-    cursor: pointer;
-    font-weight: 600;
-    color: var(--brand);
-    min-width: 100px;
-}
-
-.inbox-action-btn:hover {
-    background: color-mix(in srgb, var(--brand) 10%, var(--bg-card));
-}
-
-.inbox-action-btn[aria-busy="true"] {
-    opacity: 0.6;
-    cursor: wait;
-}
-
-#inbox-post-btn { /* docks left within the action row by being first child */
-    margin-right: auto;
-}
-
-/* Preview block — inbox-specific label visible inside the standard
-   .page-preview-block scaffold from page.css. */
-.inbox-preview-block-label {
-    font-size: 0.7rem;
-    font-family: monospace;
-    color: var(--text-body);
-    padding: 2px 4px;
-    text-align: center;
-    overflow: hidden;
-    white-space: nowrap;
-}
-
-.page-preview-block.active .inbox-preview-block-label {
-    color: #fff;
-}
-
-/* Sender mode hides receiver-only chrome via the data-mode attribute
-   set by JS on .page[data-page="inbox-thread"]. */
-.page[data-mode="sender"] #inbox-preview-rail {
-    display: none !important;
-}
-
-/* Mobile: stack rail above windows when narrow. */
+/* Mobile: the rail (already visible only in receiver mode) flips
+   to a horizontal strip above the textareas, mirroring BB / BC's
+   own narrow-screen treatment. */
 @media (max-width: 640px) {
-    .inbox-thread-body {
+    .log-editor-row {
         flex-direction: column;
     }
-    .inbox-thread-body .page-preview-rail {
+    #inbox-preview-rail {
         flex-direction: row;
         width: 100%;
         height: 36px;

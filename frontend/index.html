@@ -520,62 +520,54 @@
                     <div class="misc-action-container" id="bc-config-action"></div>
                 </div>
             </div>
-            <!-- Inbox: 3-window submission thread. Sender mode shows only their own
-                 row; receiver (inbox owner) gets push/pull + preview rail across
-                 all submitters. JS toggles `data-mode="sender|receiver"` on the
-                 page root to gate the receiver-only chrome. -->
+            <!-- Inbox thread page — same skeleton as BB log / BC channel.
+                 `.editor-wrapper` is the drop zone; chips at top, log-editor-row
+                 (preview rail + stacked sender/receiver textareas) in the middle,
+                 drop-overlay over the textarea region. POST + PULL live in
+                 `.vcs-button-container` at the bottom (CAST/COMMIT pattern).
+                 JS sets `data-mode="sender|receiver"` to gate the rail visibility
+                 and which textarea is editable. -->
             <div class="page can-push-pull have-feature show-branch" data-page="inbox-thread">
-                <div class="inbox-thread-container" id="inbox-thread-container">
-                    <div class="inbox-thread-empty" id="inbox-thread-empty"
-                         data-i18n="inbox.noInboxSelected">SELECT AN INBOX FROM THE LIST</div>
-
-                    <div class="inbox-thread-body" id="inbox-thread-body" style="display:none">
+                <div class="editor-wrapper" id="inbox-drop-zone">
+                    <div class="attachment-chips" id="inbox-attachment-chips"></div>
+                    <div class="log-editor-row">
                         <div class="page-preview-rail" id="inbox-preview-rail"></div>
-
-                        <div class="inbox-thread-windows">
-                            <!-- Window 1: file attach (1 max) -->
-                            <div class="inbox-window inbox-file-window">
-                                <div class="inbox-window-title" data-i18n="inbox.fileWindow">FILE</div>
-                                <div class="inbox-file-slot" id="inbox-file-slot">
-                                    <button type="button" class="inbox-file-pick-btn"
-                                            id="inbox-file-pick-btn"
-                                            data-i18n="inbox.attachFile">+ ATTACH FILE</button>
-                                    <div class="inbox-file-chip" id="inbox-file-chip" style="display:none"></div>
-                                </div>
-                                <input type="file" id="inbox-file-input" hidden>
-                            </div>
-
-                            <!-- Window 2: sender text -->
-                            <div class="inbox-window inbox-sender-window">
-                                <div class="inbox-window-title" data-i18n="inbox.senderWindow">SENDER TEXT</div>
+                        <div class="inbox-textareas">
+                            <div class="inbox-textarea-section">
+                                <div class="inbox-textarea-label crt-text-orange"
+                                     data-i18n="inbox.senderWindow">SUBMISSION</div>
                                 <textarea id="inbox-sender-textarea"
                                           data-i18n-placeholder="inbox.senderPlaceholder"
                                           placeholder="What you want to submit..."></textarea>
                             </div>
-
-                            <!-- Window 3: receiver text -->
-                            <div class="inbox-window inbox-receiver-window">
-                                <div class="inbox-window-title" data-i18n="inbox.receiverWindow">RECEIVER TEXT</div>
+                            <div class="inbox-textarea-section">
+                                <div class="inbox-textarea-label crt-text-orange"
+                                     data-i18n="inbox.receiverWindow">FEEDBACK</div>
                                 <textarea id="inbox-receiver-textarea"
                                           data-i18n-placeholder="inbox.receiverPlaceholder"
                                           placeholder="Feedback from the inbox owner..."></textarea>
                             </div>
                         </div>
-
-                        <div class="inbox-thread-actions">
-                            <button type="button" class="inbox-action-btn" id="inbox-post-btn"
-                                    data-hint="hints.inbox.post"
-                                    data-i18n="inbox.postBtn">POST</button>
-                            <button type="button" class="inbox-action-btn" id="inbox-pull-btn"
-                                    data-hint="hints.inbox.pull"
-                                    data-i18n="inbox.pullBtn">PULL</button>
-                        </div>
                     </div>
+                    <input type="file" id="inbox-file-input" hidden>
+                    <div class="drop-overlay" id="inbox-drop-overlay"
+                         data-i18n="files.dropZoneHint">DROP FILES HERE</div>
                 </div>
+                <div class="vcs-button-container inbox-action-row">
+                    <button id="inbox-pull-btn" class="vcs-btn crt-text-green"
+                            data-hint="hints.inbox.pull"
+                            data-i18n="inbox.pullBtn">PULL</button>
+                    <button id="inbox-post-btn" class="vcs-btn crt-text-green"
+                            data-hint="hints.inbox.post"
+                            data-i18n="inbox.postBtn">POST</button>
+                </div>
+                <div class="inbox-empty-overlay" id="inbox-empty-overlay"
+                     data-i18n="inbox.noInboxSelected">SELECT AN INBOX FROM THE LIST</div>
             </div>
             <div class="page have-feature" data-page="inbox-list">
                 <div class="inbox-list-container">
-                    <div class="inbox-list-title crt-text-orange" data-i18n="inbox.listTitle">INBOX REGISTRY</div>
+                    <div class="inbox-list-title crt-text-orange"
+                         data-i18n="inbox.listTitle">INBOX REGISTRY</div>
                     <input type="text" class="inbox-search-input" id="inbox-search"
                            data-i18n-placeholder="inbox.searchPlaceholder"
                            placeholder="SEARCH INBOXES...">
