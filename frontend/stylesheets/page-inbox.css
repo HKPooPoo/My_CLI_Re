@@ -283,16 +283,47 @@
     display: none;
 }
 
-/* Preview-block label — vertical-rl text fits the 48 px rail block.
-   Uses the same writing-mode pattern `.head-indicator` uses elsewhere
-   in the project for narrow vertical text. The leading glyph (✓ for
-   graded, · for ungraded) doubles as a status badge so the receiver
-   reads grading state without colour cues alone. */
+/* Inbox preview blocks are click-to-navigate only — submissions
+   can't be reordered (the order is server-authoritative by submission
+   timestamp). Suppress the drag affordance the BB/BC scaffold paints
+   by default: hide the grip-handle pseudo-element and change cursor
+   from `grab` to `pointer` so the visual matches the actual behaviour. */
 .page[data-page="inbox-thread"] .page-preview-block {
     align-items: center;
     justify-content: center;
     padding: 4px 2px;
+    cursor: pointer;
 }
+.page[data-page="inbox-thread"] .page-preview-block::after {
+    display: none;
+}
+
+/* The graded marker (✓) lives in its own non-rotated span anchored
+   to the top of the block, NOT inside the rotated uid label. Earlier
+   the marker was prefixed onto the label string, but
+   `writing-mode: vertical-rl` + `transform: rotate(180deg)` flipped
+   it to the BOTTOM of the block as an upside-down chevron — confusing
+   UX (looked like an unknown icon). Ungraded blocks simply omit the
+   span; the dashed accent border on `.unsynced` is the ungraded cue. */
+.inbox-preview-block-marker {
+    flex: 0 0 auto;
+    font-family: monospace;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 1;
+    color: var(--brand);
+    margin-bottom: 2px;
+}
+.page-preview-block.active .inbox-preview-block-marker,
+.page-preview-block.peeking .inbox-preview-block-marker {
+    color: #ffffff;
+}
+@media (hover: hover) {
+    .page-preview-block:hover .inbox-preview-block-marker {
+        color: #ffffff;
+    }
+}
+
 .inbox-preview-block-label {
     writing-mode: vertical-rl;
     transform: rotate(180deg);

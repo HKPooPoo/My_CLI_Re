@@ -556,11 +556,20 @@ export const IXThread = {
             if (idx === this.head) block.classList.add('active');
             if (row.feedback_at === null) block.classList.add('unsynced'); // ungraded yet
             block.dataset.head = idx;
-            // Block content: short label = sender uid + feedback marker
+            // Graded blocks carry an unrotated ✓ badge at the top of
+            // the block. Kept separate from the rotated uid label so
+            // the checkmark stays upright. Ungraded blocks rely on the
+            // dashed accent border (`.unsynced`) as the visual cue —
+            // no badge needed.
+            if (row.feedback_at !== null) {
+                const marker = document.createElement('span');
+                marker.className = 'inbox-preview-block-marker';
+                marker.textContent = '✓';
+                block.appendChild(marker);
+            }
             const label = document.createElement('span');
             label.className = 'inbox-preview-block-label';
-            const graded = row.feedback_at !== null ? '✓' : '·';
-            label.textContent = `${graded} ${row.sender_uid}`;
+            label.textContent = row.sender_uid;
             block.appendChild(label);
 
             block.addEventListener('click', async () => {
