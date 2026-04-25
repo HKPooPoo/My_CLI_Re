@@ -1,7 +1,8 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-  <!-- User figure (head + body silhouette) -->
-  <circle cx="9" cy="7" r="3.6"/>
-  <path d="M2 19.5c0-3.866 3.134-7 7-7s7 3.134 7 7v1.5H2v-1.5z"/>
-  <!-- Checkmark at bottom-right corner -->
-  <path d="M22.7 14.7l-5.6 5.6-3.1-3.1 1.6-1.6 1.5 1.5 4-4z"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+  <!-- Person head, top-left -->
+  <circle cx="9" cy="7.5" r="3.5"/>
+  <!-- Person shoulders, U-shape opening downward -->
+  <path d="M2 21v-1c0-3.31 3.13-6 7-6s7 2.69 7 6v1"/>
+  <!-- Bold checkmark at bottom-right -->
+  <path d="M14.5 17.5l3 3 6-7"/>
 </svg>
