@@ -36,6 +36,7 @@ import { getHKTTimestamp } from './utils.js';
 import db from './indexedDB.js';
 
 const SAVE_DEBOUNCE_KEY = 'inboxAutoSave';
+const PROMPT_SAVE_KEY  = 'inboxPromptSave';
 
 /**
  * Compact `MM-DD HH:MM` formatter for the section timestamp badge.
@@ -62,8 +63,14 @@ export const IXThread = {
         receiverEmpty: document.getElementById('inbox-receiver-empty'),
         chipsArea: document.getElementById('inbox-attachment-chips'),
         previewRail: document.getElementById('inbox-preview-rail'),
+        // PROMPT — inbox.description (assignment text). Owner-writable,
+        // sender-readable. Auto-saves to server (metadata flow, NOT
+        // through POST/PULL which is for per-submission content).
+        promptArea: document.getElementById('inbox-prompt-textarea'),
+        promptSection: document.querySelector('.inbox-textarea-section.is-prompt'),
+        promptUid: document.getElementById('inbox-prompt-uid'),
         senderArea: document.getElementById('inbox-sender-textarea'),
-        senderSection: document.querySelector('.inbox-textarea-section:not(.is-feedback)'),
+        senderSection: document.querySelector('.inbox-textarea-section.is-submission'),
         senderUid: document.getElementById('inbox-sender-uid'),
         senderTs: document.getElementById('inbox-sender-ts'),
         receiverArea: document.getElementById('inbox-receiver-textarea'),
@@ -215,6 +222,18 @@ export const IXThread = {
             this.elements.receiverArea.addEventListener('input', () => {
                 if (this.mode !== 'receiver' || !this.inbox) return;
                 this.scheduleSaveReceiver();
+            });
+        }
+
+        // ── Prompt textarea (owner only) ──
+        // Auto-saves the inbox description to server. Different sync
+        // model from POST/PULL — description is metadata, owner writes
+        // freely without manual commit. Debounce avoids hammering
+        // the server on every keystroke.
+        if (this.elements.promptArea) {
+            this.elements.promptArea.addEventListener('input', () => {
+                if (this.mode !== 'receiver' || !this.inbox) return;
+                this.scheduleSavePrompt();
             });
         }
 
@@ -415,6 +434,13 @@ export const IXThread = {
         const me = localStorage.getItem('currentUser') || '';
         const ownerLabel = this.inbox?.owner_uid || '';
 
+        // PROMPT — read-only for senders, populated from inbox.description.
+        if (this.elements.promptArea) {
+            this.elements.promptArea.value = this.inbox?.description ?? '';
+            this.elements.promptArea.disabled = true;
+        }
+        if (this.elements.promptUid) this.elements.promptUid.textContent = ownerLabel;
+
         if (this.elements.senderArea) {
             this.elements.senderArea.value = row?.sender_text ?? '';
             this.elements.senderArea.disabled = false;
@@ -455,6 +481,16 @@ export const IXThread = {
     renderReceiverView() {
         const row = this.submissions[this.head];
         const me = localStorage.getItem('currentUser') || '';
+
+        // PROMPT — owner-editable. Skip overwriting if the owner is
+        // mid-typing (active focus), so a server pull doesn't trample
+        // unsaved local edits.
+        if (this.elements.promptArea
+            && document.activeElement !== this.elements.promptArea) {
+            this.elements.promptArea.value = this.inbox?.description ?? '';
+        }
+        if (this.elements.promptArea) this.elements.promptArea.disabled = false;
+        if (this.elements.promptUid) this.elements.promptUid.textContent = me;
 
         if (this.elements.senderArea) {
             this.elements.senderArea.value = row?.sender_text ?? '';
@@ -584,6 +620,37 @@ export const IXThread = {
         }
         chip.appendChild(top);
         wrap.appendChild(chip);
+    },
+
+    // ── Owner-only: prompt (description) auto-save ───────────────
+
+    /**
+     * Owner edits inbox.description → debounce 200ms → PATCH to
+     * server. Different from POST: this is metadata, written
+     * automatically without an explicit commit gesture. Updates the
+     * in-memory inbox + IDB cache so the next list-render reflects
+     * the new prompt without a roundtrip.
+     */
+    scheduleSavePrompt() {
+        this.timers.schedule(PROMPT_SAVE_KEY, async () => {
+            if (!this.inbox || this.mode !== 'receiver') return;
+            const text = this.elements.promptArea?.value ?? '';
+            // Optimistic local update — UI already shows the text.
+            this.inbox.description = text;
+            try {
+                await InboxService.update(this.inbox.id, { description: text });
+                // Keep the IDB cache fresh so dashboard / list reads
+                // see the same text without a server roundtrip.
+                await IXMeta.upsertInbox({
+                    server_inbox_id: this.inbox.id,
+                    description: text,
+                });
+            } catch (e) {
+                console.error('Inbox prompt save failed', e);
+                // Don't toast — debounced save failures are noisy.
+                // Next attempt or manual PULL will reconcile.
+            }
+        }, T('frontend.input.bbSaveDebounce'));
     },
 
     // ── Sender actions ───────────────────────────────────────────

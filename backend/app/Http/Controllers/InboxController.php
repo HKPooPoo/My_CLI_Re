@@ -45,7 +45,7 @@ class InboxController extends Controller
 
         $request->validate([
             'name'         => 'required|string|max:255',
-            'description'  => 'nullable|string|max:500',
+            'description'  => 'nullable|string|max:65535',
             'whitelist_id' => 'nullable|integer',
         ]);
 
@@ -73,7 +73,7 @@ class InboxController extends Controller
 
         $request->validate([
             'name'        => 'sometimes|string|max:255',
-            'description' => 'sometimes|nullable|string|max:500',
+            'description' => 'sometimes|nullable|string|max:65535',
         ]);
 
         if ($request->has('name')) {

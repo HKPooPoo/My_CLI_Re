@@ -542,7 +542,22 @@
                     <div class="log-editor-row">
                         <div class="page-preview-rail" id="inbox-preview-rail"></div>
                         <div class="inbox-textareas">
-                            <div class="inbox-textarea-section">
+                            <!-- INBOX TEXT — the assignment / instructions /
+                                 prompt the inbox owner writes. Sender (student)
+                                 reads this before submitting. Auto-saves to
+                                 server on debounce (metadata, not per-submission
+                                 content, so doesn't go through POST/PULL). -->
+                            <div class="inbox-textarea-section is-prompt">
+                                <div class="inbox-textarea-label">
+                                    <span class="inbox-textarea-label-name"
+                                          data-i18n="inbox.promptWindow">INBOX TEXT</span>
+                                    <span class="inbox-textarea-uid" id="inbox-prompt-uid"></span>
+                                </div>
+                                <textarea id="inbox-prompt-textarea"
+                                          data-i18n-placeholder="inbox.promptPlaceholder"
+                                          placeholder="Assignment instructions, deadline, expected format..."></textarea>
+                            </div>
+                            <div class="inbox-textarea-section is-submission">
                                 <div class="inbox-textarea-label">
                                     <span class="inbox-textarea-label-name"
                                           data-i18n="inbox.senderWindow">SUBMISSION</span>

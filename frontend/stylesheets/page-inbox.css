@@ -242,11 +242,20 @@
     font-size: calc(var(--font-size) * 1.05);
     line-height: 1.6;
 }
-.page[data-mode="receiver"][data-empty-submissions="true"] .inbox-textareas {
+/* Hide only SUBMISSION + FEEDBACK panes on empty-submissions —
+   the PROMPT pane stays visible so the owner can keep writing the
+   assignment text while waiting for the first submission to land. */
+.page[data-mode="receiver"][data-empty-submissions="true"] .inbox-textarea-section.is-submission,
+.page[data-mode="receiver"][data-empty-submissions="true"] .inbox-textarea-section.is-feedback {
     display: none;
 }
 .page[data-mode="receiver"][data-empty-submissions="true"] .inbox-receiver-empty {
     display: flex;
+}
+/* When subs are empty the PROMPT pane stretches to fill the
+   freed-up vertical space so it doesn't sit cramped. */
+.page[data-mode="receiver"][data-empty-submissions="true"] .inbox-textarea-section.is-prompt {
+    flex: 1;
 }
 
 /* ── Sender mode FEEDBACK pane proportions ────────────────────
@@ -282,6 +291,37 @@
 .page[data-mode="sender"] #inbox-preview-rail {
     display: none;
 }
+
+/* Inbox-prompt textarea — the owner-written assignment text /
+   instructions. Sender mode renders it read-only (slate bg via
+   the existing :disabled rule). The pane sits at the top of the
+   stack so readers see "what's the task" before scrolling to
+   their own SUBMISSION. */
+#inbox-prompt-textarea {
+    flex: 1;
+    width: 100%;
+    margin: 0;
+    padding: 14px 12px 10px 12px;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--text-body);
+    font: inherit;
+    font-size: var(--textbox-font-size);
+    resize: none;
+}
+#inbox-prompt-textarea:disabled {
+    background: var(--bg-page);
+    color: var(--text-muted);
+    cursor: default;
+    caret-color: transparent;
+}
+
+/* PROMPT pane sizing — the assignment text doesn't usually need as
+   much room as the SUBMISSION / FEEDBACK panes. Default to 0.6
+   weight (smaller than the other two's flex:1) so the writing area
+   stays prominent. */
+.inbox-textarea-section.is-prompt { flex: 0.6; }
 
 /* Preview-block label — vertical-rl text fits the 48 px rail block.
    Uses the same writing-mode pattern `.head-indicator` uses elsewhere
