@@ -151,8 +151,10 @@ export const IXList = {
                         }
                     } catch (e) {
                         msg.close();
-                        const isUserError = e.status >= 400 && e.status < 500;
-                        BBMessage.error(isUserError ? (e.message || t('inbox.createFailed')) : t('inbox.createFailed'));
+                        const status = e.status || e.response?.status;
+                        if (status === 403)      BBMessage.error(t('inbox.titleRequired'));
+                        else if (status === 409) BBMessage.error(t('inbox.renameTaken'));
+                        else                     BBMessage.error(t('inbox.createFailed'));
                     }
                 },
             });
@@ -181,8 +183,10 @@ export const IXList = {
                         await this.fetchAndRender();
                     } catch (e) {
                         msg.close();
-                        const isUserError = e.status >= 400 && e.status < 500;
-                        BBMessage.error(isUserError ? (e.message || t('inbox.deleteFailed')) : t('inbox.deleteFailed'));
+                        const status = e.status || e.response?.status;
+                        if (status === 403)      BBMessage.error(t('inbox.notOwner'));
+                        else if (status === 404) BBMessage.error(t('inbox.errInboxNotFound'));
+                        else                     BBMessage.error(t('inbox.deleteFailed'));
                     }
                 },
             });
@@ -283,6 +287,7 @@ export const IXList = {
                     e.target.value = inbox.name;
                     return BBMessage.error(t('inbox.nameEmpty'));
                 }
+                if (newName === inbox.name) return;  // no-op
                 if (!this.isOwnerOf(inbox)) {
                     e.target.value = inbox.name;
                     return BBMessage.error(t('inbox.notOwner'));
@@ -291,10 +296,16 @@ export const IXList = {
                     await InboxService.update(inbox.id, { name: newName });
                     inbox.name = newName;
                     this.updateNaviText(newName);
+                    BBMessage.success(t('inbox.renameComplete'));
                 } catch (err) {
                     e.target.value = inbox.name;
-                    const isUserError = err.status >= 400 && err.status < 500;
-                    BBMessage.error(isUserError ? (err.message || t('inbox.renameFailed')) : t('inbox.renameFailed'));
+                    // Map status to localized message — never surface
+                    // backend's raw English (e.g. 'NAME ALREADY TAKEN').
+                    const status = err.status || err.response?.status;
+                    if (status === 409)      BBMessage.error(t('inbox.renameTaken'));
+                    else if (status === 403) BBMessage.error(t('inbox.notOwner'));
+                    else if (status === 404) BBMessage.error(t('inbox.errInboxNotFound'));
+                    else                     BBMessage.error(t('inbox.renameFailed'));
                 }
             });
             nameInput.addEventListener('click', e => e.stopPropagation());

@@ -368,6 +368,14 @@ export const IXThread = {
 
         const msg = silent ? null : BBMessage.loading(t('inbox.pulling'));
 
+        // Snapshot pre-fetch state so we can detect transitions:
+        //   - receiver: submission count grew → "new submission" toast
+        //   - sender:   canSubmit flipped     → eligibility toast,
+        //               feedback_at advanced  → "new feedback" toast
+        const prevSubsCount = this.submissions.length;
+        const prevCanSubmit = this.canSubmit;
+        const prevFeedbackAt = this.submissions[0]?.feedback_at ?? null;
+
         try {
             if (this.mode === 'receiver') {
                 const data = await InboxService.fetchSubmissions(this.inbox.id, signal);
@@ -378,11 +386,30 @@ export const IXThread = {
                 if (this.head >= this.submissions.length) this.head = Math.max(0, this.submissions.length - 1);
                 this.renderReceiverView();
                 this._syncGlobalButtons();
+                // New-submission toast on silent re-pull. Compare counts
+                // (a strict increase means at least one new row landed).
+                if (silent && this.submissions.length > prevSubsCount) {
+                    const newest = this.submissions[0];
+                    BBMessage.info(t('inbox.newSubmissionArrived',
+                        { sender: newest?.sender_uid ?? '?' }));
+                }
             } else {
                 const data = await InboxService.getMySubmission(this.inbox.id, signal);
                 if (signal.aborted) return;
                 const row = data?.submission ?? null;
                 this.canSubmit = !!data?.can_submit;
+                // Eligibility transition toasts (silent refresh only — a
+                // user-initiated PULL already gets a 'PULLED' toast).
+                if (silent && prevCanSubmit !== this.canSubmit) {
+                    if (this.canSubmit) BBMessage.success(t('inbox.eligibilityGranted'));
+                    else BBMessage.info(t('inbox.eligibilityRevoked'));
+                }
+                // New-feedback toast — owner wrote / changed feedback
+                // since last fetch.
+                if (silent && row?.feedback_at && row.feedback_at !== prevFeedbackAt) {
+                    BBMessage.info(t('inbox.feedbackArrived',
+                        { owner: this.inbox?.owner_uid ?? '?' }));
+                }
                 if (row) {
                     const me = localStorage.getItem('currentUser');
                     await IXSubmissions.upsert({
@@ -419,8 +446,10 @@ export const IXThread = {
             if (signal.aborted || e.name === 'AbortError') return;
             console.error('IXThread refresh failed', e);
             msg?.close();
-            const isUserError = e.status >= 400 && e.status < 500;
-            BBMessage.error(isUserError ? (e.message || t('inbox.pullFailed')) : t('inbox.pullFailed'));
+            const status = e.status || e.response?.status;
+            if (status === 403)      BBMessage.error(t('inbox.notOwner'));
+            else if (status === 404) BBMessage.error(t('inbox.errInboxNotFound'));
+            else                     BBMessage.error(t('inbox.pullFailed'));
         }
     },
 
@@ -739,8 +768,18 @@ export const IXThread = {
         } catch (e) {
             console.error('Inbox post failed', e);
             msg.close();
-            const isUserError = e.status >= 400 && e.status < 500;
-            BBMessage.error(isUserError ? (e.message || t('inbox.postFailed')) : t('inbox.postFailed'));
+            const status = e.status || e.response?.status;
+            if (status === 403) {
+                BBMessage.error(t('inbox.errNotAuthorisedSubmit'));
+                // Force-refresh so the UI catches up to the
+                // server's revoked-eligibility state immediately
+                // — banner appears, button hides.
+                await this.refreshFromServer({ silent: true });
+            } else if (status === 404) {
+                BBMessage.error(t('inbox.errInboxNotFound'));
+            } else {
+                BBMessage.error(t('inbox.postFailed'));
+            }
         }
     },
 
@@ -784,8 +823,10 @@ export const IXThread = {
         } catch (e) {
             console.error('Inbox feedback post failed', e);
             msg.close();
-            const isUserError = e.status >= 400 && e.status < 500;
-            BBMessage.error(isUserError ? (e.message || t('inbox.feedbackPostFailed')) : t('inbox.feedbackPostFailed'));
+            const status = e.status || e.response?.status;
+            if (status === 403)      BBMessage.error(t('inbox.notOwner'));
+            else if (status === 404) BBMessage.error(t('inbox.errInboxNotFound'));
+            else                     BBMessage.error(t('inbox.feedbackPostFailed'));
         }
     },
 
