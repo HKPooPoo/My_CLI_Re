@@ -1,9 +1,8 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-  <!-- Person silhouette: filled head + filled body, top-left -->
-  <circle cx="7.5" cy="6" r="3.5"/>
-  <path d="M2 18c0-2.76 2.74-5 5.5-5s5.5 2.24 5.5 5v3H2z"/>
-  <!-- Check badge: filled circle with check-shaped hole (evenodd carves
-       the check out so the button background shows through, giving the
-       classic "filled circle with white check" silhouette) -->
-  <path fill-rule="evenodd" d="M18 12a5 5 0 1 0 0 10 5 5 0 0 0 0-10zm-1.1 7.55L14.5 17.15l1.05-1.05 1.35 1.35 3.4-3.4 1.05 1.05z"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <!-- Head: open circle, top-left -->
+  <circle cx="8" cy="6" r="3.5"/>
+  <!-- Body: U-shape outline, x ≤ 14 (no overlap with check) -->
+  <path d="M2 19c0-3 2.5-5 6-5s6 2 6 5v2H2z"/>
+  <!-- Check: thick chevron, bottom-right corner, x ≥ 15 -->
+  <path d="M15 18l3 3 5.5-5.5"/>
 </svg>
