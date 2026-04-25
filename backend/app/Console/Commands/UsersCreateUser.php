@@ -12,17 +12,20 @@ use Illuminate\Support\Facades\Hash;
  * doesn't fit the S{year}{NNNN} batch generator.
  *
  *   php artisan users:create-user Lecturer01 --title=SEHH2238
- *   php artisan users:create-user admin --title=Admin --passcode=secret
+ *   → passcode = "Lecturer01" (default policy)
  *
- * Re-running with the same uid no-ops by default; pass --update
- * to refresh the title / passcode on an existing row.
+ *   php artisan users:create-user admin --title=Admin --passcode=secret
+ *   → passcode = "secret" (explicit override)
+ *
+ * Default policy (demo): passcode = uid. Pass --passcode to
+ * override. Re-running with the same uid no-ops unless --update.
  */
 class UsersCreateUser extends Command
 {
     protected $signature = 'users:create-user
                             {uid : The uid (any non-empty string)}
                             {--title= : Title (e.g. course code for lecturers, "Admin", etc.)}
-                            {--passcode=testpass : Initial passcode}
+                            {--passcode= : Override (default = uid as passcode)}
                             {--update : Update title/passcode if user already exists}';
 
     protected $description = 'Create or update a single user account';
@@ -35,10 +38,12 @@ class UsersCreateUser extends Command
             return self::FAILURE;
         }
 
-        $existing = DB::table('users')->where('uid', $uid)->first();
-        $hashed = Hash::make((string) $this->option('passcode'));
+        $explicit = $this->option('passcode');
+        $passcode = ($explicit !== null && $explicit !== '') ? $explicit : $uid;
+        $hashed = Hash::make($passcode);
         $title = $this->option('title');
 
+        $existing = DB::table('users')->where('uid', $uid)->first();
         if ($existing) {
             if (!$this->option('update')) {
                 $this->info("User '{$uid}' already exists. Use --update to refresh.");
@@ -47,7 +52,7 @@ class UsersCreateUser extends Command
             $fields = ['passcode' => $hashed, 'updated_at' => now()];
             if ($title !== null) $fields['title'] = $title;
             DB::table('users')->where('uid', $uid)->update($fields);
-            $this->info("Updated '{$uid}'.");
+            $this->info("Updated '{$uid}' (passcode = '{$passcode}').");
             return self::SUCCESS;
         }
 
@@ -61,7 +66,8 @@ class UsersCreateUser extends Command
             'updated_at' => now(),
         ]);
 
-        $this->info("Created '{$uid}'" . ($title ? " with title '{$title}'" : '') . '.');
+        $titleNote = $title ? " with title '{$title}'" : '';
+        $this->info("Created '{$uid}'{$titleNote}; passcode = '{$passcode}'.");
         return self::SUCCESS;
     }
 }

@@ -11,11 +11,13 @@ use Illuminate\Support\Facades\Hash;
  * uid format: S{4-digit-year}{4-digit-sequence}.
  *
  *   php artisan users:create-students 1 10 --year=2026
- *   → creates S20260001 .. S20260010
+ *   → creates S20260001 .. S20260010, each with passcode = its uid
  *
- * All accounts get title=Student and the same passcode (default
- * 'testpass'). Existing uids are skipped, never overwritten —
- * safe to re-run after a partial creation.
+ * Default policy (demo): each account's passcode equals its own
+ * uid (so S20260001 logs in with "S20260001"). Pass --passcode
+ * explicitly to override with a single shared passcode for all.
+ *
+ * Existing uids are skipped, never overwritten — safe to re-run.
  */
 class UsersCreateStudents extends Command
 {
@@ -23,7 +25,7 @@ class UsersCreateStudents extends Command
                             {first : First sequence number, e.g. 1}
                             {last : Last sequence number, e.g. 10}
                             {--year=2026 : 4-digit entering year}
-                            {--passcode=testpass : Initial passcode for all created accounts}
+                            {--passcode= : Override: one passcode shared by all (default = use each uid as its own passcode)}
                             {--title=Student : Title to assign}';
 
     protected $description = 'Generate empty student accounts S{year}{NNNN} in a numeric range';
@@ -34,6 +36,7 @@ class UsersCreateStudents extends Command
         $last  = (int) $this->argument('last');
         $year  = (int) $this->option('year');
         $title = (string) $this->option('title');
+        $shared = $this->option('passcode'); // null/empty ⇒ "use each uid"
 
         if ($year < 1000 || $year > 9999) {
             $this->error('--year must be 4 digits.');
@@ -44,7 +47,7 @@ class UsersCreateStudents extends Command
             return self::FAILURE;
         }
 
-        $hashed = Hash::make($this->option('passcode'));
+        $sharedHash = ($shared !== null && $shared !== '') ? Hash::make($shared) : null;
         $created = 0;
         $skipped = 0;
 
@@ -58,7 +61,7 @@ class UsersCreateStudents extends Command
             DB::table('users')->insert([
                 'uid'        => $uid,
                 'title'      => $title,
-                'passcode'   => $hashed,
+                'passcode'   => $sharedHash ?? Hash::make($uid),
                 'email'      => null,
                 'settings'   => null,
                 'created_at' => now(),
@@ -71,7 +74,10 @@ class UsersCreateStudents extends Command
         if ($created > 0) {
             $exFirst = sprintf('S%04d%04d', $year, $first);
             $exLast  = sprintf('S%04d%04d', $year, $last);
-            $this->line("Range: {$exFirst} … {$exLast}; passcode = '" . $this->option('passcode') . "'");
+            $passcodeNote = $sharedHash
+                ? "shared passcode = '{$shared}'"
+                : 'passcode = uid (each account logs in with its own uid as the password)';
+            $this->line("Range: {$exFirst} … {$exLast}; {$passcodeNote}");
         }
         return self::SUCCESS;
     }

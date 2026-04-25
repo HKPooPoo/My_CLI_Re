@@ -731,8 +731,13 @@ Log section; every new user decision gets appended with a date.
       and 2 whitelists `2026SEHH2238` (members 0001-0006) /
       `2026SEHH3140` (members 0006-0010) with the matching
       title-based distribution grants. `S20260006` overlaps both —
-      useful overlap test. All accounts share passcode `testpass`.
-      Idempotent (uses `updateOrInsert` + `findByCode` lookup).
+      useful overlap test. **Passcode policy: each account's
+      passcode = its own uid** (S20260001 logs in with passcode
+      `S20260001`; Lecturer01 with `Lecturer01`). Demo-only
+      convenience — `users:create-students` / `users:create-user`
+      both default to this policy too, with `--passcode=...`
+      override available. Idempotent (uses `updateOrInsert` +
+      `findByCode` lookup).
       Companion CLI: `users:create-students {first} {last}
       [--year=]` for ad-hoc batch student creation outside the
       smoke seed; `users:create-user {uid} --title=...` for single

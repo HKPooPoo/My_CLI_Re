@@ -32,7 +32,9 @@ class WhitelistSmokeSeed extends Command
 
     public function handle(WhitelistService $service): int
     {
-        $hashed = Hash::make('testpass');
+        // Each account's passcode = its own uid (demo-only policy:
+        // S20260001 logs in with passcode "S20260001"). Hashing
+        // happens per-user since bcrypt salts every call.
 
         // 10 students S20260001 .. S20260010
         for ($i = 1; $i <= 10; $i++) {
@@ -41,7 +43,7 @@ class WhitelistSmokeSeed extends Command
                 ['uid' => $uid],
                 [
                     'title'      => 'Student',
-                    'passcode'   => $hashed,
+                    'passcode'   => Hash::make($uid),
                     'email'      => null,
                     'settings'   => null,
                     'created_at' => now(),
@@ -51,8 +53,8 @@ class WhitelistSmokeSeed extends Command
         }
 
         // 2 lecturers, title = the course code they teach
-        $this->ensureUser('Lecturer01', 'SEHH2238', $hashed);
-        $this->ensureUser('Lecturer02', 'SEHH3140', $hashed);
+        $this->ensureUser('Lecturer01', 'SEHH2238');
+        $this->ensureUser('Lecturer02', 'SEHH3140');
 
         // 2 whitelists (placeholder course names — admin can rename later
         // via tinker; CLI rename helper not yet exposed)
@@ -73,7 +75,9 @@ class WhitelistSmokeSeed extends Command
 
         $this->newLine();
         $this->info('═══════════════════ E2E TEST PLAN ═══════════════════');
-        $this->line('Login passcode for everyone: testpass');
+        $this->line('Login passcode = the uid itself for every account');
+        $this->line('  (e.g. S20260001 logs in with passcode "S20260001";');
+        $this->line('   Lecturer01 logs in with passcode "Lecturer01")');
         $this->newLine();
         $this->line('Lecturers (titled — Apply-Preset shelf available):');
         $this->line('  Lecturer01  title=SEHH2238  → can apply 2026SEHH2238');
@@ -102,13 +106,13 @@ class WhitelistSmokeSeed extends Command
         return self::SUCCESS;
     }
 
-    private function ensureUser(string $uid, string $title, string $hashedPasscode): void
+    private function ensureUser(string $uid, string $title): void
     {
         DB::table('users')->updateOrInsert(
             ['uid' => $uid],
             [
                 'title'      => $title,
-                'passcode'   => $hashedPasscode,
+                'passcode'   => Hash::make($uid),
                 'email'      => null,
                 'settings'   => null,
                 'created_at' => now(),
