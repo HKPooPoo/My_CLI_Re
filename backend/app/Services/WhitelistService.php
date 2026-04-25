@@ -85,14 +85,12 @@ class WhitelistService
 
         $whitelistIds = DB::table('whitelist_distributions')
             ->where(function ($q) use ($user) {
-                $q->where(function ($qq) use ($user) {
-                    if ($user->title) {
-                        $qq->whereNotNull('title')->where('title', $user->title);
-                    }
-                });
-                $q->orWhere(function ($qq) use ($user) {
-                    $qq->whereNotNull('uid')->where('uid', $user->uid);
-                });
+                if ($user->title) {
+                    $q->where(fn($qq) => $qq->whereNotNull('title')->where('title', $user->title));
+                    $q->orWhere(fn($qq) => $qq->whereNotNull('uid')->where('uid', $user->uid));
+                } else {
+                    $q->whereNotNull('uid')->where('uid', $user->uid);
+                }
             })
             ->pluck('whitelist_id')
             ->unique()
@@ -369,14 +367,12 @@ class WhitelistService
         return DB::table('whitelist_distributions')
             ->where('whitelist_id', $whitelistId)
             ->where(function ($q) use ($user) {
-                $q->where(function ($qq) use ($user) {
-                    if ($user->title) {
-                        $qq->whereNotNull('title')->where('title', $user->title);
-                    }
-                });
-                $q->orWhere(function ($qq) use ($user) {
-                    $qq->whereNotNull('uid')->where('uid', $user->uid);
-                });
+                if ($user->title) {
+                    $q->where(fn($qq) => $qq->whereNotNull('title')->where('title', $user->title));
+                    $q->orWhere(fn($qq) => $qq->whereNotNull('uid')->where('uid', $user->uid));
+                } else {
+                    $q->whereNotNull('uid')->where('uid', $user->uid);
+                }
             })
             ->exists();
     }

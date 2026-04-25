@@ -36,13 +36,17 @@ class WhitelistSmokeSeed extends Command
         // S20260001 logs in with passcode "S20260001"). Hashing
         // happens per-user since bcrypt salts every call.
 
-        // 10 students S20260001 .. S20260010
+        // 10 students S20260001 .. S20260010 — title intentionally
+        // null. Students are audience only; titled status is what
+        // grants channel-ownership rights (cast requires title), so
+        // a null title encodes "this user is not allowed to own
+        // channels" at the schema layer.
         for ($i = 1; $i <= 10; $i++) {
             $uid = sprintf('S2026%04d', $i);
             DB::table('users')->updateOrInsert(
                 ['uid' => $uid],
                 [
-                    'title'      => 'Student',
+                    'title'      => null,
                     'passcode'   => Hash::make($uid),
                     'email'      => null,
                     'settings'   => null,

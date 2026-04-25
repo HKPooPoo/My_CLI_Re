@@ -26,7 +26,7 @@ class UsersCreateStudents extends Command
                             {last : Last sequence number, e.g. 10}
                             {--year=2026 : 4-digit entering year}
                             {--passcode= : Override: one passcode shared by all (default = use each uid as its own passcode)}
-                            {--title=Student : Title to assign}';
+                            {--title= : Title to assign (default = NULL — students are titleless audience)}';
 
     protected $description = 'Generate empty student accounts S{year}{NNNN} in a numeric range';
 
@@ -35,7 +35,8 @@ class UsersCreateStudents extends Command
         $first = (int) $this->argument('first');
         $last  = (int) $this->argument('last');
         $year  = (int) $this->option('year');
-        $title = (string) $this->option('title');
+        $titleOpt = $this->option('title');
+        $title = ($titleOpt !== null && $titleOpt !== '') ? $titleOpt : null;
         $shared = $this->option('passcode'); // null/empty ⇒ "use each uid"
 
         if ($year < 1000 || $year > 9999) {

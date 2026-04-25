@@ -184,6 +184,30 @@ class WhitelistServiceTest extends TestCase
         $this->assertFalse($this->service->canUserApply(null, $id));
     }
 
+    #[Test] /* W13b — regression: null-title user used to match all distributions */
+    public function null_title_user_does_not_match_title_only_grants(): void
+    {
+        $student = User::factory()->create(['uid' => 'student_x', 'title' => null]);
+
+        $id = $this->service->create('2026SEHH9990', '2026 SEHH9990 Service Test A');
+        $this->service->addDistribution($id, 'rule', title: 'Faculty');
+
+        $this->assertFalse($this->service->canUserApply($student, $id));
+        $this->assertEquals([], $this->service->listForApplicant($student));
+    }
+
+    #[Test] /* W13c */
+    public function null_title_user_still_matches_uid_grants(): void
+    {
+        $student = User::factory()->create(['uid' => 'student_x', 'title' => null]);
+
+        $id = $this->service->create('2026SEHH9990', '2026 SEHH9990 Service Test A');
+        $this->service->addDistribution($id, 'rule', uid: 'student_x');
+
+        $this->assertTrue($this->service->canUserApply($student, $id));
+        $this->assertEquals(['2026SEHH9990'], array_column($this->service->listForApplicant($student), 'code'));
+    }
+
     #[Test] /* W14 */
     public function list_for_applicant_filters_by_distribution(): void
     {
