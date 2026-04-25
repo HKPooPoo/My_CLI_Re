@@ -543,15 +543,23 @@
                         <div class="page-preview-rail" id="inbox-preview-rail"></div>
                         <div class="inbox-textareas">
                             <div class="inbox-textarea-section">
-                                <div class="inbox-textarea-label"
-                                     data-i18n="inbox.senderWindow">SUBMISSION</div>
+                                <div class="inbox-textarea-label">
+                                    <span class="inbox-textarea-label-name"
+                                          data-i18n="inbox.senderWindow">SUBMISSION</span>
+                                    <span class="inbox-textarea-uid" id="inbox-sender-uid"></span>
+                                </div>
+                                <div class="inbox-textarea-timestamp" id="inbox-sender-ts"></div>
                                 <textarea id="inbox-sender-textarea"
                                           data-i18n-placeholder="inbox.senderPlaceholder"
                                           placeholder="What you want to submit..."></textarea>
                             </div>
                             <div class="inbox-textarea-section is-feedback">
-                                <div class="inbox-textarea-label"
-                                     data-i18n="inbox.receiverWindow">FEEDBACK</div>
+                                <div class="inbox-textarea-label">
+                                    <span class="inbox-textarea-label-name"
+                                          data-i18n="inbox.receiverWindow">FEEDBACK</span>
+                                    <span class="inbox-textarea-uid" id="inbox-receiver-uid"></span>
+                                </div>
+                                <div class="inbox-textarea-timestamp" id="inbox-receiver-ts"></div>
                                 <textarea id="inbox-receiver-textarea"
                                           data-i18n-placeholder="inbox.receiverPlaceholder"
                                           placeholder="Feedback from the inbox owner..."></textarea>

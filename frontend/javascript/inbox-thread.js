@@ -32,9 +32,27 @@ import { TimerGroup } from './timer-group.js';
 import { t } from './i18n.js';
 import { T } from './timing.js';
 import { getEcho } from './echo-service.js';
+import { getHKTTimestamp } from './utils.js';
 import db from './indexedDB.js';
 
 const SAVE_DEBOUNCE_KEY = 'inboxAutoSave';
+
+/**
+ * Compact `MM-DD HH:MM` formatter for the section timestamp badge.
+ * Accepts either a server datetime string (created_at / updated_at)
+ * or a bigint ms (feedback_at). Falls back to empty string for null
+ * / undefined / unparseable input.
+ */
+function formatStamp(input) {
+    if (input === null || input === undefined || input === '') return '';
+    try {
+        const iso = getHKTTimestamp(input);  // "2026-04-25T14:32:18.000+08:00"
+        // Slice MM-DD + space + HH:MM → "04-25 14:32"
+        return iso.slice(5, 10) + ' ' + iso.slice(11, 16);
+    } catch {
+        return '';
+    }
+}
 
 export const IXThread = {
     elements: {
@@ -46,8 +64,12 @@ export const IXThread = {
         previewRail: document.getElementById('inbox-preview-rail'),
         senderArea: document.getElementById('inbox-sender-textarea'),
         senderSection: document.querySelector('.inbox-textarea-section:not(.is-feedback)'),
+        senderUid: document.getElementById('inbox-sender-uid'),
+        senderTs: document.getElementById('inbox-sender-ts'),
         receiverArea: document.getElementById('inbox-receiver-textarea'),
         receiverSection: document.querySelector('.inbox-textarea-section.is-feedback'),
+        receiverUid: document.getElementById('inbox-receiver-uid'),
+        receiverTs: document.getElementById('inbox-receiver-ts'),
         dropOverlay: document.getElementById('inbox-drop-overlay'),
         fileInput: document.getElementById('inbox-file-input'),
         postBtn: document.getElementById('inbox-post-btn'),
@@ -390,6 +412,9 @@ export const IXThread = {
 
     renderSenderView() {
         const row = this.submissions[0];
+        const me = localStorage.getItem('currentUser') || '';
+        const ownerLabel = this.inbox?.owner_uid || '';
+
         if (this.elements.senderArea) {
             this.elements.senderArea.value = row?.sender_text ?? '';
             this.elements.senderArea.disabled = false;
@@ -398,6 +423,17 @@ export const IXThread = {
             this.elements.receiverArea.value = row?.receiver_text ?? '';
             this.elements.receiverArea.disabled = true;
         }
+        // SUBMISSION pane: my own uid, my last submission timestamp.
+        if (this.elements.senderUid) this.elements.senderUid.textContent = me;
+        if (this.elements.senderTs) {
+            this.elements.senderTs.textContent = formatStamp(row?.updated_at);
+        }
+        // FEEDBACK pane: inbox owner uid + feedback_at.
+        if (this.elements.receiverUid) this.elements.receiverUid.textContent = ownerLabel;
+        if (this.elements.receiverTs) {
+            this.elements.receiverTs.textContent = formatStamp(row?.feedback_at);
+        }
+
         // Feedback pane shrinks to a "no feedback yet" placeholder when
         // the inbox owner hasn't replied. Pairs with the CSS rule on
         // `.inbox-textarea-section.is-feedback.is-empty`.
@@ -405,7 +441,6 @@ export const IXThread = {
             const hasFeedback = !!(row?.receiver_text && row.receiver_text.trim());
             this.elements.receiverSection.classList.toggle('is-empty', !hasFeedback);
             if (!hasFeedback) {
-                const ownerLabel = this.inbox?.owner_title || this.inbox?.owner_uid || '';
                 this.elements.receiverSection.dataset.emptyLabel =
                     t('inbox.feedbackPending', { owner: ownerLabel });
             } else {
@@ -419,6 +454,8 @@ export const IXThread = {
 
     renderReceiverView() {
         const row = this.submissions[this.head];
+        const me = localStorage.getItem('currentUser') || '';
+
         if (this.elements.senderArea) {
             this.elements.senderArea.value = row?.sender_text ?? '';
             this.elements.senderArea.disabled = true;
@@ -427,6 +464,19 @@ export const IXThread = {
             this.elements.receiverArea.value = row?.receiver_text ?? '';
             this.elements.receiverArea.disabled = false;
         }
+        // SUBMISSION pane: current sender's uid + their last update.
+        if (this.elements.senderUid) {
+            this.elements.senderUid.textContent = row?.sender_uid ?? '';
+        }
+        if (this.elements.senderTs) {
+            this.elements.senderTs.textContent = formatStamp(row?.updated_at);
+        }
+        // FEEDBACK pane: my own uid (= owner) + feedback_at on this row.
+        if (this.elements.receiverUid) this.elements.receiverUid.textContent = me;
+        if (this.elements.receiverTs) {
+            this.elements.receiverTs.textContent = formatStamp(row?.feedback_at);
+        }
+
         // Feedback pane in receiver mode is always full-size (it's the
         // owner's primary write target) — clear the sender-mode shrink.
         this.elements.receiverSection?.classList.remove('is-empty');
@@ -435,6 +485,11 @@ export const IXThread = {
         if (this.elements.page) {
             if (this.submissions.length === 0) {
                 this.elements.page.setAttribute('data-empty-submissions', 'true');
+                // Clear stamps on empty so badges hide via :empty rule.
+                if (this.elements.senderUid) this.elements.senderUid.textContent = '';
+                if (this.elements.senderTs) this.elements.senderTs.textContent = '';
+                if (this.elements.receiverUid) this.elements.receiverUid.textContent = '';
+                if (this.elements.receiverTs) this.elements.receiverTs.textContent = '';
             } else {
                 this.elements.page.removeAttribute('data-empty-submissions');
             }

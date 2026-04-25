@@ -137,7 +137,9 @@
 /* Mirror the BB / BC / WT title-on-border treatment: the label sits
    on top of the section's top border, with the bg-secondary background
    "cutting" the border line so the label looks integrated. Same
-   formula as `.vcs-title`, `.broadcast-list-title`, `.walkie-typie-list-title`. */
+   formula as `.vcs-title`, `.broadcast-list-title`, `.walkie-typie-list-title`.
+   Holds the section title + author uid as a flex row so they share
+   the bg-secondary cut. */
 .inbox-textarea-label {
     position: absolute;
     top: 0;
@@ -150,6 +152,42 @@
     color: var(--brand);
     width: max-content;
     z-index: 1;
+    flex-direction: row;
+    align-items: center;
+    gap: 10px;
+}
+
+/* Author uid pill — sits next to the section title. Shows the
+   sender_uid in receiver mode (whose submission is on screen) and
+   own uid in sender mode. Always shown for receiver, but receiver-
+   side FEEDBACK shows the inbox owner uid (= self) which is mildly
+   redundant — kept for symmetry so both panes always carry an
+   author cue. */
+.inbox-textarea-uid {
+    color: var(--text-muted);
+    font-weight: 500;
+    font-family: monospace;
+    font-size: calc(var(--font-size) * 0.78);
+}
+
+/* Timestamp badge at top-right on the section border, mirroring the
+   label's bg-secondary cut so the two read as bookends. Empty content
+   hides the badge naturally (no padding background). */
+.inbox-textarea-timestamp {
+    position: absolute;
+    top: 0;
+    right: 16px;
+    transform: translateY(-50%);
+    background-color: var(--bg-secondary);
+    padding: var(--title-padding);
+    font-size: calc(var(--font-size) * 0.72);
+    font-family: monospace;
+    color: var(--text-muted);
+    z-index: 1;
+    width: max-content;
+}
+.inbox-textarea-timestamp:empty {
+    display: none;
 }
 
 #inbox-sender-textarea,
