@@ -1,10 +1,10 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-  <!-- Clipboard top clip pill -->
-  <rect x="8" y="2" width="8" height="3" rx="1.5" fill="black"/>
-  <!-- Clipboard body, with a circular hole carved out via evenodd -->
-  <path fill="black" fill-rule="evenodd" d="M5 4h14a1 1 0 0 1 1 1v17a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1zm7 6a4 4 0 1 0 0 8 4 4 0 0 0 0-8z"/>
-  <!-- Ring outline inside the hole -->
-  <circle cx="12" cy="14" r="3" fill="none" stroke="black" stroke-width="1.5"/>
-  <!-- Down chevron inside the ring -->
-  <path d="M10.5 13.2 L12 14.8 L13.5 13.2" fill="none" stroke="black" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="black">
+  <!-- Top clip pill -->
+  <rect x="8" y="2" width="8" height="3" rx="1.5"/>
+  <!-- Body silhouette with circular hole carved out (evenodd) -->
+  <path fill-rule="evenodd" d="M5 4h14a1 1 0 0 1 1 1v17a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1zm7 5.5a4.5 4.5 0 1 0 0 9 4.5 4.5 0 0 0 0-9z"/>
+  <!-- Ring annulus inside the hole (filled outer minus inner) -->
+  <path fill-rule="evenodd" d="M12 10.5a3.5 3.5 0 1 1 0 7 3.5 3.5 0 0 1 0-7zm0 1a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5z"/>
+  <!-- Down chevron centered in the ring -->
+  <path d="M10.4 13l1.6 1.6L13.6 13l0.6 0.6L12 15.8l-2.2-2.2z"/>
 </svg>
