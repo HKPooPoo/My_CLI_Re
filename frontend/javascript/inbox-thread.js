@@ -494,7 +494,11 @@ export const IXThread = {
         }
         // Clear the receiver-mode-only empty-submissions flag.
         this.elements.page?.removeAttribute('data-empty-submissions');
-        this.renderFileChip(row?.file_hash ?? null, /*readOnly*/ false);
+        // Chip is read-only when the sender can no longer write
+        // (read-preserved state — whitelist removed, existing row
+        // visible but no edit / detach allowed). Gate matches the
+        // textarea/save-button visibility above.
+        this.renderFileChip(row?.file_hash ?? null, /*readOnly*/ !canWrite);
     },
 
     renderReceiverView() {
@@ -835,6 +839,13 @@ export const IXThread = {
         if (!this.inbox) return;
         const me = localStorage.getItem('currentUser');
         if (!me) return BBMessage.error(t('inbox.loginRequired'));
+        // Defense-in-depth: every wrapper that calls attachFile
+        // (drag-drop zone handler, chips-area click, file-input
+        // change) already checks mode + canSubmit, but a programmatic
+        // bypass (e.g. DevTools dispatching a 'change' event) would
+        // reach here directly. Re-gate so a read-preserved or
+        // wrong-perspective caller can't stage a file in IDB.
+        if (this.mode !== 'sender' || !this.canSubmit) return;
 
         if (!FileService.isAllowedExtension(file.name)) {
             return BBMessage.error(t('files.unsupportedType'));
@@ -878,6 +889,12 @@ export const IXThread = {
         if (!this.inbox) return;
         const me = localStorage.getItem('currentUser');
         if (!me) return;
+        // Same defense-in-depth as attachFile. The × remove button
+        // is suppressed in renderFileChip when readOnly=true, so
+        // the visible UI already prevents detach on read-preserved
+        // / receiver perspectives. This guard catches DevTools-style
+        // bypasses that call detachFile directly.
+        if (this.mode !== 'sender' || !this.canSubmit) return;
         await IXSubmissions.upsert({
             server_inbox_id: this.inbox.id,
             sender_uid: me,
