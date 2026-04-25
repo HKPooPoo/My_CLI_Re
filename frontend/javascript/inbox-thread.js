@@ -107,6 +107,7 @@ export const IXThread = {
     init() {
         this.bindEvents();
         this._wireDropZone();
+        this._wirePreviewRailInteractions();
         // Empty overlay starts visible — JS hides it once an inbox loads
         if (this.elements.emptyOverlay) {
             this.elements.emptyOverlay.style.display = '';
@@ -547,6 +548,17 @@ export const IXThread = {
         this.renderPreviewRail();
     },
 
+    /**
+     * Render the receiver-mode preview rail. Each block carries only
+     * a `data-head` attribute + the rotated uid label; click and peek
+     * handlers live at the rail level (set once in `init`), so this
+     * function is render-only — no per-block listener wiring.
+     *
+     * Visual state (graded vs ungraded) is conveyed by border style
+     * alone: solid brand-edge for graded, dashed accent (purple) for
+     * `.unsynced` (ungraded). No glyph marker — the border carries
+     * the information already.
+     */
     renderPreviewRail() {
         if (!this.elements.previewRail) return;
         this.elements.previewRail.innerHTML = '';
@@ -554,37 +566,184 @@ export const IXThread = {
             const block = document.createElement('div');
             block.classList.add('page-preview-block');
             if (idx === this.head) block.classList.add('active');
-            if (row.feedback_at === null) block.classList.add('unsynced'); // ungraded yet
+            if (row.feedback_at === null) block.classList.add('unsynced');
             block.dataset.head = idx;
-            // Graded blocks carry an unrotated ✓ badge at the top of
-            // the block. Kept separate from the rotated uid label so
-            // the checkmark stays upright. Ungraded blocks rely on the
-            // dashed accent border (`.unsynced`) as the visual cue —
-            // no badge needed.
-            if (row.feedback_at !== null) {
-                const marker = document.createElement('span');
-                marker.className = 'inbox-preview-block-marker';
-                marker.textContent = '✓';
-                block.appendChild(marker);
-            }
             const label = document.createElement('span');
             label.className = 'inbox-preview-block-label';
             label.textContent = row.sender_uid;
             block.appendChild(label);
-
-            block.addEventListener('click', async () => {
-                await this.flushPending();
-                this.head = idx;
-                this.renderReceiverView();
-            });
             this.elements.previewRail.appendChild(block);
         });
-        // Keep the active block in view after navigation. Cheap fallback
-        // for long submitter lists where the active row scrolls off the
-        // visible rail height.
         this.elements.previewRail
             .querySelector('.page-preview-block.active')
             ?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    },
+
+    /**
+     * Rail-level peek + click + touch handlers. Mirrors the BB / BC
+     * preview-rail pattern (`blackboard.js` `$previewRail.addEventListener
+     * (mouseover|mouseleave|click|touchstart|touchmove|touchend)`):
+     *
+     *   • mouseover  → take a snapshot of the current view, lock both
+     *                  textareas read-only, paint the hovered block's
+     *                  submission into SUBMISSION + FEEDBACK + file chip
+     *   • mouseleave → restore snapshot, unlock
+     *   • click      → drop snapshot, navigate this.head to the block
+     *   • touchstart → start a 300 ms timer; on fire enter peek mode
+     *                  with the .peeking class (CSS analogue of :hover)
+     *   • touchmove  → resolve the block under the finger via
+     *                  elementFromPoint, swap peek content; movement
+     *                  > 10 px before the timer cancels (treat as scroll)
+     *   • touchend   → if peek was entered, restore snapshot; otherwise
+     *                  fall through to native click → navigate
+     *
+     * Sender mode skips the wiring entirely (the rail is `display: none`
+     * for senders). Active-element guard prevents the peek from
+     * stealing focus while the receiver is mid-typing in FEEDBACK.
+     */
+    _wirePreviewRailInteractions() {
+        const rail = this.elements.previewRail;
+        if (!rail) return;
+        let snapshot = null;
+
+        const lock = (locked) => {
+            if (this.elements.senderArea) this.elements.senderArea.readOnly = locked;
+            if (this.elements.receiverArea) this.elements.receiverArea.readOnly = locked;
+        };
+        const clearPeekMarker = () => {
+            rail.querySelectorAll('.peeking').forEach(el => el.classList.remove('peeking'));
+        };
+        const applyPeek = (head) => {
+            const row = this.submissions[head];
+            if (!row) return;
+            if (this.elements.senderArea) this.elements.senderArea.value = row.sender_text ?? '';
+            if (this.elements.receiverArea) this.elements.receiverArea.value = row.receiver_text ?? '';
+            this.renderFileChip(row.file_hash ?? null, /*readOnly*/ true);
+        };
+        const restoreSnapshot = () => {
+            if (!snapshot) return;
+            if (this.elements.senderArea) this.elements.senderArea.value = snapshot.sender;
+            if (this.elements.receiverArea) this.elements.receiverArea.value = snapshot.receiver;
+            this.renderFileChip(snapshot.fileHash, /*readOnly*/ true);
+            snapshot = null;
+            lock(false);
+            clearPeekMarker();
+            // Re-apply per-mode disabled state. Receiver mode keeps
+            // sender textarea disabled; the lock(false) call above
+            // would otherwise leave both editable.
+            if (this.mode === 'receiver' && this.elements.senderArea) {
+                this.elements.senderArea.disabled = true;
+            }
+        };
+
+        rail.addEventListener('mouseover', (e) => {
+            if (this.mode !== 'receiver') return;
+            const block = e.target.closest('.page-preview-block');
+            if (!block) return;
+            if (!snapshot &&
+                (document.activeElement === this.elements.receiverArea ||
+                 document.activeElement === this.elements.senderArea)) return;
+            const head = parseInt(block.dataset.head, 10);
+            if (Number.isNaN(head) || head < 0) return;
+            if (!snapshot) {
+                const row = this.submissions[this.head];
+                snapshot = {
+                    sender:   this.elements.senderArea?.value ?? '',
+                    receiver: this.elements.receiverArea?.value ?? '',
+                    fileHash: row?.file_hash ?? null,
+                };
+                lock(true);
+            }
+            applyPeek(head);
+        });
+        rail.addEventListener('mouseleave', () => {
+            restoreSnapshot();
+        });
+
+        rail.addEventListener('click', async (e) => {
+            const block = e.target.closest('.page-preview-block');
+            if (!block) return;
+            const head = parseInt(block.dataset.head, 10);
+            if (Number.isNaN(head) || head < 0) return;
+            if (snapshot) {
+                snapshot = null;
+                lock(false);
+                clearPeekMarker();
+            }
+            await this.flushPending();
+            this.head = head;
+            this.renderReceiverView();
+        });
+
+        // Mobile touch peek — 300 ms hold opens peek; touchmove tracks
+        // the block under the finger via elementFromPoint.
+        let touchTimer = null;
+        let touchStartPos = null;
+        let inTouchPeek = false;
+        const peekBlockFromPoint = (x, y) => {
+            const el = document.elementFromPoint(x, y);
+            return el?.closest?.('.page-preview-block') || null;
+        };
+
+        rail.addEventListener('touchstart', (e) => {
+            if (this.mode !== 'receiver') return;
+            const touch = e.touches[0];
+            if (!touch) return;
+            touchStartPos = { x: touch.clientX, y: touch.clientY };
+            const block = e.target.closest('.page-preview-block');
+            if (!block) return;
+            clearTimeout(touchTimer);
+            touchTimer = setTimeout(() => {
+                if (!snapshot) {
+                    const row = this.submissions[this.head];
+                    snapshot = {
+                        sender:   this.elements.senderArea?.value ?? '',
+                        receiver: this.elements.receiverArea?.value ?? '',
+                        fileHash: row?.file_hash ?? null,
+                    };
+                    lock(true);
+                }
+                inTouchPeek = true;
+                const head = parseInt(block.dataset.head, 10);
+                if (!Number.isNaN(head) && head >= 0) {
+                    clearPeekMarker();
+                    block.classList.add('peeking');
+                    applyPeek(head);
+                }
+            }, 300);
+        });
+        rail.addEventListener('touchmove', (e) => {
+            const t = e.touches[0];
+            if (!t) return;
+            if (touchStartPos && !inTouchPeek) {
+                const dx = Math.abs(t.clientX - touchStartPos.x);
+                const dy = Math.abs(t.clientY - touchStartPos.y);
+                if (dx > 10 || dy > 10) {
+                    clearTimeout(touchTimer);
+                    touchStartPos = null;
+                    return;
+                }
+            }
+            if (!inTouchPeek) return;
+            const block = peekBlockFromPoint(t.clientX, t.clientY);
+            if (!block) return;
+            const head = parseInt(block.dataset.head, 10);
+            if (!Number.isNaN(head) && head >= 0) {
+                clearPeekMarker();
+                block.classList.add('peeking');
+                applyPeek(head);
+            }
+        });
+        const touchEnd = () => {
+            clearTimeout(touchTimer);
+            if (inTouchPeek) {
+                restoreSnapshot();
+                inTouchPeek = false;
+            }
+            touchStartPos = null;
+        };
+        rail.addEventListener('touchend', touchEnd);
+        rail.addEventListener('touchcancel', touchEnd);
     },
 
     /**

@@ -298,38 +298,6 @@
     display: none;
 }
 
-/* The graded marker (✓) lives in its own non-rotated span anchored
-   to the top of the block, NOT inside the rotated uid label. Earlier
-   the marker was prefixed onto the label string, but
-   `writing-mode: vertical-rl` + `transform: rotate(180deg)` flipped
-   it to the BOTTOM of the block as an upside-down chevron — confusing
-   UX (looked like an unknown icon). Ungraded blocks simply omit the
-   span; the dashed accent border on `.unsynced` is the ungraded cue. */
-.inbox-preview-block-marker {
-    flex: 0 0 auto;
-    font-family: monospace;
-    font-size: 12px;
-    font-weight: 700;
-    line-height: 1;
-    color: var(--brand);
-    margin-bottom: 2px;
-}
-/* Marker colour MUST track block background, same trap the label
-   rule above had to dodge. Block bg per state:
-     • rest / .active            → bg-card / bg-secondary (light grey)
-     • :hover / .peeking          → brand (wine red)
-   So white only fires on the brand-bg states. `.active` is excluded
-   via :not(.active) to handle the active+hover combo (active wins
-   for block bg, so marker must stay brand on grey, not white). */
-.page-preview-block.peeking:not(.active) .inbox-preview-block-marker {
-    color: #ffffff;
-}
-@media (hover: hover) {
-    .page-preview-block:hover:not(.active) .inbox-preview-block-marker {
-        color: #ffffff;
-    }
-}
-
 .inbox-preview-block-label {
     writing-mode: vertical-rl;
     transform: rotate(180deg);
