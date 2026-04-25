@@ -30,6 +30,7 @@ const SLOTS = [
     { key: 'asynced', svg: 'asynced' },
     { key: 'new',     svg: 'new'     },
     { key: 'locked',  svg: 'locked'  }, // BC private channel (whitelist applied)
+    { key: 'pinned',  svg: 'pinned'  }, // BC: subscriber pinned this channel
 ];
 
 /** HTML-string form for `innerHTML` renderers (BB). */

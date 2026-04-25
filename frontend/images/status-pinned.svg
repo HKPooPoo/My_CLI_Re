@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true">
+    <!-- Thumbtack = pinned channel (sticks to top of subscriber list) -->
+    <circle cx="8" cy="4" r="2"/>
+    <line x1="5" y1="7" x2="11" y2="7"/>
+    <line x1="8" y1="7" x2="8" y2="14"/>
+</svg>

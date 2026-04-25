@@ -679,6 +679,7 @@ export const BCList = {
                 synced:  isCast && !(this.isOwnerOf(ch) && ch.isDirty),
                 asynced: isCast &&  (this.isOwnerOf(ch) && ch.isDirty),
                 locked:  isCast && !!ch.whitelistId,
+                pinned:  !!ch.isPinned,
             });
 
             item.appendChild(nameInput);
