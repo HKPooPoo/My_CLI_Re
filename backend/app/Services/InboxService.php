@@ -174,6 +174,14 @@ class InboxService
      * Owner-side fetch: every submission to this inbox, including
      * sender uid + tag for the preview rail. 403 to non-owners
      * (senders read their own row via getMySubmission, not this).
+     *
+     * Ordering is by sender `users.uid` ASC — the lecturer's preview
+     * rail reads as a roll-call: S20260001 first, S20260002 next,
+     * etc., regardless of submission/feedback time. Stable position
+     * per student is more useful for "did everyone submit?" scanning
+     * than activity-driven ordering. Matches the no-drag-reorder
+     * contract on the rail (the lecturer can't reorder; the
+     * alphabetical roll is the only meaningful order).
      */
     public function fetchSubmissions(User $user, int $inboxId): array
     {
@@ -184,7 +192,7 @@ class InboxService
         $rows = DB::table('inbox_submissions')
             ->leftJoin('users', 'inbox_submissions.user_id', '=', 'users.id')
             ->where('inbox_id', $inboxId)
-            ->orderBy('inbox_submissions.updated_at', 'desc')
+            ->orderBy('users.uid', 'asc')
             ->select(
                 'inbox_submissions.*',
                 'users.uid as sender_uid',
