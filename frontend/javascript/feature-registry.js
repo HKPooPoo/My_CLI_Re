@@ -20,11 +20,11 @@ import { feature as LlmFeature        } from './features/llm.js';
 import { feature as WhitelistFeature  } from './features/whitelist.js';
 
 export const FEATURES = [
+    WhitelistFeature,
     FileAttachFeature,
     CalendarFeature,
     FlashcardFeature,
     LlmFeature,
-    WhitelistFeature,
 ];
 
 export function getFeature(id) {
