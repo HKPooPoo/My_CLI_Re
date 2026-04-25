@@ -55,7 +55,7 @@ export const BCList = {
 
     init() {
         this.bindEvents();
-        this.lockTitleButtons();
+        this.updateActionButtonsVisibility();
     },
 
     // =====================================================================
@@ -87,13 +87,31 @@ export const BCList = {
     },
 
     /**
-     * CAST, CREATE, DELETE only visible for uid with title.
+     * Action buttons visibility:
+     *   CREATE — any titled user (no selection needed)
+     *   CAST   — titled AND owner of currently-selected channel
+     *   DELETE — same as CAST
+     *
+     * If nothing is selected, or the selected channel was cast by
+     * someone else, CAST/DELETE hide entirely. Without this, a
+     * titled user looking at someone else's channel saw the
+     * buttons and would only learn it was forbidden after clicking
+     * (server enforces but the UI shouldn't dangle the option).
      */
-    lockTitleButtons() {
-        const show = this.hasTitle();
-        if (this.elements.castBtn) this.elements.castBtn.style.display = show ? '' : 'none';
-        if (this.elements.createBtn) this.elements.createBtn.style.display = show ? '' : 'none';
-        if (this.elements.deleteBtn) this.elements.deleteBtn.style.display = show ? '' : 'none';
+    updateActionButtonsVisibility() {
+        const titled = this.hasTitle();
+        const isOwnerOfSelected = this.selectedChannel && this.isOwnerOf(this.selectedChannel);
+        const showOwnerActions = titled && !!isOwnerOfSelected;
+
+        if (this.elements.createBtn) {
+            this.elements.createBtn.style.display = titled ? '' : 'none';
+        }
+        if (this.elements.castBtn) {
+            this.elements.castBtn.style.display = showOwnerActions ? '' : 'none';
+        }
+        if (this.elements.deleteBtn) {
+            this.elements.deleteBtn.style.display = showOwnerActions ? '' : 'none';
+        }
     },
 
     // =====================================================================
@@ -103,7 +121,7 @@ export const BCList = {
     bindEvents() {
         // Auth change → refresh list + re-evaluate button visibility
         window.addEventListener('auth:updated', () => {
-            this.lockTitleButtons();
+            this.updateActionButtonsVisibility();
             this.selectedChannel = null; // Force selection reset — owner mode needs recalculation
             this.fetchAndRender();
         });
@@ -137,6 +155,7 @@ export const BCList = {
 
             this.selectedChannel = ch;
             this.updatePinBtnText();
+            this.updateActionButtonsVisibility();
 
             clearTimeout(this.selectionTimer);
             this.selectionTimer = setTimeout(() => {
@@ -364,6 +383,7 @@ export const BCList = {
                         if (newCh) {
                             this.selectedChannel = newCh;
                             this.render();
+                            this.updateActionButtonsVisibility();
                             this.updateNaviText(newCh.name);
                             window.dispatchEvent(new CustomEvent('broadcast:selected', { detail: newCh }));
                         }
@@ -403,6 +423,7 @@ export const BCList = {
                         await BCMeta.deleteChannel(ch.localId);
 
                         this.selectedChannel = null;
+                        this.updateActionButtonsVisibility();
                         this.updateNaviText('');
 
                         msg.update(t('broadcast.deleteComplete'));
@@ -518,7 +539,15 @@ export const BCList = {
 
             this.channels = Array.from(merged.values());
             this.sortChannels();
+            // If the previously-selected channel no longer exists in
+            // the new list (deleted on server, wiped, signed-out
+            // user's view doesn't include it, etc.), drop the stale
+            // reference so CAST/DELETE visibility recalculates correctly.
+            if (this.selectedChannel && !this.channels.some(c => c.localId === this.selectedChannel.localId)) {
+                this.selectedChannel = null;
+            }
             this.render();
+            this.updateActionButtonsVisibility();
         } catch (e) {
             if (signal.aborted || e.name === 'AbortError') return; // silent cancel
             console.error('BCList: Fetch failed', e);
