@@ -7,8 +7,8 @@
  * `.log-editor-row` (preview rail + textarea region) in the middle,
  * `.drop-overlay` covering the textarea zone. The only Inbox-specific
  * shape is the dual-textarea split inside `.log-editor-row` (sender
- * + receiver stacked) — every other rule in this file is consumer-
- * specific tweaks layered on top of shared editor scaffolding.
+ * + receiver stacked) — every other rule layers on top of shared
+ * editor scaffolding.
  *
  * The LIST page mirrors BC's `.broadcast-list-container` exactly,
  * down to the same shapes / paddings / scrollbar treatment.
@@ -113,22 +113,14 @@
 
 /* ── Thread page (mirror BB log / BC channel scaffolding) ───── */
 
-/* The page is `flex-direction: column` by default (style.css); the
-   editor-wrapper takes flex:1, the action row sits underneath, and
-   the empty overlay floats over everything via absolute positioning. */
-
-#inbox-drop-zone {
-    /* `.editor-wrapper` already has flex:1; nothing else needed. */
-}
-
 /* Stacked sender + receiver textareas inside the standard
    `.log-editor-row` (which is flex-row: rail + content). The content
-   half here flips back to flex-column so the two textareas stack
+   half flips back to flex-column so the two textareas stack
    vertically. Each section is its own labelled mini-pane. */
 .inbox-textareas {
     flex: 1;
     flex-direction: column;
-    gap: 4px;
+    gap: 12px;
     min-width: 0;
 }
 
@@ -137,17 +129,25 @@
     flex-direction: column;
     min-height: 0;
     border: var(--border-line);
+    border-radius: var(--border-radius);
     position: relative;
+    background: var(--bg-card);
 }
 
+/* Mirror the BB / BC / WT title-on-border treatment: the label sits
+   on top of the section's top border, with the bg-secondary background
+   "cutting" the border line so the label looks integrated. Same
+   formula as `.vcs-title`, `.broadcast-list-title`, `.walkie-typie-list-title`. */
 .inbox-textarea-label {
     position: absolute;
     top: 0;
     transform: translateY(-50%);
-    left: 8px;
+    left: 16px;
     background-color: var(--bg-secondary);
     padding: var(--title-padding);
     font-size: calc(var(--font-size) * 0.85);
+    font-weight: 600;
+    color: var(--brand);
     width: max-content;
     z-index: 1;
 }
@@ -157,7 +157,7 @@
     flex: 1;
     width: 100%;
     margin: 0;
-    padding: 12px 10px 8px 10px;
+    padding: 14px 12px 10px 12px;
     background: transparent;
     border: none;
     outline: none;
@@ -169,19 +169,20 @@
 
 #inbox-sender-textarea:disabled,
 #inbox-receiver-textarea:disabled {
-    opacity: 0.65;
+    opacity: 0.7;
     cursor: default;
     caret-color: transparent;
-    background: color-mix(in srgb, var(--text-muted) 6%, transparent);
+    background: transparent;
 }
 
-/* Sender mode hides the receiver-only preview rail. Same gating
-   pattern WT uses for THEY-side controls when they're irrelevant. */
+/* Sender mode hides the receiver-only preview rail — the rail
+   navigates between submitters, which doesn't apply when the user
+   is the sole submitter. */
 .page[data-mode="sender"] #inbox-preview-rail {
     display: none;
 }
 
-/* Drop-overlay inset — Inbox has the same 48 px preview rail + 8 px
+/* Drop-overlay inset — Inbox uses the same 48 px preview rail + 8 px
    gap as BB / BC, so the dashed frame should clear the rail. Reuses
    the same offset rule the editor-attachments stylesheet uses for
    #bb-drop-zone / #bc-drop-zone. */
@@ -189,19 +190,35 @@
     left: calc(8vw + 56px);
 }
 
-/* Action row at the bottom — POST + PULL. Reuses `.vcs-button-container`
-   so it inherits the BB BRANCH page's button row geometry without
-   having to re-derive the proportions. */
+/* Action row — POST + PULL inside .editor-actions (top-right of the
+   editor-wrapper), but as rectangular text buttons rather than the
+   circular icon style used by DELETE / RESET. POST + PULL are
+   primary user-initiated sync actions; the text label communicates
+   intent more clearly than an icon. */
 .inbox-action-row {
-    flex: 0 0 auto;
-    flex-direction: row;
-    justify-content: center;
-    gap: var(--panel-gap);
-    padding: 12px 0;
+    /* `.editor-actions` already absolutes top:8px right:calc(--sub-navi-height + 8px). */
 }
 
-.inbox-action-row .vcs-btn {
-    min-width: 96px;
+.inbox-action-btn {
+    padding: 6px 14px;
+    border: var(--border-line);
+    border-radius: var(--border-radius);
+    background: var(--bg-page);
+    color: var(--brand);
+    font-weight: 600;
+    font-size: calc(var(--font-size) * 0.82);
+    cursor: pointer;
+    transition: background var(--transition-normal),
+                color var(--transition-normal),
+                box-shadow var(--transition-normal);
+}
+
+@media (hover: hover) {
+    .inbox-action-btn:hover {
+        background: var(--brand);
+        color: #ffffff;
+        box-shadow: 0 2px 8px var(--shadow-brand);
+    }
 }
 
 /* Empty-state overlay — shown when no inbox is selected. Same
@@ -217,6 +234,7 @@
     font-size: calc(var(--font-size) * 1.05);
     background: color-mix(in srgb, var(--bg-page) 92%, transparent);
     pointer-events: none;
+    z-index: 5;
     /* JS toggles `display: none` once an inbox is loaded. */
 }
 
@@ -224,10 +242,10 @@
    to a horizontal strip above the textareas, mirroring BB / BC's
    own narrow-screen treatment. */
 @media (max-width: 640px) {
-    .log-editor-row {
+    .page[data-page="inbox-thread"] .log-editor-row {
         flex-direction: column;
     }
-    #inbox-preview-rail {
+    .page[data-page="inbox-thread"] #inbox-preview-rail {
         flex-direction: row;
         width: 100%;
         height: 36px;

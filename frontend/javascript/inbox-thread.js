@@ -70,6 +70,34 @@ export const IXThread = {
         if (this.elements.emptyOverlay) {
             this.elements.emptyOverlay.style.display = '';
         }
+        this._syncGlobalButtons();
+    },
+
+    /**
+     * Hide / show the global PUSH / PULL buttons inside `.page-container`.
+     * Sender mode: never show (single-page view, no navigation).
+     * Receiver mode: show only when there's more than one submission to
+     * scroll through. The transform values match navi.js's hidden /
+     * shown states so we don't fight its updatePage routine.
+     */
+    _syncGlobalButtons() {
+        const pushBtn = document.querySelector('.push-btn');
+        const pullBtn = document.querySelector('.pull-btn');
+        if (!pushBtn || !pullBtn) return;
+        const activePage = document.querySelector('.page.active');
+        const isInboxThread = activePage?.dataset.page === 'inbox-thread';
+        const shouldShow = isInboxThread
+            && this.mode === 'receiver'
+            && this.submissions.length > 1;
+        if (shouldShow) {
+            pushBtn.style.transform = 'translateY(0)';
+            pullBtn.style.transform = 'translateY(0)';
+        } else if (isInboxThread) {
+            // Only force-hide when the inbox-thread page is active —
+            // leave other pages' visibility decisions alone.
+            pushBtn.style.transform = 'translateY(-256%)';
+            pullBtn.style.transform = 'translateY(256%)';
+        }
     },
 
     /**
@@ -132,9 +160,13 @@ export const IXThread = {
 
         // Re-fetch when re-entering the thread page so the user
         // sees the latest feedback / submissions on tab return.
+        // Also re-sync push/pull visibility because navi.js's
+        // updatePage will have just shown them based on
+        // `can-push-pull`; we want the mode-aware decision instead.
         window.addEventListener('navi:pageChanged', (e) => {
-            if (e.detail?.page === 'inbox-thread' && this.inbox) {
-                this.refreshFromServer({ silent: true });
+            if (e.detail?.page === 'inbox-thread') {
+                this._syncGlobalButtons();
+                if (this.inbox) this.refreshFromServer({ silent: true });
             }
         });
 
@@ -238,6 +270,7 @@ export const IXThread = {
 
         await this.refreshFromServer({ silent: false });
         this._subscribeWS(inbox.id);
+        this._syncGlobalButtons();
     },
 
     unloadInbox() {
@@ -251,6 +284,7 @@ export const IXThread = {
         if (this.elements.senderArea) this.elements.senderArea.value = '';
         if (this.elements.receiverArea) this.elements.receiverArea.value = '';
         this.renderFileChip(null);
+        this._syncGlobalButtons();
     },
 
     // ── WebSocket subscription ───────────────────────────────────
@@ -303,6 +337,7 @@ export const IXThread = {
                 await IXSubmissions.replaceForInbox(this.inbox.id, this.submissions);
                 if (this.head >= this.submissions.length) this.head = Math.max(0, this.submissions.length - 1);
                 this.renderReceiverView();
+                this._syncGlobalButtons();
             } else {
                 const data = await InboxService.getMySubmission(this.inbox.id, signal);
                 if (signal.aborted) return;
