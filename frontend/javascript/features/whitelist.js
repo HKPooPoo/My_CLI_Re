@@ -349,3 +349,17 @@ export const feature = {
         refresh();
     },
 };
+
+// `feature-shelf.js` reads `feature.hintKey || \`hints.feature.${id}\`` ONCE
+// at boot and writes the result into `data-hint`. To keep the hint copy
+// in sync with the active page (BC vs Inbox flavour), we re-write the
+// attribute on `navi:pageChanged`. Same selector pattern used by the
+// rest of the project's hint resolution — `hint-panel.js` reads
+// `data-hint` from the DOM on hover.
+window.addEventListener('navi:pageChanged', (e) => {
+    const btn = document.querySelector('.feature-btn[data-feature-btn="whitelist"]');
+    if (!btn) return;
+    btn.dataset.hint = e.detail?.page === 'inbox-thread'
+        ? 'hints.inbox.whitelist'
+        : 'hints.feature.whitelist';
+});

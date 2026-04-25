@@ -528,14 +528,14 @@
                  BC's RESET + DELETE PAGE pattern, but rectangular text
                  instead of circular icons).
                  JS toggles `data-mode="sender|receiver"` on .page so
-                 CSS gates the receiver-only chrome (preview rail) and
-                 textareas (which side is editable). The page does NOT
-                 carry `show-branch` (no VCS branches in Inbox) or
-                 `have-feature` (no feature shelf — file-attach /
-                 calendar / flashcard / llm aren't relevant here).
-                 `can-push-pull` is set for global PUSH/PULL nav, but
-                 inbox-thread.js hides those buttons in sender mode or
-                 when receiver has <2 submissions. -->
+                 CSS gates the receiver-only chrome (preview rail,
+                 empty-submissions placeholder) and textareas. Page
+                 carries `have-feature` because the whitelist feature
+                 shelf surfaces here for owners; other features
+                 (file-attach / calendar / flashcard / llm) auto-hide
+                 via their own `pages` filter. `can-push-pull` is on
+                 but inbox-thread.js hides the global PUSH/PULL buttons
+                 in sender mode or when receiver has < 2 submissions. -->
             <div class="page can-push-pull have-feature" data-page="inbox-thread">
                 <div class="editor-wrapper" id="inbox-drop-zone">
                     <div class="attachment-chips" id="inbox-attachment-chips"></div>
@@ -549,7 +549,7 @@
                                           data-i18n-placeholder="inbox.senderPlaceholder"
                                           placeholder="What you want to submit..."></textarea>
                             </div>
-                            <div class="inbox-textarea-section">
+                            <div class="inbox-textarea-section is-feedback">
                                 <div class="inbox-textarea-label"
                                      data-i18n="inbox.receiverWindow">FEEDBACK</div>
                                 <textarea id="inbox-receiver-textarea"
@@ -557,6 +557,10 @@
                                           placeholder="Feedback from the inbox owner..."></textarea>
                             </div>
                         </div>
+                        <!-- Receiver-mode 0-submissions placeholder. CSS-shown via
+                             [data-empty-submissions="true"] on the parent .page. -->
+                        <div class="inbox-receiver-empty" id="inbox-receiver-empty"
+                             data-i18n="inbox.awaitingSubmissions">AWAITING FIRST SUBMISSION</div>
                     </div>
                     <div class="editor-actions inbox-action-row">
                         <button type="button" class="inbox-action-btn" id="inbox-pull-btn"

@@ -295,20 +295,15 @@
     },
     "inbox": {
       "create": "Create a new inbox. You become its owner — only you receive submissions. Sign-in with a title required.",
-      "delete": "Permanently delete this inbox and every submission inside it. Cannot be undone. Owner only. Three-step confirm.",
-      "post": "Push your latest changes to the cloud. Sender uploads file + sender text; receiver uploads feedback. Without POST, edits stay on this device only.",
-      "pull": "Re-fetch the latest from the server. Sender pulls the owner's feedback; receiver pulls every submitter's latest content."
+      "delete": "Permanently delete this inbox and every submission inside it. Cannot be undone. Three-step confirm.",
+      "post": "Push your latest local changes to the cloud. Sender posts file + sender text; receiver posts feedback. Edits stay local until POST.",
+      "pull": "Re-fetch the latest from the server. Sender pulls feedback; receiver pulls every submitter's latest.",
+      "whitelist": "Restrict who can submit. Members of the chosen preset can post; non-members see the inbox but cannot submit. DETACH reverts to public."
     },
     "search": {
       "open": "Search the pages of this notebook / channel / chat. Click to expand; Enter jumps to the next match.",
       "prev": "Previous match. Shift+Enter also works from the search input.",
       "next": "Next match. Enter from the search input also works."
-    },
-    "inbox": {
-      "post": "Push your latest local changes to the cloud. Sender posts file + sender text; receiver posts feedback. Edits stay local until POST.",
-      "pull": "Re-fetch the latest from the server. Sender pulls feedback; receiver pulls every submitter's latest.",
-      "create": "Create a new inbox. You become its owner — only you receive submissions. Sign-in with a title required.",
-      "delete": "Permanently delete this inbox and every submission inside it. Cannot be undone. Three-step confirm."
     },
     "wipeLocal": "Clear all locally stored notebooks, messages, channels and cached files. Settings and sign-in survive. Server data untouched. Page reloads. Three-step confirm.",
     "dropAllBranches": "Delete ALL your notebooks from the cloud. Sign-in required. Local data untouched. Three-step confirm.",
@@ -484,6 +479,8 @@
     "searchPlaceholder": "SEARCH INBOXES...",
     "namePlaceholder": "Inbox name",
     "noInboxSelected": "SELECT AN INBOX FROM THE LIST",
+    "awaitingSubmissions": "AWAITING FIRST SUBMISSION — share the inbox name with the audience.",
+    "feedbackPending": "Awaiting feedback from {owner}.",
     "senderWindow": "SUBMISSION",
     "receiverWindow": "FEEDBACK",
     "senderPlaceholder": "What you want to submit...",

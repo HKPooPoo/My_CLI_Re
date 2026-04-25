@@ -41,10 +41,13 @@ export const IXThread = {
         page: document.querySelector('.page[data-page="inbox-thread"]'),
         wrapper: document.getElementById('inbox-drop-zone'),
         emptyOverlay: document.getElementById('inbox-empty-overlay'),
+        receiverEmpty: document.getElementById('inbox-receiver-empty'),
         chipsArea: document.getElementById('inbox-attachment-chips'),
         previewRail: document.getElementById('inbox-preview-rail'),
         senderArea: document.getElementById('inbox-sender-textarea'),
+        senderSection: document.querySelector('.inbox-textarea-section:not(.is-feedback)'),
         receiverArea: document.getElementById('inbox-receiver-textarea'),
+        receiverSection: document.querySelector('.inbox-textarea-section.is-feedback'),
         dropOverlay: document.getElementById('inbox-drop-overlay'),
         fileInput: document.getElementById('inbox-file-input'),
         postBtn: document.getElementById('inbox-post-btn'),
@@ -395,6 +398,22 @@ export const IXThread = {
             this.elements.receiverArea.value = row?.receiver_text ?? '';
             this.elements.receiverArea.disabled = true;
         }
+        // Feedback pane shrinks to a "no feedback yet" placeholder when
+        // the inbox owner hasn't replied. Pairs with the CSS rule on
+        // `.inbox-textarea-section.is-feedback.is-empty`.
+        if (this.elements.receiverSection) {
+            const hasFeedback = !!(row?.receiver_text && row.receiver_text.trim());
+            this.elements.receiverSection.classList.toggle('is-empty', !hasFeedback);
+            if (!hasFeedback) {
+                const ownerLabel = this.inbox?.owner_title || this.inbox?.owner_uid || '';
+                this.elements.receiverSection.dataset.emptyLabel =
+                    t('inbox.feedbackPending', { owner: ownerLabel });
+            } else {
+                delete this.elements.receiverSection.dataset.emptyLabel;
+            }
+        }
+        // Clear the receiver-mode-only empty-submissions flag.
+        this.elements.page?.removeAttribute('data-empty-submissions');
         this.renderFileChip(row?.file_hash ?? null, /*readOnly*/ false);
     },
 
@@ -407,6 +426,18 @@ export const IXThread = {
         if (this.elements.receiverArea) {
             this.elements.receiverArea.value = row?.receiver_text ?? '';
             this.elements.receiverArea.disabled = false;
+        }
+        // Feedback pane in receiver mode is always full-size (it's the
+        // owner's primary write target) — clear the sender-mode shrink.
+        this.elements.receiverSection?.classList.remove('is-empty');
+        // Toggle the 0-submissions empty state. CSS hides
+        // .inbox-textareas and shows .inbox-receiver-empty when set.
+        if (this.elements.page) {
+            if (this.submissions.length === 0) {
+                this.elements.page.setAttribute('data-empty-submissions', 'true');
+            } else {
+                this.elements.page.removeAttribute('data-empty-submissions');
+            }
         }
         this.renderFileChip(row?.file_hash ?? null, /*readOnly*/ true);
         this.renderPreviewRail();
@@ -435,6 +466,12 @@ export const IXThread = {
             });
             this.elements.previewRail.appendChild(block);
         });
+        // Keep the active block in view after navigation. Cheap fallback
+        // for long submitter lists where the active row scrolls off the
+        // visible rail height.
+        this.elements.previewRail
+            .querySelector('.page-preview-block.active')
+            ?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     },
 
     /**

@@ -819,6 +819,34 @@ Log section; every new user decision gets appended with a date.
         sets `data-mode="sender|receiver"` on `.page` so CSS hides
         the receiver-only preview rail in sender mode. Auto-save
         on every keystroke, manual POST + PULL.
+      - **Empty / shrink states (UI-only batch 2026-04-25 follow-up):**
+        - Receiver mode + 0 submissions: JS sets
+          `data-empty-submissions="true"` on the page; CSS swaps
+          the dual-textarea pane for a single centred
+          `inbox.awaitingSubmissions` placeholder.
+        - Sender mode + no feedback yet: the `.is-feedback`
+          textarea section gets `.is-empty` and collapses to a
+          56 px placeholder strip showing
+          `t('inbox.feedbackPending', { owner })`. Once feedback
+          arrives, the section flexes back to 0.4 of SUBMISSION's
+          weight (40/60 split — sender's writing dominates).
+        - Receiver preview-rail blocks: each renders a
+          `.inbox-preview-block-label` span with vertical-rl text
+          (`✓ S20260005` graded / `· S20260003` ungraded). Ungraded
+          blocks carry `.unsynced` class — dashed accent (purple)
+          border + tinted bg, scoped under
+          `.page[data-page="inbox-thread"]` so BB / BC are untouched.
+          Active block auto-scrolls into view after navigation
+          (`scrollIntoView({ block: 'nearest' })`).
+        - Disabled textareas (sender SUBMISSION in receiver mode,
+          or receiver FEEDBACK in sender mode) use `bg-page` slate
+          + `text-muted` colour — clearer read-only signal than
+          the previous opacity-only treatment.
+        - Whitelist feature shelf hint flips per active page: BC
+          ⇒ `hints.feature.whitelist`, Inbox ⇒ `hints.inbox.whitelist`.
+          `features/whitelist.js` listens to `navi:pageChanged` and
+          mutates the button's `data-hint` directly, since
+          `feature-shelf.js` reads `hintKey` once at boot.
       - `IXMeta` / `IXSubmissions` IDB wrappers (Dexie v7 schema
         adds `inboxes` and `inbox_submissions` tables — keyed by
         `server_inbox_id` and `[server_inbox_id+sender_uid]`

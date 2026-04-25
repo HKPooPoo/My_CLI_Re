@@ -169,10 +169,61 @@
 
 #inbox-sender-textarea:disabled,
 #inbox-receiver-textarea:disabled {
-    opacity: 0.7;
+    background: var(--bg-page);
+    color: var(--text-muted);
     cursor: default;
     caret-color: transparent;
+}
+
+/* ── Receiver mode + 0 submissions empty state ────────────────
+   Owner just opened a fresh inbox; nothing to render in the
+   textareas yet. JS toggles `data-empty-submissions="true"` on
+   the page; CSS swaps the dual-textarea pane for a single
+   centred message. */
+.inbox-receiver-empty {
+    display: none;
+    flex: 1;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-muted);
+    font-style: italic;
+    text-align: center;
+    padding: 24px;
+    font-size: calc(var(--font-size) * 1.05);
+    line-height: 1.6;
+}
+.page[data-mode="receiver"][data-empty-submissions="true"] .inbox-textareas {
+    display: none;
+}
+.page[data-mode="receiver"][data-empty-submissions="true"] .inbox-receiver-empty {
+    display: flex;
+}
+
+/* ── Sender mode FEEDBACK pane proportions ────────────────────
+   Sender's primary task is writing the SUBMISSION; the FEEDBACK
+   pane is contextual (read-only, smaller). When no feedback yet,
+   collapse to a slim placeholder so SUBMISSION dominates. */
+.page[data-mode="sender"] .inbox-textarea-section.is-feedback {
+    flex: 0.4;
+}
+.page[data-mode="sender"] .inbox-textarea-section.is-feedback.is-empty {
+    flex: 0 0 56px;
     background: transparent;
+    border-style: dashed;
+    border-color: var(--border-subtle);
+}
+.page[data-mode="sender"] .inbox-textarea-section.is-feedback.is-empty
+    #inbox-receiver-textarea {
+    display: none;
+}
+.page[data-mode="sender"] .inbox-textarea-section.is-feedback.is-empty::after {
+    content: attr(data-empty-label);
+    color: var(--text-muted);
+    font-style: italic;
+    font-size: calc(var(--font-size) * 0.85);
+    padding: 0 16px;
+    align-self: center;
+    text-align: center;
 }
 
 /* Sender mode hides the receiver-only preview rail — the rail
@@ -180,6 +231,53 @@
    is the sole submitter. */
 .page[data-mode="sender"] #inbox-preview-rail {
     display: none;
+}
+
+/* Preview-block label — vertical-rl text fits the 48 px rail block.
+   Uses the same writing-mode pattern `.head-indicator` uses elsewhere
+   in the project for narrow vertical text. The leading glyph (✓ for
+   graded, · for ungraded) doubles as a status badge so the receiver
+   reads grading state without colour cues alone. */
+.page[data-page="inbox-thread"] .page-preview-block {
+    align-items: center;
+    justify-content: center;
+    padding: 4px 2px;
+}
+.inbox-preview-block-label {
+    writing-mode: vertical-rl;
+    transform: rotate(180deg);
+    font-size: 10px;
+    font-family: monospace;
+    color: var(--text-body);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-height: 100%;
+    padding: 4px 0;
+    line-height: 1.2;
+}
+.page-preview-block.active .inbox-preview-block-label,
+.page-preview-block:hover .inbox-preview-block-label,
+.page-preview-block.peeking .inbox-preview-block-label {
+    color: #ffffff;
+}
+
+/* Ungraded submissions — receiver hasn't written feedback_at yet.
+   Dashed accent (purple) border distinguishes from the brand-wine
+   active state without colliding with `.virtual` (BB's transparent
+   dashed) or `.dragging` (BB's dim). Inbox-thread-scoped so the rule
+   doesn't bleed into BB / BC pages. */
+.page[data-page="inbox-thread"] .page-preview-block.unsynced {
+    border-style: dashed;
+    border-color: var(--accent);
+    background: color-mix(in srgb, var(--accent) 8%, var(--bg-secondary));
+}
+.page[data-page="inbox-thread"] .page-preview-block.unsynced.active {
+    border-color: var(--accent);
+    background: var(--accent);
+}
+.page[data-page="inbox-thread"] .page-preview-block.unsynced::after {
+    background-color: var(--accent);
 }
 
 /* Drop-overlay inset — Inbox uses the same 48 px preview rail + 8 px
