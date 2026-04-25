@@ -752,13 +752,85 @@ Log section; every new user decision gets appended with a date.
     - **Pending follow-ups**: Inbox reuse hookup when that subsystem
       lands; i18n strings (current shelf copy is inline English —
       fine for the demo, swap to `t()` keys when locales return).
-- **Tier 23 — Inbox system** (depends on 9g). BC variant with a
-  whitelist (reuses 9g), sender 4-component view, receiver preview
-  rail + search + whitelist management. Independent tables
-  (`inboxes`, `inbox_submissions`, `inbox_feedback`) — NOT a
-  `broadcast_channels.type` overload. Name locked as "inbox" (no
-  "mailbox" ambiguity). Unidirectional feedback thread (not WT-
-  style bi-directional).
+- **Inbox subsystem** ✅ (shipped 2026-04-25). Many-to-one
+  transposition of Broadcast: N senders submit, 1 owner reads + writes
+  feedback. Reuses the whitelist subsystem with **flipped semantics** —
+  whitelist members are **submitters** (not readers as in BC). The
+  spec's planned `inbox_feedback` table was DROPPED — receiver_text
+  lives on the same `inbox_submissions` row as sender_text + file_hash,
+  because a submission has exactly one (sender, owner) feedback pair
+  and no thread depth. Two tables instead of three.
+    - **Tables** (migrations `2026_04_25_000001`, `…000002`):
+      - `inboxes` — id, name UNIQUE, description, user_id FK
+        (owner), whitelist_id nullable FK SET NULL on delete,
+        last_signal bigint ms.
+      - `inbox_submissions` — id, inbox_id FK CASCADE, user_id
+        FK CASCADE (sender), sender_text, file_hash (single hash —
+        max 1 file per submission, hence text not jsonb), receiver_text,
+        feedback_at bigint ms (null until owner first responds).
+        UNIQUE(inbox_id, user_id) — one row per (inbox, sender) pair,
+        so resubmit is UPDATE not INSERT.
+    - **Sync model** is BB/BC's commit/checkout, not auto:
+      - textarea → IDB: 200ms debounce auto-save (sender_text on
+        sender side, receiver_text on receiver side)
+      - IDB → server: explicit POST button (sender pushes file +
+        sender_text; receiver pushes receiver_text)
+      - server → IDB: explicit PULL button (full re-fetch)
+      - WS event re-fetches silently on the same page so observers
+        see live state without auto-pushing local edits to server
+    - **Read-preserved, write-revoked** policy on whitelist switch.
+      `InboxService::isVisibleTo` extends to anyone with an existing
+      submission on the inbox (so an evicted student keeps read
+      access to their already-graded work), but
+      `isSenderEligible` doesn't (write is gated strictly by the
+      current whitelist). 24 service tests + matching HTTP gates
+      lock this in.
+    - **3 windows** on the inbox-thread page = the 3 content fields
+      of one submission row. Sender mode: file + sender_text editable,
+      receiver_text read-only, single page, no push/pull. Receiver
+      mode: file + sender_text read-only, receiver_text editable,
+      push/pull + preview rail across submitters (one block per
+      sender, ✓ marker when feedback_at is non-null).
+    - **HTTP endpoints**:
+      - `GET /api/inboxes` (visibility-filtered list)
+      - `POST /api/inboxes` (titled-only create; whitelist optional)
+      - `PATCH /api/inboxes/{id}` (rename + description, owner)
+      - `DELETE /api/inboxes/{id}` (cascade delete, owner)
+      - `PUT /api/inboxes/{id}/whitelist` (apply/detach, owner +
+        T1 grant required)
+      - `GET /api/inboxes/{id}/submissions` (owner full list)
+      - `GET /api/inboxes/{id}/submission` (sender's own row, null
+        when not yet submitted)
+      - `PUT /api/inboxes/{id}/submission` (sender push)
+      - `PUT /api/inboxes/{id}/submission/{senderUid}/feedback`
+        (receiver write — bumps `feedback_at` distinctly from
+        `updated_at` so sender [NEW] indicator can flip without
+        ambiguity vs. own edits)
+    - **WS**: `inbox.{id}` public channel, payload metadata-only
+      (action / last_signal). Same leak-tolerant model as BC —
+      content fetch is HTTP-gated. Senders / owners re-pull on
+      receive.
+    - **Frontend** (5th main nav `inbox`):
+      - `inbox-list` page (mirrors `broadcast-list`): list of
+        accessible inboxes, CREATE (titled), DELETE (owner, 3-step).
+        Status legend reuses the existing `locked` icon (whitelist
+        applied) and a new `new` envelope variant for unread feedback.
+      - `inbox-thread` page: polymorphic on `inbox.owner_uid`. JS
+        sets `data-mode="sender|receiver"` on `.page` so CSS hides
+        the receiver-only preview rail in sender mode. Auto-save
+        on every keystroke, manual POST + PULL.
+      - `IXMeta` / `IXSubmissions` IDB wrappers (Dexie v7 schema
+        adds `inboxes` and `inbox_submissions` tables — keyed by
+        `server_inbox_id` and `[server_inbox_id+sender_uid]`
+        respectively, no `++local_id` since inboxes are server-bound
+        from creation).
+    - **Artisan**: `inbox:create / list / delete` for admin
+      management (same patterns as `whitelist:*`).
+    - **Tests**: 24 new `InboxServiceTest` cases covering lifecycle,
+      visibility (read-preserved), submit (unique upsert,
+      eligibility, public path), feedback (owner-only,
+      `feedback_at` vs `sender_text` isolation), whitelist switching.
+      Suite now 377 / 817.
 - **Tier 14 part 2** — (superseded by 9e) server-side sync for BC
   Flashcard data now flows through the existing `cast` endpoint.
 - **Tier 13** — List status icons + 4 px left border sweep.
@@ -768,10 +840,12 @@ Log section; every new user decision gets appended with a date.
 - **Pending mission**: LLM multi-branch aggregation (memory:
   `project_pending_llm_multipage.md`).
 
-**Execution order (updated 2026-04-24):**
-`24 ✅ → 9e ✅ → 9g → 23-A → 23-B → 23-C`. 9g was added
-per stakeholder request to extend whitelist from Inbox-only to
-a shared BC+Inbox subsystem.
+**Execution order (updated 2026-04-25):**
+`24 ✅ → 9e ✅ → 9g ✅ → Inbox ✅`. The Inbox subsystem
+shipped without sub-tier letters — the design simplified during
+implementation (3 tables → 2; receiver_text moved onto the
+submission row; one-shot 3-window page replaces the spec's
+4-component sender + separate receiver views).
 
 ### Doc-discipline rule for this session
 

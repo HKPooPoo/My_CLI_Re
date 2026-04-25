@@ -81,5 +81,19 @@ db.version(6).stores({
     ]);
 });
 
+// v7: Inbox subsystem. Inboxes are server-bound from creation (no
+// local-only drafts as in BC), so server_inbox_id is the natural PK
+// — no ++local_id indirection needed. inbox_submissions is keyed by
+// the natural identity (inbox + sender uid), one row per pair.
+db.version(7).stores({
+    blackboard:          '[owner+branch_id+timestamp], owner, branch_id, [branch_id+timestamp]',
+    walkie_typie:        '[branch_id+timestamp], branch_id, branch',
+    broadcast_boards:    '[local_channel_id+timestamp], local_channel_id',
+    broadcast_channels:  '++local_id, name, server_channel_id',
+    file_blobs:          'hash, last_accessed, status',
+    inboxes:             'server_inbox_id, name, last_signal',
+    inbox_submissions:   '[server_inbox_id+sender_uid], server_inbox_id, sender_uid, updated_at',
+});
+
 export default db;
 export { Dexie };

@@ -36,6 +36,7 @@
     <link rel="stylesheet" href="stylesheets/toast.css">
     <link rel="stylesheet" href="stylesheets/page-walkie-typie.css">
     <link rel="stylesheet" href="stylesheets/page-broadcast.css">
+    <link rel="stylesheet" href="stylesheets/page-inbox.css">
     <link rel="stylesheet" href="stylesheets/page-misc.css">
     <link rel="stylesheet" href="stylesheets/editor-attachments.css">
     <link rel="stylesheet" href="stylesheets/features.css">
@@ -164,6 +165,21 @@
                         </div>
                         <div class="sub-navi-item" data-sub-navi-item="broadcast-config">
                             <div class="sub-navi-item-text" data-i18n="nav.bcConfig">CONFIG</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="navi-item" data-navi-item="inbox" data-sound-main="UIGeneralOK.mp3"
+                data-sound-sub="UIPipboyOK.mp3">
+                <div class="navi-item-text" data-i18n="nav.inbox">INBOX</div>
+                <div class="sub-navi-indicator"></div>
+                <div class="sub-navi-container">
+                    <div class="sub-navi-track">
+                        <div class="sub-navi-item" data-sub-navi-item="inbox-thread">
+                            <div class="sub-navi-item-text" data-i18n="inbox.threadTab">&lt;--&gt;</div>
+                        </div>
+                        <div class="sub-navi-item" data-sub-navi-item="inbox-list">
+                            <div class="sub-navi-item-text" data-i18n="inbox.listTab">LIST</div>
                         </div>
                     </div>
                 </div>
@@ -376,6 +392,9 @@
             <script type="module" src="./javascript/broadcast-channel.js"></script>
             <!-- Broadcast Config -->
             <script type="module" src="./javascript/broadcast-config.js"></script>
+            <!-- Inbox Modules -->
+            <script type="module" src="./javascript/inbox-list.js"></script>
+            <script type="module" src="./javascript/inbox-thread.js"></script>
             <!---->
             <!-- <div class="page page-flex-direction-row can-push-pull" data-page="ai-translate">
                 <textarea name="" id="ai-translate-input" placeholder="Enter..."></textarea>
@@ -499,6 +518,75 @@
                     <div class="misc-title crt-text-orange" data-i18n="nav.bcConfig">CONFIG</div>
                     <div class="misc-list-container" id="bc-config-container"></div>
                     <div class="misc-action-container" id="bc-config-action"></div>
+                </div>
+            </div>
+            <!-- Inbox: 3-window submission thread. Sender mode shows only their own
+                 row; receiver (inbox owner) gets push/pull + preview rail across
+                 all submitters. JS toggles `data-mode="sender|receiver"` on the
+                 page root to gate the receiver-only chrome. -->
+            <div class="page can-push-pull have-feature show-branch" data-page="inbox-thread">
+                <div class="inbox-thread-container" id="inbox-thread-container">
+                    <div class="inbox-thread-empty" id="inbox-thread-empty"
+                         data-i18n="inbox.noInboxSelected">SELECT AN INBOX FROM THE LIST</div>
+
+                    <div class="inbox-thread-body" id="inbox-thread-body" style="display:none">
+                        <div class="page-preview-rail" id="inbox-preview-rail"></div>
+
+                        <div class="inbox-thread-windows">
+                            <!-- Window 1: file attach (1 max) -->
+                            <div class="inbox-window inbox-file-window">
+                                <div class="inbox-window-title" data-i18n="inbox.fileWindow">FILE</div>
+                                <div class="inbox-file-slot" id="inbox-file-slot">
+                                    <button type="button" class="inbox-file-pick-btn"
+                                            id="inbox-file-pick-btn"
+                                            data-i18n="inbox.attachFile">+ ATTACH FILE</button>
+                                    <div class="inbox-file-chip" id="inbox-file-chip" style="display:none"></div>
+                                </div>
+                                <input type="file" id="inbox-file-input" hidden>
+                            </div>
+
+                            <!-- Window 2: sender text -->
+                            <div class="inbox-window inbox-sender-window">
+                                <div class="inbox-window-title" data-i18n="inbox.senderWindow">SENDER TEXT</div>
+                                <textarea id="inbox-sender-textarea"
+                                          data-i18n-placeholder="inbox.senderPlaceholder"
+                                          placeholder="What you want to submit..."></textarea>
+                            </div>
+
+                            <!-- Window 3: receiver text -->
+                            <div class="inbox-window inbox-receiver-window">
+                                <div class="inbox-window-title" data-i18n="inbox.receiverWindow">RECEIVER TEXT</div>
+                                <textarea id="inbox-receiver-textarea"
+                                          data-i18n-placeholder="inbox.receiverPlaceholder"
+                                          placeholder="Feedback from the inbox owner..."></textarea>
+                            </div>
+                        </div>
+
+                        <div class="inbox-thread-actions">
+                            <button type="button" class="inbox-action-btn" id="inbox-post-btn"
+                                    data-hint="hints.inbox.post"
+                                    data-i18n="inbox.postBtn">POST</button>
+                            <button type="button" class="inbox-action-btn" id="inbox-pull-btn"
+                                    data-hint="hints.inbox.pull"
+                                    data-i18n="inbox.pullBtn">PULL</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="page have-feature" data-page="inbox-list">
+                <div class="inbox-list-container">
+                    <div class="inbox-list-title crt-text-orange" data-i18n="inbox.listTitle">INBOX REGISTRY</div>
+                    <input type="text" class="inbox-search-input" id="inbox-search"
+                           data-i18n-placeholder="inbox.searchPlaceholder"
+                           placeholder="SEARCH INBOXES...">
+                    <div class="inbox-list-list-container" data-sound-item="UIGeneralFocus.mp3">
+                    </div>
+                    <button id="inbox-create-btn" class="crt-text-green"
+                            data-hint="hints.inbox.create"
+                            data-i18n="inbox.createBtn">CREATE</button>
+                    <button id="inbox-delete-btn" class="crt-text-red"
+                            data-hint="hints.inbox.delete"
+                            data-i18n="inbox.deleteBtn">DELETE</button>
                 </div>
             </div>
             <div id="toast-container"></div>

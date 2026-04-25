@@ -25,6 +25,8 @@ const LOCKED_PAGES = new Set([
     'walkie-typie-text',   // CHAT → MESSAGES
     'broadcast-channel',   // ANNOUNCE → POSTS
     'broadcast-list',      // ANNOUNCE → CHANNELS
+    'inbox-thread',        // INBOX → THREAD
+    'inbox-list',          // INBOX → LIST
 ]);
 
 const $overlay  = document.getElementById('auth-locked-overlay');
