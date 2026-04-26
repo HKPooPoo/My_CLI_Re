@@ -155,10 +155,8 @@ export const IXThread = {
             },
         });
 
-        // Empty overlay starts visible — JS hides it once an inbox loads
-        if (this.elements.emptyOverlay) {
-            this.elements.emptyOverlay.style.display = '';
-        }
+        // Empty overlay starts visible — JS removes .is-visible once an inbox loads
+        this.elements.emptyOverlay?.classList.add('is-visible');
         this._syncGlobalButtons();
     },
 
@@ -424,7 +422,7 @@ export const IXThread = {
         // fire between our synchronous setup and the first await.
         // If the overlay hide is after await, the user sees "SELECT
         // AN INBOX" flash after they already selected one.
-        if (this.elements.emptyOverlay) this.elements.emptyOverlay.style.display = 'none';
+        this.elements.emptyOverlay?.classList.remove('is-visible');
 
         // Persist any pending edits from the old inbox before switching
         await this.flushPending();
@@ -444,7 +442,7 @@ export const IXThread = {
         this.head = 0;
         this.mode = 'sender';
         this.elements.page?.removeAttribute('data-mode');
-        if (this.elements.emptyOverlay) this.elements.emptyOverlay.style.display = '';
+        this.elements.emptyOverlay?.classList.add('is-visible');
         if (this.elements.instructionArea) this.elements.instructionArea.value = '';
         if (this.elements.senderArea) this.elements.senderArea.value = '';
         if (this.elements.receiverArea) this.elements.receiverArea.value = '';

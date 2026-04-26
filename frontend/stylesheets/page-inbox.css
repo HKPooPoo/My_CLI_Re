@@ -271,8 +271,12 @@
 }
 
 /* ── Empty-state overlay ───────────────────────────────────────
-   "Select an inbox from the list" — shown when no inbox loaded. */
+   "Select an inbox from the list" — shown when no inbox loaded.
+   Hidden by default (display: none). JS toggles `.is-visible`
+   class instead of inline style.display — inline style was
+   unreliable (failed to hide after loadInbox in some flows). */
 .inbox-empty-overlay {
+    display: none;
     position: absolute;
     inset: 0;
     align-items: center;
@@ -283,6 +287,9 @@
     background: color-mix(in srgb, var(--bg-page) 92%, transparent);
     pointer-events: none;
     z-index: 5;
+}
+.inbox-empty-overlay.is-visible {
+    display: flex;
 }
 
 /* ── Mobile ────────────────────────────────────────────────────
