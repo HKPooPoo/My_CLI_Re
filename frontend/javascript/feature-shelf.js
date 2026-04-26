@@ -113,7 +113,13 @@ window.addEventListener('navi:pageChanged', ({ detail }) => {
 // Inbox emits the analogous events on inbox-list selection — whitelist
 // shelf gates on `IXThread.inbox.owner_uid === currentUid`, so we have to
 // re-evaluate when the active inbox changes.
-['broadcast:selected', 'broadcast:cleared',
+//
+// `broadcast:localBootstrapped` covers the cross-device-owner path: the
+// owner opens a channel they own but have no local copy of yet, async
+// bootstrap pulls the server copy into IDB, isOwnerMode flips from false
+// to true mid-load. Without this listener the Whitelist button would
+// stay hidden until the next page navigation.
+['broadcast:selected', 'broadcast:cleared', 'broadcast:localBootstrapped',
  'inbox:selected', 'inbox:cleared'].forEach(evtName => {
     window.addEventListener(evtName, () => {
         const activePage = document.querySelector('.page.active');

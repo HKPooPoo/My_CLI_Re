@@ -618,6 +618,14 @@ export const BCChannel = {
         const hasTitle = !!localStorage.getItem('currentTitle');
         const isOwner = !!(me && hasTitle && channel.ownerUid === me);
 
+        // Set isOwnerMode SYNCHRONOUSLY before any await — feature-shelf
+        // re-evaluates `WhitelistFeature.shouldShow` on the same
+        // `broadcast:selected` event and reads `BCChannel.isOwnerMode`.
+        // If we set it after an await, the synchronous shouldShow call
+        // sees the previous value (typically false) and the Whitelist
+        // button stays hidden until the next page change.
+        this.isOwnerMode = !!(isOwner && channel.isLocal);
+
         // Owner on this device but no local copy (cross-device / after WIPE
         // LOCAL). Pull the server copy into IndexedDB so owner mode can work
         // — otherwise `channel.isLocal` stays false and owner would be locked
@@ -625,6 +633,8 @@ export const BCChannel = {
         if (isOwner && !channel.isLocal && channel.serverChannelId) {
             try {
                 await this._bootstrapLocalFromServer(channel);
+                // Re-evaluate now that channel.isLocal flipped to true.
+                this.isOwnerMode = !!(isOwner && channel.isLocal);
                 window.dispatchEvent(new CustomEvent('broadcast:localBootstrapped', {
                     detail: { serverChannelId: channel.serverChannelId }
                 }));
@@ -634,8 +644,6 @@ export const BCChannel = {
                 // channel.isLocal stays false → falls through to reader mode
             }
         }
-
-        this.isOwnerMode = !!(isOwner && channel.isLocal);
 
         // Lock the chip UI for readers. Without this, the attachment instance
         // (init'd with readOnly: false to support owner mode) renders the
