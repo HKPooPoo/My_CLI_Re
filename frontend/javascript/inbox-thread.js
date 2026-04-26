@@ -889,11 +889,15 @@ export const IXThread = {
             clearTimeout(touchTimer);
             touchTimer = setTimeout(() => {
                 if (!snapshot) {
-                    const row = this.submissions[this.head];
+                    const uid = this.members[this.head];
+                    const row = uid ? this.submissions.find(s => s.sender_uid === uid) : null;
                     snapshot = {
-                        sender:   this.elements.senderArea?.value ?? '',
-                        receiver: this.elements.receiverArea?.value ?? '',
-                        fileHash: row?.file_hash ?? null,
+                        sender:     this.elements.senderArea?.value ?? '',
+                        receiver:   this.elements.receiverArea?.value ?? '',
+                        fileHash:   row?.file_hash ?? null,
+                        senderUid:  this.elements.senderUid?.textContent ?? '',
+                        senderTs:   this.elements.senderTs?.textContent ?? '',
+                        receiverTs: this.elements.receiverTs?.textContent ?? '',
                     };
                     lock(true);
                 }
@@ -1023,7 +1027,8 @@ export const IXThread = {
     scheduleSaveReceiver() {
         this.timers.schedule(SAVE_DEBOUNCE_KEY, async () => {
             if (!this.inbox) return;
-            const row = this.submissions[this.head];
+            const currentUid = this.members[this.head];
+            const row = currentUid ? this.submissions.find(s => s.sender_uid === currentUid) : null;
             if (!row) return;
             const text = this.elements.receiverArea?.value ?? '';
             await IXSubmissions.upsert({
@@ -1075,7 +1080,8 @@ export const IXThread = {
     },
 
     async postAsReceiver() {
-        const row = this.submissions[this.head];
+        const currentUid = this.members[this.head];
+        const row = currentUid ? this.submissions.find(s => s.sender_uid === currentUid) : null;
         if (!row) return BBMessage.error(t('inbox.noSubmissionToFeedback'));
 
         // Same as sender path — DOM is the source of truth at the
