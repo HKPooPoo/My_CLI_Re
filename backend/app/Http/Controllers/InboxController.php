@@ -72,15 +72,23 @@ class InboxController extends Controller
         }
 
         $request->validate([
-            'name'        => 'sometimes|string|max:255',
-            'description' => 'sometimes|nullable|string|max:65535',
+            'name'              => 'sometimes|string|max:255',
+            'description'       => 'sometimes|nullable|string|max:65535',
+            'instruction_files' => 'sometimes|nullable|array',
         ]);
 
         if ($request->has('name')) {
             $this->service->renameInbox($user, (int) $inboxId, $request->input('name'));
         }
-        if ($request->has('description')) {
-            $this->service->setDescription($user, (int) $inboxId, $request->input('description'));
+        if ($request->has('description') || $request->has('instruction_files')) {
+            $this->service->setInstruction(
+                $user,
+                (int) $inboxId,
+                $request->has('description') ? $request->input('description') : null,
+                $request->has('instruction_files') ? $request->input('instruction_files') : null,
+                $request->has('description'),
+                $request->has('instruction_files'),
+            );
         }
 
         return response()->json(['message' => 'INBOX UPDATED']);

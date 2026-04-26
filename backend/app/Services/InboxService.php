@@ -324,6 +324,24 @@ class InboxService
             ->update(['description' => $description, 'updated_at' => now()]);
     }
 
+    /**
+     * Update the instruction pane (per-inbox text + files). Partial
+     * update: only the fields whose `$has*` flag is true are written.
+     * Keeps the controller thin — it just forwards request->has checks.
+     */
+    public function setInstruction(
+        User $user, int $inboxId,
+        ?string $description, ?array $instructionFiles,
+        bool $hasDescription, bool $hasFiles,
+    ): void {
+        $this->loadOwnedOrAbort($user, $inboxId);
+        $update = ['updated_at' => now()];
+        if ($hasDescription)  $update['description'] = $description;
+        if ($hasFiles)        $update['instruction_files'] = $instructionFiles !== null
+                                    ? json_encode($instructionFiles) : null;
+        DB::table('inboxes')->where('id', $inboxId)->update($update);
+    }
+
     public function applyWhitelist(User $user, int $inboxId, ?int $whitelistId): void
     {
         $inbox = $this->loadOwnedOrAbort($user, $inboxId);
