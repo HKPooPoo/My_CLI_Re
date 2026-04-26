@@ -420,12 +420,16 @@ export const IXThread = {
         this.mode = (me && inbox.owner_uid === me) ? 'receiver' : 'sender';
         this.elements.page?.setAttribute('data-mode', this.mode);
 
+        // Hide the empty-state overlay SYNCHRONOUSLY — same reason
+        // as hoisting this.inbox: other listeners on the same event
+        // fire between our synchronous setup and the first await.
+        // If the overlay hide is after await, the user sees "SELECT
+        // AN INBOX" flash after they already selected one.
+        if (this.elements.emptyOverlay) this.elements.emptyOverlay.style.display = 'none';
+
         // Persist any pending edits from the old inbox before switching
         await this.flushPending();
         this._unsubscribeWS();
-
-        // Hide the empty-state overlay; show the editor scaffold.
-        if (this.elements.emptyOverlay) this.elements.emptyOverlay.style.display = 'none';
 
         await this.refreshFromServer({ silent: false });
         this._subscribeWS(inbox.id);
