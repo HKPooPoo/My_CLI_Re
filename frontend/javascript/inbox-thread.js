@@ -531,10 +531,8 @@ export const IXThread = {
                 // students' submissions, no class-roster leak.
                 const me2 = localStorage.getItem('currentUser');
                 this.members = me2 ? [me2] : [];
-                // Derive submittedUids from own submission existence
-                // (getMySubmission no longer returns submitted_uids).
-                this.submittedUids = row ? new Set([me2]) : new Set();
                 const row = data?.submission ?? null;
+                this.submittedUids = row ? new Set([me2]) : new Set();
                 this.canSubmit = !!data?.can_submit;
                 // Eligibility transition toasts (silent refresh only — a
                 // user-initiated PULL already gets a 'PULLED' toast).
@@ -549,10 +547,9 @@ export const IXThread = {
                         { owner: this.inbox?.owner_uid ?? '?' }));
                 }
                 if (row) {
-                    const me = localStorage.getItem('currentUser');
                     await IXSubmissions.upsert({
                         server_inbox_id: this.inbox.id,
-                        sender_uid: me,
+                        sender_uid: me2,
                         sender_text: row.sender_text,
                         file_hash: row.file_hash,
                         receiver_text: row.receiver_text,
@@ -568,7 +565,7 @@ export const IXThread = {
                     }
                 }
                 this.submissions = row ? [{
-                    sender_uid: localStorage.getItem('currentUser'),
+                    sender_uid: me2,
                     sender_text: row.sender_text,
                     file_hash: row.file_hash,
                     receiver_text: row.receiver_text,
@@ -576,8 +573,6 @@ export const IXThread = {
                     submitted_at: row.submitted_at,
                     updated_at: row.updated_at,
                 }] : [];
-                // Set head to own position in member roster (or 0).
-                const me2 = localStorage.getItem('currentUser');
                 this.head = Math.max(0, this.members.indexOf(me2));
                 this.renderSenderView();
             }
