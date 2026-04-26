@@ -121,14 +121,17 @@
     flex: 1;
     flex-direction: column;
     min-width: 0;
-    gap: 4px;
+    margin: var(--single-textbox-margin);
+    gap: 8px;
 }
 
-/* Each window — direct copy of `.walkie-typie-blackboard` layout */
+/* Each window — mirrors `.walkie-typie-blackboard` (bordered flex:1)
+   but uses container gap instead of per-window margin so three
+   windows pack tighter than WT's two-board layout (which uses
+   per-board margin creating ~8vh between boards — too much for 3). */
 .inbox-window {
     position: relative;
     flex: 1;
-    margin: var(--single-textbox-margin);
     border: var(--border-line);
 }
 
@@ -181,16 +184,18 @@
    `.we-pull-btn` / `.they-pull-btn` (bottom, translateY(86%)).
    Hidden by default; shown via perspective gate on the editable
    window for the current role. */
+/* Actions sit inside the window at bottom-right — NOT protruding
+   outside (unlike WT's pull-btn which protrudes below the board).
+   With 8px inter-window gap, a protruding button would overlap the
+   next window. Absolute-positioned inside the bordered box. */
 .inbox-window-actions {
     display: none;
     position: absolute;
-    bottom: 0;
-    transform: translateY(86%);
-    right: -16px;
-    border-radius: calc(var(--border-radius) * 4) 0
-                   var(--border-radius) var(--border-radius);
+    bottom: 4px;
+    right: 4px;
     flex-direction: row;
     gap: 4px;
+    z-index: 1;
 }
 
 .page[data-mode="sender"]   .is-submission  .inbox-window-actions,

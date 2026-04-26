@@ -421,7 +421,7 @@ class WhitelistService
      * convention so the lecturer sees the same roll order on
      * the inbox preview rail and the whitelist member panel.
      */
-    private function decodeMembers($raw): array
+    public function decodeMembers($raw): array
     {
         if ($raw === null) return [];
         $arr = is_array($raw) ? $raw : (json_decode($raw, true) ?: []);
