@@ -150,10 +150,20 @@ class InboxController extends Controller
             }
         }
 
+        // Which members have submitted (uid list only — no content
+        // leaked). Lets the sender's preview rail mark submitted vs
+        // unsubmitted blocks without accessing other students' data.
+        $submittedUids = DB::table('inbox_submissions')
+            ->where('inbox_id', (int) $inboxId)
+            ->join('users', 'inbox_submissions.user_id', '=', 'users.id')
+            ->pluck('users.uid')
+            ->all();
+
         return response()->json([
-            'submission' => $this->service->getMySubmission($user, (int) $inboxId),
-            'can_submit' => $this->service->canSubmit($user, (int) $inboxId),
-            'members'    => $members,
+            'submission'     => $this->service->getMySubmission($user, (int) $inboxId),
+            'can_submit'     => $this->service->canSubmit($user, (int) $inboxId),
+            'members'        => $members,
+            'submitted_uids' => $submittedUids,
         ]);
     }
 

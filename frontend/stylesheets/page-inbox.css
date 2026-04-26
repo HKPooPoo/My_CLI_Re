@@ -219,6 +219,14 @@
    submissions" placeholder, no "empty feedback" placeholder, no
    mode-gated hiding. An empty textarea IS the empty state. */
 
+/* ── File chips inside inbox windows ────────────────────────────
+   The shared `.attachment-chips` has margin-top: 4vh to clear BB's
+   PUSH button at the top of the editor-wrapper. Inbox windows
+   don't have a PUSH button — chips should sit flush at the top. */
+.inbox-window .attachment-chips.has-items {
+    margin-top: 0;
+}
+
 /* ── Preview rail — inbox-thread specifics ─────────────────────
    Blocks are plain colored bars (same as BB/BC — no text label
    inside). Click-to-navigate only, no drag reorder (uid-asc order

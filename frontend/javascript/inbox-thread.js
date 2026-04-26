@@ -109,6 +109,8 @@ export const IXThread = {
     members: [],
     /** Actual submission rows. Lookup by sender_uid to pair with member. */
     submissions: [],
+    /** UIDs that have submitted (sender mode — no content, just existence). */
+    submittedUids: new Set(),
     /** Content search instance (attached to preview rail). */
     _search: null,
     /** EditorAttachments for INSTRUCTION window (≤10 files). */
@@ -435,6 +437,7 @@ export const IXThread = {
         this.inbox = null;
         this.members = [];
         this.submissions = [];
+        this.submittedUids = new Set();
         this.head = 0;
         this.mode = 'sender';
         this.elements.page?.removeAttribute('data-mode');
@@ -504,6 +507,7 @@ export const IXThread = {
                 if (signal.aborted) return;
                 this.members = data?.members ?? [];
                 this.submissions = data?.submissions ?? [];
+                this.submittedUids = new Set(this.submissions.map(s => s.sender_uid));
                 this.canSubmit = true;
                 await IXSubmissions.replaceForInbox(this.inbox.id, this.submissions);
                 if (this.head >= this.members.length) this.head = Math.max(0, this.members.length - 1);
@@ -520,6 +524,7 @@ export const IXThread = {
                 const data = await InboxService.getMySubmission(this.inbox.id, signal);
                 if (signal.aborted) return;
                 this.members = data?.members ?? [];
+                this.submittedUids = new Set(data?.submitted_uids ?? []);
                 const row = data?.submission ?? null;
                 this.canSubmit = !!data?.can_submit;
                 // Eligibility transition toasts (silent refresh only — a
@@ -732,8 +737,15 @@ export const IXThread = {
             const block = document.createElement('div');
             let cls = 'page-preview-block';
             if (idx === this.head) cls += ' active';
-            const sub = this.submissions.find(s => s.sender_uid === uid);
-            if (!sub || sub.feedback_at === null) cls += ' unsynced';
+            // Use submittedUids (available in both sender + receiver
+            // mode) to decide submitted vs unsubmitted. For receiver,
+            // also check feedback_at from the full submission row.
+            if (!this.submittedUids.has(uid)) {
+                cls += ' unsynced';
+            } else if (this.mode === 'receiver') {
+                const sub = this.submissions.find(s => s.sender_uid === uid);
+                if (sub && sub.feedback_at === null) cls += ' unsynced';
+            }
             block.className = cls;
             block.dataset.head = String(idx);
             frag.appendChild(block);
