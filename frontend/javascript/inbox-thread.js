@@ -781,12 +781,18 @@ export const IXThread = {
             const row = uid ? this.submissions.find(s => s.sender_uid === uid) : null;
             if (this.elements.senderArea) this.elements.senderArea.value = row?.sender_text ?? '';
             if (this.elements.receiverArea) this.elements.receiverArea.value = row?.receiver_text ?? '';
+            if (this.elements.senderUid) this.elements.senderUid.textContent = uid ?? '';
+            if (this.elements.senderTs) this.elements.senderTs.textContent = formatStamp(row?.updated_at);
+            if (this.elements.receiverTs) this.elements.receiverTs.textContent = formatStamp(row?.feedback_at);
             this.renderFileChip(row?.file_hash ?? null, /*readOnly*/ true);
         };
         const restoreSnapshot = () => {
             if (!snapshot) return;
             if (this.elements.senderArea) this.elements.senderArea.value = snapshot.sender;
             if (this.elements.receiverArea) this.elements.receiverArea.value = snapshot.receiver;
+            if (this.elements.senderUid) this.elements.senderUid.textContent = snapshot.senderUid;
+            if (this.elements.senderTs) this.elements.senderTs.textContent = snapshot.senderTs;
+            if (this.elements.receiverTs) this.elements.receiverTs.textContent = snapshot.receiverTs;
             this.renderFileChip(snapshot.fileHash, /*readOnly*/ true);
             snapshot = null;
             lock(false);
@@ -812,9 +818,12 @@ export const IXThread = {
                 const uid = this.members[this.head];
                 const row = uid ? this.submissions.find(s => s.sender_uid === uid) : null;
                 snapshot = {
-                    sender:   this.elements.senderArea?.value ?? '',
-                    receiver: this.elements.receiverArea?.value ?? '',
-                    fileHash: row?.file_hash ?? null,
+                    sender:     this.elements.senderArea?.value ?? '',
+                    receiver:   this.elements.receiverArea?.value ?? '',
+                    fileHash:   row?.file_hash ?? null,
+                    senderUid:  this.elements.senderUid?.textContent ?? '',
+                    senderTs:   this.elements.senderTs?.textContent ?? '',
+                    receiverTs: this.elements.receiverTs?.textContent ?? '',
                 };
                 lock(true);
             }
