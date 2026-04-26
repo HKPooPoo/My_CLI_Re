@@ -57,36 +57,43 @@ function formatStamp(input) {
 export const IXThread = {
     elements: {
         page: document.querySelector('.page[data-page="inbox-thread"]'),
-        wrapper: document.getElementById('inbox-drop-zone'),
-        emptyOverlay: document.getElementById('inbox-empty-overlay'),
-        receiverEmpty: document.getElementById('inbox-receiver-empty'),
+        // WT-style three-window layout. Each window = `.inbox-window`
+        // with own editor-wrapper. Element refs mirror the HTML IDs;
+        // CSS perspective gate controls which windows' action pairs show.
+        page:           document.querySelector('.page[data-page="inbox-thread"]'),
+        emptyOverlay:   document.getElementById('inbox-empty-overlay'),
+        receiverEmpty:  document.getElementById('inbox-receiver-empty'),
         readOnlyBanner: document.getElementById('inbox-read-only-banner'),
-        chipsArea: document.getElementById('inbox-attachment-chips'),
-        previewRail: document.getElementById('inbox-preview-rail'),
-        senderArea: document.getElementById('inbox-sender-textarea'),
-        senderSection: document.querySelector('.inbox-textarea-section.is-submission'),
-        senderUid: document.getElementById('inbox-sender-uid'),
-        senderTs: document.getElementById('inbox-sender-ts'),
-        receiverArea: document.getElementById('inbox-receiver-textarea'),
-        receiverSection: document.querySelector('.inbox-textarea-section.is-feedback'),
-        receiverUid: document.getElementById('inbox-receiver-uid'),
-        receiverTs: document.getElementById('inbox-receiver-ts'),
-        dropOverlay: document.getElementById('inbox-drop-overlay'),
-        fileInput: document.getElementById('inbox-file-input'),
-        // Per-section RESET / SUBMIT buttons. CSS hides the wrong-side
-        // pair via `data-mode="sender|receiver"` × `.is-instruction |
-        // .is-submission | .is-feedback` so we don't need to
-        // JS-toggle perspectives.
-        instructionArea:     document.getElementById('inbox-instruction-textarea'),
-        instructionSection:  document.querySelector('.inbox-textarea-section.is-instruction'),
-        instructionUid:      document.getElementById('inbox-instruction-uid'),
-        instructionTs:       document.getElementById('inbox-instruction-ts'),
-        instructionResetBtn: document.getElementById('inbox-instruction-reset-btn'),
-        instructionSaveBtn:  document.getElementById('inbox-instruction-save-btn'),
-        senderResetBtn:      document.getElementById('inbox-sender-reset-btn'),
-        senderSaveBtn:       document.getElementById('inbox-sender-save-btn'),
-        receiverResetBtn:    document.getElementById('inbox-receiver-reset-btn'),
-        receiverSaveBtn:     document.getElementById('inbox-receiver-save-btn'),
+        previewRail:    document.getElementById('inbox-preview-rail'),
+
+        // Window 1 — INSTRUCTION
+        instructionZone:      document.getElementById('inbox-instruction-zone'),
+        instructionChips:     document.getElementById('inbox-instruction-chips'),
+        instructionArea:      document.getElementById('inbox-instruction-textarea'),
+        instructionFileInput: document.getElementById('inbox-instruction-file-input'),
+        instructionDropOverlay: document.getElementById('inbox-instruction-drop-overlay'),
+        instructionResetBtn:  document.getElementById('inbox-instruction-reset-btn'),
+        instructionSaveBtn:   document.getElementById('inbox-instruction-save-btn'),
+
+        // Window 2 — SUBMISSION
+        submissionZone:  document.getElementById('inbox-submission-zone'),
+        chipsArea:       document.getElementById('inbox-attachment-chips'),
+        senderArea:      document.getElementById('inbox-sender-textarea'),
+        senderUid:       document.getElementById('inbox-sender-uid'),
+        senderTs:        document.getElementById('inbox-sender-ts'),
+        fileInput:       document.getElementById('inbox-file-input'),
+        dropOverlay:     document.getElementById('inbox-drop-overlay'),
+        senderResetBtn:  document.getElementById('inbox-sender-reset-btn'),
+        senderSaveBtn:   document.getElementById('inbox-sender-save-btn'),
+
+        // Window 3 — FEEDBACK
+        feedbackZone:    document.getElementById('inbox-feedback-zone'),
+        receiverArea:    document.getElementById('inbox-receiver-textarea'),
+        receiverSection: document.querySelector('.inbox-window.is-feedback'),
+        receiverUid:     document.getElementById('inbox-receiver-uid'),
+        receiverTs:      document.getElementById('inbox-receiver-ts'),
+        receiverResetBtn: document.getElementById('inbox-receiver-reset-btn'),
+        receiverSaveBtn:  document.getElementById('inbox-receiver-save-btn'),
     },
 
     /** Currently loaded inbox metadata (server snapshot) */
@@ -123,14 +130,28 @@ export const IXThread = {
     },
 
     /**
-     * Vestigial. Inbox-thread no longer carries the `can-push-pull`
-     * class, so navi.js auto-hides the global PUSH/PULL buttons on
-     * this page; submissions are reached via the preview rail and
-     * each editable section ships its own RESET / SAVE pair. Kept
-     * as a no-op to avoid touching the five call sites that still
-     * fire it; remove in a future cleanup.
+     * Show / hide the global NEWER / OLDER buttons. `can-push-pull`
+     * is on the page so navi.js shows them by default, but we only
+     * want them when the receiver has ≥ 2 submissions to navigate.
+     * Sender mode or ≤ 1 submission → hide.
      */
-    _syncGlobalButtons() {},
+    _syncGlobalButtons() {
+        const pushBtn = document.querySelector('.push-btn');
+        const pullBtn = document.querySelector('.pull-btn');
+        if (!pushBtn || !pullBtn) return;
+        const activePage = document.querySelector('.page.active');
+        const isInboxThread = activePage?.dataset.page === 'inbox-thread';
+        const shouldShow = isInboxThread
+            && this.mode === 'receiver'
+            && this.submissions.length > 1;
+        if (shouldShow) {
+            pushBtn.style.transform = 'translateY(0)';
+            pullBtn.style.transform = 'translateY(0)';
+        } else if (isInboxThread) {
+            pushBtn.style.transform = 'translateY(-256%)';
+            pullBtn.style.transform = 'translateY(256%)';
+        }
+    },
 
     /**
      * Drag-and-drop wiring on the editor-wrapper. Mirrors BB/BC's
@@ -139,7 +160,7 @@ export const IXThread = {
      * we don't need the full EditorAttachments machinery.
      */
     _wireDropZone() {
-        const zone = this.elements.wrapper;
+        const zone = this.elements.submissionZone;
         const overlay = this.elements.dropOverlay;
         if (!zone || !overlay) return;
 
@@ -326,6 +347,23 @@ export const IXThread = {
                 },
             });
         }
+
+        // ── Global NEWER / OLDER for receiver-mode submission navigation ──
+        // `can-push-pull` is on the page, so navi.js shows the global
+        // `.push-btn` / `.pull-btn`. We wire click handlers that move
+        // through submissions (= different students).
+        document.querySelector('.push-btn')?.addEventListener('click', () => {
+            if (this.mode !== 'receiver') return;
+            const activePage = document.querySelector('.page.active');
+            if (activePage?.dataset.page !== 'inbox-thread') return;
+            this.movePush();
+        });
+        document.querySelector('.pull-btn')?.addEventListener('click', () => {
+            if (this.mode !== 'receiver') return;
+            const activePage = document.querySelector('.page.active');
+            if (activePage?.dataset.page !== 'inbox-thread') return;
+            this.movePull();
+        });
     },
 
     // ── Loading / unloading ──────────────────────────────────────

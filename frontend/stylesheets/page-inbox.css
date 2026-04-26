@@ -1,17 +1,13 @@
 /**
  * Inbox subsystem styling.
  *
- * Goal: visually identical scaffolding to BB / WT / BC. The Inbox
- * THREAD page is structured exactly like BB log and BC channel —
- * `.editor-wrapper` as drop zone, `.attachment-chips` at top,
- * `.log-editor-row` (preview rail + textarea region) in the middle,
- * `.drop-overlay` covering the textarea zone. The only Inbox-specific
- * shape is the dual-textarea split inside `.log-editor-row` (sender
- * + receiver stacked) — every other rule layers on top of shared
- * editor scaffolding.
+ * THREAD page mirrors walkie-typie-text: three `.inbox-window` boxes
+ * (= WT `.walkie-typie-blackboard`), each bordered flex:1 with own
+ * title, editor-wrapper (textarea + chips + drop-overlay), and
+ * RESET/SUBMIT button pair. Page-level chrome (preview rail, NEWER/
+ * OLDER, search) sits alongside the three windows via `.log-editor-row`.
  *
- * The LIST page mirrors BC's `.broadcast-list-container` exactly,
- * down to the same shapes / paddings / scrollbar treatment.
+ * LIST page mirrors broadcast-list's `.broadcast-list-container`.
  */
 
 /* ── List page (mirror BC channel list) ─────────────────────── */
@@ -111,82 +107,65 @@
     padding: 8px 0;
 }
 
-/* ── Thread page (mirror BB log / BC channel scaffolding) ───── */
+/* ── Thread page — WT-style three-window layout ──────────────
+   Each window mirrors WT's `.walkie-typie-blackboard`:
+     • bordered flex:1 box
+     • title at top-right (absolute, translateY(-86%), bg-secondary)
+     • editor-wrapper inside for textarea + chips + drop-overlay
+     • action buttons at bottom (absolute, translateY(86%))
+   Preview rail in `.log-editor-row` alongside the three windows
+   (same as BB/BC rail). NEWER/OLDER via `can-push-pull` on .page
+   for receiver-mode submission navigation. */
 
-/* Three textarea panes stacked inside the standard `.log-editor-row`.
-   Mirrors BB / WT / BC editor structure: plain textareas, no per-pane
-   border, no label-on-border decoration, no focus-within glow box.
-   Sections are separated by a single hairline (not gap) so the three
-   panes read as one continuous editor like BB's single textarea —
-   not three discrete bordered cards. */
-.inbox-textareas {
+.inbox-windows {
     flex: 1;
     flex-direction: column;
     min-width: 0;
+    gap: 4px;
 }
 
-.inbox-textarea-section {
+/* Each window — direct copy of `.walkie-typie-blackboard` layout */
+.inbox-window {
+    position: relative;
     flex: 1;
-    flex-direction: column;
-    min-height: 0;
-}
-.inbox-textarea-section + .inbox-textarea-section {
-    border-top: 1px solid var(--border-subtle);
+    margin: var(--single-textbox-margin);
+    border: var(--border-line);
 }
 
-/* Inline header row — label · uid · timestamp · action pair.
-   `margin-right: auto` on the timestamp pushes the buttons hard right
-   while keeping label / uid / timestamp left-aligned with each other.
-   No absolute positioning, no border-cut chrome — flat row in flow,
-   matches the way BB / WT / BC put any inline metadata directly above
-   their textarea (e.g. `.head-indicator` on those editors). */
-.inbox-textarea-header {
-    flex: 0 0 auto;
+/* Title — mirrors `.walkie-typie-blackboard-*-title` */
+.inbox-window-title {
+    position: absolute;
+    top: 0;
+    transform: translateY(-86%);
+    right: 4px;
+    background-color: var(--bg-secondary);
+    width: max-content;
     flex-direction: row;
     align-items: center;
-    gap: 10px;
-    padding: 8px 12px 4px 12px;
+    gap: 8px;
 }
-.inbox-textarea-label-name {
-    font-weight: 700;
-    font-size: calc(var(--font-size) * 0.85);
-    letter-spacing: 0.04em;
-    color: var(--brand);
-}
-.inbox-textarea-uid {
+.inbox-window-uid {
     color: var(--text-muted);
     font-family: monospace;
     font-size: calc(var(--font-size) * 0.78);
 }
-.inbox-textarea-timestamp {
+.inbox-window-timestamp {
     color: var(--text-muted);
     font-family: monospace;
     font-size: calc(var(--font-size) * 0.72);
-    margin-right: auto;
 }
-.inbox-textarea-timestamp:empty {
+.inbox-window-timestamp:empty {
     display: none;
-    margin-right: 0;
-}
-.inbox-textarea-uid:empty + .inbox-textarea-timestamp:empty,
-.inbox-textarea-uid:empty {
-    margin-right: auto;
 }
 
+/* Textareas inside editor-wrappers — mirrors WT
+   `#walkie-typie-we-blackboard` / `#walkie-typie-they-blackboard` */
 #inbox-instruction-textarea,
 #inbox-sender-textarea,
 #inbox-receiver-textarea {
+    font-size: var(--textbox-font-size);
     flex: 1;
     width: 100%;
-    margin: 0;
-    padding: 4px 12px 10px 12px;
-    background: transparent;
-    border: none;
-    outline: none;
-    color: var(--text-body);
-    font: inherit;
-    font-size: var(--textbox-font-size);
-    resize: none;
 }
 
 #inbox-instruction-textarea:disabled,
@@ -197,13 +176,41 @@
     caret-color: transparent;
 }
 
-/* ── Receiver mode + 0 submissions empty state ────────────────
-   Owner just opened a fresh inbox; no SUBMISSION or FEEDBACK to
-   render yet — but INSTRUCTION must stay visible so the lecturer
-   can write the assignment prompt before any student submits.
-   Only hide `.is-submission` and `.is-feedback` sections; the
-   placeholder message sits below instruction as a sibling in
-   `.inbox-textareas` (or `.log-editor-row`). */
+/* ── Per-window RESET / SUBMIT actions ─────────────────────────
+   Positioned at the bottom of the window, mirroring WT's
+   `.we-pull-btn` / `.they-pull-btn` (bottom, translateY(86%)).
+   Hidden by default; shown via perspective gate on the editable
+   window for the current role. */
+.inbox-window-actions {
+    display: none;
+    position: absolute;
+    bottom: 0;
+    transform: translateY(86%);
+    right: -16px;
+    border-radius: calc(var(--border-radius) * 4) 0
+                   var(--border-radius) var(--border-radius);
+    flex-direction: row;
+    gap: 4px;
+}
+
+.page[data-mode="sender"]   .is-submission  .inbox-window-actions,
+.page[data-mode="receiver"] .is-instruction .inbox-window-actions,
+.page[data-mode="receiver"] .is-feedback    .inbox-window-actions {
+    display: flex;
+}
+
+.inbox-window-btn {
+    border: var(--border-line);
+    border-radius: var(--border-radius);
+    padding: 4px 14px;
+    font-size: calc(var(--font-size) * 0.78);
+    background-color: var(--bg-primary);
+}
+
+/* ── Receiver mode + 0 submissions ─────────────────────────────
+   Instruction stays visible; only submission + feedback hide.
+   Placeholder message sits inside .inbox-windows alongside
+   instruction. */
 .inbox-receiver-empty {
     display: none;
     flex: 1;
@@ -216,25 +223,29 @@
     font-size: calc(var(--font-size) * 1.05);
     line-height: 1.6;
 }
-.page[data-mode="receiver"][data-empty-submissions="true"] .inbox-textarea-section.is-submission,
-.page[data-mode="receiver"][data-empty-submissions="true"] .inbox-textarea-section.is-feedback {
+.page[data-mode="receiver"][data-empty-submissions="true"] .inbox-window.is-submission,
+.page[data-mode="receiver"][data-empty-submissions="true"] .inbox-window.is-feedback {
     display: none;
 }
 .page[data-mode="receiver"][data-empty-submissions="true"] .inbox-receiver-empty {
     display: flex;
 }
 
-/* ── Sender mode FEEDBACK pane: empty-state hint ──
-   When `feedback_at` is null, hide the read-only textarea and
-   surface a centred italic placeholder taking the same vertical
-   slot. Section's flex: 1 share is unchanged so the layout doesn't
-   jump on first feedback arrival. No border/bg overrides — the
-   panes are flat now, the placeholder reads as muted body text. */
-.page[data-mode="sender"] .inbox-textarea-section.is-feedback.is-empty
+/* ── Sender mode ───────────────────────────────────────────────
+   Hide preview rail (sender views own submission only, no
+   multi-student navigation). Also hide global NEWER/OLDER since
+   can-push-pull is on the page but sender has nothing to navigate. */
+.page[data-mode="sender"] #inbox-preview-rail {
+    display: none;
+}
+
+/* Empty FEEDBACK pane in sender mode — feedback_at is null, so
+   hide the textarea and show the placeholder pseudo-element. */
+.page[data-mode="sender"] .inbox-window.is-feedback.is-empty
     #inbox-receiver-textarea {
     display: none;
 }
-.page[data-mode="sender"] .inbox-textarea-section.is-feedback.is-empty::after {
+.page[data-mode="sender"] .inbox-window.is-feedback.is-empty::after {
     content: attr(data-empty-label);
     color: var(--text-muted);
     font-style: italic;
@@ -247,18 +258,9 @@
     display: flex;
 }
 
-/* Sender mode hides the receiver-only preview rail — the rail
-   navigates between submitters, which doesn't apply when the user
-   is the sole submitter. */
-.page[data-mode="sender"] #inbox-preview-rail {
-    display: none;
-}
-
-/* Inbox preview blocks are click-to-navigate only — submissions
-   can't be reordered (the order is server-authoritative by submission
-   timestamp). Suppress the drag affordance the BB/BC scaffold paints
-   by default: hide the grip-handle pseudo-element and change cursor
-   from `grab` to `pointer` so the visual matches the actual behaviour. */
+/* ── Preview rail — inbox-thread specifics ─────────────────────
+   Click-to-navigate only (no drag reorder — uid-asc order is
+   server-authoritative). Suppress the grip-handle pseudo. */
 .page[data-page="inbox-thread"] .page-preview-block {
     align-items: center;
     justify-content: center;
@@ -282,18 +284,7 @@
     padding: 4px 0;
     line-height: 1.2;
 }
-/* Label colour by block state — must track the BLOCK background or
-   the text vanishes:
-     • peek (touch hold)  → block paints brand    → label white
-     • hover (desktop)    → block paints brand    → label white
-     • active (selected)  → block stays bg-card   → label brand
-                            (a graded selected block keeps the calm
-                            light-grey so the rail doesn't shout; the
-                            label switches to brand wine for emphasis
-                            without flipping the bg)
-   The earlier rule painted .active labels white on bg-card —
-   invisible. .unsynced.active (ungraded selected) is handled below
-   where the block bg is accent (purple) and white reads. */
+/* Label colour tracks block bg — white only on brand-bg states. */
 .page-preview-block.peeking .inbox-preview-block-label {
     color: #ffffff;
 }
@@ -308,11 +299,7 @@
     font-weight: 700;
 }
 
-/* Ungraded submissions — receiver hasn't written feedback_at yet.
-   Dashed accent (purple) border distinguishes from the brand-wine
-   active state without colliding with `.virtual` (BB's transparent
-   dashed) or `.dragging` (BB's dim). Inbox-thread-scoped so the rule
-   doesn't bleed into BB / BC pages. */
+/* Ungraded submissions — dashed accent border */
 .page[data-page="inbox-thread"] .page-preview-block.unsynced {
     border-style: dashed;
     border-color: var(--accent);
@@ -322,10 +309,6 @@
     border-color: var(--accent);
     background: var(--accent);
 }
-/* Ungraded-selected block bg is accent (purple) — flip label to
-   white. Without this rule the .active:not(.unsynced) rule above
-   would still paint brand wine, which would contrast poorly with
-   accent purple. */
 .page[data-page="inbox-thread"] .page-preview-block.unsynced.active
     .inbox-preview-block-label {
     color: #ffffff;
@@ -334,52 +317,12 @@
     background-color: var(--accent);
 }
 
-/* Drop-overlay inset — Inbox uses the same 48 px preview rail + 8 px
-   gap as BB / BC, so the dashed frame should clear the rail. Reuses
-   the same offset rule the editor-attachments stylesheet uses for
-   #bb-drop-zone / #bc-drop-zone. */
-#inbox-drop-zone .drop-overlay {
-    left: calc(8vw + 56px);
-}
-
-/* Per-section RESET / SUBMIT pair. Lives INSIDE the inline header
-   row (right-aligned via the header's flex layout + the timestamp's
-   `margin-right: auto`). Hidden by default; perspective gate below
-   shows it only on the editable section for the current role:
-     • sender mode    → SUBMISSION pair visible
-     • receiver mode  → INSTRUCTION + FEEDBACK pairs visible
-   No padding, no background — flat inline button group inside the
-   header. Visual style of buttons matches `#inbox-create-btn /
-   #broadcast-cast-btn` family: border + radius + padding only,
-   hover/armed inherits from global rules. */
-.inbox-section-actions {
-    display: none;
-    flex-direction: row;
-    align-items: center;
-    gap: 6px;
-}
-
-.page[data-mode="sender"]   .is-submission  .inbox-section-actions,
-.page[data-mode="receiver"] .is-feedback    .inbox-section-actions,
-.page[data-mode="receiver"] .is-instruction .inbox-section-actions {
-    display: flex;
-}
-
-.inbox-section-btn {
-    border: var(--border-line);
-    border-radius: var(--border-radius);
-    padding: 4px 14px;
-    font-size: calc(var(--font-size) * 0.78);
-}
-
-/* Read-preserved banner — visible only to senders whose submission
-   rights were revoked (whitelist detached / swapped while they had
-   an existing row). JS toggles `.visible`; default hidden. */
+/* ── Read-preserved banner ─────────────────────────────────────
+   Shown to senders whose write access was revoked. */
 .inbox-read-only-banner {
     display: none;
     flex: 0 0 auto;
     padding: 8px 16px;
-    margin-top: 4vh;
     background: color-mix(in srgb, var(--accent) 16%, var(--bg-page));
     border: 1px solid var(--accent);
     border-radius: var(--border-radius);
@@ -394,15 +337,8 @@
     display: flex;
 }
 
-/* When the banner is showing, the chips area can drop its top margin —
-   banner already provides the clearance from the push-button zone. */
-.inbox-read-only-banner.visible ~ .log-editor-row {
-    margin-top: 0;
-}
-
-/* Empty-state overlay — shown when no inbox is selected. Same
-   "centered card on dim backdrop" treatment as `#auth-locked-overlay`
-   so guest UX and "select-something-first" UX feel uniform. */
+/* ── Empty-state overlay ───────────────────────────────────────
+   "Select an inbox from the list" — shown when no inbox loaded. */
 .inbox-empty-overlay {
     position: absolute;
     inset: 0;
@@ -414,12 +350,10 @@
     background: color-mix(in srgb, var(--bg-page) 92%, transparent);
     pointer-events: none;
     z-index: 5;
-    /* JS toggles `display: none` once an inbox is loaded. */
 }
 
-/* Mobile: the rail (already visible only in receiver mode) flips
-   to a horizontal strip above the textareas, mirroring BB / BC's
-   own narrow-screen treatment. */
+/* ── Mobile ────────────────────────────────────────────────────
+   Rail flips to horizontal strip above the windows. */
 @media (max-width: 640px) {
     .page[data-page="inbox-thread"] .log-editor-row {
         flex-direction: column;
