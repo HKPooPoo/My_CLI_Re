@@ -111,8 +111,10 @@ export const IXThread = {
     submissions: [],
     /** Content search instance (attached to preview rail). */
     _search: null,
-    /** EditorAttachments instance for the INSTRUCTION window (≤10 files). */
+    /** EditorAttachments for INSTRUCTION window (≤10 files). */
     _instructionAttach: null,
+    /** EditorAttachments for SUBMISSION window (≤1 file). */
+    _submissionAttach: null,
     /** Save-debounce timers, keyed so we can cancel on inbox switch */
     timers: new TimerGroup(),
     _abortController: null,
@@ -129,9 +131,9 @@ export const IXThread = {
 
     init() {
         this.bindEvents();
-        this._wireDropZone();
-        this._wirePreviewRailInteractions();
         this._wireInstructionAttachments();
+        this._wireSubmissionAttachments();
+        this._wirePreviewRailInteractions();
 
         // Content search — searches BOTH uid and submission text so
         // the lecturer can find "S20260003" or "final report" from
@@ -212,6 +214,30 @@ export const IXThread = {
         });
     },
 
+    /**
+     * Wire EditorAttachments for the SUBMISSION window — maxFiles: 1.
+     * Same pattern as instruction but single-file constraint enforced
+     * via EditorAttachments' new maxFiles config.
+     */
+    _wireSubmissionAttachments() {
+        this._submissionAttach = EditorAttachments.create({
+            dropZoneSelector:       '#inbox-sender-textarea',
+            fileInputSelector:      '#inbox-file-input',
+            chipsContainerSelector: '#inbox-attachment-chips',
+            dropOverlaySelector:    '#inbox-drop-overlay',
+            maxFiles: 1,
+            onAttach: async (hash, meta) => {
+                if (this.mode !== 'sender' || !this.canSubmit) return;
+            },
+            onDetach: async (hash) => {
+                if (this.mode !== 'sender' || !this.canSubmit) return;
+            },
+            onRename: async (oldHash, newHash, meta) => {
+                if (this.mode !== 'sender' || !this.canSubmit) return;
+            },
+        });
+    },
+
     _syncGlobalButtons() {
         const pushBtn = document.querySelector('.push-btn');
         const pullBtn = document.querySelector('.pull-btn');
@@ -235,52 +261,8 @@ export const IXThread = {
      * stays slim because Inbox is single-file and senders only —
      * we don't need the full EditorAttachments machinery.
      */
-    _wireDropZone() {
-        const zone = this.elements.submissionZone;
-        const overlay = this.elements.dropOverlay;
-        if (!zone || !overlay) return;
-
-        let counter = 0;
-        const showOverlay = () => overlay.classList.add('active');
-        const hideOverlay = () => overlay.classList.remove('active');
-
-        zone.addEventListener('dragenter', (e) => {
-            if (this.mode !== 'sender' || !this.inbox || !this.canSubmit) return;
-            e.preventDefault();
-            counter++;
-            showOverlay();
-        });
-        zone.addEventListener('dragover', (e) => {
-            if (this.mode !== 'sender' || !this.inbox || !this.canSubmit) return;
-            e.preventDefault();
-        });
-        zone.addEventListener('dragleave', () => {
-            if (--counter <= 0) {
-                counter = 0;
-                hideOverlay();
-            }
-        });
-        zone.addEventListener('drop', async (e) => {
-            e.preventDefault();
-            counter = 0;
-            hideOverlay();
-            if (this.mode !== 'sender' || !this.inbox || !this.canSubmit) return;
-            // One file per submission, manual replacement only — the
-            // user must delete the existing chip with × before
-            // attaching a new file. Both multi-file drop and
-            // single-file-while-attached are rejected with distinct
-            // toasts (different rule violations, different messages).
-            const files = e.dataTransfer?.files;
-            if (!files || files.length === 0) return;
-            if (files.length > 1) {
-                return BBMessage.error(t('inbox.multiFileRejected'));
-            }
-            if (this.submissions[0]?.file_hash) {
-                return BBMessage.error(t('inbox.deleteExistingFirst'));
-            }
-            await this.attachFile(files[0]);
-        });
-    },
+    // _wireDropZone retired — EditorAttachments handles drag/drop
+    // for both instruction + submission windows.
 
     // ── Events ───────────────────────────────────────────────────
 
@@ -340,31 +322,8 @@ export const IXThread = {
             });
         }
 
-        // ── File picker (sender only) — triggered from the empty
-        //    chips area when no chip is rendered, or from the chip's
-        //    swap action.
-        if (this.elements.fileInput) {
-            this.elements.fileInput.addEventListener('change', async (e) => {
-                const file = e.target.files?.[0];
-                if (file) await this.attachFile(file);
-                e.target.value = ''; // reset for re-pick of same file
-            });
-        }
-        // Click on empty chips area opens the file picker (mirrors BB/BC).
-        // If a chip already exists, the rule "one file per submission,
-        // manual delete required to replace" stops the picker from
-        // even opening — surfacing the rule before the OS file dialog
-        // appears, instead of dismissing it after pick.
-        if (this.elements.chipsArea) {
-            this.elements.chipsArea.addEventListener('click', (e) => {
-                if (this.mode !== 'sender' || !this.inbox || !this.canSubmit) return;
-                if (e.target.closest('.attachment-chip')) return;
-                if (this.submissions[0]?.file_hash) {
-                    return BBMessage.error(t('inbox.deleteExistingFirst'));
-                }
-                this.elements.fileInput?.click();
-            });
-        }
+        // File picker + chips click + drop are all handled by
+        // EditorAttachments (instruction + submission instances).
 
         // ── Per-section RESET + SAVE pairs ──
         // The two SAVE buttons map to the two `postAs*` paths, one per
@@ -484,7 +443,8 @@ export const IXThread = {
         if (this.elements.senderArea) this.elements.senderArea.value = '';
         if (this.elements.receiverArea) this.elements.receiverArea.value = '';
         if (this.elements.instructionUid) this.elements.instructionUid.textContent = '';
-        this.renderFileChip(null);
+        this._instructionAttach?.setFromRecord({ file_hash: null });
+        this._submissionAttach?.setFromRecord({ file_hash: null });
         this._syncGlobalButtons();
     },
 
@@ -683,7 +643,10 @@ export const IXThread = {
         // (read-preserved state — whitelist removed, existing row
         // visible but no edit / detach allowed). Gate matches the
         // textarea/save-button visibility above.
-        this.renderFileChip(row?.file_hash ?? null, /*readOnly*/ !canWrite);
+        if (this._submissionAttach) {
+            this._submissionAttach.setReadOnly(!canWrite);
+            this._submissionAttach.setFromRecord({ file_hash: row?.file_hash ?? null });
+        }
         this.renderPreviewRail();
         this._search?.refresh();
     },
@@ -735,7 +698,10 @@ export const IXThread = {
         }
 
         // No mode-specific placeholders. Empty textarea = empty state.
-        this.renderFileChip(row?.file_hash ?? null, /*readOnly*/ true);
+        if (this._submissionAttach) {
+            this._submissionAttach.setReadOnly(true);
+            this._submissionAttach.setFromRecord({ file_hash: row?.file_hash ?? null });
+        }
         this.renderPreviewRail();
         this._search?.refresh();
     },
@@ -821,7 +787,10 @@ export const IXThread = {
             if (this.elements.senderUid) this.elements.senderUid.textContent = uid ?? '';
             if (this.elements.senderTs) this.elements.senderTs.textContent = formatStamp(row?.updated_at);
             if (this.elements.receiverTs) this.elements.receiverTs.textContent = formatStamp(row?.feedback_at);
-            this.renderFileChip(row?.file_hash ?? null, /*readOnly*/ true);
+            if (this._submissionAttach) {
+            this._submissionAttach.setReadOnly(true);
+            this._submissionAttach.setFromRecord({ file_hash: row?.file_hash ?? null });
+        }
         };
         const restoreSnapshot = () => {
             if (!snapshot) return;
@@ -830,7 +799,10 @@ export const IXThread = {
             if (this.elements.senderUid) this.elements.senderUid.textContent = snapshot.senderUid;
             if (this.elements.senderTs) this.elements.senderTs.textContent = snapshot.senderTs;
             if (this.elements.receiverTs) this.elements.receiverTs.textContent = snapshot.receiverTs;
-            this.renderFileChip(snapshot.fileHash, /*readOnly*/ true);
+            if (this._submissionAttach) {
+                this._submissionAttach.setReadOnly(true);
+                this._submissionAttach.setFromRecord({ file_hash: snapshot.fileHash });
+            }
             snapshot = null;
             lock(false);
             clearPeekMarker();
@@ -956,63 +928,6 @@ export const IXThread = {
         rail.addEventListener('touchcancel', touchEnd);
     },
 
-    /**
-     * Render the file chip into `.attachment-chips` using the same
-     * class structure BB / BC use, so the standard chip styling
-     * (state colours, hover, etc.) applies for free. 1-file max:
-     * we wipe the chips area and append at most one chip.
-     *
-     * Read-only mode (receiver viewing a sender's file) skips the
-     * remove button — `.attachment-chips.readonly` triggers the
-     * standard "no remove" CSS rule too.
-     */
-    renderFileChip(hash, readOnly = false) {
-        const wrap = this.elements.chipsArea;
-        if (!wrap) return;
-        wrap.innerHTML = '';
-        wrap.classList.toggle('readonly', !!readOnly);
-
-        if (!hash) {
-            wrap.classList.remove('has-items');
-            return;
-        }
-        wrap.classList.add('has-items');
-
-        const chip = document.createElement('div');
-        chip.className = 'attachment-chip is-synced';
-        chip.dataset.hash = hash;
-
-        const top = document.createElement('div');
-        top.className = 'attachment-chip-top';
-
-        const icon = document.createElement('a');
-        icon.className = 'attachment-chip-icon';
-        icon.href = `/api/files/${hash}?inline=1`;
-        icon.target = '_blank';
-        icon.rel = 'noopener';
-        icon.textContent = '📎';
-        top.appendChild(icon);
-
-        const name = document.createElement('span');
-        name.className = 'attachment-chip-name';
-        name.textContent = hash.substring(0, 12) + '…';
-        top.appendChild(name);
-
-        if (!readOnly) {
-            const remove = document.createElement('button');
-            remove.type = 'button';
-            remove.className = 'attachment-chip-remove';
-            remove.textContent = '×';
-            remove.addEventListener('click', (e) => {
-                e.stopPropagation();
-                this.detachFile();
-            });
-            top.appendChild(remove);
-        }
-        chip.appendChild(top);
-        wrap.appendChild(chip);
-    },
-
     // ── Sender actions ───────────────────────────────────────────
 
     scheduleSaveSender() {
@@ -1041,84 +956,6 @@ export const IXThread = {
         }, T('frontend.input.bbSaveDebounce'));
     },
 
-    async attachFile(file) {
-        if (!this.inbox) return;
-        const me = localStorage.getItem('currentUser');
-        if (!me) return BBMessage.error(t('inbox.loginRequired'));
-        // Defense-in-depth: every wrapper that calls attachFile
-        // (drag-drop zone handler, chips-area click, file-input
-        // change) already checks mode + canSubmit, but a programmatic
-        // bypass (e.g. DevTools dispatching a 'change' event) would
-        // reach here directly. Re-gate so a read-preserved or
-        // wrong-perspective caller can't stage a file in IDB.
-        if (this.mode !== 'sender' || !this.canSubmit) return;
-
-        if (!FileService.isAllowedExtension(file.name)) {
-            return BBMessage.error(t('files.unsupportedType'));
-        }
-
-        // One-file-per-submission rule with NO silent replacement —
-        // the user must delete the current chip with × first. Wrappers
-        // (drop / chips click) already enforce this; the check here is
-        // defense-in-depth against programmatic callers (DevTools).
-        if (this.submissions[0]?.file_hash) {
-            return BBMessage.error(t('inbox.deleteExistingFirst'));
-        }
-
-        const msg = BBMessage.loading(t('inbox.staging'));
-        try {
-            const hash = await FileService.computeHash(file, file.name);
-            // Stage in IDB (status: 'local'); upload happens on POST
-            const existing = await db.file_blobs.get(hash);
-            if (!existing) {
-                await db.file_blobs.put({
-                    hash,
-                    blob: file,
-                    name: file.name,
-                    size: file.size,
-                    mime: file.type || 'application/octet-stream',
-                    status: 'local',
-                    last_accessed: Date.now(),
-                });
-            }
-            await IXSubmissions.upsert({
-                server_inbox_id: this.inbox.id,
-                sender_uid: me,
-                file_hash: hash,
-                _dirtySender: true,
-            });
-            if (this.submissions[0]) {
-                this.submissions[0].file_hash = hash;
-            }
-            this.renderFileChip(hash);
-            msg.update(t('inbox.fileStaged'));
-        } catch (e) {
-            console.error('Inbox attach failed', e);
-            msg.close();
-            BBMessage.error(t('inbox.attachFailed'));
-        }
-    },
-
-    async detachFile() {
-        if (!this.inbox) return;
-        const me = localStorage.getItem('currentUser');
-        if (!me) return;
-        // Same defense-in-depth as attachFile. The × remove button
-        // is suppressed in renderFileChip when readOnly=true, so
-        // the visible UI already prevents detach on read-preserved
-        // / receiver perspectives. This guard catches DevTools-style
-        // bypasses that call detachFile directly.
-        if (this.mode !== 'sender' || !this.canSubmit) return;
-        await IXSubmissions.upsert({
-            server_inbox_id: this.inbox.id,
-            sender_uid: me,
-            file_hash: null,
-            _dirtySender: true,
-        });
-        if (this.submissions[0]) this.submissions[0].file_hash = null;
-        this.renderFileChip(null);
-    },
-
     async postAsSender() {
         const me = localStorage.getItem('currentUser');
         if (!me) return BBMessage.error(t('inbox.loginRequired'));
@@ -1128,7 +965,7 @@ export const IXThread = {
         // POST: whatever is on screen now is what we send.
         this.timers.cancel(SAVE_DEBOUNCE_KEY);
         const senderText = this.elements.senderArea?.value ?? '';
-        const fileHash = this.submissions[0]?.file_hash ?? null;
+        const fileHash = this._submissionAttach?.currentHash ?? null;
 
         const msg = BBMessage.loading(t('inbox.posting'));
         try {

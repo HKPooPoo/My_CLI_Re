@@ -88,6 +88,7 @@ export const EditorAttachments = {
                 dropOverlay: config.dropOverlaySelector
             },
             readOnly: config.readOnly || false,
+            maxFiles: config.maxFiles ?? RECORD_MAX_FILES,
             onAttach: config.onAttach || (() => { }),
             onDetach: config.onDetach || (() => { }),
             onRename: config.onRename || (() => { }),
@@ -240,9 +241,7 @@ export const EditorAttachments = {
              * @param {File} file
              */
             async handleFile(file) {
-                // Tier 18: configurable maxFiles retired — hardcoded 10 per
-                // record across BB / WT / BC.
-                if (this.currentHashes.length >= RECORD_MAX_FILES) {
+                if (this.currentHashes.length >= this.maxFiles) {
                     BBMessage.error(t('files.limitReached'));
                     return;
                 }
