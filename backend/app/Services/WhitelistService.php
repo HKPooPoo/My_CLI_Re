@@ -411,12 +411,23 @@ class WhitelistService
         return $added;
     }
 
+    /**
+     * Decode the JSONB `members` column into a uid-asc-sorted array.
+     * Sort happens here (not at write time) so storage stays in
+     * insertion order (cheap dedup via in_array) but every READ
+     * returns the canonical uid-asc order. This is the single
+     * authoritative ordering rule for whitelist membership lists —
+     * matches the `inbox_submissions ORDER BY users.uid ASC`
+     * convention so the lecturer sees the same roll order on
+     * the inbox preview rail and the whitelist member panel.
+     */
     private function decodeMembers($raw): array
     {
         if ($raw === null) return [];
-        if (is_array($raw)) return $raw;
-        $decoded = json_decode($raw, true);
-        return is_array($decoded) ? $decoded : [];
+        $arr = is_array($raw) ? $raw : (json_decode($raw, true) ?: []);
+        if (!is_array($arr)) return [];
+        sort($arr, SORT_STRING);
+        return array_values($arr);
     }
 
     private function forgetCaches(): void
