@@ -320,21 +320,18 @@ export const IXList = {
             const ts = inbox.last_signal ? getHKTTimestamp(inbox.last_signal) : t('common.head');
             meta.textContent = `${ts} · ${t('inbox.subCount', { count: inbox.submission_count ?? 0 })}`;
 
-            // Row 3: owner title + role tags
+            // Row 3: owner title (no text tags — GUI convention matches
+            // BB/BC where status is conveyed purely through the icon
+            // legend, not inline text like [OWNED] or [SUBMITTED]).
             const role = document.createElement('div');
             role.classList.add('inbox-list-role');
-            const ownerLabel = inbox.owner_title || inbox.owner_uid || t('common.head');
-            role.textContent = ownerLabel;
-            if (this.isOwnerOf(inbox)) role.textContent += ` [${t('inbox.youOwn')}]`;
-            else if (inbox.has_my_submission) role.textContent += ` [${t('inbox.youSubmitted')}]`;
-            if (flags[idx]) role.textContent += ` [${t('inbox.newFlag')}]`;
+            role.textContent = inbox.owner_title || inbox.owner_uid || '';
 
-            // Lock icon retired — after the whitelist null=closed flip,
-            // every visible inbox row is restricted by definition, so
-            // a permanently-on lock is noise. Only the unread-feedback
-            // envelope remains useful.
+            // Status icons — same vocabulary as BC/WT. Only `new`
+            // (envelope) is active; other states (owned, submitted)
+            // are contextually obvious without a dedicated icon.
             const iconsWrap = makeStatusLegend({
-                new:    flags[idx],
+                new: flags[idx],
             });
 
             item.appendChild(nameInput);
