@@ -314,18 +314,19 @@ export const IXList = {
                 e.stopPropagation();
             });
 
-            // Row 2: last signal timestamp + submission count
+            // Row 2: last signal timestamp (matches BC's single-line timestamp)
             const meta = document.createElement('div');
             meta.classList.add('inbox-list-meta');
-            const ts = inbox.last_signal ? getHKTTimestamp(inbox.last_signal) : t('common.head');
-            meta.textContent = `${ts} · ${t('inbox.subCount', { count: inbox.submission_count ?? 0 })}`;
+            meta.textContent = inbox.last_signal ? getHKTTimestamp(inbox.last_signal) : '';
 
-            // Row 3: owner title (no text tags — GUI convention matches
-            // BB/BC where status is conveyed purely through the icon
-            // legend, not inline text like [OWNED] or [SUBMITTED]).
+            // Row 3: owner title + submission count
             const role = document.createElement('div');
             role.classList.add('inbox-list-role');
-            role.textContent = inbox.owner_title || inbox.owner_uid || '';
+            const ownerText = inbox.owner_title || inbox.owner_uid || '';
+            const count = inbox.submission_count ?? 0;
+            role.textContent = count > 0
+                ? `${ownerText} · ${t('inbox.subCount', { count })}`
+                : ownerText;
 
             // Status icons — same vocabulary as BC/WT. Only `new`
             // (envelope) is active; other states (owned, submitted)
