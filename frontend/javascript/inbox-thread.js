@@ -603,6 +603,7 @@ export const IXThread = {
         // visible but no edit / detach allowed). Gate matches the
         // textarea/save-button visibility above.
         this.renderFileChip(row?.file_hash ?? null, /*readOnly*/ !canWrite);
+        this.renderPreviewRail();
     },
 
     renderReceiverView() {
