@@ -62,7 +62,7 @@ export const IXThread = {
         // CSS perspective gate controls which windows' action pairs show.
         page:           document.querySelector('.page[data-page="inbox-thread"]'),
         emptyOverlay:   document.getElementById('inbox-empty-overlay'),
-        receiverEmpty:  document.getElementById('inbox-receiver-empty'),
+        // receiverEmpty removed — no mode-specific placeholders
         readOnlyBanner: document.getElementById('inbox-read-only-banner'),
         previewRail:    document.getElementById('inbox-preview-rail'),
 
@@ -597,21 +597,7 @@ export const IXThread = {
             this.elements.receiverTs.textContent = formatStamp(row?.feedback_at);
         }
 
-        // Feedback pane shrinks to a "no feedback yet" placeholder when
-        // the inbox owner hasn't replied. Pairs with the CSS rule on
-        // `.inbox-textarea-section.is-feedback.is-empty`.
-        if (this.elements.receiverSection) {
-            const hasFeedback = !!(row?.receiver_text && row.receiver_text.trim());
-            this.elements.receiverSection.classList.toggle('is-empty', !hasFeedback);
-            if (!hasFeedback) {
-                this.elements.receiverSection.dataset.emptyLabel =
-                    t('inbox.feedbackPending', { owner: ownerLabel });
-            } else {
-                delete this.elements.receiverSection.dataset.emptyLabel;
-            }
-        }
-        // Clear the receiver-mode-only empty-submissions flag.
-        this.elements.page?.removeAttribute('data-empty-submissions');
+        // No mode-specific placeholders. Empty textarea = empty state.
         // Chip is read-only when the sender can no longer write
         // (read-preserved state — whitelist removed, existing row
         // visible but no edit / detach allowed). Gate matches the
@@ -661,23 +647,7 @@ export const IXThread = {
             this.elements.receiverTs.textContent = formatStamp(row?.feedback_at);
         }
 
-        // Feedback pane in receiver mode is always full-size (it's the
-        // owner's primary write target) — clear the sender-mode shrink.
-        this.elements.receiverSection?.classList.remove('is-empty');
-        // Toggle the 0-submissions empty state. CSS hides
-        // .inbox-textareas and shows .inbox-receiver-empty when set.
-        if (this.elements.page) {
-            if (this.submissions.length === 0) {
-                this.elements.page.setAttribute('data-empty-submissions', 'true');
-                // Clear stamps on empty so badges hide via :empty rule.
-                if (this.elements.senderUid) this.elements.senderUid.textContent = '';
-                if (this.elements.senderTs) this.elements.senderTs.textContent = '';
-                if (this.elements.receiverUid) this.elements.receiverUid.textContent = '';
-                if (this.elements.receiverTs) this.elements.receiverTs.textContent = '';
-            } else {
-                this.elements.page.removeAttribute('data-empty-submissions');
-            }
-        }
+        // No mode-specific placeholders. Empty textarea = empty state.
         this.renderFileChip(row?.file_hash ?? null, /*readOnly*/ true);
         this.renderPreviewRail();
     },
