@@ -331,8 +331,14 @@ export const feature = {
     hasShelf: true,
     shouldShow(page) {
         if (page === 'broadcast-channel') {
-            if (!BCChannel?.isOwnerMode) return false;
-            return !!BCChannel?.currentChannel?.serverChannelId;
+            // Owner mode is the only gate. The earlier `serverChannelId`
+            // requirement hid the shelf until the channel had been cast
+            // at least once — but the natural workflow is "configure
+            // who can see this BEFORE I post it". Show the shelf always
+            // for owner-mode channels; APPLY surfaces a "cast the channel
+            // before applying a preset" toast (whitelist.notCast) via
+            // the apply() fallback when scope is null.
+            return !!BCChannel?.isOwnerMode;
         }
         if (page === 'inbox-thread') {
             const ix = IXThread?.inbox;
