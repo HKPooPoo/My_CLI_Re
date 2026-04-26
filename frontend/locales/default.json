@@ -290,7 +290,7 @@
       "file-attach": "Attach a file to the current page. Drag and drop works too — drop straight onto the textarea.",
       "calendar": "Open the calendar for this notebook or channel. Add events per date; the AI tutor reads from here.",
       "flashcard": "Open flashcards for this notebook or channel. Maker for editing cards; Player for studying them.",
-      "llm": "AI Tutor. Pick a prompt (summarise, translate, suggest schedule) and send it against the current page.",
+      "llm": "AI Assistant. Pick a prompt (summarise, translate, suggest schedule) and send it against the current page.",
       "whitelist": "Apply an access preset. Owner only; the shelf lists presets you've been distributed. With no preset applied the channel is CLOSED — only you see it. Pick one to grant access to its members. DETACH closes it again."
     },
     "inbox": {
@@ -356,7 +356,7 @@
     "modeSequential": "SEQUENTIAL",
     "modeRandom": "RANDOM",
     "listLabel": "CARDS ({count})",
-    "empty": "No cards yet. Add your first above — or use the AI Tutor's \"Create flashcards\" action.",
+    "empty": "No cards yet. Add your first above.",
     "playBtn": "PLAY",
     "resetBtn": "RESET ALL",
     "resetComplete": "FLASHCARDS CLEARED",
@@ -365,9 +365,6 @@
     "backToMaker": "BACK",
     "unavailable": "Open a notebook page first to start a deck here.",
     "loading": "Loading flashcards…",
-    "aiSuccess": "AI generated {count} flashcards — saved to this notebook",
-    "aiParseFail": "AI response wasn't valid flashcard JSON — try again",
-    "aiScopeMissing": "Open a notebook page before asking AI to create flashcards",
     "readerEmpty": "No flashcards cast for this channel yet. The owner's next CAST will publish their deck here.",
     "readerBadge": "READ-ONLY"
   },

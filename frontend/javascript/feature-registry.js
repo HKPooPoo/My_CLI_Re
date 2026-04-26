@@ -6,7 +6,7 @@
  *   1. File attach  (always-needed utility)
  *   2. Calendar     (per-branch schedule)
  *   3. Flashcard    (per-branch study set)
- *   4. AI Tutor     (reads page / branch + calendar + flashcards)
+ *   4. AI Assistant (reads page / branch + calendar + flashcards)
  *
  * Features may expose an optional shouldShow(page, context) hook.
  * Returning false hides the button on that page for that context —

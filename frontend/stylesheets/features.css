@@ -47,7 +47,7 @@
     font-style: italic;
 }
 
-/* ============ AI Tutor (LLM) shelf ============ */
+/* ============ AI Assistant (LLM) shelf ============ */
 
 /* One-row control: SEND (left, fixed) + dropdown (right, flexing).
    Layout rationale: shelf drags right-to-left, so primary action sits

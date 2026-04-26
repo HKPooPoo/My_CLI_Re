@@ -225,9 +225,10 @@ Log section; every new user decision gets appended with a date.
    `walkie-typie-text`, `broadcast-channel`, `broadcast-list`.
    Old per-page overlays (walkie-typie-auth-overlay, etc.) retired.
 
-5. **Tier 9a** — AI Tutor shelf (`features/llm.js`):
-   - 4 hardcoded prompts: Summarize page / Summarize notebook /
-     Translate to 繁中 / Suggest a schedule.
+5. **Tier 9a** — AI Assistant shelf (`features/llm.js`):
+   - 3 hardcoded prompts: Summarize page / Summarize notebook /
+     Translate to 繁中 / Suggest a schedule. (The earlier
+     "Create flashcards" action was retired 2026-04-26.)
    - SEND left + dropdown right on same row (shelf drags right-to-left).
    - Markdown render via marked.js + sanitiser; user-select enabled.
    - "Suggest a schedule" uses dynamic prompt composition (empty /
@@ -247,7 +248,7 @@ Log section; every new user decision gets appended with a date.
      editor; data via `sync-service.getSetting('calendar')`; title
      is `{uid} CALENDAR`. BB calendar is PERSONAL — does NOT merge
      with BC channel calendars.
-   - AI Tutor's "Suggest a schedule" reads calendar via same
+   - AI Assistant's "Suggest a schedule" reads calendar via same
      `sync-service` — single source of truth.
 
 7. **Tier 9f** — Shelf drag handle: two vertical grip bars via
@@ -492,14 +493,13 @@ Log section; every new user decision gets appended with a date.
       Mobile touch: swipe right = OLDER, swipe left = NEWER (> 50 px
       horizontal, dominant over vertical, tap with < 10 px movement
       falls through to click→flip).
-    - **LLM "Create flashcards" action** (`features/llm.js`):
-      new prompt key `create_flashcards`, scope = 'branch'. Lenient
-      JSON extractor (`parseFlashcardsJson`) strips `” ```json ”`
-      fences + isolates first `[...]` slice. Persists to current
-      BB branch deck, preserving user's mode + playState. Only
-      persists when chosen action IS `create_flashcards` (guards
-      against overwriting deck if user pastes JSON into summarise
-      by accident).
+    - ~~**LLM "Create flashcards" action**~~ — RETIRED 2026-04-26.
+      The action let the AI Assistant generate cards from page
+      content; removed per user direction so the deck is purely
+      hand-curated. `parseFlashcardsJson` + `persistFlashcards`
+      helpers and the `flashcards.aiSuccess / aiParseFail /
+      aiScopeMissing` i18n keys deleted; `setSetting` import
+      dropped from `features/llm.js`.
     - Press-start-overlay click-dismiss now guards both
       `.dashboard-mode` AND `.flashcard-mode`.
 
@@ -1479,7 +1479,7 @@ Semantic spread: action 4's clear is a subset of action 6's erase. 4 preserves s
 | `file-attach` | blackboard-log, walkie-typie-text, broadcast-channel | — | Native file picker; on mobile shows Take Photo + Choose File |
 | `calendar` | blackboard-log, broadcast-channel | ✓ | **Data model: `{ "YYYY-MM-DD": ["event", "event", ...] }` — arrays, not single strings**, so merging is concatenation. Editor is an incremental list (one-line entries, no line breaks; add via input+Add button, remove per row with ×). Day cell shows numeric count + one colour dot per source type present (brand=self, accent=channel). Polymorphic on page: **BB merges** self (`users.settings.calendar`, editable) with every channel calendar the user cares about — subscribed (`is_pinned`) OR owned (`owner_uid === currentUid`) — as read-only items labelled by channel name. Owners don't auto-pin their own channels, so the `is_pinned || owned` union is what ensures a single-account test still shows merged results. BC = the channel's own calendar only; owner drafts in local IDB, cast bundles to server; subscribers see the cast copy read-only. |
 | `flashcard` | blackboard-log, broadcast-channel | ✓ | Maker + Player; per-branch (BB) or per-channel (BC) |
-| `llm` | blackboard-log, broadcast-channel | ✓ | AI Tutor: dropdown prompts → Ollama streaming |
+| `llm` | blackboard-log, broadcast-channel | ✓ | AI Assistant: dropdown prompts → Ollama streaming |
 
 Each feature module exports:
 ```js
