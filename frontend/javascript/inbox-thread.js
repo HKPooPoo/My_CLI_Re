@@ -586,12 +586,12 @@ export const IXThread = {
         if (this.elements.senderSaveBtn) {
             this.elements.senderSaveBtn.style.display = canWrite ? '' : 'none';
         }
-        // SUBMISSION pane: my own uid, my last submission timestamp.
-        if (this.elements.senderUid) this.elements.senderUid.textContent = me;
+        // SUBMISSION pane: show WHICH member is selected (not always "me").
+        if (this.elements.senderUid) this.elements.senderUid.textContent = currentUid ?? '';
         if (this.elements.senderTs) {
             this.elements.senderTs.textContent = formatStamp(row?.updated_at);
         }
-        // FEEDBACK pane: inbox owner uid + feedback_at.
+        // FEEDBACK pane: owner uid + feedback_at for this member.
         if (this.elements.receiverUid) this.elements.receiverUid.textContent = ownerLabel;
         if (this.elements.receiverTs) {
             this.elements.receiverTs.textContent = formatStamp(row?.feedback_at);
@@ -637,7 +637,7 @@ export const IXThread = {
         if (this.elements.senderSaveBtn) this.elements.senderSaveBtn.style.display = '';
         // SUBMISSION pane: current sender's uid + their last update.
         if (this.elements.senderUid) {
-            this.elements.senderUid.textContent = row?.sender_uid ?? '';
+            this.elements.senderUid.textContent = currentUid ?? '';
         }
         if (this.elements.senderTs) {
             this.elements.senderTs.textContent = formatStamp(row?.updated_at);
