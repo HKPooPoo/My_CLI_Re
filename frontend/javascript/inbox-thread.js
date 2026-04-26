@@ -33,6 +33,7 @@ import { t } from './i18n.js';
 import { T } from './timing.js';
 import { getEcho } from './echo-service.js';
 import { getHKTTimestamp } from './utils.js';
+import { attachContentSearch } from './content-search.js';
 import db from './indexedDB.js';
 
 const SAVE_DEBOUNCE_KEY = 'inboxAutoSave';
@@ -107,6 +108,8 @@ export const IXThread = {
     members: [],
     /** Actual submission rows. Lookup by sender_uid to pair with member. */
     submissions: [],
+    /** Content search instance (attached to preview rail). */
+    _search: null,
     /** Save-debounce timers, keyed so we can cancel on inbox switch */
     timers: new TimerGroup(),
     _abortController: null,
@@ -125,6 +128,26 @@ export const IXThread = {
         this.bindEvents();
         this._wireDropZone();
         this._wirePreviewRailInteractions();
+
+        // Content search — searches BOTH uid and submission text so
+        // the lecturer can find "S20260003" or "final report" from
+        // the same pill. Placement = rail (same as BB/BC).
+        this._search = attachContentSearch({
+            root: this.elements.previewRail,
+            placement: 'rail',
+            getRecords: () => this.members.map(uid => {
+                const sub = this.submissions.find(s => s.sender_uid === uid);
+                return { text: `${uid} ${sub?.sender_text ?? ''}` };
+            }),
+            getCurrentHead: () => this.head,
+            navigateTo: async (head) => {
+                await this.flushPending();
+                this.head = head;
+                if (this.mode === 'receiver') this.renderReceiverView();
+                else this.renderSenderView();
+            },
+        });
+
         // Empty overlay starts visible — JS hides it once an inbox loads
         if (this.elements.emptyOverlay) {
             this.elements.emptyOverlay.style.display = '';
@@ -629,6 +652,7 @@ export const IXThread = {
         // textarea/save-button visibility above.
         this.renderFileChip(row?.file_hash ?? null, /*readOnly*/ !canWrite);
         this.renderPreviewRail();
+        this._search?.refresh();
     },
 
     renderReceiverView() {
@@ -676,6 +700,7 @@ export const IXThread = {
         // No mode-specific placeholders. Empty textarea = empty state.
         this.renderFileChip(row?.file_hash ?? null, /*readOnly*/ true);
         this.renderPreviewRail();
+        this._search?.refresh();
     },
 
     /**
