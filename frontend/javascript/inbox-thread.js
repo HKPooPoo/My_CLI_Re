@@ -578,7 +578,7 @@ export const IXThread = {
             }
             msg?.update(t('inbox.pullComplete'), 1500);
         } catch (e) {
-            if (signal.aborted || e.name === 'AbortError') return;
+            if (signal.aborted || e.name === 'AbortError') { msg?.close(); return; }
             console.error('IXThread refresh failed', e);
             msg?.close();
             const status = e.status || e.response?.status;
