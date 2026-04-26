@@ -73,13 +73,20 @@ export const IXThread = {
         receiverTs: document.getElementById('inbox-receiver-ts'),
         dropOverlay: document.getElementById('inbox-drop-overlay'),
         fileInput: document.getElementById('inbox-file-input'),
-        // Per-section RESET / SAVE buttons. CSS hides the wrong-side
-        // pair via `data-mode="sender|receiver"` × `.is-submission |
-        // .is-feedback` so we don't need to JS-toggle perspectives.
-        senderResetBtn:   document.getElementById('inbox-sender-reset-btn'),
-        senderSaveBtn:    document.getElementById('inbox-sender-save-btn'),
-        receiverResetBtn: document.getElementById('inbox-receiver-reset-btn'),
-        receiverSaveBtn:  document.getElementById('inbox-receiver-save-btn'),
+        // Per-section RESET / SUBMIT buttons. CSS hides the wrong-side
+        // pair via `data-mode="sender|receiver"` × `.is-instruction |
+        // .is-submission | .is-feedback` so we don't need to
+        // JS-toggle perspectives.
+        instructionArea:     document.getElementById('inbox-instruction-textarea'),
+        instructionSection:  document.querySelector('.inbox-textarea-section.is-instruction'),
+        instructionUid:      document.getElementById('inbox-instruction-uid'),
+        instructionTs:       document.getElementById('inbox-instruction-ts'),
+        instructionResetBtn: document.getElementById('inbox-instruction-reset-btn'),
+        instructionSaveBtn:  document.getElementById('inbox-instruction-save-btn'),
+        senderResetBtn:      document.getElementById('inbox-sender-reset-btn'),
+        senderSaveBtn:       document.getElementById('inbox-sender-save-btn'),
+        receiverResetBtn:    document.getElementById('inbox-receiver-reset-btn'),
+        receiverSaveBtn:     document.getElementById('inbox-receiver-save-btn'),
     },
 
     /** Currently loaded inbox metadata (server snapshot) */
@@ -292,6 +299,33 @@ export const IXThread = {
         wireSave(this.elements.receiverSaveBtn, this.postAsReceiver);
         wireReset(this.elements.senderResetBtn);
         wireReset(this.elements.receiverResetBtn);
+
+        // Instruction pane SUBMIT pushes the per-inbox description to
+        // the server (PATCH /api/inboxes/{id}). RESET restores the
+        // textarea from the in-memory inbox object — no fetch round-
+        // trip needed for the per-session "discard local edits"
+        // semantic. Cross-tab freshness arrives on the next inbox-list
+        // re-fetch (silently triggered by inbox:signalUpdated WS).
+        if (this.elements.instructionSaveBtn) {
+            new MultiStepButton(this.elements.instructionSaveBtn, {
+                sound: 'UIPipboyOK.mp3',
+                steps: 1,
+                action: async () => {
+                    if (!this.inbox) return BBMessage.error(t('inbox.noInboxSelected'));
+                    return this.postAsInstruction();
+                },
+            });
+        }
+        if (this.elements.instructionResetBtn) {
+            new MultiStepButton(this.elements.instructionResetBtn, {
+                sound: 'UIGeneralFocus.mp3',
+                steps: 1,
+                action: async () => {
+                    if (!this.inbox || !this.elements.instructionArea) return;
+                    this.elements.instructionArea.value = this.inbox.description ?? '';
+                },
+            });
+        }
     },
 
     // ── Loading / unloading ──────────────────────────────────────
@@ -328,8 +362,10 @@ export const IXThread = {
         this.mode = 'sender';
         this.elements.page?.removeAttribute('data-mode');
         if (this.elements.emptyOverlay) this.elements.emptyOverlay.style.display = '';
+        if (this.elements.instructionArea) this.elements.instructionArea.value = '';
         if (this.elements.senderArea) this.elements.senderArea.value = '';
         if (this.elements.receiverArea) this.elements.receiverArea.value = '';
+        if (this.elements.instructionUid) this.elements.instructionUid.textContent = '';
         this.renderFileChip(null);
         this._syncGlobalButtons();
     },
@@ -472,6 +508,17 @@ export const IXThread = {
         // the user is read-preserved (had access, no longer does).
         const canWrite = this.canSubmit;
 
+        // INSTRUCTION pane: per-inbox content set by the lecturer.
+        // Sender always sees it read-only (regardless of canSubmit —
+        // even read-preserved users can read the original prompt).
+        if (this.elements.instructionArea) {
+            this.elements.instructionArea.value = this.inbox?.description ?? '';
+            this.elements.instructionArea.disabled = true;
+        }
+        if (this.elements.instructionUid) {
+            this.elements.instructionUid.textContent = ownerLabel;
+        }
+
         if (this.elements.senderArea) {
             this.elements.senderArea.value = row?.sender_text ?? '';
             this.elements.senderArea.disabled = !canWrite;
@@ -529,6 +576,17 @@ export const IXThread = {
     renderReceiverView() {
         const row = this.submissions[this.head];
         const me = localStorage.getItem('currentUser') || '';
+
+        // INSTRUCTION pane: receiver (= owner) edits the per-inbox
+        // assignment prompt. Same value across every preview-rail
+        // selection — instruction is inbox-level, not per-submission.
+        if (this.elements.instructionArea) {
+            this.elements.instructionArea.value = this.inbox?.description ?? '';
+            this.elements.instructionArea.disabled = false;
+        }
+        if (this.elements.instructionUid) {
+            this.elements.instructionUid.textContent = me;
+        }
 
         if (this.elements.senderArea) {
             this.elements.senderArea.value = row?.sender_text ?? '';
@@ -1004,6 +1062,30 @@ export const IXThread = {
             });
             row.receiver_text = text;
         }, T('frontend.input.bbSaveDebounce'));
+    },
+
+    /**
+     * Push the per-inbox instruction (= `inboxes.description`) to the
+     * server. Receiver-only path. Read-modify-write on a single column;
+     * no IDB caching layer because the instruction is inbox-level
+     * metadata, not per-submission content. RESET on this pane just
+     * restores the textarea from `this.inbox.description` — no fetch.
+     */
+    async postAsInstruction() {
+        const newDescription = this.elements.instructionArea?.value ?? '';
+        const msg = BBMessage.loading(t('inbox.posting'));
+        try {
+            await InboxService.update(this.inbox.id, { description: newDescription });
+            this.inbox.description = newDescription;
+            msg.update(t('inbox.postComplete'));
+        } catch (e) {
+            console.error('Inbox instruction post failed', e);
+            msg.close();
+            const status = e.status || e.response?.status;
+            if (status === 403)      BBMessage.error(t('inbox.notOwner'));
+            else if (status === 404) BBMessage.error(t('inbox.errInboxNotFound'));
+            else                     BBMessage.error(t('inbox.postFailed'));
+        }
     },
 
     async postAsReceiver() {

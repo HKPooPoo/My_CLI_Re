@@ -400,8 +400,9 @@
     padding: 6px 10px 8px 10px;
 }
 
-.page[data-mode="sender"]   .is-submission .inbox-section-actions,
-.page[data-mode="receiver"] .is-feedback   .inbox-section-actions {
+.page[data-mode="sender"]   .is-submission  .inbox-section-actions,
+.page[data-mode="receiver"] .is-feedback    .inbox-section-actions,
+.page[data-mode="receiver"] .is-instruction .inbox-section-actions {
     display: flex;
 }
 
