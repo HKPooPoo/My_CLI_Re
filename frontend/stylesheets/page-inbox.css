@@ -221,47 +221,18 @@
    mode-gated hiding. An empty textarea IS the empty state. */
 
 /* ── Preview rail — inbox-thread specifics ─────────────────────
-   Click-to-navigate only (no drag reorder — uid-asc order is
-   server-authoritative). Suppress the grip-handle pseudo. */
+   Blocks are plain colored bars (same as BB/BC — no text label
+   inside). Click-to-navigate only, no drag reorder (uid-asc order
+   is server-authoritative). Grip-handle pseudo hidden. */
 .page[data-page="inbox-thread"] .page-preview-block {
-    align-items: center;
-    justify-content: center;
-    padding: 4px 2px;
     cursor: pointer;
 }
 .page[data-page="inbox-thread"] .page-preview-block::after {
     display: none;
 }
 
-.inbox-preview-block-label {
-    writing-mode: vertical-rl;
-    transform: rotate(180deg);
-    font-size: 10px;
-    font-family: monospace;
-    color: var(--text-body);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    max-height: 100%;
-    padding: 4px 0;
-    line-height: 1.2;
-}
-/* Label colour tracks block bg — white only on brand-bg states. */
-.page-preview-block.peeking .inbox-preview-block-label {
-    color: #ffffff;
-}
-@media (hover: hover) {
-    .page-preview-block:hover .inbox-preview-block-label {
-        color: #ffffff;
-    }
-}
-.page[data-page="inbox-thread"] .page-preview-block.active:not(.unsynced)
-    .inbox-preview-block-label {
-    color: var(--brand);
-    font-weight: 700;
-}
-
-/* Ungraded submissions — dashed accent border */
+/* Ungraded (no submission or no feedback) — dashed accent border,
+   same visual language as BB's `.unsynced` but scoped to inbox. */
 .page[data-page="inbox-thread"] .page-preview-block.unsynced {
     border-style: dashed;
     border-color: var(--accent);
@@ -270,13 +241,6 @@
 .page[data-page="inbox-thread"] .page-preview-block.unsynced.active {
     border-color: var(--accent);
     background: var(--accent);
-}
-.page[data-page="inbox-thread"] .page-preview-block.unsynced.active
-    .inbox-preview-block-label {
-    color: #ffffff;
-}
-.page[data-page="inbox-thread"] .page-preview-block.unsynced::after {
-    background-color: var(--accent);
 }
 
 /* ── Read-preserved banner ─────────────────────────────────────

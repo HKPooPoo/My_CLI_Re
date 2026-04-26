@@ -716,27 +716,27 @@ export const IXThread = {
      */
     renderPreviewRail() {
         if (!this.elements.previewRail) return;
-        // Remove only preview blocks — preserve the search pill
-        // appended by attachContentSearch (same pattern as BB/BC).
+        // Mirror BB's renderPreviewRail exactly: fragment build,
+        // remove only blocks, insertBefore search pill. No text
+        // labels inside blocks — blocks are plain colored bars,
+        // UID shows in the SUBMISSION window title on select/peek.
         this.elements.previewRail
             .querySelectorAll('.page-preview-block')
             .forEach(b => b.remove());
-        const searchEl = this.elements.previewRail.querySelector('.editor-search');
+        const search = this.elements.previewRail.querySelector('.editor-search');
+        const frag = document.createDocumentFragment();
         this.members.forEach((uid, idx) => {
             const block = document.createElement('div');
-            block.classList.add('page-preview-block');
-            if (idx === this.head) block.classList.add('active');
+            let cls = 'page-preview-block';
+            if (idx === this.head) cls += ' active';
             const sub = this.submissions.find(s => s.sender_uid === uid);
-            if (!sub || sub.feedback_at === null) block.classList.add('unsynced');
-            block.dataset.head = idx;
-            const label = document.createElement('span');
-            label.className = 'inbox-preview-block-label';
-            label.textContent = uid;
-            block.appendChild(label);
-            // Insert before the search pill so it stays at the bottom.
-            if (searchEl) this.elements.previewRail.insertBefore(block, searchEl);
-            else this.elements.previewRail.appendChild(block);
+            if (!sub || sub.feedback_at === null) cls += ' unsynced';
+            block.className = cls;
+            block.dataset.head = String(idx);
+            frag.appendChild(block);
         });
+        if (search) this.elements.previewRail.insertBefore(frag, search);
+        else this.elements.previewRail.appendChild(frag);
         this.elements.previewRail
             .querySelector('.page-preview-block.active')
             ?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
