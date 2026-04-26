@@ -140,30 +140,11 @@ class InboxController extends Controller
             return response()->json(['message' => 'Unauthorized'], 401);
         }
 
-        $inbox = DB::table('inboxes')->where('id', (int) $inboxId)->first();
-        $members = [];
-        if ($inbox && $inbox->whitelist_id) {
-            $wl = DB::table('whitelists')->where('id', $inbox->whitelist_id)->first();
-            if ($wl) {
-                $members = app(\App\Services\WhitelistService::class)
-                    ->decodeMembers($wl->members ?? null);
-            }
-        }
-
-        // Which members have submitted (uid list only — no content
-        // leaked). Lets the sender's preview rail mark submitted vs
-        // unsubmitted blocks without accessing other students' data.
-        $submittedUids = DB::table('inbox_submissions')
-            ->where('inbox_id', (int) $inboxId)
-            ->join('users', 'inbox_submissions.user_id', '=', 'users.id')
-            ->pluck('users.uid')
-            ->all();
-
+        // Sender sees ONLY their own data — no roster, no other
+        // students' submission status. Privacy by design.
         return response()->json([
-            'submission'     => $this->service->getMySubmission($user, (int) $inboxId),
-            'can_submit'     => $this->service->canSubmit($user, (int) $inboxId),
-            'members'        => $members,
-            'submitted_uids' => $submittedUids,
+            'submission' => $this->service->getMySubmission($user, (int) $inboxId),
+            'can_submit' => $this->service->canSubmit($user, (int) $inboxId),
         ]);
     }
 

@@ -523,7 +523,13 @@ export const IXThread = {
             } else {
                 const data = await InboxService.getMySubmission(this.inbox.id, signal);
                 if (signal.aborted) return;
-                this.members = data?.members ?? [];
+                // Sender sees ONLY themselves — never the full roster.
+                // The preview rail shows one block (self); navigation
+                // is disabled (NEWER/OLDER hidden via _syncGlobalButtons
+                // because members.length <= 1). No access to other
+                // students' submissions, no class-roster leak.
+                const me2 = localStorage.getItem('currentUser');
+                this.members = me2 ? [me2] : [];
                 this.submittedUids = new Set(data?.submitted_uids ?? []);
                 const row = data?.submission ?? null;
                 this.canSubmit = !!data?.can_submit;
