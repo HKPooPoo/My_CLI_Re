@@ -297,14 +297,20 @@ export const IXThread = {
     // ── Loading / unloading ──────────────────────────────────────
 
     async loadInbox(inbox) {
-        // Persist any pending edits from the old inbox before switching
-        await this.flushPending();
-        this._unsubscribeWS();
-
+        // Set state SYNCHRONOUSLY before any await — feature-shelf
+        // re-evaluates shouldShow on the same `inbox:selected` event
+        // and reads IXThread.inbox to decide whether to surface the
+        // Whitelist button. If we set this.inbox after an await, the
+        // synchronous shouldShow eval happens BEFORE the assignment
+        // and the button stays hidden until the next page change.
         this.inbox = inbox;
         const me = localStorage.getItem('currentUser');
         this.mode = (me && inbox.owner_uid === me) ? 'receiver' : 'sender';
         this.elements.page?.setAttribute('data-mode', this.mode);
+
+        // Persist any pending edits from the old inbox before switching
+        await this.flushPending();
+        this._unsubscribeWS();
 
         // Hide the empty-state overlay; show the editor scaffold.
         if (this.elements.emptyOverlay) this.elements.emptyOverlay.style.display = 'none';
