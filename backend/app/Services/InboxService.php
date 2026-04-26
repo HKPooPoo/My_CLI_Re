@@ -376,6 +376,9 @@ class InboxService
         if ($hasFiles)        $update['instruction_files'] = $instructionFiles !== null
                                     ? json_encode($instructionFiles) : null;
         DB::table('inboxes')->where('id', $inboxId)->update($update);
+        if ($instructionFiles) {
+            $this->fileService->markCommittedBatch($instructionFiles);
+        }
     }
 
     public function applyWhitelist(User $user, int $inboxId, ?int $whitelistId): void
@@ -436,6 +439,9 @@ class InboxService
                 'feedback_at'        => $nowMs,
                 'updated_at'         => now(),
             ]);
+        if ($feedbackFileHash) {
+            $this->fileService->markCommittedBatch($feedbackFileHash);
+        }
         DB::table('inboxes')->where('id', $inboxId)
             ->update(['last_signal' => $nowMs, 'updated_at' => now()]);
 

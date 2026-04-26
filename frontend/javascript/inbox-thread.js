@@ -156,8 +156,7 @@ export const IXThread = {
             navigateTo: async (head) => {
                 await this.flushPending();
                 this.head = head;
-                if (this.mode === 'receiver') this.renderReceiverView();
-                else this.renderSenderView();
+                this._renderCurrentMember();
             },
         });
 
@@ -537,7 +536,7 @@ export const IXThread = {
                 this.canSubmit = true;
                 await IXSubmissions.replaceForInbox(this.inbox.id, this.submissions);
                 if (this.head >= this.members.length) this.head = Math.max(0, this.members.length - 1);
-                this.renderReceiverView();
+                this._renderCurrentMember();
                 this._syncGlobalButtons();
                 // New-submission toast on silent re-pull. Compare counts
                 // (a strict increase means at least one new row landed).
@@ -601,7 +600,7 @@ export const IXThread = {
                     updated_at: row.updated_at,
                 }] : [];
                 this.head = Math.max(0, this.members.indexOf(me2));
-                this.renderSenderView();
+                this._renderCurrentMember();
             }
             msg?.update(t('inbox.pullComplete'), 1500);
         } catch (e) {
@@ -618,135 +617,71 @@ export const IXThread = {
     // ── Rendering ────────────────────────────────────────────────
 
     renderSenderView() {
+        this._renderInstruction();
+        this._renderCurrentMember();
+    },
+
+    _renderInstruction() {
+        const me = localStorage.getItem('currentUser') || '';
+        if (this.elements.instructionArea) {
+            this.elements.instructionArea.value = this.inbox?.description ?? '';
+            this.elements.instructionArea.disabled = (this.mode !== 'receiver');
+        }
+        if (this._instructionAttach) {
+            this._instructionAttach.setReadOnly(this.mode !== 'receiver');
+            this._instructionAttach.setFromRecord(this.inbox?.instruction_files ?? null);
+        }
+    },
+
+    _renderCurrentMember() {
         const currentUid = this.members[this.head] ?? null;
         const row = this.submissions.find(s => s.sender_uid === currentUid) || null;
         const me = localStorage.getItem('currentUser') || '';
         const ownerLabel = this.inbox?.owner_uid || '';
 
-        // Eligibility gate — disables senderArea + POST + file when
-        // the user is read-preserved (had access, no longer does).
-        const canWrite = this.canSubmit;
-
-        // INSTRUCTION pane: per-inbox content. Sender = read-only.
-        if (this.elements.instructionArea) {
-            this.elements.instructionArea.value = this.inbox?.description ?? '';
-            this.elements.instructionArea.disabled = true;
-        }
-        if (this.elements.instructionUid) {
-            this.elements.instructionUid.textContent = ownerLabel;
-        }
-        // Instruction files — read-only for sender.
-        if (this._instructionAttach) {
-            this._instructionAttach.setReadOnly(true);
-            const fileHash = this.inbox?.instruction_files;
-            this._instructionAttach.setFromRecord(fileHash ?? null);
-        }
-
         if (this.elements.senderArea) {
             this.elements.senderArea.value = row?.sender_text ?? '';
-            this.elements.senderArea.disabled = !canWrite;
+            this.elements.senderArea.disabled = (this.mode === 'receiver') || !this.canSubmit;
         }
         if (this.elements.receiverArea) {
             this.elements.receiverArea.value = row?.receiver_text ?? '';
-            this.elements.receiverArea.disabled = true;
+            this.elements.receiverArea.disabled = (this.mode !== 'receiver');
         }
-        // Read-preserved banner — only show when user is in this state
-        // (has a submission to read, but no current submission rights).
-        if (this.elements.readOnlyBanner) {
-            const isReadPreserved = !canWrite && !!row;
-            this.elements.readOnlyBanner.classList.toggle('visible', isReadPreserved);
-        }
-        // SAVE button on sender side: hide when can't write at all
-        // (read-preserved state). RESET stays available so the user
-        // can still refresh to see new feedback. CSS handles
-        // perspective gating; this is the can_submit gate only.
-        if (this.elements.senderSaveBtn) {
-            this.elements.senderSaveBtn.style.display = canWrite ? '' : 'none';
-        }
-        // SUBMISSION pane: show WHICH member is selected (not always "me").
-        if (this.elements.senderUid) this.elements.senderUid.textContent = currentUid ?? '';
-        if (this.elements.senderTs) {
-            this.elements.senderTs.textContent = formatStamp(row?.updated_at);
-        }
-        // FEEDBACK pane: owner uid + feedback_at for this member.
-        if (this.elements.receiverUid) this.elements.receiverUid.textContent = ownerLabel;
-        if (this.elements.receiverTs) {
-            this.elements.receiverTs.textContent = formatStamp(row?.feedback_at);
-        }
-
-        // No mode-specific placeholders. Empty textarea = empty state.
-        // Chip is read-only when the sender can no longer write
-        // (read-preserved state — whitelist removed, existing row
-        // visible but no edit / detach allowed). Gate matches the
-        // textarea/save-button visibility above.
-        if (this._submissionAttach) {
-            this._submissionAttach.setReadOnly(!canWrite);
-            this._submissionAttach.setFromRecord(row?.file_hash ?? null);
-        }
-        if (this._feedbackAttach) {
-            this._feedbackAttach.setReadOnly(true);
-            this._feedbackAttach.setFromRecord(row?.feedback_file_hash ?? null);
-        }
-        this.renderPreviewRail();
-        this._search?.refresh();
-    },
-
-    renderReceiverView() {
-        const currentUid = this.members[this.head] ?? null;
-        const row = this.submissions.find(s => s.sender_uid === currentUid) || null;
-        const me = localStorage.getItem('currentUser') || '';
-
-        // INSTRUCTION pane: receiver (= owner) edits.
-        if (this.elements.instructionArea) {
-            this.elements.instructionArea.value = this.inbox?.description ?? '';
-            this.elements.instructionArea.disabled = false;
-        }
-        if (this.elements.instructionUid) {
-            this.elements.instructionUid.textContent = me;
-        }
-        // Instruction files — editable for receiver.
-        if (this._instructionAttach) {
-            this._instructionAttach.setReadOnly(false);
-            const fileHash = this.inbox?.instruction_files;
-            this._instructionAttach.setFromRecord(fileHash ?? null);
-        }
-
-        if (this.elements.senderArea) {
-            this.elements.senderArea.value = row?.sender_text ?? '';
-            this.elements.senderArea.disabled = true;
-        }
-        if (this.elements.receiverArea) {
-            this.elements.receiverArea.value = row?.receiver_text ?? '';
-            this.elements.receiverArea.disabled = false;
-        }
-        // Receiver mode — banner hidden. SAVE button visibility is
-        // perspective-gated by CSS; we just clear any can_submit
-        // override left over from a previous sender session.
-        this.elements.readOnlyBanner?.classList.remove('visible');
-        if (this.elements.senderSaveBtn) this.elements.senderSaveBtn.style.display = '';
-        // SUBMISSION pane: current sender's uid + their last update.
         if (this.elements.senderUid) {
             this.elements.senderUid.textContent = currentUid ?? '';
         }
         if (this.elements.senderTs) {
             this.elements.senderTs.textContent = formatStamp(row?.updated_at);
         }
-        // FEEDBACK pane: my own uid (= owner) + feedback_at on this row.
-        if (this.elements.receiverUid) this.elements.receiverUid.textContent = me;
+        if (this.elements.receiverUid) {
+            this.elements.receiverUid.textContent = this.mode === 'receiver' ? me : ownerLabel;
+        }
         if (this.elements.receiverTs) {
             this.elements.receiverTs.textContent = formatStamp(row?.feedback_at);
         }
-
         if (this._submissionAttach) {
-            this._submissionAttach.setReadOnly(true);
+            this._submissionAttach.setReadOnly(this.mode === 'receiver' || !this.canSubmit);
             this._submissionAttach.setFromRecord(row?.file_hash ?? null);
         }
         if (this._feedbackAttach) {
-            this._feedbackAttach.setReadOnly(false);
+            this._feedbackAttach.setReadOnly(this.mode !== 'receiver');
             this._feedbackAttach.setFromRecord(row?.feedback_file_hash ?? null);
+        }
+        if (this.elements.readOnlyBanner) {
+            const isReadPreserved = this.mode !== 'receiver' && !this.canSubmit && !!row;
+            this.elements.readOnlyBanner.classList.toggle('visible', isReadPreserved);
+        }
+        if (this.elements.senderSaveBtn) {
+            this.elements.senderSaveBtn.style.display =
+                (this.mode !== 'receiver' && this.canSubmit) ? '' : 'none';
         }
         this.renderPreviewRail();
         this._search?.refresh();
+    },
+
+    renderReceiverView() {
+        this._renderInstruction();
+        this._renderCurrentMember();
     },
 
     /**
@@ -917,8 +852,7 @@ export const IXThread = {
             }
             await this.flushPending();
             this.head = head;
-            if (this.mode === 'receiver') this.renderReceiverView();
-            else this.renderSenderView();
+            this._renderCurrentMember();
         });
 
         // Mobile touch peek — 300 ms hold opens peek; touchmove tracks
@@ -1175,15 +1109,13 @@ export const IXThread = {
     async movePush() {
         await this.flushPending();
         if (this.head > 0) this.head -= 1;
-        if (this.mode === 'receiver') this.renderReceiverView();
-        else this.renderSenderView();
+        this._renderCurrentMember();
     },
 
     async movePull() {
         await this.flushPending();
         if (this.head < this.members.length - 1) this.head += 1;
-        if (this.mode === 'receiver') this.renderReceiverView();
-        else this.renderSenderView();
+        this._renderCurrentMember();
     },
 
     // ── Cleanup ──────────────────────────────────────────────────
