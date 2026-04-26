@@ -94,11 +94,10 @@
     cursor: default;
 }
 
-.inbox-list-meta,
-.inbox-list-role {
-    font-size: calc(var(--font-size) * 0.78);
-    color: var(--text-muted);
-}
+/* Sub-rows inherit font-size + color from parent — no explicit
+   overrides. BB .vcs-list-timestamp/.vcs-list-owner and BC
+   .broadcast-list-last-signal/.broadcast-list-title both inherit;
+   inbox matches. */
 
 #inbox-create-btn,
 #inbox-delete-btn {
