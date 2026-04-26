@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Services\InboxService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class InboxController extends Controller
 {
@@ -121,9 +122,8 @@ class InboxController extends Controller
             return response()->json(['message' => 'Unauthorized'], 401);
         }
 
-        return response()->json([
-            'submissions' => $this->service->fetchSubmissions($user, (int) $inboxId),
-        ]);
+        $result = $this->service->fetchSubmissions($user, (int) $inboxId);
+        return response()->json($result);
     }
 
     /**
@@ -140,14 +140,20 @@ class InboxController extends Controller
             return response()->json(['message' => 'Unauthorized'], 401);
         }
 
+        $inbox = DB::table('inboxes')->where('id', (int) $inboxId)->first();
+        $members = [];
+        if ($inbox && $inbox->whitelist_id) {
+            $wl = DB::table('whitelists')->where('id', $inbox->whitelist_id)->first();
+            if ($wl) {
+                $members = app(\App\Services\WhitelistService::class)
+                    ->decodeMembers($wl->members ?? null);
+            }
+        }
+
         return response()->json([
             'submission' => $this->service->getMySubmission($user, (int) $inboxId),
-            // Server-authoritative eligibility flag. The front-end
-            // disables senderArea / POST / file picker when false so
-            // a read-preserved user (existing submission, no longer
-            // in whitelist) cannot type a change that the server
-            // would refuse to commit.
             'can_submit' => $this->service->canSubmit($user, (int) $inboxId),
+            'members'    => $members,
         ]);
     }
 

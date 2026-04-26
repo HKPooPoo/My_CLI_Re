@@ -183,11 +183,30 @@ class InboxService
      * contract on the rail (the lecturer can't reorder; the
      * alphabetical roll is the only meaningful order).
      */
+    /**
+     * Returns `['members' => [...uids], 'submissions' => [...rows]]`.
+     *
+     * `members` = the full whitelist roster (uid-asc), regardless of
+     * whether each member has submitted. The preview rail renders one
+     * block per member; clicking a non-submitted member shows empty
+     * SUBMISSION + FEEDBACK windows. This makes the rail a roll-call
+     * — the lecturer sees who is missing, not just who is present.
+     *
+     * `submissions` = the actual `inbox_submissions` rows, keyed by
+     * `sender_uid` for easy lookup on the frontend.
+     */
     public function fetchSubmissions(User $user, int $inboxId): array
     {
         $inbox = DB::table('inboxes')->where('id', $inboxId)->first();
         if (!$inbox) abort(404, 'INBOX NOT FOUND');
         if ((int) $inbox->user_id !== (int) $user->id) abort(403, 'NOT INBOX OWNER');
+
+        // Full whitelist member roster (uid-asc via decodeMembers sort).
+        $members = [];
+        if ($inbox->whitelist_id) {
+            $wl = DB::table('whitelists')->where('id', $inbox->whitelist_id)->first();
+            if ($wl) $members = $this->whitelistService->decodeMembers($wl->members ?? null);
+        }
 
         $rows = DB::table('inbox_submissions')
             ->leftJoin('users', 'inbox_submissions.user_id', '=', 'users.id')
@@ -200,8 +219,6 @@ class InboxService
             )
             ->get();
 
-        // Hide file_hash entries whose blob is missing from disk —
-        // mirrors BC fetchBoards behaviour so dead chips don't render.
         $allHashes = [];
         foreach ($rows as $r) {
             if ($r->file_hash) $allHashes[] = $r->file_hash;
@@ -215,7 +232,7 @@ class InboxService
             }
         }
 
-        return $rows->map(fn($r) => [
+        $submissions = $rows->map(fn($r) => [
             'id'             => (int) $r->id,
             'sender_uid'     => $r->sender_uid,
             'sender_title'   => $r->sender_title,
@@ -226,6 +243,8 @@ class InboxService
             'submitted_at'   => $r->created_at,
             'updated_at'     => $r->updated_at,
         ])->toArray();
+
+        return ['members' => $members, 'submissions' => $submissions];
     }
 
     /**

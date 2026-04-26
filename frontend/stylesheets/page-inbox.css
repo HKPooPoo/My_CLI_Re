@@ -232,12 +232,11 @@
 }
 
 /* ── Sender mode ───────────────────────────────────────────────
-   Hide preview rail (sender views own submission only, no
-   multi-student navigation). Also hide global NEWER/OLDER since
-   can-push-pull is on the page but sender has nothing to navigate. */
-.page[data-mode="sender"] #inbox-preview-rail {
-    display: none;
-}
+   Sender and receiver share the EXACT same layout — preview rail
+   visible, NEWER/OLDER visible, all three windows visible. The
+   only difference is which textareas are disabled (= edit rights).
+   Rail shows the full whitelist member roster; sender's own block
+   is active, others show empty content. */
 
 /* Empty FEEDBACK pane in sender mode — feedback_at is null, so
    hide the textarea and show the placeholder pseudo-element. */

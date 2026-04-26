@@ -100,9 +100,12 @@ export const IXThread = {
     inbox: null,
     /** 'sender' | 'receiver' — derived from owner_uid */
     mode: 'sender',
-    /** Receiver-mode head index into `submissions` (0 = newest) */
+    /** Head index into `members` array (which member is displayed) */
     head: 0,
-    /** All submissions (receiver mode); single-row array (sender mode) */
+    /** Full whitelist roster (uid-asc). Rail renders from this, NOT
+     *  from submissions — so unsubmitted members appear as blocks. */
+    members: [],
+    /** Actual submission rows. Lookup by sender_uid to pair with member. */
     submissions: [],
     /** Save-debounce timers, keyed so we can cancel on inbox switch */
     timers: new TimerGroup(),
@@ -142,8 +145,7 @@ export const IXThread = {
         const activePage = document.querySelector('.page.active');
         const isInboxThread = activePage?.dataset.page === 'inbox-thread';
         const shouldShow = isInboxThread
-            && this.mode === 'receiver'
-            && this.submissions.length > 1;
+            && this.members.length > 1;
         if (shouldShow) {
             pushBtn.style.transform = 'translateY(0)';
             pullBtn.style.transform = 'translateY(0)';
@@ -353,13 +355,13 @@ export const IXThread = {
         // `.push-btn` / `.pull-btn`. We wire click handlers that move
         // through submissions (= different students).
         document.querySelector('.push-btn')?.addEventListener('click', () => {
-            if (this.mode !== 'receiver') return;
+            if (!this.inbox || this.members.length <= 1) return;
             const activePage = document.querySelector('.page.active');
             if (activePage?.dataset.page !== 'inbox-thread') return;
             this.movePush();
         });
         document.querySelector('.pull-btn')?.addEventListener('click', () => {
-            if (this.mode !== 'receiver') return;
+            if (!this.inbox || this.members.length <= 1) return;
             const activePage = document.querySelector('.page.active');
             if (activePage?.dataset.page !== 'inbox-thread') return;
             this.movePull();
@@ -395,6 +397,7 @@ export const IXThread = {
     unloadInbox() {
         this._unsubscribeWS();
         this.inbox = null;
+        this.members = [];
         this.submissions = [];
         this.head = 0;
         this.mode = 'sender';
@@ -462,10 +465,11 @@ export const IXThread = {
             if (this.mode === 'receiver') {
                 const data = await InboxService.fetchSubmissions(this.inbox.id, signal);
                 if (signal.aborted) return;
+                this.members = data?.members ?? [];
                 this.submissions = data?.submissions ?? [];
-                this.canSubmit = true;  // owner override — receiver always eligible
+                this.canSubmit = true;
                 await IXSubmissions.replaceForInbox(this.inbox.id, this.submissions);
-                if (this.head >= this.submissions.length) this.head = Math.max(0, this.submissions.length - 1);
+                if (this.head >= this.members.length) this.head = Math.max(0, this.members.length - 1);
                 this.renderReceiverView();
                 this._syncGlobalButtons();
                 // New-submission toast on silent re-pull. Compare counts
@@ -478,6 +482,7 @@ export const IXThread = {
             } else {
                 const data = await InboxService.getMySubmission(this.inbox.id, signal);
                 if (signal.aborted) return;
+                this.members = data?.members ?? [];
                 const row = data?.submission ?? null;
                 this.canSubmit = !!data?.can_submit;
                 // Eligibility transition toasts (silent refresh only — a
@@ -520,7 +525,9 @@ export const IXThread = {
                     submitted_at: row.submitted_at,
                     updated_at: row.updated_at,
                 }] : [];
-                this.head = 0;
+                // Set head to own position in member roster (or 0).
+                const me2 = localStorage.getItem('currentUser');
+                this.head = Math.max(0, this.members.indexOf(me2));
                 this.renderSenderView();
             }
             msg?.update(t('inbox.pullComplete'), 1500);
@@ -538,7 +545,8 @@ export const IXThread = {
     // ── Rendering ────────────────────────────────────────────────
 
     renderSenderView() {
-        const row = this.submissions[0];
+        const currentUid = this.members[this.head] ?? null;
+        const row = this.submissions.find(s => s.sender_uid === currentUid) || null;
         const me = localStorage.getItem('currentUser') || '';
         const ownerLabel = this.inbox?.owner_uid || '';
 
@@ -612,7 +620,8 @@ export const IXThread = {
     },
 
     renderReceiverView() {
-        const row = this.submissions[this.head];
+        const currentUid = this.members[this.head] ?? null;
+        const row = this.submissions.find(s => s.sender_uid === currentUid) || null;
         const me = localStorage.getItem('currentUser') || '';
 
         // INSTRUCTION pane: receiver (= owner) edits the per-inbox
@@ -687,15 +696,16 @@ export const IXThread = {
     renderPreviewRail() {
         if (!this.elements.previewRail) return;
         this.elements.previewRail.innerHTML = '';
-        this.submissions.forEach((row, idx) => {
+        this.members.forEach((uid, idx) => {
             const block = document.createElement('div');
             block.classList.add('page-preview-block');
             if (idx === this.head) block.classList.add('active');
-            if (row.feedback_at === null) block.classList.add('unsynced');
+            const sub = this.submissions.find(s => s.sender_uid === uid);
+            if (!sub || sub.feedback_at === null) block.classList.add('unsynced');
             block.dataset.head = idx;
             const label = document.createElement('span');
             label.className = 'inbox-preview-block-label';
-            label.textContent = row.sender_uid;
+            label.textContent = uid;
             block.appendChild(label);
             this.elements.previewRail.appendChild(block);
         });
@@ -739,11 +749,11 @@ export const IXThread = {
             rail.querySelectorAll('.peeking').forEach(el => el.classList.remove('peeking'));
         };
         const applyPeek = (head) => {
-            const row = this.submissions[head];
-            if (!row) return;
-            if (this.elements.senderArea) this.elements.senderArea.value = row.sender_text ?? '';
-            if (this.elements.receiverArea) this.elements.receiverArea.value = row.receiver_text ?? '';
-            this.renderFileChip(row.file_hash ?? null, /*readOnly*/ true);
+            const uid = this.members[head];
+            const row = uid ? this.submissions.find(s => s.sender_uid === uid) : null;
+            if (this.elements.senderArea) this.elements.senderArea.value = row?.sender_text ?? '';
+            if (this.elements.receiverArea) this.elements.receiverArea.value = row?.receiver_text ?? '';
+            this.renderFileChip(row?.file_hash ?? null, /*readOnly*/ true);
         };
         const restoreSnapshot = () => {
             if (!snapshot) return;
@@ -762,7 +772,7 @@ export const IXThread = {
         };
 
         rail.addEventListener('mouseover', (e) => {
-            if (this.mode !== 'receiver') return;
+            if (!this.inbox || this.members.length <= 1) return;
             const block = e.target.closest('.page-preview-block');
             if (!block) return;
             if (!snapshot &&
@@ -771,7 +781,8 @@ export const IXThread = {
             const head = parseInt(block.dataset.head, 10);
             if (Number.isNaN(head) || head < 0) return;
             if (!snapshot) {
-                const row = this.submissions[this.head];
+                const uid = this.members[this.head];
+                const row = uid ? this.submissions.find(s => s.sender_uid === uid) : null;
                 snapshot = {
                     sender:   this.elements.senderArea?.value ?? '',
                     receiver: this.elements.receiverArea?.value ?? '',
@@ -811,7 +822,7 @@ export const IXThread = {
         };
 
         rail.addEventListener('touchstart', (e) => {
-            if (this.mode !== 'receiver') return;
+            if (!this.inbox || this.members.length <= 1) return;
             const touch = e.touches[0];
             if (!touch) return;
             touchStartPos = { x: touch.clientX, y: touch.clientY };
@@ -1158,13 +1169,15 @@ export const IXThread = {
     async movePush() {
         await this.flushPending();
         if (this.head > 0) this.head -= 1;
-        this.renderReceiverView();
+        if (this.mode === 'receiver') this.renderReceiverView();
+        else this.renderSenderView();
     },
 
     async movePull() {
         await this.flushPending();
-        if (this.head < this.submissions.length - 1) this.head += 1;
-        this.renderReceiverView();
+        if (this.head < this.members.length - 1) this.head += 1;
+        if (this.mode === 'receiver') this.renderReceiverView();
+        else this.renderSenderView();
     },
 
     // ── Cleanup ──────────────────────────────────────────────────
