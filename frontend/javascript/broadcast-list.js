@@ -649,15 +649,12 @@ export const BCList = {
             //   testTitle [LOCAL]
             //   testTitle [PIN]
             // `pinLabel` locale value already starts with a space.
+            // Owner title — no text badges. Status is icon-only:
+            //   LOCAL/DRAFT → no icon (absence = not cast yet)
+            //   SUBSCRIBED  → pinned thumbtack icon in legend
             const titleEl = document.createElement('div');
             titleEl.classList.add('broadcast-list-title');
             titleEl.textContent = this.resolveOwnerTitle(ch);
-            if (ch.isLocalOnly) {
-                titleEl.textContent += ` [${t('broadcast.statusLocal')}]`;
-            }
-            if (ch.isPinned) {
-                titleEl.textContent += t('broadcast.pinLabel');
-            }
 
             // Tier 22.8: BC has exactly TWO icon slots — cloud (synced)
             // and cloud-with-cross (asynced). No HEAD eye, no LOCAL

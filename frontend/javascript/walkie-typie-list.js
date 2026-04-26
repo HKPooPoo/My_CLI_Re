@@ -45,12 +45,10 @@ function _applyNewTagToRow(partnerUid) {
 
     const isNew = _newMessagePartners.has(partnerUid);
 
+    // UID text stays plain — status is conveyed by the icon legend
+    // only (envelope). No text suffix (icon-only GUI convention).
     const uidEl = item.querySelector('.walkie-typie-list-uid');
-    if (uidEl) {
-        uidEl.textContent = isNew
-            ? `${partnerUid} ${t('walkieTypie.statusNew')}`
-            : partnerUid;
-    }
+    if (uidEl) uidEl.textContent = partnerUid;
 
     // Swap the status-icon wrap so the envelope icon flips in/out
     // alongside the text change. makeStatusLegend returns a real
@@ -377,19 +375,12 @@ export const WTList = {
             lastSignal.classList.add("walkie-typie-list-last-signal");
             lastSignal.textContent = conn.last_signal ? getHKTTimestamp(conn.last_signal) : t('common.head');
 
-            // UID — appended with "[NEW]" when this partner has fired
-            // a content-update since the last time we opened their chat.
             const uid = document.createElement("div");
             uid.classList.add("walkie-typie-list-uid");
-            uid.textContent = _newMessagePartners.has(conn.partner_uid)
-                ? `${conn.partner_uid} ${t('walkieTypie.statusNew')}`
-                : conn.partner_uid;
+            uid.textContent = conn.partner_uid;
 
             // Tier 22.8: WT has exactly ONE icon slot — NEW (envelope).
-            // Fires when the partner has sent content since the user last
-            // opened WT-TEXT with them. Same signal that already renders
-            // the inline `[NEW]` suffix beside partner_uid; the icon is
-            // the visual companion, not a replacement.
+            // Icon-only, no text suffix (GUI convention).
             const iconsWrap = makeStatusLegend({
                 new: _newMessagePartners.has(conn.partner_uid),
             });
