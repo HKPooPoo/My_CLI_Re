@@ -548,84 +548,76 @@
                     <div class="log-editor-row">
                         <div class="page-preview-rail" id="inbox-preview-rail"></div>
                         <div class="inbox-textareas">
-                            <!-- Pane 1 of 3 — INSTRUCTION (per-inbox; lecturer
-                                 writes once, all senders read). Editable for
-                                 receiver only; sender sees read-only. -->
+                            <!-- Three flat textarea panes stacked, hairline-
+                                 divided. Mirrors BB / WT / BC editor scaffold:
+                                 plain textarea, no per-pane border or
+                                 label-on-border chrome. Each pane carries a
+                                 simple inline header (label · uid · timestamp ·
+                                 RESET / SUBMIT pair). The button pair is
+                                 perspective-gated via CSS so only the editable
+                                 pane for the current role shows actions. -->
                             <div class="inbox-textarea-section is-instruction">
-                                <div class="inbox-textarea-label">
+                                <div class="inbox-textarea-header">
                                     <span class="inbox-textarea-label-name"
                                           data-i18n="inbox.instructionWindow">INSTRUCTION</span>
                                     <span class="inbox-textarea-uid" id="inbox-instruction-uid"></span>
+                                    <span class="inbox-textarea-timestamp" id="inbox-instruction-ts"></span>
+                                    <div class="inbox-section-actions">
+                                        <button type="button" class="inbox-section-btn"
+                                                id="inbox-instruction-reset-btn"
+                                                data-hint="hints.inbox.pull"
+                                                data-i18n="inbox.pullBtn">RESET</button>
+                                        <button type="button" class="inbox-section-btn"
+                                                id="inbox-instruction-save-btn"
+                                                data-hint="hints.inbox.post"
+                                                data-i18n="inbox.postBtn">SUBMIT</button>
+                                    </div>
                                 </div>
-                                <div class="inbox-textarea-timestamp" id="inbox-instruction-ts"></div>
                                 <textarea id="inbox-instruction-textarea"
                                           data-i18n-placeholder="inbox.instructionPlaceholder"
                                           placeholder="Write the assignment instructions for senders to read..."></textarea>
-                                <div class="inbox-section-actions">
-                                    <button type="button" class="inbox-section-btn"
-                                            id="inbox-instruction-reset-btn"
-                                            data-hint="hints.inbox.pull"
-                                            data-i18n="inbox.pullBtn">RESET</button>
-                                    <button type="button" class="inbox-section-btn"
-                                            id="inbox-instruction-save-btn"
-                                            data-hint="hints.inbox.post"
-                                            data-i18n="inbox.postBtn">SUBMIT</button>
-                                </div>
                             </div>
-                            <!-- Pane 2 of 3 — SUBMISSION (per-(inbox, sender);
-                                 sender's answer + file). Editable for sender
-                                 only; receiver sees read-only. -->
                             <div class="inbox-textarea-section is-submission">
-                                <div class="inbox-textarea-label">
+                                <div class="inbox-textarea-header">
                                     <span class="inbox-textarea-label-name"
                                           data-i18n="inbox.senderWindow">INBOX</span>
                                     <span class="inbox-textarea-uid" id="inbox-sender-uid"></span>
+                                    <span class="inbox-textarea-timestamp" id="inbox-sender-ts"></span>
+                                    <div class="inbox-section-actions">
+                                        <button type="button" class="inbox-section-btn"
+                                                id="inbox-sender-reset-btn"
+                                                data-hint="hints.inbox.pull"
+                                                data-i18n="inbox.pullBtn">RESET</button>
+                                        <button type="button" class="inbox-section-btn"
+                                                id="inbox-sender-save-btn"
+                                                data-hint="hints.inbox.post"
+                                                data-i18n="inbox.postBtn">SUBMIT</button>
+                                    </div>
                                 </div>
-                                <div class="inbox-textarea-timestamp" id="inbox-sender-ts"></div>
                                 <textarea id="inbox-sender-textarea"
                                           data-i18n-placeholder="inbox.senderPlaceholder"
                                           placeholder="What you want to submit..."></textarea>
-                                <!-- Per-section RESET / SAVE pair. Visible only when
-                                     this section is the editable one for the current
-                                     perspective (sender mode → submission editable). -->
-                                <div class="inbox-section-actions">
-                                    <button type="button" class="inbox-section-btn"
-                                            id="inbox-sender-reset-btn"
-                                            data-hint="hints.inbox.pull"
-                                            data-i18n="inbox.pullBtn">RESET</button>
-                                    <button type="button" class="inbox-section-btn"
-                                            id="inbox-sender-save-btn"
-                                            data-hint="hints.inbox.post"
-                                            data-i18n="inbox.postBtn">SAVE</button>
-                                </div>
                             </div>
-                            <!-- Pane 3 of 3 — FEEDBACK (per-(inbox, sender);
-                                 lecturer's grade/comment for the currently-
-                                 selected sender row). Editable for receiver
-                                 only; sender sees read-only. -->
                             <div class="inbox-textarea-section is-feedback">
-                                <div class="inbox-textarea-label">
+                                <div class="inbox-textarea-header">
                                     <span class="inbox-textarea-label-name"
                                           data-i18n="inbox.receiverWindow">FEEDBACK</span>
                                     <span class="inbox-textarea-uid" id="inbox-receiver-uid"></span>
+                                    <span class="inbox-textarea-timestamp" id="inbox-receiver-ts"></span>
+                                    <div class="inbox-section-actions">
+                                        <button type="button" class="inbox-section-btn"
+                                                id="inbox-receiver-reset-btn"
+                                                data-hint="hints.inbox.pull"
+                                                data-i18n="inbox.pullBtn">RESET</button>
+                                        <button type="button" class="inbox-section-btn"
+                                                id="inbox-receiver-save-btn"
+                                                data-hint="hints.inbox.post"
+                                                data-i18n="inbox.postBtn">SUBMIT</button>
+                                    </div>
                                 </div>
-                                <div class="inbox-textarea-timestamp" id="inbox-receiver-ts"></div>
                                 <textarea id="inbox-receiver-textarea"
                                           data-i18n-placeholder="inbox.receiverPlaceholder"
                                           placeholder="Feedback from the inbox owner..."></textarea>
-                                <!-- Per-section RESET / SAVE pair. Visible only when
-                                     this section is the editable one for the current
-                                     perspective (receiver mode → feedback editable). -->
-                                <div class="inbox-section-actions">
-                                    <button type="button" class="inbox-section-btn"
-                                            id="inbox-receiver-reset-btn"
-                                            data-hint="hints.inbox.pull"
-                                            data-i18n="inbox.pullBtn">RESET</button>
-                                    <button type="button" class="inbox-section-btn"
-                                            id="inbox-receiver-save-btn"
-                                            data-hint="hints.inbox.post"
-                                            data-i18n="inbox.postBtn">SAVE</button>
-                                </div>
                             </div>
                         </div>
                         <!-- Receiver-mode 0-submissions placeholder. CSS-shown via
