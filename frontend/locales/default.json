@@ -488,6 +488,8 @@
     "receiverPlaceholder": "Feedback from the inbox owner...",
     "postBtn": "SUBMIT",
     "pullBtn": "RESET",
+    "formerBtn": "FORMER",
+    "latterBtn": "LATTER",
     "createBtn": "CREATE",
     "deleteBtn": "DELETE",
     "deleteBtnX2": "DELETEx2",

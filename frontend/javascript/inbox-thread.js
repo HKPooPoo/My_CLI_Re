@@ -138,6 +138,28 @@ export const IXThread = {
      * want them when the receiver has ≥ 2 submissions to navigate.
      * Sender mode or ≤ 1 submission → hide.
      */
+    /**
+     * Relabel the global NEWER/OLDER buttons to FORMER/LATTER when
+     * the inbox-thread page is active. Inbox navigates between
+     * students (not between pages), so the label should reflect
+     * "previous student / next student" rather than "newer / older".
+     * Restores original text when leaving the page.
+     */
+    _relabelNavButtons(entering) {
+        const push = document.querySelector('.push-btn');
+        const pull = document.querySelector('.pull-btn');
+        if (!push || !pull) return;
+        if (entering) {
+            push._origText = push._origText ?? push.textContent;
+            pull._origText = pull._origText ?? pull.textContent;
+            push.textContent = t('inbox.formerBtn');
+            pull.textContent = t('inbox.latterBtn');
+        } else if (push._origText) {
+            push.textContent = push._origText;
+            pull.textContent = pull._origText;
+        }
+    },
+
     _syncGlobalButtons() {
         const pushBtn = document.querySelector('.push-btn');
         const pullBtn = document.querySelector('.pull-btn');
@@ -233,7 +255,10 @@ export const IXThread = {
         window.addEventListener('navi:pageChanged', (e) => {
             if (e.detail?.page === 'inbox-thread') {
                 this._syncGlobalButtons();
+                this._relabelNavButtons(true);
                 if (this.inbox) this.refreshFromServer({ silent: true });
+            } else {
+                this._relabelNavButtons(false);
             }
         });
 
