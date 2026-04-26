@@ -58,7 +58,6 @@ function formatStamp(input) {
 
 export const IXThread = {
     elements: {
-        page: document.querySelector('.page[data-page="inbox-thread"]'),
         // WT-style three-window layout. Each window = `.inbox-window`
         // with own editor-wrapper. Element refs mirror the HTML IDs;
         // CSS perspective gate controls which windows' action pairs show.
@@ -534,7 +533,9 @@ export const IXThread = {
                 // students' submissions, no class-roster leak.
                 const me2 = localStorage.getItem('currentUser');
                 this.members = me2 ? [me2] : [];
-                this.submittedUids = new Set(data?.submitted_uids ?? []);
+                // Derive submittedUids from own submission existence
+                // (getMySubmission no longer returns submitted_uids).
+                this.submittedUids = row ? new Set([me2]) : new Set();
                 const row = data?.submission ?? null;
                 this.canSubmit = !!data?.can_submit;
                 // Eligibility transition toasts (silent refresh only — a
@@ -785,9 +786,9 @@ export const IXThread = {
      *   • touchend   → if peek was entered, restore snapshot; otherwise
      *                  fall through to native click → navigate
      *
-     * Sender mode skips the wiring entirely (the rail is `display: none`
-     * for senders). Active-element guard prevents the peek from
-     * stealing focus while the receiver is mid-typing in FEEDBACK.
+     * Both sender and receiver share the same rail. Active-element
+     * guard prevents the peek from stealing focus while the user is
+     * mid-typing in a textarea.
      */
     _wirePreviewRailInteractions() {
         const rail = this.elements.previewRail;
@@ -810,9 +811,9 @@ export const IXThread = {
             if (this.elements.senderTs) this.elements.senderTs.textContent = formatStamp(row?.updated_at);
             if (this.elements.receiverTs) this.elements.receiverTs.textContent = formatStamp(row?.feedback_at);
             if (this._submissionAttach) {
-            this._submissionAttach.setReadOnly(true);
-            this._submissionAttach.setFromRecord(row?.file_hash ?? null);
-        }
+                this._submissionAttach.setReadOnly(true);
+                this._submissionAttach.setFromRecord(row?.file_hash ?? null);
+            }
         };
         const restoreSnapshot = () => {
             if (!snapshot) return;
@@ -822,17 +823,21 @@ export const IXThread = {
             if (this.elements.senderTs) this.elements.senderTs.textContent = snapshot.senderTs;
             if (this.elements.receiverTs) this.elements.receiverTs.textContent = snapshot.receiverTs;
             if (this._submissionAttach) {
-                this._submissionAttach.setReadOnly(true);
+                this._submissionAttach.setReadOnly(this.mode !== 'sender');
                 this._submissionAttach.setFromRecord(snapshot.fileHash);
             }
             snapshot = null;
             lock(false);
             clearPeekMarker();
-            // Re-apply per-mode disabled state. Receiver mode keeps
-            // sender textarea disabled; the lock(false) call above
-            // would otherwise leave both editable.
+            // Re-apply per-mode disabled state on textareas.
             if (this.mode === 'receiver' && this.elements.senderArea) {
                 this.elements.senderArea.disabled = true;
+            }
+            if (this.mode === 'sender' && this.elements.receiverArea) {
+                this.elements.receiverArea.disabled = true;
+            }
+            if (this.mode === 'sender' && this.elements.instructionArea) {
+                this.elements.instructionArea.disabled = true;
             }
         };
 
@@ -876,7 +881,8 @@ export const IXThread = {
             }
             await this.flushPending();
             this.head = head;
-            this.renderReceiverView();
+            if (this.mode === 'receiver') this.renderReceiverView();
+            else this.renderSenderView();
         });
 
         // Mobile touch peek — 300 ms hold opens peek; touchmove tracks
