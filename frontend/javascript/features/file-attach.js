@@ -13,6 +13,7 @@
  */
 
 import { BCChannel } from '../broadcast-channel.js';
+import { IXThread } from '../inbox-thread.js';
 
 const ICON_URL = '/images/file_attach.svg';
 
@@ -20,6 +21,7 @@ const PAGE_INPUT_MAP = {
     'blackboard-log':    '#bb-file-input',
     'walkie-typie-text': '#wt-file-input',
     'broadcast-channel': '#bc-file-input',
+    'inbox-thread':      null, // resolved dynamically — see onClick
 };
 
 export const feature = {
@@ -35,7 +37,15 @@ export const feature = {
     },
     onClick() {
         const page = document.querySelector('.page.active')?.dataset.page;
-        const selector = PAGE_INPUT_MAP[page];
+        let selector = PAGE_INPUT_MAP[page];
+        // Inbox has two file inputs — pick by perspective:
+        //   sender   → submission file input
+        //   receiver → instruction file input
+        if (page === 'inbox-thread') {
+            selector = IXThread.mode === 'receiver'
+                ? '#inbox-instruction-file-input'
+                : '#inbox-file-input';
+        }
         if (!selector) return;
         const input = document.querySelector(selector);
         if (!input) return;
