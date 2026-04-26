@@ -48,8 +48,8 @@ function formatStamp(input) {
     if (input === null || input === undefined || input === '') return '';
     try {
         const iso = getHKTTimestamp(input);  // "2026-04-25T14:32:18.000+08:00"
-        // Slice MM-DD + space + HH:MM → "04-25 14:32"
-        return iso.slice(5, 10) + ' ' + iso.slice(11, 16);
+        // YYYY-MM-DD HH:MM
+        return iso.slice(0, 10) + ' ' + iso.slice(11, 16);
     } catch {
         return '';
     }
