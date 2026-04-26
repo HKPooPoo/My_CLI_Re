@@ -156,6 +156,7 @@ class InboxService
                     'id'                => (int) $r->id,
                     'name'              => $r->name,
                     'description'       => $r->description,
+                    'instruction_files' => $r->instruction_files !== null ? json_decode($r->instruction_files, true) : null,
                     'owner_uid'         => $r->owner_uid,
                     'owner_title'       => $r->owner_title,
                     'whitelist_id'      => $r->whitelist_id ? (int) $r->whitelist_id : null,
@@ -222,6 +223,8 @@ class InboxService
         $allHashes = [];
         foreach ($rows as $r) {
             if ($r->file_hash) $allHashes[] = $r->file_hash;
+            $fbHashes = $r->feedback_file_hash !== null ? json_decode($r->feedback_file_hash, true) : [];
+            foreach ($fbHashes as $h) { $allHashes[] = $h; }
         }
         if (!empty($allHashes)) {
             $available = FileService::buildAvailableHashSet($allHashes);
@@ -229,19 +232,25 @@ class InboxService
                 if ($r->file_hash && !isset($available[$r->file_hash])) {
                     $r->file_hash = null;
                 }
+                if ($r->feedback_file_hash !== null) {
+                    $decoded = json_decode($r->feedback_file_hash, true) ?: [];
+                    $filtered = array_values(array_filter($decoded, fn($h) => isset($available[$h])));
+                    $r->feedback_file_hash = !empty($filtered) ? json_encode($filtered) : null;
+                }
             }
         }
 
         $submissions = $rows->map(fn($r) => [
-            'id'             => (int) $r->id,
-            'sender_uid'     => $r->sender_uid,
-            'sender_title'   => $r->sender_title,
-            'sender_text'    => $r->sender_text,
-            'file_hash'      => $r->file_hash,
-            'receiver_text'  => $r->receiver_text,
-            'feedback_at'    => $r->feedback_at !== null ? (int) $r->feedback_at : null,
-            'submitted_at'   => $r->created_at,
-            'updated_at'     => $r->updated_at,
+            'id'                 => (int) $r->id,
+            'sender_uid'         => $r->sender_uid,
+            'sender_title'       => $r->sender_title,
+            'sender_text'        => $r->sender_text,
+            'file_hash'          => $r->file_hash,
+            'receiver_text'      => $r->receiver_text,
+            'feedback_file_hash' => $r->feedback_file_hash !== null ? json_decode($r->feedback_file_hash, true) : null,
+            'feedback_at'        => $r->feedback_at !== null ? (int) $r->feedback_at : null,
+            'submitted_at'       => $r->created_at,
+            'updated_at'         => $r->updated_at,
         ])->toArray();
 
         return ['members' => $members, 'submissions' => $submissions];
@@ -266,20 +275,28 @@ class InboxService
             ->first();
         if (!$row) return null;
 
+        $allHashes = [];
+        if ($row->file_hash) $allHashes[] = $row->file_hash;
+        $fbHashes = $row->feedback_file_hash !== null ? json_decode($row->feedback_file_hash, true) : [];
+        foreach ($fbHashes as $h) { $allHashes[] = $h; }
+
         $fileHash = $row->file_hash;
-        if ($fileHash) {
-            $available = FileService::buildAvailableHashSet([$fileHash]);
-            if (!isset($available[$fileHash])) $fileHash = null;
+        $feedbackFileHash = $fbHashes;
+        if (!empty($allHashes)) {
+            $available = FileService::buildAvailableHashSet($allHashes);
+            if ($fileHash && !isset($available[$fileHash])) $fileHash = null;
+            $feedbackFileHash = array_values(array_filter($fbHashes, fn($h) => isset($available[$h])));
         }
 
         return [
-            'id'             => (int) $row->id,
-            'sender_text'    => $row->sender_text,
-            'file_hash'      => $fileHash,
-            'receiver_text'  => $row->receiver_text,
-            'feedback_at'    => $row->feedback_at !== null ? (int) $row->feedback_at : null,
-            'submitted_at'   => $row->created_at,
-            'updated_at'     => $row->updated_at,
+            'id'                 => (int) $row->id,
+            'sender_text'        => $row->sender_text,
+            'file_hash'          => $fileHash,
+            'receiver_text'      => $row->receiver_text,
+            'feedback_file_hash' => !empty($feedbackFileHash) ? $feedbackFileHash : null,
+            'feedback_at'        => $row->feedback_at !== null ? (int) $row->feedback_at : null,
+            'submitted_at'       => $row->created_at,
+            'updated_at'         => $row->updated_at,
         ];
     }
 
@@ -397,7 +414,7 @@ class InboxService
      * UI flip a [NEW] flag without ambiguity — `updated_at` also
      * bumps on sender edits.
      */
-    public function writeFeedback(User $user, int $inboxId, string $senderUid, ?string $receiverText): void
+    public function writeFeedback(User $user, int $inboxId, string $senderUid, ?string $receiverText, ?array $feedbackFileHash = null): void
     {
         $inbox = $this->loadOwnedOrAbort($user, $inboxId);
 
@@ -414,9 +431,10 @@ class InboxService
         DB::table('inbox_submissions')
             ->where('id', $submission->id)
             ->update([
-                'receiver_text' => $receiverText,
-                'feedback_at'   => $nowMs,
-                'updated_at'    => now(),
+                'receiver_text'      => $receiverText,
+                'feedback_file_hash' => $feedbackFileHash !== null ? json_encode($feedbackFileHash) : null,
+                'feedback_at'        => $nowMs,
+                'updated_at'         => now(),
             ]);
         DB::table('inboxes')->where('id', $inboxId)
             ->update(['last_signal' => $nowMs, 'updated_at' => now()]);

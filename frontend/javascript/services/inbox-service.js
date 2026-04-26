@@ -63,10 +63,10 @@ export const InboxService = {
     },
 
     /** Receiver-side: write feedback on a specific sender's row. */
-    writeFeedback(inboxId, senderUid, receiverText) {
+    writeFeedback(inboxId, senderUid, data) {
         return apiRequest(`/inboxes/${inboxId}/submission/${senderUid}/feedback`, {
             method: 'PUT',
-            body: JSON.stringify({ receiver_text: receiverText }),
+            body: JSON.stringify(data),
         });
     },
 };

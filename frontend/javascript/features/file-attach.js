@@ -42,9 +42,16 @@ export const feature = {
         //   sender   → submission file input
         //   receiver → instruction file input
         if (page === 'inbox-thread') {
-            selector = IXThread.mode === 'receiver'
-                ? '#inbox-instruction-file-input'
-                : '#inbox-file-input';
+            if (IXThread.mode === 'receiver') {
+                const focused = document.activeElement;
+                if (focused?.id === 'inbox-receiver-textarea') {
+                    selector = '#inbox-feedback-file-input';
+                } else {
+                    selector = '#inbox-instruction-file-input';
+                }
+            } else {
+                selector = '#inbox-file-input';
+            }
         }
         if (!selector) return;
         const input = document.querySelector(selector);

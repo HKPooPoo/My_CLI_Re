@@ -190,7 +190,8 @@ class InboxController extends Controller
         }
 
         $request->validate([
-            'receiver_text' => 'nullable|string|max:65535',
+            'receiver_text'      => 'nullable|string|max:65535',
+            'feedback_file_hash' => 'nullable|array',
         ]);
 
         $this->service->writeFeedback(
@@ -198,6 +199,7 @@ class InboxController extends Controller
             (int) $inboxId,
             $senderUid,
             $request->input('receiver_text'),
+            $request->input('feedback_file_hash'),
         );
 
         return response()->json(['message' => 'FEEDBACK SAVED']);

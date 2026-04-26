@@ -88,13 +88,16 @@ export const IXThread = {
         senderSaveBtn:   document.getElementById('inbox-sender-save-btn'),
 
         // Window 3 — FEEDBACK
-        feedbackZone:    document.getElementById('inbox-feedback-zone'),
-        receiverArea:    document.getElementById('inbox-receiver-textarea'),
-        receiverSection: document.querySelector('.inbox-window.is-feedback'),
-        receiverUid:     document.getElementById('inbox-receiver-uid'),
-        receiverTs:      document.getElementById('inbox-receiver-ts'),
-        receiverResetBtn: document.getElementById('inbox-receiver-reset-btn'),
-        receiverSaveBtn:  document.getElementById('inbox-receiver-save-btn'),
+        feedbackZone:       document.getElementById('inbox-feedback-zone'),
+        feedbackChips:      document.getElementById('inbox-feedback-chips'),
+        feedbackFileInput:  document.getElementById('inbox-feedback-file-input'),
+        feedbackDropOverlay:document.getElementById('inbox-feedback-drop-overlay'),
+        receiverArea:       document.getElementById('inbox-receiver-textarea'),
+        receiverSection:    document.querySelector('.inbox-window.is-feedback'),
+        receiverUid:        document.getElementById('inbox-receiver-uid'),
+        receiverTs:         document.getElementById('inbox-receiver-ts'),
+        receiverResetBtn:   document.getElementById('inbox-receiver-reset-btn'),
+        receiverSaveBtn:    document.getElementById('inbox-receiver-save-btn'),
     },
 
     /** Currently loaded inbox metadata (server snapshot) */
@@ -116,6 +119,8 @@ export const IXThread = {
     _instructionAttach: null,
     /** EditorAttachments for SUBMISSION window (≤1 file). */
     _submissionAttach: null,
+    /** EditorAttachments for FEEDBACK window (≤10 files). */
+    _feedbackAttach: null,
     /** Save-debounce timers, keyed so we can cancel on inbox switch */
     timers: new TimerGroup(),
     _abortController: null,
@@ -134,6 +139,7 @@ export const IXThread = {
         this.bindEvents();
         this._wireInstructionAttachments();
         this._wireSubmissionAttachments();
+        this._wireFeedbackAttachments();
         this._wirePreviewRailInteractions();
 
         // Content search — searches BOTH uid and submission text so
@@ -233,6 +239,24 @@ export const IXThread = {
             },
             onRename: async (oldHash, newHash, meta) => {
                 if (this.mode !== 'sender' || !this.canSubmit) return;
+            },
+        });
+    },
+
+    _wireFeedbackAttachments() {
+        this._feedbackAttach = EditorAttachments.create({
+            dropZoneSelector:       '#inbox-receiver-textarea',
+            fileInputSelector:      '#inbox-feedback-file-input',
+            chipsContainerSelector: '#inbox-feedback-chips',
+            dropOverlaySelector:    '#inbox-feedback-drop-overlay',
+            onAttach: async (hash, meta) => {
+                if (this.mode !== 'receiver') return;
+            },
+            onDetach: async (hash) => {
+                if (this.mode !== 'receiver') return;
+            },
+            onRename: async (oldHash, newHash, meta) => {
+                if (this.mode !== 'receiver') return;
             },
         });
     },
@@ -449,6 +473,7 @@ export const IXThread = {
         if (this.elements.instructionUid) this.elements.instructionUid.textContent = '';
         this._instructionAttach?.setFromRecord(null);
         this._submissionAttach?.setFromRecord(null);
+        this._feedbackAttach?.setFromRecord(null);
         this._syncGlobalButtons();
     },
 
@@ -553,6 +578,7 @@ export const IXThread = {
                         sender_text: row.sender_text,
                         file_hash: row.file_hash,
                         receiver_text: row.receiver_text,
+                        feedback_file_hash: row.feedback_file_hash,
                         feedback_at: row.feedback_at,
                         submitted_at: row.submitted_at,
                         updated_at: row.updated_at,
@@ -569,6 +595,7 @@ export const IXThread = {
                     sender_text: row.sender_text,
                     file_hash: row.file_hash,
                     receiver_text: row.receiver_text,
+                    feedback_file_hash: row.feedback_file_hash,
                     feedback_at: row.feedback_at,
                     submitted_at: row.submitted_at,
                     updated_at: row.updated_at,
@@ -656,6 +683,10 @@ export const IXThread = {
             this._submissionAttach.setReadOnly(!canWrite);
             this._submissionAttach.setFromRecord(row?.file_hash ?? null);
         }
+        if (this._feedbackAttach) {
+            this._feedbackAttach.setReadOnly(true);
+            this._feedbackAttach.setFromRecord(row?.feedback_file_hash ?? null);
+        }
         this.renderPreviewRail();
         this._search?.refresh();
     },
@@ -706,10 +737,13 @@ export const IXThread = {
             this.elements.receiverTs.textContent = formatStamp(row?.feedback_at);
         }
 
-        // No mode-specific placeholders. Empty textarea = empty state.
         if (this._submissionAttach) {
             this._submissionAttach.setReadOnly(true);
             this._submissionAttach.setFromRecord(row?.file_hash ?? null);
+        }
+        if (this._feedbackAttach) {
+            this._feedbackAttach.setReadOnly(false);
+            this._feedbackAttach.setFromRecord(row?.feedback_file_hash ?? null);
         }
         this.renderPreviewRail();
         this._search?.refresh();
@@ -807,6 +841,10 @@ export const IXThread = {
                 this._submissionAttach.setReadOnly(true);
                 this._submissionAttach.setFromRecord(row?.file_hash ?? null);
             }
+            if (this._feedbackAttach) {
+                this._feedbackAttach.setReadOnly(true);
+                this._feedbackAttach.setFromRecord(row?.feedback_file_hash ?? null);
+            }
         };
         const restoreSnapshot = () => {
             if (!snapshot) return;
@@ -818,6 +856,10 @@ export const IXThread = {
             if (this._submissionAttach) {
                 this._submissionAttach.setReadOnly(this.mode !== 'sender');
                 this._submissionAttach.setFromRecord(snapshot.fileHash);
+            }
+            if (this._feedbackAttach) {
+                this._feedbackAttach.setReadOnly(this.mode !== 'receiver');
+                this._feedbackAttach.setFromRecord(snapshot.fbFileHash);
             }
             snapshot = null;
             lock(false);
@@ -850,6 +892,7 @@ export const IXThread = {
                     sender:     this.elements.senderArea?.value ?? '',
                     receiver:   this.elements.receiverArea?.value ?? '',
                     fileHash:   row?.file_hash ?? null,
+                    fbFileHash: row?.feedback_file_hash ?? null,
                     senderUid:  this.elements.senderUid?.textContent ?? '',
                     senderTs:   this.elements.senderTs?.textContent ?? '',
                     receiverTs: this.elements.receiverTs?.textContent ?? '',
@@ -904,6 +947,7 @@ export const IXThread = {
                         sender:     this.elements.senderArea?.value ?? '',
                         receiver:   this.elements.receiverArea?.value ?? '',
                         fileHash:   row?.file_hash ?? null,
+                        fbFileHash: row?.feedback_file_hash ?? null,
                         senderUid:  this.elements.senderUid?.textContent ?? '',
                         senderTs:   this.elements.senderTs?.textContent ?? '',
                         receiverTs: this.elements.receiverTs?.textContent ?? '',
@@ -1093,14 +1137,24 @@ export const IXThread = {
         const row = currentUid ? this.submissions.find(s => s.sender_uid === currentUid) : null;
         if (!row) return BBMessage.error(t('inbox.noSubmissionToFeedback'));
 
-        // Same as sender path — DOM is the source of truth at the
-        // moment of POST, not the (potentially stale) IDB cache.
         this.timers.cancel(SAVE_DEBOUNCE_KEY);
         const text = this.elements.receiverArea?.value ?? null;
+        const fbHashes = this._feedbackAttach?.currentHashes ?? [];
 
         const msg = BBMessage.loading(t('inbox.posting'));
         try {
-            await InboxService.writeFeedback(this.inbox.id, row.sender_uid, text);
+            for (const hash of fbHashes) {
+                const blob = await db.file_blobs.get(hash);
+                if (blob && blob.status !== 'synced' && blob.blob) {
+                    await FileService.upload(blob.blob, blob.name);
+                    await db.file_blobs.update(hash, { status: 'synced' });
+                }
+            }
+            const files = fbHashes.length > 0 ? fbHashes : null;
+            await InboxService.writeFeedback(this.inbox.id, row.sender_uid, {
+                receiver_text: text,
+                feedback_file_hash: files,
+            });
             await IXSubmissions.upsert({
                 server_inbox_id: this.inbox.id,
                 sender_uid: row.sender_uid,
