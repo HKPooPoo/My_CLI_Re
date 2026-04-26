@@ -198,10 +198,12 @@
 }
 
 /* ── Receiver mode + 0 submissions empty state ────────────────
-   Owner just opened a fresh inbox; nothing to render in the
-   textareas yet. JS toggles `data-empty-submissions="true"` on
-   the page; CSS swaps the dual-textarea pane for a single
-   centred message. */
+   Owner just opened a fresh inbox; no SUBMISSION or FEEDBACK to
+   render yet — but INSTRUCTION must stay visible so the lecturer
+   can write the assignment prompt before any student submits.
+   Only hide `.is-submission` and `.is-feedback` sections; the
+   placeholder message sits below instruction as a sibling in
+   `.inbox-textareas` (or `.log-editor-row`). */
 .inbox-receiver-empty {
     display: none;
     flex: 1;
@@ -214,7 +216,8 @@
     font-size: calc(var(--font-size) * 1.05);
     line-height: 1.6;
 }
-.page[data-mode="receiver"][data-empty-submissions="true"] .inbox-textareas {
+.page[data-mode="receiver"][data-empty-submissions="true"] .inbox-textarea-section.is-submission,
+.page[data-mode="receiver"][data-empty-submissions="true"] .inbox-textarea-section.is-feedback {
     display: none;
 }
 .page[data-mode="receiver"][data-empty-submissions="true"] .inbox-receiver-empty {
