@@ -716,7 +716,12 @@ export const IXThread = {
      */
     renderPreviewRail() {
         if (!this.elements.previewRail) return;
-        this.elements.previewRail.innerHTML = '';
+        // Remove only preview blocks — preserve the search pill
+        // appended by attachContentSearch (same pattern as BB/BC).
+        this.elements.previewRail
+            .querySelectorAll('.page-preview-block')
+            .forEach(b => b.remove());
+        const searchEl = this.elements.previewRail.querySelector('.editor-search');
         this.members.forEach((uid, idx) => {
             const block = document.createElement('div');
             block.classList.add('page-preview-block');
@@ -728,7 +733,9 @@ export const IXThread = {
             label.className = 'inbox-preview-block-label';
             label.textContent = uid;
             block.appendChild(label);
-            this.elements.previewRail.appendChild(block);
+            // Insert before the search pill so it stays at the bottom.
+            if (searchEl) this.elements.previewRail.insertBefore(block, searchEl);
+            else this.elements.previewRail.appendChild(block);
         });
         this.elements.previewRail
             .querySelector('.page-preview-block.active')
