@@ -446,8 +446,8 @@ export const IXThread = {
         if (this.elements.senderArea) this.elements.senderArea.value = '';
         if (this.elements.receiverArea) this.elements.receiverArea.value = '';
         if (this.elements.instructionUid) this.elements.instructionUid.textContent = '';
-        this._instructionAttach?.setFromRecord({ file_hash: null });
-        this._submissionAttach?.setFromRecord({ file_hash: null });
+        this._instructionAttach?.setFromRecord(null);
+        this._submissionAttach?.setFromRecord(null);
         this._syncGlobalButtons();
     },
 
@@ -608,7 +608,7 @@ export const IXThread = {
         if (this._instructionAttach) {
             this._instructionAttach.setReadOnly(true);
             const fileHash = this.inbox?.instruction_files;
-            this._instructionAttach.setFromRecord({ file_hash: fileHash ?? null });
+            this._instructionAttach.setFromRecord(fileHash ?? null);
         }
 
         if (this.elements.senderArea) {
@@ -650,7 +650,7 @@ export const IXThread = {
         // textarea/save-button visibility above.
         if (this._submissionAttach) {
             this._submissionAttach.setReadOnly(!canWrite);
-            this._submissionAttach.setFromRecord({ file_hash: row?.file_hash ?? null });
+            this._submissionAttach.setFromRecord(row?.file_hash ?? null);
         }
         this.renderPreviewRail();
         this._search?.refresh();
@@ -673,7 +673,7 @@ export const IXThread = {
         if (this._instructionAttach) {
             this._instructionAttach.setReadOnly(false);
             const fileHash = this.inbox?.instruction_files;
-            this._instructionAttach.setFromRecord({ file_hash: fileHash ?? null });
+            this._instructionAttach.setFromRecord(fileHash ?? null);
         }
 
         if (this.elements.senderArea) {
@@ -705,7 +705,7 @@ export const IXThread = {
         // No mode-specific placeholders. Empty textarea = empty state.
         if (this._submissionAttach) {
             this._submissionAttach.setReadOnly(true);
-            this._submissionAttach.setFromRecord({ file_hash: row?.file_hash ?? null });
+            this._submissionAttach.setFromRecord(row?.file_hash ?? null);
         }
         this.renderPreviewRail();
         this._search?.refresh();
@@ -801,7 +801,7 @@ export const IXThread = {
             if (this.elements.receiverTs) this.elements.receiverTs.textContent = formatStamp(row?.feedback_at);
             if (this._submissionAttach) {
             this._submissionAttach.setReadOnly(true);
-            this._submissionAttach.setFromRecord({ file_hash: row?.file_hash ?? null });
+            this._submissionAttach.setFromRecord(row?.file_hash ?? null);
         }
         };
         const restoreSnapshot = () => {
@@ -813,7 +813,7 @@ export const IXThread = {
             if (this.elements.receiverTs) this.elements.receiverTs.textContent = snapshot.receiverTs;
             if (this._submissionAttach) {
                 this._submissionAttach.setReadOnly(true);
-                this._submissionAttach.setFromRecord({ file_hash: snapshot.fileHash });
+                this._submissionAttach.setFromRecord(snapshot.fileHash);
             }
             snapshot = null;
             lock(false);
@@ -1061,13 +1061,13 @@ export const IXThread = {
                     await db.file_blobs.update(hash, { status: 'synced' });
                 }
             }
-            const fileHashJson = hashes.length > 0 ? JSON.stringify(hashes) : null;
+            const files = hashes.length > 0 ? hashes : null;
             await InboxService.update(this.inbox.id, {
                 description: newDescription,
-                instruction_files: fileHashJson,
+                instruction_files: files,
             });
             this.inbox.description = newDescription;
-            this.inbox.instruction_files = fileHashJson;
+            this.inbox.instruction_files = files;
             msg.update(t('inbox.postComplete'));
         } catch (e) {
             console.error('Inbox instruction post failed', e);
