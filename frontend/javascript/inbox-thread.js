@@ -34,6 +34,7 @@ import { T } from './timing.js';
 import { getEcho } from './echo-service.js';
 import { getHKTTimestamp } from './utils.js';
 import { attachContentSearch } from './content-search.js';
+import { EditorAttachments } from './editor-attachments.js';
 import db from './indexedDB.js';
 
 const SAVE_DEBOUNCE_KEY = 'inboxAutoSave';
@@ -110,6 +111,8 @@ export const IXThread = {
     submissions: [],
     /** Content search instance (attached to preview rail). */
     _search: null,
+    /** EditorAttachments instance for the INSTRUCTION window (≤10 files). */
+    _instructionAttach: null,
     /** Save-debounce timers, keyed so we can cancel on inbox switch */
     timers: new TimerGroup(),
     _abortController: null,
@@ -128,6 +131,7 @@ export const IXThread = {
         this.bindEvents();
         this._wireDropZone();
         this._wirePreviewRailInteractions();
+        this._wireInstructionAttachments();
 
         // Content search — searches BOTH uid and submission text so
         // the lecturer can find "S20260003" or "final report" from
@@ -181,6 +185,31 @@ export const IXThread = {
             push.textContent = push._origText;
             pull.textContent = pull._origText;
         }
+    },
+
+    /**
+     * Wire EditorAttachments for the INSTRUCTION window — same
+     * pattern as BB's `bbAttach` (editor-attachments.js). Instruction
+     * supports ≤10 files (RECORD_MAX_FILES). Files are staged locally
+     * in IDB; SUBMIT uploads unsynced blobs then sends the hash array
+     * via PATCH /api/inboxes/{id}.
+     */
+    _wireInstructionAttachments() {
+        this._instructionAttach = EditorAttachments.create({
+            dropZoneSelector:      '#inbox-instruction-textarea',
+            fileInputSelector:     '#inbox-instruction-file-input',
+            chipsContainerSelector:'#inbox-instruction-chips',
+            dropOverlaySelector:   '#inbox-instruction-drop-overlay',
+            onAttach: async (hash, meta) => {
+                if (this.mode !== 'receiver') return;
+            },
+            onDetach: async (hash) => {
+                if (this.mode !== 'receiver') return;
+            },
+            onRename: async (oldHash, newHash, meta) => {
+                if (this.mode !== 'receiver') return;
+            },
+        });
     },
 
     _syncGlobalButtons() {
@@ -602,15 +631,19 @@ export const IXThread = {
         // the user is read-preserved (had access, no longer does).
         const canWrite = this.canSubmit;
 
-        // INSTRUCTION pane: per-inbox content set by the lecturer.
-        // Sender always sees it read-only (regardless of canSubmit —
-        // even read-preserved users can read the original prompt).
+        // INSTRUCTION pane: per-inbox content. Sender = read-only.
         if (this.elements.instructionArea) {
             this.elements.instructionArea.value = this.inbox?.description ?? '';
             this.elements.instructionArea.disabled = true;
         }
         if (this.elements.instructionUid) {
             this.elements.instructionUid.textContent = ownerLabel;
+        }
+        // Instruction files — read-only for sender.
+        if (this._instructionAttach) {
+            this._instructionAttach.setReadOnly(true);
+            const fileHash = this.inbox?.instruction_files;
+            this._instructionAttach.setFromRecord({ file_hash: fileHash ?? null });
         }
 
         if (this.elements.senderArea) {
@@ -660,15 +693,19 @@ export const IXThread = {
         const row = this.submissions.find(s => s.sender_uid === currentUid) || null;
         const me = localStorage.getItem('currentUser') || '';
 
-        // INSTRUCTION pane: receiver (= owner) edits the per-inbox
-        // assignment prompt. Same value across every preview-rail
-        // selection — instruction is inbox-level, not per-submission.
+        // INSTRUCTION pane: receiver (= owner) edits.
         if (this.elements.instructionArea) {
             this.elements.instructionArea.value = this.inbox?.description ?? '';
             this.elements.instructionArea.disabled = false;
         }
         if (this.elements.instructionUid) {
             this.elements.instructionUid.textContent = me;
+        }
+        // Instruction files — editable for receiver.
+        if (this._instructionAttach) {
+            this._instructionAttach.setReadOnly(false);
+            const fileHash = this.inbox?.instruction_files;
+            this._instructionAttach.setFromRecord({ file_hash: fileHash ?? null });
         }
 
         if (this.elements.senderArea) {
@@ -1159,10 +1196,24 @@ export const IXThread = {
      */
     async postAsInstruction() {
         const newDescription = this.elements.instructionArea?.value ?? '';
+        const hashes = this._instructionAttach?.currentHashes ?? [];
         const msg = BBMessage.loading(t('inbox.posting'));
         try {
-            await InboxService.update(this.inbox.id, { description: newDescription });
+            // Upload any local-only blobs before sending hashes to server
+            for (const hash of hashes) {
+                const blob = await db.file_blobs.get(hash);
+                if (blob && blob.status !== 'synced' && blob.blob) {
+                    await FileService.upload(blob.blob, blob.name);
+                    await db.file_blobs.update(hash, { status: 'synced' });
+                }
+            }
+            const fileHashJson = hashes.length > 0 ? JSON.stringify(hashes) : null;
+            await InboxService.update(this.inbox.id, {
+                description: newDescription,
+                instruction_files: fileHashJson,
+            });
             this.inbox.description = newDescription;
+            this.inbox.instruction_files = fileHashJson;
             msg.update(t('inbox.postComplete'));
         } catch (e) {
             console.error('Inbox instruction post failed', e);
