@@ -536,7 +536,8 @@ export const IXThread = {
                 this.canSubmit = true;
                 await IXSubmissions.replaceForInbox(this.inbox.id, this.submissions);
                 if (this.head >= this.members.length) this.head = Math.max(0, this.members.length - 1);
-                this._renderCurrentMember();
+                if (silent) this._renderCurrentMember();
+                else this.renderReceiverView();
                 this._syncGlobalButtons();
                 // New-submission toast on silent re-pull. Compare counts
                 // (a strict increase means at least one new row landed).
@@ -600,7 +601,8 @@ export const IXThread = {
                     updated_at: row.updated_at,
                 }] : [];
                 this.head = Math.max(0, this.members.indexOf(me2));
-                this._renderCurrentMember();
+                if (silent) this._renderCurrentMember();
+                else this.renderSenderView();
             }
             msg?.update(t('inbox.pullComplete'), 1500);
         } catch (e) {
@@ -1061,6 +1063,7 @@ export const IXThread = {
             });
             this.inbox.description = newDescription;
             this.inbox.instruction_files = files;
+            this._renderInstruction();
             msg.update(t('inbox.postComplete'));
             window.dispatchEvent(new CustomEvent('inbox:signalUpdated', {
                 detail: { inboxId: this.inbox.id },
