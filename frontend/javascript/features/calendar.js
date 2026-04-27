@@ -186,18 +186,9 @@ function resolveMode() {
                     sourceIdx: idx,
                 }));
             }
-            // Channels the user cares about (read-only overlay on BB):
-            //   - subscribed channels (is_pinned)         — student POV
-            //   - channels the user owns (owner_uid match) — lecturer POV
-            // Owners don't auto-pin their own channels, so without this
-            // union a lecturer testing on a single account would see
-            // nothing merged from channels they literally posted.
-            const currentUid = localStorage.getItem('currentUser') || '';
             try {
                 const data = await BroadcastService.listChannels();
-                const channels = (data?.channels || []).filter(c =>
-                    c.is_pinned || (currentUid && c.owner_uid === currentUid)
-                );
+                const channels = (data?.channels || []).filter(c => c.is_pinned);
                 for (const ch of channels) {
                     const dict = normalizeDict(ch.calendar);
                     for (const [date, items] of Object.entries(dict)) {
