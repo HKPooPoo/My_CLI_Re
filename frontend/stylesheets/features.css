@@ -589,7 +589,7 @@
 }
 
 [data-feature="flashcard"] .fc-add-btn {
-    align-self: flex-end;
+    align-self: flex-start;
     padding: 6px 16px;
     border: 2px solid var(--brand);
     border-radius: 4px;
