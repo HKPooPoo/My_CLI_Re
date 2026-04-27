@@ -312,16 +312,22 @@ export const IXThread = {
             if (e.detail?.page === 'inbox-thread') {
                 this._syncGlobalButtons();
                 this._relabelNavButtons(true);
-                if (this.inbox) this.refreshFromServer({ silent: true });
+                if (this.inbox) {
+                    this.refreshFromServer({ silent: true });
+                    this._refreshInboxMeta();
+                }
             } else {
                 this._relabelNavButtons(false);
             }
         });
 
-        // WS-driven re-fetch
+        // WS-driven re-fetch — refresh BOTH submissions AND inbox metadata.
+        // refreshFromServer only fetches submissions; instruction text/files
+        // live on the inboxes table and need a separate metadata re-fetch.
         window.addEventListener('inbox:signalUpdated', (e) => {
             if (this.inbox && e.detail?.inboxId === this.inbox.id) {
                 this.refreshFromServer({ silent: true });
+                this._refreshInboxMeta();
             }
         });
 
@@ -499,6 +505,19 @@ export const IXThread = {
             // Realtime is best-effort; manual PULL still works without WS
             console.warn('IXThread: WS subscribe failed', err);
         }
+    },
+
+    async _refreshInboxMeta() {
+        if (!this.inbox) return;
+        try {
+            const data = await InboxService.listInboxes();
+            const updated = (data?.inboxes || []).find(ix => ix.id === this.inbox.id);
+            if (!updated) return;
+            const changed = updated.description !== this.inbox.description ||
+                JSON.stringify(updated.instruction_files) !== JSON.stringify(this.inbox.instruction_files);
+            this.inbox = updated;
+            if (changed) this._renderInstruction();
+        } catch { /* best-effort — manual RESET still works */ }
     },
 
     _unsubscribeWS() {
