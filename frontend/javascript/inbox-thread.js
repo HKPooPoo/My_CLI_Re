@@ -1062,6 +1062,9 @@ export const IXThread = {
             this.inbox.description = newDescription;
             this.inbox.instruction_files = files;
             msg.update(t('inbox.postComplete'));
+            window.dispatchEvent(new CustomEvent('inbox:signalUpdated', {
+                detail: { inboxId: this.inbox.id },
+            }));
         } catch (e) {
             console.error('Inbox instruction post failed', e);
             msg.close();

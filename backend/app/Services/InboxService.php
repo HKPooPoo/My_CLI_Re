@@ -370,8 +370,9 @@ class InboxService
         ?string $description, ?array $instructionFiles,
         bool $hasDescription, bool $hasFiles,
     ): void {
-        $this->loadOwnedOrAbort($user, $inboxId);
-        $update = ['updated_at' => now()];
+        $inbox = $this->loadOwnedOrAbort($user, $inboxId);
+        $nowMs = (int) (microtime(true) * 1000);
+        $update = ['last_signal' => $nowMs, 'updated_at' => now()];
         if ($hasDescription)  $update['description'] = $description;
         if ($hasFiles)        $update['instruction_files'] = $instructionFiles !== null
                                     ? json_encode($instructionFiles) : null;
@@ -379,6 +380,9 @@ class InboxService
         if ($instructionFiles) {
             $this->fileService->markCommittedBatch($instructionFiles);
         }
+        broadcast(new InboxUpdated(
+            $inboxId, $inbox->name, $user->uid, $nowMs, 'instruction'
+        ));
     }
 
     public function applyWhitelist(User $user, int $inboxId, ?int $whitelistId): void
