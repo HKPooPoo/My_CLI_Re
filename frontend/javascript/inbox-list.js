@@ -90,6 +90,12 @@ export const IXList = {
             if (isIXActive) this.fetchAndRender();
         });
 
+        setInterval(() => {
+            if (document.hidden) return;
+            const activePage = document.querySelector('.page.active');
+            if (activePage?.dataset.page?.startsWith('inbox-')) this.fetchAndRender();
+        }, 15000);
+
         // Re-fetch when the page becomes active so [NEW] indicators
         // and counts stay live without a page-load refresh.
         window.addEventListener('navi:pageChanged', (e) => {
