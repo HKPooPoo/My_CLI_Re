@@ -202,11 +202,13 @@ class InboxService
         if (!$inbox) abort(404, 'INBOX NOT FOUND');
         if ((int) $inbox->user_id !== (int) $user->id) abort(403, 'NOT INBOX OWNER');
 
-        // Full whitelist member roster (uid-asc via decodeMembers sort).
-        $members = [];
+        // Member roster = whitelist members ∪ existing submitters (uid-asc).
+        // Without the union, detaching the whitelist empties the roster
+        // even though submissions still exist — the lecturer sees 0 blocks.
+        $wlMembers = [];
         if ($inbox->whitelist_id) {
             $wl = DB::table('whitelists')->where('id', $inbox->whitelist_id)->first();
-            if ($wl) $members = $this->whitelistService->decodeMembers($wl->members ?? null);
+            if ($wl) $wlMembers = $this->whitelistService->decodeMembers($wl->members ?? null);
         }
 
         $rows = DB::table('inbox_submissions')
@@ -219,6 +221,10 @@ class InboxService
                 'users.title as sender_title'
             )
             ->get();
+
+        $submitterUids = $rows->pluck('sender_uid')->filter()->unique()->values()->all();
+        $members = array_values(array_unique(array_merge($wlMembers, $submitterUids)));
+        sort($members, SORT_STRING);
 
         $allHashes = [];
         foreach ($rows as $r) {
