@@ -15,6 +15,10 @@
       "bcSaveDebounce": 200
     },
 
+    "polling": {
+      "inboxListRefresh": 15000
+    },
+
     "background": {
       "_comment": "Periodic background tasks.",
       "bbAutoCommitDelay": 2000,

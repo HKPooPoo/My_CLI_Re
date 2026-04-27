@@ -145,7 +145,7 @@ class InboxServiceTest extends TestCase
     }
 
     #[Test] /* I11 */
-    public function read_preserved_after_whitelist_removal(): void
+    public function evicted_student_loses_visibility(): void
     {
         $inbox = $this->service->createInbox($this->owner, 'PreserveTest', null, $this->whitelistId);
         $this->service->submit($this->studentA, (int) $inbox->id, 'I submitted', null);
@@ -153,8 +153,7 @@ class InboxServiceTest extends TestCase
         $this->whitelistService->removeMember($this->whitelistId, 'studA');
 
         $list = $this->service->listInboxes($this->studentA);
-        $this->assertCount(1, $list, 'evicted student keeps read access via existing submission');
-        $this->assertTrue($list[0]['has_my_submission']);
+        $this->assertCount(0, $list, 'evicted student loses access — no read-preserved');
     }
 
     // ── Submit (write) ───────────────────────────────────────────
@@ -290,10 +289,10 @@ class InboxServiceTest extends TestCase
         $row = DB::table('inboxes')->where('id', $inbox->id)->first();
         $this->assertNull($row->whitelist_id);
 
-        // studentC: never submitted, no whitelist now → closed
+        // studentC: never submitted → closed
         $this->assertCount(0, $this->service->listInboxes($this->studentC));
-        // studentA: had submitted while in whitelist → read-preserved
-        $this->assertCount(1, $this->service->listInboxes($this->studentA));
+        // studentA: had submitted but no whitelist now → closed (no read-preserved)
+        $this->assertCount(0, $this->service->listInboxes($this->studentA));
         // owner: always sees
         $this->assertCount(1, $this->service->listInboxes($this->owner));
     }
@@ -336,18 +335,13 @@ class InboxServiceTest extends TestCase
     }
 
     #[Test] /* I26 */
-    public function can_submit_false_for_evicted_member_after_whitelist_removal(): void
+    public function evicted_member_loses_both_visibility_and_submit(): void
     {
-        // The bug fix: read-preserved must NOT imply write-preserved.
-        // Student submits while in whitelist → evicted → still has
-        // visibility (existing submission) but canSubmit is false.
         $inbox = $this->service->createInbox($this->owner, 'Evict', null, $this->whitelistId);
         $this->service->submit($this->studentA, (int) $inbox->id, 'first', null);
         $this->whitelistService->removeMember($this->whitelistId, 'studA');
 
-        // Read-preserved: list still includes the inbox.
-        $this->assertCount(1, $this->service->listInboxes($this->studentA));
-        // Write-revoked: canSubmit false.
+        $this->assertCount(0, $this->service->listInboxes($this->studentA));
         $this->assertFalse($this->service->canSubmit($this->studentA, (int) $inbox->id));
     }
 

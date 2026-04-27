@@ -94,7 +94,7 @@ export const IXList = {
             if (document.hidden) return;
             const activePage = document.querySelector('.page.active');
             if (activePage?.dataset.page?.startsWith('inbox-')) this.fetchAndRender();
-        }, 15000);
+        }, T('frontend.polling.inboxListRefresh'));
 
         // Re-fetch when the page becomes active so [NEW] indicators
         // and counts stay live without a page-load refresh.

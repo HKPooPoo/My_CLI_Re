@@ -54,19 +54,8 @@ class InboxService
     {
         if (!$user) return false;
         if ((int) $user->id === (int) $inbox->user_id) return true;
-        if (!empty($inbox->whitelist_id)
-            && $this->whitelistService->isMember((int) $inbox->whitelist_id, $user->uid)) {
-            return true;
-        }
-        // Read-preserved: the user has an existing submission on this
-        // inbox. Could be from when they were a member of the
-        // currently-applied whitelist, or from a previous whitelist
-        // that was swapped out, or from an open period before the
-        // current preset was applied.
-        return DB::table('inbox_submissions')
-            ->where('inbox_id', $inbox->id)
-            ->where('user_id', $user->id)
-            ->exists();
+        if (empty($inbox->whitelist_id)) return false;
+        return $this->whitelistService->isMember((int) $inbox->whitelist_id, $user->uid);
     }
 
     private function assertVisibleTo(object $inbox, ?User $user): void
