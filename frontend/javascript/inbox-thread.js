@@ -156,7 +156,7 @@ export const IXThread = {
             navigateTo: async (head) => {
                 await this.flushPending();
                 this.head = head;
-                this._renderCurrentMember();
+                this._renderCurrentMember({ force: true });
             },
         });
 
@@ -618,7 +618,7 @@ export const IXThread = {
 
     renderSenderView() {
         this._renderInstruction();
-        this._renderCurrentMember();
+        this._renderCurrentMember({ force: true });
     },
 
     _renderInstruction() {
@@ -633,19 +633,25 @@ export const IXThread = {
         }
     },
 
-    _renderCurrentMember() {
+    _renderCurrentMember({ force = false } = {}) {
         const currentUid = this.members[this.head] ?? null;
         const row = this.submissions.find(s => s.sender_uid === currentUid) || null;
         const me = localStorage.getItem('currentUser') || '';
         const ownerLabel = this.inbox?.owner_uid || '';
 
+        const senderEditable = this.mode !== 'receiver' && this.canSubmit;
+        const receiverEditable = this.mode === 'receiver';
         if (this.elements.senderArea) {
-            this.elements.senderArea.value = row?.sender_text ?? '';
-            this.elements.senderArea.disabled = (this.mode === 'receiver') || !this.canSubmit;
+            if (force || !senderEditable) {
+                this.elements.senderArea.value = row?.sender_text ?? '';
+            }
+            this.elements.senderArea.disabled = !senderEditable;
         }
         if (this.elements.receiverArea) {
-            this.elements.receiverArea.value = row?.receiver_text ?? '';
-            this.elements.receiverArea.disabled = (this.mode !== 'receiver');
+            if (force || !receiverEditable) {
+                this.elements.receiverArea.value = row?.receiver_text ?? '';
+            }
+            this.elements.receiverArea.disabled = !receiverEditable;
         }
         if (this.elements.senderUid) {
             this.elements.senderUid.textContent = currentUid ?? '';
@@ -681,7 +687,7 @@ export const IXThread = {
 
     renderReceiverView() {
         this._renderInstruction();
-        this._renderCurrentMember();
+        this._renderCurrentMember({ force: true });
     },
 
     /**
