@@ -425,7 +425,18 @@ input.attachment-chip-name[readonly] {
    so it fills the walkie-typie-blackboard.
 
    THEY side attachment-chips.readonly sits directly
-   inside .walkie-typie-blackboard (no wrapper needed) */
+   inside .walkie-typie-blackboard (no wrapper needed). WE side chips
+   sit inside the editor-wrapper, FIRST child. Both should hug the
+   top of their container — same contract as Inbox windows (no
+   PUSH button to clear inside the editor-wrapper, push-btn sits
+   on .walkie-typie-blackboard with translateY(-86%) entirely above
+   the wrapper). The shared `.attachment-chips { margin-top: 4vh }`
+   default exists for BB where push-btn IS inside .page-container at
+   `top: 0` with no offset — that 4vh clears it. WT (and Inbox) don't
+   need that clearance. */
+.walkie-typie-blackboard .attachment-chips.has-items {
+    margin-top: 0;
+}
 
 .walkie-typie-blackboard>.attachment-chips {
     /* WT THEY side: chips inside the blackboard panel but without wrapper */
