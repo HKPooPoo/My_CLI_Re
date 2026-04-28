@@ -242,14 +242,29 @@ function updatePage(subNaviItem) {
             $page.classList.add("active");
             $activePage = $page;
 
-            // Push/Pull buttons: only on can-push-pull pages
+            // Push/Pull buttons: only on can-push-pull pages.
+            // translateY(±256%) animates the slide-out, but at flat
+            // (short-height) viewports the math can leave a sliver of
+            // button visible inside `.page-container` — vh-based offsets
+            // shrink with the viewport and the absolute `bottom: 0` /
+            // `top: 0` positions are still inside the clip box. Belt and
+            // braces: also drop visibility + pointer-events on hide so a
+            // partial render can't overlap list content underneath.
             if ($pushBtn && $pullBtn) {
                 if ($page.classList.contains("can-push-pull")) {
                     $pushBtn.style.transform = "translateY(0)";
                     $pullBtn.style.transform = "translateY(0)";
+                    $pushBtn.style.visibility = "visible";
+                    $pullBtn.style.visibility = "visible";
+                    $pushBtn.style.pointerEvents = "auto";
+                    $pullBtn.style.pointerEvents = "auto";
                 } else {
                     $pushBtn.style.transform = "translateY(-256%)";
                     $pullBtn.style.transform = "translateY(256%)";
+                    $pushBtn.style.visibility = "hidden";
+                    $pullBtn.style.visibility = "hidden";
+                    $pushBtn.style.pointerEvents = "none";
+                    $pullBtn.style.pointerEvents = "none";
                 }
             }
 

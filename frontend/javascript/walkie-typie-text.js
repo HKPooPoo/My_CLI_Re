@@ -395,6 +395,14 @@ export const WTText = {
                         BBMessage.info(t('common.deletePageFailed'));
                         return;
                     }
+                    // Cancel pending save + commit BEFORE the delete: a queued
+                    // commitWE(staleText) would otherwise run WTVCS.save(state,
+                    // staleText) after our delete has shifted state.currentHead
+                    // onto the older record, overwriting that record's text
+                    // with the typed text from the deleted page. Same race
+                    // onAttach already guards against above.
+                    this.timers.cancel('save');
+                    this.timers.cancel('commit');
                     try {
                         const entry = await WTDb.getRecord(this.weState.branchId, this.weState.currentHead);
                         if (!entry) return;

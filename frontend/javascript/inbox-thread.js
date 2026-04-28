@@ -268,12 +268,23 @@ export const IXThread = {
         const isInboxThread = activePage?.dataset.page === 'inbox-thread';
         const shouldShow = isInboxThread
             && this.members.length > 1;
+        // Mirror navi.js's defence: also toggle visibility +
+        // pointer-events so a partially-translated button can't appear
+        // over list rows on flat viewports.
         if (shouldShow) {
             pushBtn.style.transform = 'translateY(0)';
             pullBtn.style.transform = 'translateY(0)';
+            pushBtn.style.visibility = 'visible';
+            pullBtn.style.visibility = 'visible';
+            pushBtn.style.pointerEvents = 'auto';
+            pullBtn.style.pointerEvents = 'auto';
         } else if (isInboxThread) {
             pushBtn.style.transform = 'translateY(-256%)';
             pullBtn.style.transform = 'translateY(256%)';
+            pushBtn.style.visibility = 'hidden';
+            pullBtn.style.visibility = 'hidden';
+            pushBtn.style.pointerEvents = 'none';
+            pullBtn.style.pointerEvents = 'none';
         }
     },
 

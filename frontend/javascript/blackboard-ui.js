@@ -114,16 +114,20 @@ export const BBUI = {
             // Same pattern as BC non-owner rename + WT THEY textarea.
             const isReadonly = !branch.isLocal;
 
-            // Tier 22.7: HEAD eye fires for the branch CURRENTLY OPEN in
-            // the log editor (`branch.id === state.branchId`, already
-            // passed in as `currentHeadId`) — NOT the list cursor
-            // selection. BB is the only board where list-cursor and
-            // currently-open diverge; we respect the project's native
-            // distinction between `activeBranchId` (cursor) and
-            // `currentHeadId` (editing head).
+            // Icons mirror the `vcs-list-owner` text 1:1 (one icon per
+            // visible token). Whatever the text says, the icons MUST say
+            // the same:
+            //   "local"            → LOCAL    (data lives on this device)
+            //   "[ACTIVE]"         → HEAD     (currently open in editor)
+            //   "online/{uid}"     → SYNCED or ASYNCED depending on tag
+            // Both LOCAL + SYNCED light up when the row reads
+            // "local, online/{uid} [synced]" — they are independent facts
+            // (it IS local AND it IS in sync), not a mutually-exclusive
+            // pair. Earlier code suppressed LOCAL on synced rows, which
+            // contradicted the text and confused users.
             const iconsHtml = buildStatusLegend({
                 head:    isHead,
-                local:   !!(branch.isLocal && !branch.isServer),
+                local:   !!branch.isLocal,
                 synced:  !!(branch.isLocal && branch.isServer && !branch.isDirty),
                 asynced: !!(branch.isDirty || (!branch.isLocal && branch.isServer)),
             });
