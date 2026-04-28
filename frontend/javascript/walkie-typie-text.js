@@ -184,7 +184,6 @@ export const WTText = {
                 this.timers.cancel('commit');
 
                 const binData = { hash, ...meta };
-                this.currentBin = binData;
 
                 // 1. Ensure Record Exists (Handle Virtual State)
                 // Multi-file: append binData to the record's file_hash array
@@ -192,6 +191,14 @@ export const WTText = {
                 // blackboard.js onAttach). Without the append, every new
                 // attach replaced the previous one and only the last
                 // file survived a refresh.
+                //
+                // `currentBin` is also the live whisper payload — keep it
+                // mirroring the record's `file_hash` shape (null / single
+                // object / array) so the partner sees the FULL list of
+                // attachments instantly. The earlier `this.currentBin =
+                // binData` (single LAST) made the whisper sender drop
+                // every prior file, so the opponent only ever saw one
+                // chip until the 2 s commit + syncTHEY round-trip ran.
                 let touchedTimestamp = null;
                 if (this.weState.isVirtual) {
                     await WTDb.addRecord(
@@ -202,6 +209,7 @@ export const WTText = {
                     );
                     this.weState.isVirtual = false;
                     this.weState.currentHead = 0;
+                    this.currentBin = binData;
                 } else {
                     // Update Existing Record — append to file_hash array
                     const entry = await WTDb.getRecord(this.weState.branchId, this.weState.currentHead);
@@ -217,6 +225,7 @@ export const WTText = {
                         }
                         await WTDb.updateBin(entry.branch_id, entry.timestamp, fileHashes);
                         touchedTimestamp = entry.timestamp;
+                        this.currentBin = fileHashes;
                     } else if (this.weState.currentHead === 0) {
                         // Fresh board — no record exists yet (e.g. new connection, nothing typed).
                         // Create a record now so the attachment is persisted.
@@ -228,6 +237,7 @@ export const WTText = {
                         );
                         this.weState.isVirtual = false;
                         this.weState.currentHead = 0;
+                        this.currentBin = binData;
                     }
                 }
 
@@ -271,11 +281,12 @@ export const WTText = {
                         await WTDb.updateBin(entry.branch_id, entry.timestamp, newValue);
                         touchedTimestamp = entry.timestamp;
 
-                        // Sync the live whisper bin to the new "last" file
-                        // (or null if none left). Whisper preview is single-
-                        // file by protocol so we just reflect the tail.
-                        const lastBin = remaining.length > 0 ? remaining[remaining.length - 1] : null;
-                        this.currentBin = (lastBin && typeof lastBin === 'object') ? lastBin : null;
+                        // Mirror the new file_hash shape on currentBin so
+                        // the next whisper carries the FULL remaining
+                        // list to the partner — not just the tail.
+                        this.currentBin = newValue;
+                    } else {
+                        this.currentBin = null;
                     }
                 } else {
                     this.currentBin = null;
@@ -294,7 +305,6 @@ export const WTText = {
             onRename: async (oldHash, newHash, meta) => {
                 if (!this.currentConnection) return;
                 const binData = { hash: newHash, ...meta };
-                this.currentBin = binData;
                 let touchedTimestamp = null;
                 if (!this.weState.isVirtual) {
                     const entry = await WTDb.getRecord(this.weState.branchId, this.weState.currentHead);
@@ -302,6 +312,9 @@ export const WTText = {
                         // Multi-file: find the matching hash in the array
                         // and replace just that entry. Single-file legacy
                         // path still works via the .length === 1 branch.
+                        // `currentBin` mirrors the new file_hash shape so
+                        // the live whisper carries the FULL list to the
+                        // partner instead of just the renamed entry.
                         const existing = entry.file_hash;
                         const list = Array.isArray(existing)
                             ? existing
@@ -316,6 +329,7 @@ export const WTText = {
                             const newValue = next.length === 1 ? next[0] : next;
                             await WTDb.updateBin(entry.branch_id, entry.timestamp, newValue);
                             touchedTimestamp = entry.timestamp;
+                            this.currentBin = newValue;
                         }
                     }
                 }
@@ -646,8 +660,19 @@ export const WTText = {
                 this.theyState.currentHead = 0;
                 this.elements.theyTextarea.value = text;
 
-                // Live Attachment Update
-                this.wtTheyAttach?.setFromRecord(bin?.hash, bin);
+                // Live Attachment Update — `bin` may be null, a single
+                // object, or an array (multi-file whisper). Flatten via
+                // extractHashes so the partner's chip rail reflects the
+                // FULL list of attachments instantly, instead of waiting
+                // for the 2 s commit + syncTHEY round-trip.
+                const liveHashes = extractHashes(bin);
+                if (liveHashes.length === 0) {
+                    this.wtTheyAttach?.setFromRecord(null);
+                } else if (liveHashes.length === 1 && bin && typeof bin === 'object' && !Array.isArray(bin)) {
+                    this.wtTheyAttach?.setFromRecord(liveHashes[0], bin);
+                } else {
+                    this.wtTheyAttach?.setFromRecord(liveHashes);
+                }
 
                 if (document.hidden) {
                     this.notify(partnerUid, connection.partner_tag);
