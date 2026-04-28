@@ -243,28 +243,28 @@ function updatePage(subNaviItem) {
             $activePage = $page;
 
             // Push/Pull buttons: only on can-push-pull pages.
-            // translateY(±256%) animates the slide-out, but at flat
-            // (short-height) viewports the math can leave a sliver of
-            // button visible inside `.page-container` — vh-based offsets
-            // shrink with the viewport and the absolute `bottom: 0` /
-            // `top: 0` positions are still inside the clip box. Belt and
-            // braces: also drop visibility + pointer-events on hide so a
-            // partial render can't overlap list content underneath.
+            // The hidden state SLIDES the button behind the header
+            // (push) and footer (pull) — that's the intended animation,
+            // a transform-based reveal, NOT a visibility toggle.
+            //
+            // Translation distance is `calc(-100% - 100vh)` rather than
+            // a button-height-relative percentage like `-256%`. The
+            // button is `height: 4vh`, so any %-based translation
+            // shrinks proportionally with the viewport: at flat
+            // (short-height) viewports, `-256%` of `4vh` is only a few
+            // pixels and the button's resting position can leak past
+            // the page-container's clip box and overlap list rows
+            // underneath. Using `-100vh` plus its own height guarantees
+            // it travels a full viewport away regardless of how thin
+            // the button has become — the slide always finishes behind
+            // the header/footer chrome.
             if ($pushBtn && $pullBtn) {
                 if ($page.classList.contains("can-push-pull")) {
                     $pushBtn.style.transform = "translateY(0)";
                     $pullBtn.style.transform = "translateY(0)";
-                    $pushBtn.style.visibility = "visible";
-                    $pullBtn.style.visibility = "visible";
-                    $pushBtn.style.pointerEvents = "auto";
-                    $pullBtn.style.pointerEvents = "auto";
                 } else {
-                    $pushBtn.style.transform = "translateY(-256%)";
-                    $pullBtn.style.transform = "translateY(256%)";
-                    $pushBtn.style.visibility = "hidden";
-                    $pullBtn.style.visibility = "hidden";
-                    $pushBtn.style.pointerEvents = "none";
-                    $pullBtn.style.pointerEvents = "none";
+                    $pushBtn.style.transform = "translateY(calc(-100% - 100vh))";
+                    $pullBtn.style.transform = "translateY(calc(100% + 100vh))";
                 }
             }
 
