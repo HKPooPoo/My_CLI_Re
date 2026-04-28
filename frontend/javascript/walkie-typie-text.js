@@ -823,7 +823,15 @@ export const WTText = {
                 // case (lazy fetch covers multi-file cloud chips).
                 const bin = record?.file_hash || null;
                 const hashes = extractHashes(bin);
-                this.currentBin = (Array.isArray(bin) ? bin[bin.length - 1] : bin) || null;
+                // currentBin must mirror the record's file_hash shape
+                // (null / single / array) — broadcastSignal reads it as
+                // the live whisper payload. Collapsing it to the array's
+                // last element here was the bug that made the partner see
+                // only ONE chip after the next commit / refresh: that
+                // refresh wiped currentBin from `[A, B]` down to `B`, and
+                // the very next typing whisper carried a single object
+                // again. Keep the full structure intact.
+                this.currentBin = bin;
                 if (hashes.length === 0) {
                     this.wtWeAttach?.setFromRecord(null);
                 } else if (hashes.length === 1 && bin && typeof bin === 'object' && !Array.isArray(bin)) {
