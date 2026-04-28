@@ -608,7 +608,7 @@ Log section; every new user decision gets appended with a date.
     per-scope toggles are all retired. Behaviour is now hardcoded
     project-wide:
     - `BOARD_MAX_SLOT = 100` (all boards: BB + WT + BC)
-    - `RECORD_MAX_FILES = 10` (all attach paths)
+    - `RECORD_MAX_FILES = 10` (all attach paths). **Multi-file is wired across every board:** BB / WT / BC `onAttach` append the new `binData` to the record's `file_hash` array (was: overwrite, single-file). `onDetach` removes just the matching hash; `onRename` swaps just the matching entry. Refresh paths (`syncView` / `refreshWE` / `refreshTHEY` / `syncOwnerView` / `syncReaderView`) flatten via `extractHashes` before calling `setFromRecord(hashStringArray)`. Commit/cast paths upload every hash per record and serialise to a single string (1 file) or a JSON-stringified array (n files) — backend `FileService::normalizeFileHash` accepts all three (single object, single string, JSON array string). `BCDb.importRecords` and `BCDb.bootstrapFromServer` decode the JSON-array form back into `[{hash}, ...]` so onDetach/onRename can compare per-hash on rows that came from the server. Inbox SUBMISSION is the deliberate exception — `EditorAttachments.create({ maxFiles: 1 })` on `_submissionAttach`, with the underlying `<input>` lacking the `multiple` attribute. Inbox INSTRUCTION + FEEDBACK use the default `RECORD_MAX_FILES`.
     - Auto-clean-blanks OFF (blank pages preserved — no scrub)
     - Update-timestamp OFF (all edits in-place, position stable)
     - Loop-list OFF (InfiniteList stops at top/bottom)

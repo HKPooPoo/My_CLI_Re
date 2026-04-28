@@ -10,6 +10,7 @@ import { WTDb } from "./walkie-typie-db.js";
 import { WalkieTypieService } from "./services/walkie-typie-service.js";
 import { FileService } from "./services/file-service.js";
 import { BBMessage } from "./blackboard-msg.js";
+import { extractHashes } from "./blackboard-core.js";
 import db from "./indexedDB.js";
 import { t } from './i18n.js';
 import { BOARD_MAX_SLOT } from './settings.js';
@@ -137,38 +138,40 @@ export const WTVCS = {
 
         const apiRecords = [];
 
-        // Local First: never strip the hash. Failed uploads stay 'local' in
-        // file_blobs; next commit retries automatically.
+        // Multi-file: extract every hash per record (file_hash may be a
+        // single object, single string, or an array of either). Upload
+        // each blob; serialise to a single string OR JSON array string
+        // for the server payload — matches BB's commit shape so the
+        // backend doesn't need to branch on board type.
         for (const r of records) {
-            let hashStr = null;
+            const hashes = extractHashes(r.file_hash);
 
-            if (r.file_hash) {
-                const hash = r.file_hash.hash;
-                const fileName = r.file_hash.name || hash.substring(0, 8);
-                hashStr = hash;
-
+            for (const hash of hashes) {
                 const localFile = await db.file_blobs.get(hash);
-                if (localFile && localFile.blob) {
-                    if (localFile.status !== 'synced') {
-                        const toast = BBMessage.loading(t('walkieTypie.uploading', { name: fileName }));
-                        try {
-                            await FileService.upload(localFile.blob, localFile.name);
-                            await db.file_blobs.update(hash, { status: 'synced' });
-                            toast.update(t('walkieTypie.uploaded', { name: fileName }));
-                        } catch (e) {
-                            console.error(`WT Commit: Upload failed for ${hash}`, e);
-                            toast.close();
-                            BBMessage.error(t('walkieTypie.uploadFailed', { name: fileName }));
-                        }
-                    }
-                } else {
+                if (!localFile || !localFile.blob) {
                     console.warn(`WT Commit: Local file missing for hash ${hash}`);
+                    continue;
+                }
+                if (localFile.status === 'synced') continue;
+                const fileName = localFile.name || hash.substring(0, 8);
+                const toast = BBMessage.loading(t('walkieTypie.uploading', { name: fileName }));
+                try {
+                    await FileService.upload(localFile.blob, localFile.name);
+                    await db.file_blobs.update(hash, { status: 'synced' });
+                    toast.update(t('walkieTypie.uploaded', { name: fileName }));
+                } catch (e) {
+                    console.error(`WT Commit: Upload failed for ${hash}`, e);
+                    toast.close();
+                    BBMessage.error(t('walkieTypie.uploadFailed', { name: fileName }));
                 }
             }
 
+            let fh = null;
+            if (hashes.length === 1) fh = hashes[0];
+            else if (hashes.length > 1) fh = JSON.stringify(hashes);
             apiRecords.push({
                 ...r,
-                file_hash: hashStr
+                file_hash: fh
             });
         }
 

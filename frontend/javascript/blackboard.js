@@ -630,8 +630,17 @@ if (BBUI.elements.commitBtn) {
                 // mutate something and trigger its own updateBranchList).
                 CrossTabSync.broadcast('bb:record:mutated', { branchId: selected.id, timestamp: null });
             } catch (e) {
-                console.error("SYNC ERROR:", e);
                 msg.close();
+                // NO DATA is not a real error — branch contains nothing
+                // commit-worthy (all records blank, no files). Treat it
+                // as an info notice instead of a SYNC ERROR; logging it
+                // as `console.error` filled the console with red noise
+                // every time auto-cleanup left a branch empty.
+                if (e.message === t('blackboard.noData')) {
+                    BBMessage.info(t('blackboard.noData'));
+                    return;
+                }
+                console.error("SYNC ERROR:", e);
                 const isUserError = e.status >= 400 && e.status < 500;
                 BBMessage.error(isUserError ? (e.message || t('blackboard.syncFailed')) : t('blackboard.syncFailed'));
             }

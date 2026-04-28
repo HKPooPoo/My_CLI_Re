@@ -31,6 +31,7 @@ import { BCDb, BCMeta, getHKTTimestamp } from './broadcast-db.js';
 import { BroadcastService } from './services/broadcast-service.js';
 import { BroadcastFlashcardsService } from './services/broadcast-flashcards-service.js';
 import { EditorAttachments } from './editor-attachments.js';
+import { extractHashes } from './blackboard-core.js';
 import { playAudio } from './audio.js';
 import { BBMessage } from './blackboard-msg.js';
 import { getEcho } from './echo-service.js';
@@ -141,6 +142,10 @@ export const BCChannel = {
                 playAudio('Cassette.mp3');
                 const binData = { hash, ...meta };
 
+                // Multi-file: append to file_hash array on existing
+                // records. Setting the field to a single binData
+                // (legacy single-file behaviour) overwrote prior
+                // attachments, so the second file always wiped the first.
                 let touchedTimestamp = null;
                 if (this.state.isVirtual) {
                     await BCDb.addRecord(this.state.localChannelId, this.elements.textarea?.value || '', binData);
@@ -149,7 +154,16 @@ export const BCChannel = {
                 } else {
                     const entry = await BCDb.getRecord(this.state.localChannelId, this.state.currentHead);
                     if (entry) {
-                        await BCDb.updateBinInPlace(this.state.localChannelId, entry.timestamp, binData);
+                        const existing = entry.file_hash;
+                        let fileHashes;
+                        if (Array.isArray(existing)) {
+                            fileHashes = [...existing, binData];
+                        } else if (existing) {
+                            fileHashes = [existing, binData];
+                        } else {
+                            fileHashes = [binData];
+                        }
+                        await BCDb.updateBinInPlace(this.state.localChannelId, entry.timestamp, fileHashes);
                         touchedTimestamp = entry.timestamp;
                     } else if (this.state.currentHead === 0) {
                         // Fresh channel — no record exists yet (nothing typed before attaching).
@@ -168,11 +182,25 @@ export const BCChannel = {
             onDetach: async (hash) => {
                 if (!this.isOwnerMode || !this.currentChannel) return;
                 playAudio('Erase.mp3');
+                // Multi-file: drop just THIS hash from the array. Setting
+                // the field to null wiped every other attached file
+                // alongside the one the user clicked × on.
                 let touchedTimestamp = null;
                 if (!this.state.isVirtual) {
                     const entry = await BCDb.getRecord(this.state.localChannelId, this.state.currentHead);
                     if (entry) {
-                        await BCDb.updateBinInPlace(this.state.localChannelId, entry.timestamp, null);
+                        const existing = entry.file_hash;
+                        const list = Array.isArray(existing)
+                            ? existing
+                            : (existing ? [existing] : []);
+                        const remaining = list.filter(item => {
+                            const h = (item && typeof item === 'object') ? item.hash : item;
+                            return h !== hash;
+                        });
+                        const newValue = remaining.length === 0 ? null
+                                        : remaining.length === 1 ? remaining[0]
+                                        : remaining;
+                        await BCDb.updateBinInPlace(this.state.localChannelId, entry.timestamp, newValue);
                         touchedTimestamp = entry.timestamp;
                     }
                 }
@@ -187,11 +215,23 @@ export const BCChannel = {
                 if (this.state.isVirtual) return;
                 const entry = await BCDb.getRecord(this.state.localChannelId, this.state.currentHead);
                 if (!entry) return;
-                const existing = entry.file_hash;
-                const h = (typeof existing === 'object') ? existing?.hash : existing;
-                if (h !== oldHash) return;
+                // Multi-file: locate the matching hash in the array and
+                // swap that entry only. Single-file legacy path still
+                // works because list collapses back to a single element.
                 const binData = { hash: newHash, ...meta };
-                await BCDb.updateBinInPlace(this.state.localChannelId, entry.timestamp, binData);
+                const existing = entry.file_hash;
+                const list = Array.isArray(existing)
+                    ? existing
+                    : (existing ? [existing] : []);
+                let changed = false;
+                const next = list.map(item => {
+                    const h = (item && typeof item === 'object') ? item.hash : item;
+                    if (h === oldHash) { changed = true; return binData; }
+                    return item;
+                });
+                if (!changed) return;
+                const newValue = next.length === 1 ? next[0] : next;
+                await BCDb.updateBinInPlace(this.state.localChannelId, entry.timestamp, newValue);
                 this.updateIndicators();
                 await this._markLocalDirty();
                 CrossTabSync.broadcast('bc:record:mutated', {
@@ -937,11 +977,18 @@ export const BCChannel = {
                 this.elements.textarea.value = entry?.text ?? '';
             }
 
-            // Sync attachment chip
+            // Sync attachment chip(s) — multi-file aware. Owner record
+            // may store file_hash as null, single object, or array.
             const bin = entry?.file_hash ?? null;
             this.state.currentFileHash = bin;
-            const hash = (typeof bin === 'object') ? bin?.hash : bin;
-            this.bcAttach?.setFromRecord(hash || null, typeof bin === 'object' ? bin : null);
+            const hashes = extractHashes(bin);
+            if (hashes.length === 0) {
+                this.bcAttach?.setFromRecord(null);
+            } else if (hashes.length === 1 && bin && typeof bin === 'object' && !Array.isArray(bin)) {
+                this.bcAttach?.setFromRecord(hashes[0], bin);
+            } else {
+                this.bcAttach?.setFromRecord(hashes);
+            }
 
             this.updateIndicators();
             await this.renderPreviewRail();
@@ -956,11 +1003,17 @@ export const BCChannel = {
             this.elements.textarea.value = record?.text ?? '';
         }
 
-        // Attachment (read-only)
+        // Attachment (read-only) — same multi-file aware flatten as owner.
         const bin = record?.file_hash ?? null;
         this.state.currentFileHash = bin;
-        const hash = typeof bin === 'object' ? bin?.hash : bin;
-        this.bcAttach?.setFromRecord(hash || null, typeof bin === 'object' ? bin : null);
+        const hashes = extractHashes(bin);
+        if (hashes.length === 0) {
+            this.bcAttach?.setFromRecord(null);
+        } else if (hashes.length === 1 && bin && typeof bin === 'object' && !Array.isArray(bin)) {
+            this.bcAttach?.setFromRecord(hashes[0], bin);
+        } else {
+            this.bcAttach?.setFromRecord(hashes);
+        }
 
         this.updateIndicators(this.readerHead);
         this.renderPreviewRail();

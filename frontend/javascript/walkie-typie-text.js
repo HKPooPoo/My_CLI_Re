@@ -26,6 +26,7 @@ import { WalkieTypieService } from "./services/walkie-typie-service.js";
 import { WTCore } from "./walkie-typie-core.js";
 import { BBMessage } from "./blackboard-msg.js";
 import { EditorAttachments } from "./editor-attachments.js";
+import { extractHashes } from "./blackboard-core.js";
 import db from "./indexedDB.js";
 import { playAudio } from "./audio.js";
 import { t } from './i18n.js';
@@ -186,6 +187,11 @@ export const WTText = {
                 this.currentBin = binData;
 
                 // 1. Ensure Record Exists (Handle Virtual State)
+                // Multi-file: append binData to the record's file_hash array
+                // instead of overwriting. Same pattern BB uses (see
+                // blackboard.js onAttach). Without the append, every new
+                // attach replaced the previous one and only the last
+                // file survived a refresh.
                 let touchedTimestamp = null;
                 if (this.weState.isVirtual) {
                     await WTDb.addRecord(
@@ -197,10 +203,19 @@ export const WTText = {
                     this.weState.isVirtual = false;
                     this.weState.currentHead = 0;
                 } else {
-                    // Update Existing Record
+                    // Update Existing Record — append to file_hash array
                     const entry = await WTDb.getRecord(this.weState.branchId, this.weState.currentHead);
                     if (entry) {
-                        await WTDb.updateBin(entry.branch_id, entry.timestamp, binData);
+                        const existing = entry.file_hash;
+                        let fileHashes;
+                        if (Array.isArray(existing)) {
+                            fileHashes = [...existing, binData];
+                        } else if (existing) {
+                            fileHashes = [existing, binData];
+                        } else {
+                            fileHashes = [binData];
+                        }
+                        await WTDb.updateBin(entry.branch_id, entry.timestamp, fileHashes);
                         touchedTimestamp = entry.timestamp;
                     } else if (this.weState.currentHead === 0) {
                         // Fresh board — no record exists yet (e.g. new connection, nothing typed).
@@ -234,16 +249,36 @@ export const WTText = {
                 if (!this.currentConnection) throw new Error("NO CONNECTION SELECTED");
                 playAudio("Erase.mp3");
 
-                this.currentBin = null;
-
-                // Remove bin from current record
+                // Multi-file: remove just THIS hash from the record's
+                // file_hash array. Setting it to `null` was a single-file
+                // assumption that wiped every other attached file along
+                // with the one the user clicked × on.
                 let touchedTimestamp = null;
                 if (!this.weState.isVirtual) {
                     const entry = await WTDb.getRecord(this.weState.branchId, this.weState.currentHead);
                     if (entry) {
-                        await WTDb.updateBin(entry.branch_id, entry.timestamp, null);
+                        const existing = entry.file_hash;
+                        const list = Array.isArray(existing)
+                            ? existing
+                            : (existing ? [existing] : []);
+                        const remaining = list.filter(item => {
+                            const h = (item && typeof item === 'object') ? item.hash : item;
+                            return h !== hash;
+                        });
+                        const newValue = remaining.length === 0 ? null
+                                        : remaining.length === 1 ? remaining[0]
+                                        : remaining;
+                        await WTDb.updateBin(entry.branch_id, entry.timestamp, newValue);
                         touchedTimestamp = entry.timestamp;
+
+                        // Sync the live whisper bin to the new "last" file
+                        // (or null if none left). Whisper preview is single-
+                        // file by protocol so we just reflect the tail.
+                        const lastBin = remaining.length > 0 ? remaining[remaining.length - 1] : null;
+                        this.currentBin = (lastBin && typeof lastBin === 'object') ? lastBin : null;
                     }
+                } else {
+                    this.currentBin = null;
                 }
 
                 // Broadcast Signal
@@ -264,10 +299,22 @@ export const WTText = {
                 if (!this.weState.isVirtual) {
                     const entry = await WTDb.getRecord(this.weState.branchId, this.weState.currentHead);
                     if (entry) {
+                        // Multi-file: find the matching hash in the array
+                        // and replace just that entry. Single-file legacy
+                        // path still works via the .length === 1 branch.
                         const existing = entry.file_hash;
-                        const h = (typeof existing === 'object') ? existing?.hash : existing;
-                        if (h === oldHash) {
-                            await WTDb.updateBin(entry.branch_id, entry.timestamp, binData);
+                        const list = Array.isArray(existing)
+                            ? existing
+                            : (existing ? [existing] : []);
+                        let changed = false;
+                        const next = list.map(item => {
+                            const h = (item && typeof item === 'object') ? item.hash : item;
+                            if (h === oldHash) { changed = true; return binData; }
+                            return item;
+                        });
+                        if (changed) {
+                            const newValue = next.length === 1 ? next[0] : next;
+                            await WTDb.updateBin(entry.branch_id, entry.timestamp, newValue);
                             touchedTimestamp = entry.timestamp;
                         }
                     }
@@ -638,14 +685,22 @@ export const WTText = {
     },
 
     /**
-     * Helper: Reconstruct bin object from backend flat structure
+     * Helper: Reconstruct bin from backend flat structure. Returns
+     *   null            (no files)
+     *   {hash,...}      (single file — adds name/size/mime when r has them)
+     *   [{hash},...]    (multi-file — bare hash objects; setFromRecord
+     *                    lazy-fetches meta per chip)
+     * Server may send file_hash as a JSON array string ('["h1","h2"]'),
+     * a single hash string, or a single object — extractHashes
+     * normalises all three.
      */
     reconstructBin(r) {
-        if (!r.file_hash) return null;
-        if (typeof r.file_hash === 'object') return r.file_hash;
-
+        const hashes = extractHashes(r.file_hash);
+        if (hashes.length === 0) return null;
+        if (hashes.length > 1) return hashes.map(h => ({ hash: h }));
+        if (typeof r.file_hash === 'object' && !Array.isArray(r.file_hash)) return r.file_hash;
         return {
-            hash: r.file_hash,
+            hash: hashes[0],
             name: r.file_name || 'unknown',
             size: r.file_size || 0,
             mime: r.file_mime || 'application/octet-stream'
@@ -734,10 +789,23 @@ export const WTText = {
                 }
                 this.elements.weTextarea.value = after;
 
-                // Load Attachment
+                // Load Attachment(s) — record.file_hash may be:
+                //   null              (no files)
+                //   {hash, name, ...} (legacy single-file)
+                //   [{hash,...}, ...] (multi-file)
+                // setFromRecord accepts a string array, so flatten via
+                // extractHashes. Hint is only useful for the single-file
+                // case (lazy fetch covers multi-file cloud chips).
                 const bin = record?.file_hash || null;
-                this.currentBin = bin;
-                this.wtWeAttach?.setFromRecord(bin?.hash, bin);
+                const hashes = extractHashes(bin);
+                this.currentBin = (Array.isArray(bin) ? bin[bin.length - 1] : bin) || null;
+                if (hashes.length === 0) {
+                    this.wtWeAttach?.setFromRecord(null);
+                } else if (hashes.length === 1 && bin && typeof bin === 'object' && !Array.isArray(bin)) {
+                    this.wtWeAttach?.setFromRecord(hashes[0], bin);
+                } else {
+                    this.wtWeAttach?.setFromRecord(hashes);
+                }
             }
             // Keep search match-count fresh after any WE redraw.
             // No-op when the pill is collapsed.
@@ -776,8 +844,16 @@ export const WTText = {
             theyBin = theyRecord?.file_hash || null;
         }
 
-        // Render Attachment
-        this.wtTheyAttach?.setFromRecord(theyBin?.hash, theyBin);
+        // Render Attachment(s) — partner may have committed an array
+        // (multi-file). Same flatten-via-extractHashes treatment as WE.
+        const theyHashes = extractHashes(theyBin);
+        if (theyHashes.length === 0) {
+            this.wtTheyAttach?.setFromRecord(null);
+        } else if (theyHashes.length === 1 && theyBin && typeof theyBin === 'object' && !Array.isArray(theyBin)) {
+            this.wtTheyAttach?.setFromRecord(theyHashes[0], theyBin);
+        } else {
+            this.wtTheyAttach?.setFromRecord(theyHashes);
+        }
 
         // Keep the THEY-side search match count fresh after any
         // refresh (new committed record from partner, live whisper,

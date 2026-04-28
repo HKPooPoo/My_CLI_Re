@@ -127,17 +127,40 @@ export const BCDb = {
     },
 
     async importRecords(localChannelId, serverRecords) {
-        const rows = serverRecords.map(r => ({
-            local_channel_id: localChannelId,
-            timestamp: parseInt(r.timestamp),
-            text: r.text || '',
-            file_hash: r.file_hash ? {
-                hash: r.file_hash,
-                name: r.file_name || 'unknown',
-                size: r.file_size || 0,
-                mime: r.file_mime || 'application/octet-stream'
-            } : null
-        }));
+        const rows = serverRecords.map(r => {
+            // Server may send file_hash as null, a single hash string,
+            // or a JSON-stringified array (multi-file). Normalise to:
+            //   null              → null
+            //   "hash"            → {hash, name, size, mime} (with metadata when r supplies it)
+            //   '["h1","h2",...]' → [{hash}, {hash}, ...] (bare hash objects;
+            //                       chip render lazy-fetches per-blob meta)
+            let fh = null;
+            if (r.file_hash) {
+                if (typeof r.file_hash === 'string' && r.file_hash.startsWith('[')) {
+                    try {
+                        const arr = JSON.parse(r.file_hash);
+                        if (Array.isArray(arr)) {
+                            fh = arr.filter(Boolean).map(h => ({ hash: h }));
+                            if (fh.length === 0) fh = null;
+                        }
+                    } catch { /* fall through to single-string treatment */ }
+                }
+                if (fh === null) {
+                    fh = {
+                        hash: r.file_hash,
+                        name: r.file_name || 'unknown',
+                        size: r.file_size || 0,
+                        mime: r.file_mime || 'application/octet-stream'
+                    };
+                }
+            }
+            return {
+                local_channel_id: localChannelId,
+                timestamp: parseInt(r.timestamp),
+                text: r.text || '',
+                file_hash: fh
+            };
+        });
         return await db.broadcast_boards.bulkPut(rows);
     },
 
@@ -221,12 +244,34 @@ export const BCMeta = {
             });
 
             if (records && records.length > 0) {
-                await db.broadcast_boards.bulkAdd(records.map(r => ({
-                    local_channel_id: localId,
-                    timestamp: parseInt(r.timestamp),
-                    text: r.text || '',
-                    file_hash: r.file_hash ?? null
-                })));
+                await db.broadcast_boards.bulkAdd(records.map(r => {
+                    // Same normalisation as importRecords — multi-file
+                    // JSON array strings become arrays of bare hash
+                    // objects so onDetach/onRename can compare per-hash.
+                    let fh = null;
+                    if (r.file_hash) {
+                        if (typeof r.file_hash === 'string' && r.file_hash.startsWith('[')) {
+                            try {
+                                const arr = JSON.parse(r.file_hash);
+                                if (Array.isArray(arr)) {
+                                    fh = arr.filter(Boolean).map(h => ({ hash: h }));
+                                    if (fh.length === 0) fh = null;
+                                }
+                            } catch { /* fall through */ }
+                        }
+                        if (fh === null) {
+                            fh = (typeof r.file_hash === 'object')
+                                ? r.file_hash
+                                : { hash: r.file_hash };
+                        }
+                    }
+                    return {
+                        local_channel_id: localId,
+                        timestamp: parseInt(r.timestamp),
+                        text: r.text || '',
+                        file_hash: fh
+                    };
+                }));
             }
 
             return localId;

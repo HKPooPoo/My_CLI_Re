@@ -23,6 +23,7 @@
 import { BroadcastService } from './services/broadcast-service.js';
 import { FileService } from './services/file-service.js';
 import { BCDb, BCMeta, getHKTTimestamp, _parseJsonbColumn } from './broadcast-db.js';
+import { extractHashes } from './blackboard-core.js';
 import { InfiniteList } from './blackboard-ui-list.js';
 import { MultiStepButton } from './multiStepButton.js';
 import { BBMessage } from './blackboard-msg.js';
@@ -268,43 +269,46 @@ export const BCList = {
                             (r.text && r.text.trim()) || r.file_hash
                         );
 
-                        // Local First: upload pending files but never strip the hash.
-                        // Failed uploads stay 'local' in file_blobs; next cast retries.
+                        // Multi-file: a record's file_hash may be a single
+                        // object, a single string, or an array of either.
+                        // Loop every hash per record, upload the unsynced
+                        // ones, then serialise to a single hash string OR
+                        // a JSON array string for the cast payload — same
+                        // wire format BB commit uses.
                         let failedCount = 0;
                         const apiRecords = [];
                         for (const r of candidateRecords) {
-                            let hashStr = null;
+                            const hashes = extractHashes(r.file_hash);
 
-                            if (r.file_hash) {
-                                const hash = (typeof r.file_hash === 'object') ? r.file_hash.hash : r.file_hash;
-                                const fileName = (typeof r.file_hash === 'object' && r.file_hash.name) || hash.substring(0, 8);
-                                hashStr = hash;
-
+                            for (const hash of hashes) {
                                 const localFile = await db.file_blobs.get(hash);
-                                if (localFile && localFile.blob) {
-                                    if (localFile.status !== 'synced') {
-                                        const toast = BBMessage.loading(t('broadcast.uploading', { name: fileName }));
-                                        try {
-                                            await FileService.upload(localFile.blob, localFile.name);
-                                            await db.file_blobs.update(hash, { status: 'synced' });
-                                            toast.update(t('broadcast.uploaded', { name: fileName }));
-                                        } catch (err) {
-                                            console.error(`BC Cast: Upload failed for ${hash}`, err);
-                                            toast.close();
-                                            BBMessage.error(t('broadcast.uploadFailed', { name: fileName }));
-                                            failedCount++;
-                                        }
-                                    }
-                                } else {
+                                if (!localFile || !localFile.blob) {
                                     console.warn(`BC Cast: Local file missing for hash ${hash}`);
+                                    failedCount++;
+                                    continue;
+                                }
+                                if (localFile.status === 'synced') continue;
+                                const fileName = localFile.name || hash.substring(0, 8);
+                                const toast = BBMessage.loading(t('broadcast.uploading', { name: fileName }));
+                                try {
+                                    await FileService.upload(localFile.blob, localFile.name);
+                                    await db.file_blobs.update(hash, { status: 'synced' });
+                                    toast.update(t('broadcast.uploaded', { name: fileName }));
+                                } catch (err) {
+                                    console.error(`BC Cast: Upload failed for ${hash}`, err);
+                                    toast.close();
+                                    BBMessage.error(t('broadcast.uploadFailed', { name: fileName }));
                                     failedCount++;
                                 }
                             }
 
+                            let fh = null;
+                            if (hashes.length === 1) fh = hashes[0];
+                            else if (hashes.length > 1) fh = JSON.stringify(hashes);
                             apiRecords.push({
                                 timestamp: r.timestamp,
                                 text: r.text || '',
-                                file_hash: hashStr
+                                file_hash: fh
                             });
                         }
 
